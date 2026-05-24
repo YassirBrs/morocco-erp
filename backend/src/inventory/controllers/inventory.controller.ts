@@ -21,6 +21,9 @@ export class InventoryController {
   @Post('suppliers/import') importSuppliersCsv(@Body() body: { csv?: string }) { return this.inventoryService.importSuppliersCsv(body); }
   @Get('suppliers/risk-reminders') supplierRiskReminders(@Query('filter') filter?: string) { return this.inventoryService.supplierRiskReminders(filter); }
   @Get('suppliers/payment-calendar') supplierPaymentCalendar() { return this.inventoryService.supplierPaymentCalendar(); }
+  @Get('suppliers/reliability-scores') supplierReliabilityScores() { return this.inventoryService.supplierReliabilityScores(); }
+  @Get('supplier-contracts') supplierContracts() { return this.inventoryService.listSupplierContracts(); }
+  @Post('supplier-contracts') createSupplierContract(@Body() body: any) { return this.inventoryService.createSupplierContract(body); }
   @Get('suppliers/:id/statement') supplierStatement(@Param('id') id: string) { return this.inventoryService.supplierStatement(id); }
   @Post('suppliers/bulk-status') bulkSupplierStatus(@Body() body: any) { return this.inventoryService.bulkSupplierStatus(body); }
   @Post('suppliers/:id/document-placeholders') addSupplierDocumentPlaceholder(@Param('id') id: string, @Body() body: any) {
@@ -45,6 +48,14 @@ export class InventoryController {
   @Post('traceability') createTraceabilityLot(@Body() body: any) { return this.inventoryService.createTraceabilityLot(body); }
   @Get('expiry-alerts') expiryAlerts() { return this.inventoryService.stockExpiryAlerts(); }
   @Get('movement-audit') movementAudit() { return this.inventoryService.movementAudit(); }
+  @Get('product-lifecycle-board') lifecycleBoard() { return this.inventoryService.lifecycleBoard(); }
+  @Post('products/:id/lifecycle') setProductLifecycleState(@Param('id') id: string, @Body() body: any) {
+    return this.inventoryService.setProductLifecycleState(id, body);
+  }
+  @Get('quarantines') stockQuarantines() { return this.inventoryService.listStockQuarantines(); }
+  @Post('quarantines') createStockQuarantine(@Body() body: any) { return this.inventoryService.createStockQuarantine(body); }
+  @Post('quarantines/:id/release') releaseStockQuarantine(@Param('id') id: string) { return this.inventoryService.releaseStockQuarantine(id); }
+  @Post('reservations/release-expired') releaseExpiredReservations(@Body() body: any) { return this.inventoryService.releaseExpiredReservations(body); }
   @Post('adjustments') adjust(@Body() body: { productId: string; quantity: number; reason?: string }) {
     return this.inventoryService.adjustStock(body.productId, body.quantity, body.reason);
   }
@@ -55,6 +66,9 @@ export class InventoryController {
   @Post('purchase-requests/:id/convert-to-order') convertPurchaseRequest(@Param('id') id: string, @Body() body: any) { return this.inventoryService.convertPurchaseRequestToOrder(id, body); }
   @Post('supplier-quotes') addSupplierQuote(@Body() body: any) { return this.inventoryService.addSupplierQuoteComparison(body); }
   @Get('purchase-requests/:id/supplier-quotes') supplierQuoteMatrix(@Param('id') id: string) { return this.inventoryService.supplierQuoteMatrix(id); }
+  @Get('recurring-purchases') recurringPurchases() { return this.inventoryService.listRecurringPurchaseSchedules(); }
+  @Post('recurring-purchases') createRecurringPurchase(@Body() body: any) { return this.inventoryService.createRecurringPurchaseSchedule(body); }
+  @Post('recurring-purchases/:id/run') runRecurringPurchase(@Param('id') id: string) { return this.inventoryService.runRecurringPurchaseSchedule(id); }
   @Get('purchase-orders') purchaseOrders() { return this.inventoryService.listPurchaseOrders(); }
   @Post('purchase-orders') createPurchaseOrder(@Body() body: any) { return this.inventoryService.createPurchaseOrder(body); }
   @Get('purchase-orders/:id/pdf') purchaseOrderPdf(@Param('id') id: string) { return this.inventoryService.purchaseOrderPdf(id); }

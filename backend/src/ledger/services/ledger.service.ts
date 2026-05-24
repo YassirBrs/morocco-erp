@@ -19,6 +19,7 @@ export class LedgerService {
   closeChecklist(data: { year?: number; month?: number }) { return this.store.fiscalDocumentCompletenessCheck(data.year, data.month); }
   listPeriods() { return this.store.listFiscalPeriods(); }
   vatReport(data: { year?: number; month?: number }) { return this.store.exportVatReport(data); }
+  vatExceptionDrilldown() { return this.store.vatExceptionDrilldown(); }
   accountingExport(data: { format?: 'CSV' | 'JSON'; year?: number; month?: number }) { return this.store.exportAccounting(data.format, data); }
   reconciliation() { return this.store.accountReconciliation(); }
   anomalyChecks() { return this.store.accountingAnomalyChecks(); }
@@ -28,6 +29,7 @@ export class LedgerService {
   profitAndLoss(data: { year?: number; month?: number }) { return this.store.profitAndLossReport(data); }
   balanceSheet(data: { year?: number; month?: number }) { return this.store.balanceSheetReport(data); }
   bankImportPreview(data: { csv: string }) { return this.store.importBankStatement(data); }
+  bankStatementMatchingSuggestions(data: any) { return this.store.bankStatementMatchingSuggestions(data); }
   paymentMethodReconciliation() { return this.store.paymentMethodReconciliation(); }
   listCheques() { return this.store.listCheques(); }
   createCheque(data: any) { return this.store.createCheque(data); }
@@ -37,4 +39,12 @@ export class LedgerService {
   archiveEvidence(data: any) { return this.store.archiveLegalEvidence(data); }
   auditLogs() { return this.store.auditLogs(); }
   chartOfAccountsImportTemplateCsv() { return this.store.importTemplateCsv('chart-of-accounts'); }
+  listExpenseClaims() { return this.store.listExpenseClaims(); }
+  createExpenseClaim(data: any) { return this.store.createExpenseClaim(data); }
+  approveExpenseClaim(id: string) { return this.store.approveExpenseClaim(id); }
+  exportExpenseClaims() { return this.store.exportExpenseClaims(); }
+  listPettyCashJournals() { return this.store.listPettyCashJournals(); }
+  openPettyCashJournal(data: any) { return this.store.openPettyCashJournal(data); }
+  addPettyCashMovement(id: string, data: any) { return this.store.addPettyCashMovement(id, data); }
+  closePettyCashJournal(id: string, data: any) { return this.store.closePettyCashJournal(id, data.countedBalance); }
 }

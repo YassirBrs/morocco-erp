@@ -7,6 +7,7 @@ import {
   getIntegrationReadiness,
   getModuleData,
   getMoroccoWorkflowReadiness,
+  getOperationalControlReadiness,
   getOperationalReports,
   getPlatformReadiness,
   getPayrollSnapshot,
@@ -42,7 +43,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -57,6 +58,7 @@ export default async function DashboardPage() {
     getPlatformReadiness(),
     getMoroccoWorkflowReadiness(),
     getGovernanceReadiness(),
+    getOperationalControlReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -377,6 +379,38 @@ export default async function DashboardPage() {
               `File comptable ${governanceReadiness.accountantQueue.rows.length}`,
               `KPI variance ${governanceReadiness.kpiVariance.length}`,
               `Risque client ${governanceReadiness.customerRisk.map((risk) => `${risk.customerName}: ${risk.level}`).join(' / ') || 'bas'}`,
+            ]} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Pilotage opérationnel avancé">
+          <PanelHeader title="Pilotage opérationnel avancé" action="Contrôler flux" />
+          <div className="reportGrid">
+            <Metric label="Fiabilité fournisseurs" value={String(operationalControls.supplierReliability.length)} />
+            <Metric label="Cycle articles" value={String(operationalControls.lifecycleBoard.rows.length)} />
+            <Metric label="TVA exceptions" value={String(operationalControls.vatExceptions.count)} />
+            <Metric label="CNSS anomalies" value={String(operationalControls.cnssAnomalies.count)} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Stock et livraison" rows={[
+              `Quarantaines ${operationalControls.quarantines.length}`,
+              `Preuves livraison ${operationalControls.deliveryProofs.length}`,
+              'Réservations expirées avec libération automatique',
+              'États article: brouillon, actif, bloqué, discontinué, archivé',
+            ]} empty="-" />
+            <MiniList title="Contrats et pricing" rows={[
+              `Contrats clients ${operationalControls.customerContracts.length}`,
+              `Contrats fournisseurs ${operationalControls.supplierContracts.length}`,
+              `Règles tarifaires ${operationalControls.pricingRules.length}`,
+              `Approbations remises ${operationalControls.discountApprovals.length}`,
+            ]} empty="-" />
+            <MiniList title="Finance et RH" rows={[
+              `Factures récurrentes ${operationalControls.recurringInvoices.length}`,
+              `Achats récurrents ${operationalControls.recurringPurchases.length}`,
+              `Notes de frais ${operationalControls.expenseClaims.length}`,
+              `Petite caisse ${operationalControls.pettyCash.length}`,
+              `Matching bancaire ${operationalControls.bankMatching.rows.length}`,
+              `Checklists RH ${operationalControls.employeeChecklists.length}`,
             ]} empty="-" />
           </div>
         </section>

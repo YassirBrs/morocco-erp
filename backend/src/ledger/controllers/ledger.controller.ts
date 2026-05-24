@@ -25,6 +25,7 @@ export class LedgerController {
   @Get('vat-report') vatReport(@Query('year') year?: string, @Query('month') month?: string) {
     return this.ledgerService.vatReport({ year: year ? Number(year) : undefined, month: month ? Number(month) : undefined });
   }
+  @Get('vat-exceptions') vatExceptions() { return this.ledgerService.vatExceptionDrilldown(); }
   @Get('export') accountingExport(@Query('format') format?: 'CSV' | 'JSON', @Query('year') year?: string, @Query('month') month?: string) {
     return this.ledgerService.accountingExport({ format, year: year ? Number(year) : undefined, month: month ? Number(month) : undefined });
   }
@@ -40,6 +41,7 @@ export class LedgerController {
     return this.ledgerService.balanceSheet({ year: year ? Number(year) : undefined, month: month ? Number(month) : undefined });
   }
   @Post('bank-import/preview') bankImportPreview(@Body() body: { csv: string }) { return this.ledgerService.bankImportPreview(body); }
+  @Post('bank-matching/suggestions') bankMatchingSuggestions(@Body() body: any) { return this.ledgerService.bankStatementMatchingSuggestions(body); }
   @Get('payments/reconciliation-by-method') paymentMethodReconciliation() { return this.ledgerService.paymentMethodReconciliation(); }
   @Get('cheques') cheques() { return this.ledgerService.listCheques(); }
   @Post('cheques') createCheque(@Body() body: any) { return this.ledgerService.createCheque(body); }
@@ -49,4 +51,12 @@ export class LedgerController {
   @Post('evidence') archiveEvidence(@Body() body: any) { return this.ledgerService.archiveEvidence(body); }
   @Get('audit') audit() { return this.ledgerService.auditLogs(); }
   @Get('chart-of-accounts/import-template.csv') chartOfAccountsImportTemplateCsv() { return this.ledgerService.chartOfAccountsImportTemplateCsv(); }
+  @Get('expense-claims') expenseClaims() { return this.ledgerService.listExpenseClaims(); }
+  @Post('expense-claims') createExpenseClaim(@Body() body: any) { return this.ledgerService.createExpenseClaim(body); }
+  @Post('expense-claims/:id/approve') approveExpenseClaim(@Param('id') id: string) { return this.ledgerService.approveExpenseClaim(id); }
+  @Post('expense-claims/export') exportExpenseClaims() { return this.ledgerService.exportExpenseClaims(); }
+  @Get('petty-cash') pettyCashJournals() { return this.ledgerService.listPettyCashJournals(); }
+  @Post('petty-cash') openPettyCashJournal(@Body() body: any) { return this.ledgerService.openPettyCashJournal(body); }
+  @Post('petty-cash/:id/movements') addPettyCashMovement(@Param('id') id: string, @Body() body: any) { return this.ledgerService.addPettyCashMovement(id, body); }
+  @Post('petty-cash/:id/close') closePettyCashJournal(@Param('id') id: string, @Body() body: any) { return this.ledgerService.closePettyCashJournal(id, body); }
 }

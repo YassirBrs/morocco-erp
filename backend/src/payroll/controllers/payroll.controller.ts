@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Patch, Post, Body, Param } from '@nestjs/common';
+import { Controller, Delete, Get, Patch, Post, Body, Param, Query } from '@nestjs/common';
 import { PayrollService } from '../services/payroll.service';
 import { PayrollInput, PayrollResult } from '../dto/payroll.dto';
 
@@ -12,6 +12,12 @@ export class PayrollController {
   @Get('employees/import-template.csv') employeeImportTemplateCsv() { return this.payrollService.employeeImportTemplateCsv(); }
   @Get('employees/document-reminders') employeeDocumentReminders() { return this.payrollService.employeeDocumentReminders(); }
   @Get('employees/contract-reminders') contractLifecycleReminders() { return this.payrollService.contractLifecycleReminders(); }
+  @Get('employees/cnss-anomalies') cnssEmployeeAnomalies() { return this.payrollService.cnssEmployeeAnomalies(); }
+  @Get('employee-checklists') employeeChecklists() { return this.payrollService.listEmployeeChecklists(); }
+  @Post('employee-checklists') employeeChecklist(@Body() body: any) { return this.payrollService.employeeChecklist(body); }
+  @Post('employee-checklists/:id/complete') completeEmployeeChecklistItem(@Param('id') id: string, @Body() body: any) {
+    return this.payrollService.completeEmployeeChecklistItem(id, body);
+  }
   @Get('employees/:id') employee(@Param('id') id: string) { return this.payrollService.getEmployee(id); }
   @Post('employees') addEmployee(@Body() body: any) { return this.payrollService.addEmployee(body); }
   @Patch('employees/:id') updateEmployee(@Param('id') id: string, @Body() body: any) { return this.payrollService.updateEmployee(id, body); }
@@ -20,6 +26,7 @@ export class PayrollController {
   @Get('contracts') contracts() { return this.payrollService.listContracts(); }
   @Post('contracts') addContract(@Body() body: any) { return this.payrollService.addContract(body); }
   @Get('cost-report') costReport() { return this.payrollService.costReport(); }
+  @Get('variance-report') varianceReport(@Query('period') period?: string) { return this.payrollService.payrollVarianceReport(period); }
 
   @Get('leave-balances') leaveBalances() { return this.payrollService.leaveBalances(); }
   @Get('leave-requests') leaveRequests() { return this.payrollService.leaveRequests(); }

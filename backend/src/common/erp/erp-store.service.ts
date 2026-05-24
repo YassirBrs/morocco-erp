@@ -28,8 +28,11 @@ import {
   DocumentTemplateSetting,
   DocumentTotals,
   DepositBatch,
+  DeliveryProof,
   Employee,
+  EmployeeChecklist,
   EmailDelivery,
+  ExpenseClaim,
   EmployeePortalAccess,
   EmploymentContract,
   ErpUser,
@@ -54,6 +57,7 @@ import {
   MaintenanceAsset,
   MaintenanceWorkOrder,
   Payment,
+  PettyCashJournal,
   PartnerApiKey,
   PayrollExportArchive,
   PayrollRun,
@@ -63,18 +67,24 @@ import {
   PosTransaction,
   PreferredLanguage,
   Product,
+  ProductLifecycleState,
   ProductionOrder,
   ProjectRecord,
   PurchaseOrder,
   PurchaseRequest,
+  PricingRule,
   PurchaseReceipt,
+  RecurringInvoiceBatch,
+  RecurringPurchaseSchedule,
   SalesOrder,
   Quote,
   SecurityNotification,
   StockMove,
+  StockQuarantine,
   StockTransfer,
   StoredFile,
   Supplier,
+  SupplierContract,
   SupplierQuoteComparison,
   SupplierInvoice,
   Tenant,
@@ -88,6 +98,8 @@ import {
   WarehouseStock,
   WebhookEvent,
   WebhookRetryLog,
+  CustomerContract,
+  DiscountApproval,
 } from './erp.types';
 
 const r2 = (value: number): number => Math.round(value * 100) / 100;
@@ -327,6 +339,7 @@ export class ErpStoreService {
           stockOnHand: 50,
           reservedStock: 0,
           weightedAverageCost: 520,
+          lifecycleState: 'ACTIVE',
           active: true,
           createdAt: today(),
           updatedAt: today(),
@@ -348,6 +361,7 @@ export class ErpStoreService {
           stockOnHand: 0,
           reservedStock: 0,
           weightedAverageCost: 0,
+          lifecycleState: 'ACTIVE',
           active: true,
           createdAt: today(),
           updatedAt: today(),
@@ -369,6 +383,7 @@ export class ErpStoreService {
           stockOnHand: 200,
           reservedStock: 0,
           weightedAverageCost: 90,
+          lifecycleState: 'ACTIVE',
           active: true,
           createdAt: today(),
           updatedAt: today(),
@@ -390,6 +405,7 @@ export class ErpStoreService {
           stockOnHand: 8,
           reservedStock: 0,
           weightedAverageCost: 300,
+          lifecycleState: 'ACTIVE',
           active: true,
           createdAt: today(),
           updatedAt: today(),
@@ -449,6 +465,17 @@ export class ErpStoreService {
       userInvitations: [],
       kpiTargets: [],
       webhookRetryLogs: [],
+      stockQuarantines: [],
+      deliveryProofs: [],
+      customerContracts: [],
+      supplierContracts: [],
+      pricingRules: [],
+      discountApprovals: [],
+      recurringInvoiceBatches: [],
+      recurringPurchaseSchedules: [],
+      expenseClaims: [],
+      pettyCashJournals: [],
+      employeeChecklists: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -561,6 +588,17 @@ export class ErpStoreService {
       userInvitations: [],
       kpiTargets: [],
       webhookRetryLogs: [],
+      stockQuarantines: [],
+      deliveryProofs: [],
+      customerContracts: [],
+      supplierContracts: [],
+      pricingRules: [],
+      discountApprovals: [],
+      recurringInvoiceBatches: [],
+      recurringPurchaseSchedules: [],
+      expenseClaims: [],
+      pettyCashJournals: [],
+      employeeChecklists: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -2554,6 +2592,7 @@ export class ErpStoreService {
       stockOnHand,
       reservedStock: 0,
       weightedAverageCost: trackStock ? this.nonNegative(input.weightedAverageCost ?? cost, 'Le CUMP doit être nul ou positif') : 0,
+      lifecycleState: input.lifecycleState ?? 'ACTIVE',
       active: input.active ?? true,
       createdAt: today(),
       updatedAt: today(),
@@ -2661,12 +2700,14 @@ export class ErpStoreService {
     if (input.weightedAverageCost !== undefined) {
       product.weightedAverageCost = product.trackStock ? this.nonNegative(input.weightedAverageCost, 'Le CUMP doit être nul ou positif') : 0;
     }
+    if (input.lifecycleState !== undefined) product.lifecycleState = input.lifecycleState;
     if (!product.trackStock || product.type === 'SERVICE') {
       product.stockOnHand = 0;
       product.reservedStock = 0;
       product.weightedAverageCost = 0;
     }
     if (input.active !== undefined) product.active = input.active;
+    product.active = product.lifecycleState !== 'ARCHIVED' && product.active;
     product.duplicateWarnings = this.productDuplicateWarnings(workspace, product);
     product.updatedAt = today();
     this.audit(workspace, 'product.updated', 'Product', product.id, product);
@@ -2678,6 +2719,7 @@ export class ErpStoreService {
     this.assertCanWrite(workspace);
     const product = this.product(workspace, productId);
     product.active = false;
+    product.lifecycleState = 'ARCHIVED';
     product.updatedAt = today();
     this.audit(workspace, 'product.archived', 'Product', product.id, product);
     return product;
@@ -5577,6 +5619,525 @@ export class ErpStoreService {
     });
   }
 
+  supplierReliabilityScores(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.suppliers.map((supplier) => {
+      const orders = workspace.purchaseOrders.filter((order) => order.supplierId === supplier.id);
+      const receipts = workspace.purchaseReceipts.filter((receipt) => receipt.supplierId === supplier.id);
+      const purchaseVolume = r2([...orders, ...receipts].reduce((sum, item) => sum + item.total, 0));
+      const lateOrders = orders.filter((order) => order.expectedDate && order.expectedDate < today() && !['RECEIVED', 'CANCELLED'].includes(order.status)).length;
+      const missingDocuments = supplier.documentExpiries.filter((document) => !document.uploadStatus || document.uploadStatus === 'PLACEHOLDER' || this.daysUntil(document.expiresAt) <= 30).length;
+      const score = Math.max(0, Math.min(100, 100 - lateOrders * 20 - missingDocuments * 15 + Math.min(10, Math.round(purchaseVolume / 10000))));
+      return { supplierId: supplier.id, supplierName: supplier.name, lateOrders, missingDocuments, purchaseVolume, score, level: score >= 80 ? 'HIGH' : score >= 55 ? 'MEDIUM' : 'LOW' };
+    }).sort((left, right) => right.score - left.score || left.supplierName.localeCompare(right.supplierName));
+  }
+
+  setProductLifecycleState(productId: string, state: ProductLifecycleState, tenantId?: string): Product {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const product = this.product(workspace, productId);
+    product.lifecycleState = state;
+    product.active = !['ARCHIVED'].includes(state);
+    product.updatedAt = today();
+    this.audit(workspace, 'product.lifecycle-updated', 'Product', product.id, { state });
+    return product;
+  }
+
+  productLifecycleBoard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const states: ProductLifecycleState[] = ['DRAFT', 'ACTIVE', 'BLOCKED', 'DISCONTINUED', 'ARCHIVED'];
+    return {
+      states,
+      rows: workspace.products.map((product) => ({ productId: product.id, sku: product.sku, name: product.name, state: product.lifecycleState, active: product.active, stockOnHand: product.stockOnHand })),
+      counts: Object.fromEntries(states.map((state) => [state, workspace.products.filter((product) => product.lifecycleState === state).length])),
+    };
+  }
+
+  createStockQuarantine(input: { productId: string; warehouseId?: string; quantity: number; reason?: StockQuarantine['reason']; documentReference?: string }, tenantId?: string): StockQuarantine {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const product = this.product(workspace, input.productId);
+    const warehouseId = input.warehouseId ?? workspace.warehouses[0].id;
+    this.warehouse(workspace, warehouseId);
+    const quantity = this.positive(input.quantity, 'La quantité à mettre en quarantaine doit être positive');
+    if (!product.trackStock || this.availableStock(product) < quantity) throw new BadRequestException('Stock disponible insuffisant pour la quarantaine');
+    product.reservedStock = r2(product.reservedStock + quantity);
+    this.stockMove(workspace, product, quantity, product.weightedAverageCost, 'RESERVATION', 'Quarantaine stock', warehouseId);
+    const quarantine: StockQuarantine = {
+      id: this.id('quar'),
+      tenantId: workspace.tenant.id,
+      productId: product.id,
+      warehouseId,
+      quantity,
+      reason: input.reason ?? 'COMPLIANCE_HOLD',
+      status: 'OPEN',
+      documentReference: this.clean(input.documentReference),
+      createdAt: today(),
+    };
+    workspace.stockQuarantines.push(quarantine);
+    this.audit(workspace, 'stock.quarantine-opened', 'StockQuarantine', quarantine.id, quarantine);
+    return quarantine;
+  }
+
+  listStockQuarantines(tenantId?: string): StockQuarantine[] {
+    return this.workspace(tenantId).stockQuarantines;
+  }
+
+  releaseStockQuarantine(quarantineId: string, tenantId?: string): StockQuarantine {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const quarantine = workspace.stockQuarantines.find((candidate) => candidate.id === quarantineId);
+    if (!quarantine) throw new NotFoundException('Quarantaine stock introuvable');
+    if (quarantine.status !== 'OPEN') return quarantine;
+    const product = this.product(workspace, quarantine.productId);
+    product.reservedStock = r2(Math.max(0, product.reservedStock - quarantine.quantity));
+    this.stockMove(workspace, product, -quarantine.quantity, product.weightedAverageCost, 'RESERVATION_RELEASE', 'Libération quarantaine', quarantine.warehouseId);
+    quarantine.status = 'RELEASED';
+    quarantine.closedAt = today();
+    this.audit(workspace, 'stock.quarantine-released', 'StockQuarantine', quarantine.id, quarantine);
+    return quarantine;
+  }
+
+  captureDeliveryProof(input: { deliveryNoteId: string; signer: string; signedAt?: string; documentReference?: string }, tenantId?: string): DeliveryProof {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const deliveryNote = this.deliveryNote(workspace, input.deliveryNoteId);
+    const proof: DeliveryProof = {
+      id: this.id('pod'),
+      tenantId: workspace.tenant.id,
+      deliveryNoteId: deliveryNote.id,
+      signer: this.nonEmpty(input.signer, 'Le signataire de livraison est obligatoire'),
+      signedAt: input.signedAt ? this.isoDate(input.signedAt, 'Date de signature livraison invalide') : today(),
+      documentReference: this.clean(input.documentReference) ?? `POD-${deliveryNote.number}`,
+      status: input.documentReference ? 'CAPTURED' : 'PENDING_DOCUMENT',
+    };
+    workspace.deliveryProofs.push(proof);
+    this.audit(workspace, 'delivery-proof.captured', 'DeliveryProof', proof.id, proof);
+    return proof;
+  }
+
+  listDeliveryProofs(tenantId?: string): DeliveryProof[] {
+    return this.workspace(tenantId).deliveryProofs;
+  }
+
+  salesCommissionReport(input: { period?: string; ratePercent?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.period ?? today().slice(0, 7);
+    const rate = this.nonNegative(input.ratePercent ?? 2, 'Le taux de commission doit être positif') / 100;
+    const rows = workspace.invoices
+      .filter((invoice) => invoice.date.startsWith(period))
+      .map((invoice) => {
+        const cost = invoice.lines.reduce((sum, line) => sum + this.product(workspace, line.productId).weightedAverageCost * line.quantity, 0);
+        const margin = r2(invoice.totals.subtotal - cost);
+        const salesperson = workspace.leads.find((lead) => lead.convertedQuoteId === invoice.sourceQuoteId)?.owner ?? 'Équipe commerciale';
+        return { invoiceId: invoice.id, invoiceNumber: invoice.number, salesperson, revenue: invoice.totals.subtotal, margin, paymentStatus: invoice.status, commission: invoice.status === 'PAID' ? r2(margin * rate) : 0 };
+      });
+    return { period, ratePercent: r2(rate * 100), rows, totalCommission: r2(rows.reduce((sum, row) => sum + row.commission, 0)) };
+  }
+
+  createCustomerContract(input: { customerId: string; name: string; renewalDate: string; priceList?: string; creditTermsDays?: number; documentStatus?: CustomerContract['documentStatus'] }, tenantId?: string): CustomerContract {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const customer = this.customer(workspace, input.customerId);
+    const contract: CustomerContract = {
+      id: this.id('cctr'),
+      tenantId: workspace.tenant.id,
+      customerId: customer.id,
+      name: this.nonEmpty(input.name, 'Le contrat client est obligatoire'),
+      renewalDate: this.isoDate(input.renewalDate, 'Date de renouvellement client invalide'),
+      priceList: this.clean(input.priceList) ?? 'Tarif standard',
+      creditTermsDays: this.nonNegative(input.creditTermsDays ?? customer.paymentTermsDays, 'Délai de crédit invalide'),
+      status: this.daysUntil(input.renewalDate) < 0 ? 'EXPIRED' : this.daysUntil(input.renewalDate) <= 60 ? 'RENEWAL_DUE' : 'ACTIVE',
+      documentStatus: input.documentStatus ?? 'MISSING',
+    };
+    workspace.customerContracts.push(contract);
+    this.audit(workspace, 'customer-contract.created', 'CustomerContract', contract.id, contract);
+    return contract;
+  }
+
+  listCustomerContracts(tenantId?: string): CustomerContract[] {
+    return this.workspace(tenantId).customerContracts;
+  }
+
+  createSupplierContract(input: { supplierId: string; name: string; renewalDate: string; sla?: string; paymentTermsDays?: number; documentStatus?: SupplierContract['documentStatus'] }, tenantId?: string): SupplierContract {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const supplier = this.supplier(workspace, input.supplierId);
+    const contract: SupplierContract = {
+      id: this.id('sctr'),
+      tenantId: workspace.tenant.id,
+      supplierId: supplier.id,
+      name: this.nonEmpty(input.name, 'Le contrat fournisseur est obligatoire'),
+      renewalDate: this.isoDate(input.renewalDate, 'Date de renouvellement fournisseur invalide'),
+      sla: this.clean(input.sla) ?? 'SLA standard',
+      paymentTermsDays: this.nonNegative(input.paymentTermsDays ?? supplier.paymentTermsDays, 'Délai paiement fournisseur invalide'),
+      status: this.daysUntil(input.renewalDate) < 0 ? 'EXPIRED' : this.daysUntil(input.renewalDate) <= 60 ? 'RENEWAL_DUE' : 'ACTIVE',
+      documentStatus: input.documentStatus ?? 'MISSING',
+    };
+    workspace.supplierContracts.push(contract);
+    this.audit(workspace, 'supplier-contract.created', 'SupplierContract', contract.id, contract);
+    return contract;
+  }
+
+  listSupplierContracts(tenantId?: string): SupplierContract[] {
+    return this.workspace(tenantId).supplierContracts;
+  }
+
+  createPricingRule(input: { customerSegment: string; productFamily: string; startDate: string; endDate: string; minQuantity?: number; discountPercent: number; active?: boolean }, tenantId?: string): PricingRule {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const rule: PricingRule = {
+      id: this.id('price'),
+      tenantId: workspace.tenant.id,
+      customerSegment: this.nonEmpty(input.customerSegment, 'Le segment client est obligatoire'),
+      productFamily: this.nonEmpty(input.productFamily, 'La famille article est obligatoire'),
+      startDate: this.isoDate(input.startDate, 'Date début tarif invalide'),
+      endDate: this.isoDate(input.endDate, 'Date fin tarif invalide'),
+      minQuantity: this.nonNegative(input.minQuantity ?? 1, 'Quantité minimale invalide'),
+      discountPercent: this.nonNegative(input.discountPercent, 'Remise tarifaire invalide'),
+      active: input.active ?? true,
+    };
+    workspace.pricingRules.push(rule);
+    this.audit(workspace, 'pricing-rule.created', 'PricingRule', rule.id, rule);
+    return rule;
+  }
+
+  listPricingRules(tenantId?: string): PricingRule[] {
+    return this.workspace(tenantId).pricingRules;
+  }
+
+  pricingPreview(input: { customerSegment: string; productFamily: string; quantity: number; unitPrice: number; date?: string }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const date = input.date ?? today();
+    const rule = workspace.pricingRules
+      .filter((candidate) => candidate.active && candidate.customerSegment === input.customerSegment && candidate.productFamily === input.productFamily && candidate.minQuantity <= input.quantity && candidate.startDate <= date && candidate.endDate >= date)
+      .sort((left, right) => right.discountPercent - left.discountPercent)[0];
+    const gross = r2(input.quantity * input.unitPrice);
+    const discount = rule ? r2(gross * (rule.discountPercent / 100)) : 0;
+    return { ruleId: rule?.id, gross, discount, net: r2(gross - discount), appliedPercent: rule?.discountPercent ?? 0 };
+  }
+
+  requestDiscountApproval(input: { quoteId?: string; invoiceId?: string; requestedBy?: string; discountPercent: number; marginImpact: number; thresholdPercent?: number; requiredRole?: UserRole }, tenantId?: string): DiscountApproval {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    if (input.quoteId) this.quote(workspace, input.quoteId);
+    if (input.invoiceId) this.invoice(workspace, input.invoiceId);
+    const threshold = input.thresholdPercent ?? 10;
+    const approval: DiscountApproval = {
+      id: this.id('disc'),
+      tenantId: workspace.tenant.id,
+      quoteId: this.clean(input.quoteId),
+      invoiceId: this.clean(input.invoiceId),
+      requestedBy: this.clean(input.requestedBy) ?? 'commercial@atlas.ma',
+      discountPercent: this.nonNegative(input.discountPercent, 'Remise invalide'),
+      marginImpact: this.nonNegative(input.marginImpact, 'Impact marge invalide'),
+      thresholdPercent: threshold,
+      requiredRole: input.requiredRole ?? 'ADMIN',
+      status: input.discountPercent > threshold ? 'PENDING' : 'APPROVED',
+      createdAt: today(),
+      reviewedAt: input.discountPercent > threshold ? undefined : today(),
+    };
+    workspace.discountApprovals.push(approval);
+    this.audit(workspace, 'discount-approval.requested', 'DiscountApproval', approval.id, approval);
+    return approval;
+  }
+
+  approveDiscountApproval(approvalId: string, tenantId?: string): DiscountApproval {
+    const workspace = this.workspace(tenantId);
+    const approval = workspace.discountApprovals.find((candidate) => candidate.id === approvalId);
+    if (!approval) throw new NotFoundException('Approbation remise introuvable');
+    approval.status = 'APPROVED';
+    approval.reviewedAt = today();
+    this.audit(workspace, 'discount-approval.approved', 'DiscountApproval', approval.id, approval);
+    return approval;
+  }
+
+  listDiscountApprovals(tenantId?: string): DiscountApproval[] {
+    return this.workspace(tenantId).discountApprovals;
+  }
+
+  releaseExpiredStockReservations(input: { maxAgeDays?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const maxAgeDays = input.maxAgeDays ?? 7;
+    const released = workspace.salesOrders
+      .filter((order) => order.status === 'CONFIRMED' && daysBetween(order.date, today()) >= maxAgeDays)
+      .map((order) => {
+        for (const line of order.lines) {
+          const product = this.product(workspace, line.productId);
+          if (!product.trackStock) continue;
+          product.reservedStock = r2(Math.max(0, product.reservedStock - line.quantity));
+          this.stockMove(workspace, product, -line.quantity, product.weightedAverageCost, 'RESERVATION_RELEASE', order.number);
+        }
+        order.status = 'CANCELLED';
+        return { orderId: order.id, number: order.number, releasedAt: today() };
+      });
+    this.audit(workspace, 'stock-reservation.expired-released', 'SalesOrder', 'bulk', { count: released.length });
+    return { maxAgeDays, released, count: released.length };
+  }
+
+  generateRecurringInvoiceBatch(input: { customerId: string; period?: string; description?: string; lines?: DocumentLineInput[] }, tenantId?: string): RecurringInvoiceBatch {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const customer = this.customer(workspace, input.customerId);
+    const product = this.defaultQuotableProduct(workspace);
+    const period = input.period ?? today().slice(0, 7);
+    const invoice = this.createInvoice({
+      customerId: customer.id,
+      dueDate: addDays(today(), customer.paymentTermsDays),
+      lines: input.lines ?? [{ productId: product.id, quantity: 1, unitPrice: product.salePrice }],
+    }, workspace.tenant.id);
+    const batch: RecurringInvoiceBatch = {
+      id: this.id('rib'),
+      tenantId: workspace.tenant.id,
+      customerId: customer.id,
+      period,
+      description: this.clean(input.description) ?? 'Facturation récurrente',
+      invoiceIds: [invoice.id],
+      status: 'GENERATED',
+      createdAt: today(),
+    };
+    workspace.recurringInvoiceBatches.push(batch);
+    this.audit(workspace, 'recurring-invoice.generated', 'RecurringInvoiceBatch', batch.id, batch);
+    return batch;
+  }
+
+  listRecurringInvoiceBatches(tenantId?: string): RecurringInvoiceBatch[] {
+    return this.workspace(tenantId).recurringInvoiceBatches;
+  }
+
+  createRecurringPurchaseSchedule(input: { supplierId: string; category: RecurringPurchaseSchedule['category']; amount: number; nextRunDate: string; frequency?: RecurringPurchaseSchedule['frequency']; active?: boolean }, tenantId?: string): RecurringPurchaseSchedule {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    this.supplier(workspace, input.supplierId);
+    const schedule: RecurringPurchaseSchedule = {
+      id: this.id('rps'),
+      tenantId: workspace.tenant.id,
+      supplierId: input.supplierId,
+      category: input.category,
+      amount: this.positive(input.amount, 'Montant achat récurrent invalide'),
+      nextRunDate: this.isoDate(input.nextRunDate, 'Date prochaine échéance invalide'),
+      frequency: input.frequency ?? 'MONTHLY',
+      active: input.active ?? true,
+      purchaseOrderIds: [],
+    };
+    workspace.recurringPurchaseSchedules.push(schedule);
+    this.audit(workspace, 'recurring-purchase.created', 'RecurringPurchaseSchedule', schedule.id, schedule);
+    return schedule;
+  }
+
+  runRecurringPurchaseSchedule(scheduleId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const schedule = workspace.recurringPurchaseSchedules.find((candidate) => candidate.id === scheduleId);
+    if (!schedule) throw new NotFoundException('Échéancier achat introuvable');
+    const product = workspace.products.find((candidate) => candidate.type === 'SERVICE') ?? this.defaultQuotableProduct(workspace);
+    const order = this.createPurchaseOrder({ supplierId: schedule.supplierId, lines: [{ productId: product.id, quantity: 1, unitCost: schedule.amount }] }, workspace.tenant.id);
+    schedule.purchaseOrderIds.push(order.id);
+    schedule.nextRunDate = addDays(schedule.nextRunDate, schedule.frequency === 'MONTHLY' ? 30 : schedule.frequency === 'QUARTERLY' ? 90 : 365);
+    return { schedule, order };
+  }
+
+  listRecurringPurchaseSchedules(tenantId?: string): RecurringPurchaseSchedule[] {
+    return this.workspace(tenantId).recurringPurchaseSchedules;
+  }
+
+  createExpenseClaim(input: { employeeId: string; category: string; amount: number; receiptReference?: string }, tenantId?: string): ExpenseClaim {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    this.employee(workspace, input.employeeId);
+    const claim: ExpenseClaim = {
+      id: this.id('exp'),
+      tenantId: workspace.tenant.id,
+      employeeId: input.employeeId,
+      category: this.nonEmpty(input.category, 'La catégorie de note de frais est obligatoire'),
+      amount: this.positive(input.amount, 'Le montant de note de frais est obligatoire'),
+      receiptReference: this.clean(input.receiptReference),
+      status: 'SUBMITTED',
+      createdAt: today(),
+    };
+    workspace.expenseClaims.push(claim);
+    this.audit(workspace, 'expense-claim.submitted', 'ExpenseClaim', claim.id, claim);
+    return claim;
+  }
+
+  approveExpenseClaim(claimId: string, tenantId?: string): ExpenseClaim {
+    const workspace = this.workspace(tenantId);
+    const claim = workspace.expenseClaims.find((candidate) => candidate.id === claimId);
+    if (!claim) throw new NotFoundException('Note de frais introuvable');
+    claim.status = 'APPROVED';
+    claim.approvedAt = today();
+    this.audit(workspace, 'expense-claim.approved', 'ExpenseClaim', claim.id, claim);
+    return claim;
+  }
+
+  exportExpenseClaims(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const claims = workspace.expenseClaims.filter((claim) => claim.status === 'APPROVED');
+    const exportId = this.id('exp-export');
+    for (const claim of claims) {
+      claim.status = 'EXPORTED';
+      claim.accountingExportId = exportId;
+      this.postJournal(workspace, `Note de frais ${claim.category}`, claim.id, [
+        { account: '6198', label: claim.category, debit: claim.amount, credit: 0 },
+        { account: '4441', label: 'Remboursement salarié', debit: 0, credit: claim.amount },
+      ]);
+    }
+    return { exportId, claims, count: claims.length };
+  }
+
+  listExpenseClaims(tenantId?: string): ExpenseClaim[] {
+    return this.workspace(tenantId).expenseClaims;
+  }
+
+  openPettyCashJournal(input: { custodian: string; openingBalance: number }, tenantId?: string): PettyCashJournal {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const journal: PettyCashJournal = {
+      id: this.id('pcash'),
+      tenantId: workspace.tenant.id,
+      custodian: this.nonEmpty(input.custodian, 'Le responsable caisse est obligatoire'),
+      openingBalance: this.nonNegative(input.openingBalance, 'Solde ouverture caisse invalide'),
+      movements: [],
+      variance: 0,
+      status: 'OPEN',
+    };
+    workspace.pettyCashJournals.push(journal);
+    return journal;
+  }
+
+  addPettyCashMovement(journalId: string, input: { type: 'IN' | 'OUT'; amount: number; label: string; attachmentReference?: string }, tenantId?: string): PettyCashJournal {
+    const workspace = this.workspace(tenantId);
+    const journal = workspace.pettyCashJournals.find((candidate) => candidate.id === journalId);
+    if (!journal) throw new NotFoundException('Journal petite caisse introuvable');
+    if (journal.status !== 'OPEN') throw new BadRequestException('Journal petite caisse clôturé');
+    const amount = this.positive(input.amount, 'Montant mouvement caisse invalide');
+    journal.movements.push({ id: this.id('pcmove'), type: input.type, amount, label: this.nonEmpty(input.label, 'Libellé mouvement caisse obligatoire'), attachmentReference: this.clean(input.attachmentReference), date: today() });
+    return journal;
+  }
+
+  closePettyCashJournal(journalId: string, countedBalance: number, tenantId?: string): PettyCashJournal {
+    const workspace = this.workspace(tenantId);
+    const journal = workspace.pettyCashJournals.find((candidate) => candidate.id === journalId);
+    if (!journal) throw new NotFoundException('Journal petite caisse introuvable');
+    const theoretical = journal.movements.reduce((sum, move) => sum + (move.type === 'IN' ? move.amount : -move.amount), journal.openingBalance);
+    journal.countedBalance = this.nonNegative(countedBalance, 'Solde compté caisse invalide');
+    journal.variance = r2(journal.countedBalance - theoretical);
+    journal.status = 'CLOSED';
+    return journal;
+  }
+
+  listPettyCashJournals(tenantId?: string): PettyCashJournal[] {
+    return this.workspace(tenantId).pettyCashJournals;
+  }
+
+  bankStatementMatchingSuggestions(input: { amount?: number; date?: string; reference?: string; party?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const amount = input.amount ? Number(input.amount) : undefined;
+    const rows = [
+      ...workspace.invoices.map((invoice) => ({ type: 'CUSTOMER_INVOICE', id: invoice.id, reference: invoice.number, amount: r2(invoice.totals.total - invoice.paidAmount), date: invoice.dueDate, party: this.customer(workspace, invoice.customerId).name })),
+      ...workspace.supplierInvoices.map((invoice) => ({ type: 'SUPPLIER_INVOICE', id: invoice.id, reference: invoice.number, amount: r2(invoice.total - invoice.paidAmount), date: invoice.dueDate, party: this.supplier(workspace, invoice.supplierId).name })),
+      ...workspace.payments.map((payment) => ({ type: 'PAYMENT', id: payment.id, reference: payment.invoiceId, amount: payment.amount, date: payment.date, party: this.customer(workspace, this.invoice(workspace, payment.invoiceId).customerId).name })),
+    ].map((candidate) => {
+      const amountScore = amount === undefined ? 20 : Math.max(0, 50 - Math.abs(candidate.amount - amount));
+      const referenceScore = input.reference && candidate.reference.includes(input.reference) ? 30 : 0;
+      const partyScore = input.party && candidate.party.toLowerCase().includes(input.party.toLowerCase()) ? 20 : 0;
+      const dateScore = input.date && candidate.date === input.date ? 20 : 0;
+      return { ...candidate, score: Math.min(100, Math.round(amountScore + referenceScore + partyScore + dateScore)) };
+    }).sort((left, right) => right.score - left.score);
+    return { rows: rows.slice(0, 10), criteria: ['amount', 'date', 'reference', 'party'] };
+  }
+
+  vatExceptionDrilldown(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.invoices.flatMap((invoice) => {
+      const customer = this.customer(workspace, invoice.customerId);
+      return invoice.lines
+        .filter((line) => !customer.ice || !allowedVatRates.includes(line.vatRate) || (line.vatRate > 0 && !customer.ifNumber))
+        .map((line) => ({ invoiceId: invoice.id, invoiceNumber: invoice.number, customerId: customer.id, customerName: customer.name, productId: line.productId, sku: line.sku, vatRate: line.vatRate, missingIdentifier: !customer.ice ? 'ICE' : !customer.ifNumber ? 'IF' : undefined, status: 'NEEDS_REVIEW' }));
+    });
+    return { rows, count: rows.length };
+  }
+
+  cnssEmployeeAnomalyDrilldown(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.employees
+      .map((employee) => {
+        const contract = workspace.employmentContracts.find((candidate) => candidate.employeeId === employee.id && candidate.active);
+        const missing = [
+          employee.cnssNumber ? undefined : 'CNSS',
+          employee.cin ? undefined : 'CIN',
+          contract ? undefined : 'Contrat',
+        ].filter(Boolean);
+        const inconsistentBase = contract ? Math.abs(contract.salary - employee.baseSalary) > 1 : false;
+        return { employeeId: employee.id, employeeName: employee.fullName, missing, baseSalary: employee.baseSalary, contractSalary: contract?.salary, inconsistentBase, status: missing.length || inconsistentBase ? 'NEEDS_REVIEW' : 'OK' };
+      })
+      .filter((row) => row.status !== 'OK');
+    return { rows, count: rows.length };
+  }
+
+  payrollVarianceReport(input: { period?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.period ?? today().slice(0, 7);
+    const run = workspace.payrollRuns.find((candidate) => candidate.period === period);
+    const previous = workspace.payrollRuns.filter((candidate) => candidate.period < period).sort((left, right) => right.period.localeCompare(left.period))[0];
+    const rows = (run?.payslips ?? []).map((payslip) => {
+      const employee = this.employee(workspace, payslip.employeeId);
+      const contract = workspace.employmentContracts.find((candidate) => candidate.employeeId === employee.id && candidate.active);
+      const previousPayslip = previous?.payslips.find((candidate) => candidate.employeeId === employee.id);
+      return {
+        employeeId: employee.id,
+        employeeName: employee.fullName,
+        grossSalary: payslip.grossSalary,
+        contractSalary: contract?.salary ?? employee.baseSalary,
+        previousGrossSalary: previousPayslip?.grossSalary ?? 0,
+        varianceVsContract: r2(payslip.grossSalary - (contract?.salary ?? employee.baseSalary)),
+        varianceVsPrevious: r2(payslip.grossSalary - (previousPayslip?.grossSalary ?? 0)),
+      };
+    });
+    return { period, previousPeriod: previous?.period, rows, totals: { varianceVsContract: r2(rows.reduce((sum, row) => sum + row.varianceVsContract, 0)), varianceVsPrevious: r2(rows.reduce((sum, row) => sum + row.varianceVsPrevious, 0)) } };
+  }
+
+  employeeChecklist(input: { employeeId: string; type: EmployeeChecklist['type'] }, tenantId?: string): EmployeeChecklist {
+    const workspace = this.workspace(tenantId);
+    const employee = this.employee(workspace, input.employeeId);
+    let checklist = workspace.employeeChecklists.find((candidate) => candidate.employeeId === employee.id && candidate.type === input.type && candidate.status === 'OPEN');
+    if (!checklist) {
+      const labels = input.type === 'ONBOARDING'
+        ? ['CIN', 'Contrat de travail', 'Identifiant CNSS', 'Compte bancaire/RIB', 'Équipement remis']
+        : ['Solde de tout compte', 'Dernière paie', 'Restitution équipement', 'Archive documents', 'Désactivation accès'];
+      checklist = {
+        id: this.id('hrchk'),
+        tenantId: workspace.tenant.id,
+        employeeId: employee.id,
+        type: input.type,
+        items: labels.map((label) => ({ key: label.toLowerCase().replace(/[^a-z0-9]+/g, '-'), label, done: false })),
+        status: 'OPEN',
+        createdAt: today(),
+      };
+      workspace.employeeChecklists.push(checklist);
+    }
+    return checklist;
+  }
+
+  completeEmployeeChecklistItem(checklistId: string, input: { key: string; evidence?: string }, tenantId?: string): EmployeeChecklist {
+    const workspace = this.workspace(tenantId);
+    const checklist = workspace.employeeChecklists.find((candidate) => candidate.id === checklistId);
+    if (!checklist) throw new NotFoundException('Checklist RH introuvable');
+    const item = checklist.items.find((candidate) => candidate.key === input.key);
+    if (!item) throw new NotFoundException('Élément checklist RH introuvable');
+    item.done = true;
+    item.evidence = this.clean(input.evidence);
+    if (checklist.items.every((candidate) => candidate.done)) {
+      checklist.status = 'COMPLETE';
+      checklist.completedAt = today();
+    }
+    return checklist;
+  }
+
+  listEmployeeChecklists(tenantId?: string): EmployeeChecklist[] {
+    return this.workspace(tenantId).employeeChecklists;
+  }
+
   upgradePrompts(tenantId?: string) {
     const workspace = this.workspace(tenantId);
     const plan = this.tenantBillingStatus(workspace.tenant.id);
@@ -6447,6 +7008,9 @@ export class ErpStoreService {
       const product = this.product(workspace, line.productId);
       if (!product.active) {
         throw new BadRequestException(`L’article ${product.sku} est archivé`);
+      }
+      if (['DRAFT', 'BLOCKED', 'DISCONTINUED', 'ARCHIVED'].includes(product.lifecycleState)) {
+        throw new BadRequestException(`L’article ${product.sku} n’est pas disponible à la vente`);
       }
       const quantity = Number(line.quantity);
       if (quantity <= 0) {

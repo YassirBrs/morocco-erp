@@ -25,6 +25,8 @@ export class SalesService {
   cancelDeliveryNote(id: string) { return this.store.cancelDeliveryNote(id); }
   listDeliveryNotes() { return this.store.listDeliveryNotes(); }
   deliveryRoutePlanning() { return this.store.deliveryRoutePlanning(); }
+  listDeliveryProofs() { return this.store.listDeliveryProofs(); }
+  captureDeliveryProof(data: any) { return this.store.captureDeliveryProof(data); }
   convertOrderToInvoice(id: string) { return this.store.convertOrderToInvoice(id); }
   listInvoices() { return this.store.listInvoices(); }
   createInvoice(data: any) { return this.store.createInvoice(data); }
@@ -37,6 +39,17 @@ export class SalesService {
   approveCreditNote(id: string) { return this.store.approveCreditNote(id); }
   customerStatement(customerId: string) { return this.store.customerStatement(customerId); }
   customerStatementPdf(customerId: string) { return this.store.exportCustomerStatementPdf(customerId); }
+  salesCommissionReport(data: any) { return this.store.salesCommissionReport(data); }
+  listCustomerContracts() { return this.store.listCustomerContracts(); }
+  createCustomerContract(data: any) { return this.store.createCustomerContract(data); }
+  listPricingRules() { return this.store.listPricingRules(); }
+  createPricingRule(data: any) { return this.store.createPricingRule(data); }
+  pricingPreview(data: any) { return this.store.pricingPreview(data); }
+  listDiscountApprovals() { return this.store.listDiscountApprovals(); }
+  requestDiscountApproval(data: any) { return this.store.requestDiscountApproval(data); }
+  approveDiscountApproval(id: string) { return this.store.approveDiscountApproval(id); }
+  listRecurringInvoiceBatches() { return this.store.listRecurringInvoiceBatches(); }
+  generateRecurringInvoiceBatch(data: any) { return this.store.generateRecurringInvoiceBatch(data); }
   paymentReminderSchedule() { return this.store.paymentReminderSchedule(); }
   recordPayment(data: any) { return this.store.recordPayment(data); }
 }

@@ -181,6 +181,27 @@ export type GovernanceReadiness = {
   customerRisk: Array<{ customerName: string; level: string; score: number }>;
 };
 
+export type OperationalControlReadiness = {
+  supplierReliability: Array<{ supplierName: string; score: number; level: string }>;
+  lifecycleBoard: { rows: unknown[]; counts: Record<string, number> };
+  quarantines: unknown[];
+  deliveryProofs: unknown[];
+  commissionReport: { rows: unknown[]; totalCommission: number };
+  customerContracts: unknown[];
+  supplierContracts: unknown[];
+  pricingRules: unknown[];
+  discountApprovals: unknown[];
+  recurringInvoices: unknown[];
+  recurringPurchases: unknown[];
+  expenseClaims: unknown[];
+  pettyCash: unknown[];
+  bankMatching: { rows: unknown[] };
+  vatExceptions: { rows: unknown[]; count: number };
+  cnssAnomalies: { rows: unknown[]; count: number };
+  payrollVariance: { rows: unknown[] };
+  employeeChecklists: unknown[];
+};
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -232,6 +253,23 @@ async function getJson<T>(path: string, fallback: T): Promise<T> {
   try {
     const response = await fetch(`${API_URL}${path}`, {
       headers: { 'x-tenant-id': TENANT_ID },
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      return fallback;
+    }
+    return response.json() as Promise<T>;
+  } catch {
+    return fallback;
+  }
+}
+
+async function postJson<T>(path: string, body: unknown, fallback: T): Promise<T> {
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-tenant-id': TENANT_ID },
+      body: JSON.stringify(body),
       cache: 'no-store',
     });
     if (!response.ok) {
@@ -393,4 +431,28 @@ export async function getGovernanceReadiness(): Promise<GovernanceReadiness> {
     getJson('/tenant/customer-risk-scores', []),
   ]);
   return { expiryAlerts, movementAudit, anomalyChecks, accountantQueue, numberingAudit, exportManifest, invitations, rateLimits, webhookRetries, exportCenter, onboarding, kpiVariance, executiveDigest, evidenceBinder, regions, customerRisk };
+}
+
+export async function getOperationalControlReadiness(): Promise<OperationalControlReadiness> {
+  const [supplierReliability, lifecycleBoard, quarantines, deliveryProofs, commissionReport, customerContracts, supplierContracts, pricingRules, discountApprovals, recurringInvoices, recurringPurchases, expenseClaims, pettyCash, bankMatching, vatExceptions, cnssAnomalies, payrollVariance, employeeChecklists] = await Promise.all([
+    getJson('/inventory/suppliers/reliability-scores', []),
+    getJson('/inventory/product-lifecycle-board', { rows: [], counts: {} }),
+    getJson('/inventory/quarantines', []),
+    getJson('/sales/delivery-proofs', []),
+    getJson('/sales/commission-report', { rows: [], totalCommission: 0 }),
+    getJson('/sales/customer-contracts', []),
+    getJson('/inventory/supplier-contracts', []),
+    getJson('/sales/pricing-rules', []),
+    getJson('/sales/discount-approvals', []),
+    getJson('/sales/recurring-invoices', []),
+    getJson('/inventory/recurring-purchases', []),
+    getJson('/ledger/expense-claims', []),
+    getJson('/ledger/petty-cash', []),
+    postJson('/ledger/bank-matching/suggestions', { amount: 0 }, { rows: [] }),
+    getJson('/ledger/vat-exceptions', { rows: [], count: 0 }),
+    getJson('/payroll/employees/cnss-anomalies', { rows: [], count: 0 }),
+    getJson('/payroll/variance-report', { rows: [] }),
+    getJson('/payroll/employee-checklists', []),
+  ]);
+  return { supplierReliability, lifecycleBoard, quarantines, deliveryProofs, commissionReport, customerContracts, supplierContracts, pricingRules, discountApprovals, recurringInvoices, recurringPurchases, expenseClaims, pettyCash, bankMatching, vatExceptions, cnssAnomalies, payrollVariance, employeeChecklists };
 }

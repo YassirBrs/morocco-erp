@@ -32,6 +32,7 @@ export type BackgroundJobKind = 'PDF' | 'EXPORT' | 'EMAIL' | 'DECLARATION' | 'IM
 export type BackgroundJobStatus = 'QUEUED' | 'RUNNING' | 'DONE' | 'FAILED';
 export type ChequeStatus = 'RECEIVED' | 'DEPOSITED' | 'CLEARED' | 'REJECTED';
 export type DepositBatchStatus = 'DRAFT' | 'DEPOSITED' | 'RECONCILED';
+export type ProductLifecycleState = 'DRAFT' | 'ACTIVE' | 'BLOCKED' | 'DISCONTINUED' | 'ARCHIVED';
 
 export interface LocalizedFields {
   arabicName?: string;
@@ -267,6 +268,7 @@ export interface Product {
   stockOnHand: number;
   reservedStock: number;
   weightedAverageCost: number;
+  lifecycleState: ProductLifecycleState;
   duplicateWarnings?: string[];
   active: boolean;
   createdAt: string;
@@ -867,6 +869,138 @@ export interface WebhookRetryLog {
   createdAt: string;
 }
 
+export interface StockQuarantine {
+  id: string;
+  tenantId: string;
+  productId: string;
+  warehouseId: string;
+  quantity: number;
+  reason: 'DAMAGED' | 'RETURNED' | 'COMPLIANCE_HOLD';
+  status: 'OPEN' | 'RELEASED' | 'SCRAPPED';
+  documentReference?: string;
+  createdAt: string;
+  closedAt?: string;
+}
+
+export interface DeliveryProof {
+  id: string;
+  tenantId: string;
+  deliveryNoteId: string;
+  signer: string;
+  signedAt: string;
+  documentReference: string;
+  status: 'CAPTURED' | 'PENDING_DOCUMENT';
+}
+
+export interface CustomerContract {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  name: string;
+  renewalDate: string;
+  priceList: string;
+  creditTermsDays: number;
+  status: 'ACTIVE' | 'RENEWAL_DUE' | 'EXPIRED';
+  documentStatus: 'MISSING' | 'RECEIVED';
+}
+
+export interface SupplierContract {
+  id: string;
+  tenantId: string;
+  supplierId: string;
+  name: string;
+  renewalDate: string;
+  sla: string;
+  paymentTermsDays: number;
+  status: 'ACTIVE' | 'RENEWAL_DUE' | 'EXPIRED';
+  documentStatus: 'MISSING' | 'RECEIVED';
+}
+
+export interface PricingRule {
+  id: string;
+  tenantId: string;
+  customerSegment: string;
+  productFamily: string;
+  startDate: string;
+  endDate: string;
+  minQuantity: number;
+  discountPercent: number;
+  active: boolean;
+}
+
+export interface DiscountApproval {
+  id: string;
+  tenantId: string;
+  quoteId?: string;
+  invoiceId?: string;
+  requestedBy: string;
+  discountPercent: number;
+  marginImpact: number;
+  thresholdPercent: number;
+  requiredRole: UserRole;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  reviewedAt?: string;
+}
+
+export interface RecurringInvoiceBatch {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  period: string;
+  description: string;
+  invoiceIds: string[];
+  status: 'GENERATED' | 'PARTIAL';
+  createdAt: string;
+}
+
+export interface RecurringPurchaseSchedule {
+  id: string;
+  tenantId: string;
+  supplierId: string;
+  category: 'RENT' | 'UTILITIES' | 'INSURANCE' | 'SERVICE_CONTRACT';
+  amount: number;
+  nextRunDate: string;
+  frequency: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  active: boolean;
+  purchaseOrderIds: string[];
+}
+
+export interface ExpenseClaim {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  category: string;
+  amount: number;
+  receiptReference?: string;
+  status: 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'EXPORTED';
+  createdAt: string;
+  approvedAt?: string;
+  accountingExportId?: string;
+}
+
+export interface PettyCashJournal {
+  id: string;
+  tenantId: string;
+  custodian: string;
+  openingBalance: number;
+  movements: Array<{ id: string; type: 'IN' | 'OUT'; amount: number; label: string; attachmentReference?: string; date: string }>;
+  countedBalance?: number;
+  variance: number;
+  status: 'OPEN' | 'CLOSED';
+}
+
+export interface EmployeeChecklist {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  type: 'ONBOARDING' | 'OFFBOARDING';
+  items: Array<{ key: string; label: string; done: boolean; evidence?: string }>;
+  status: 'OPEN' | 'COMPLETE';
+  createdAt: string;
+  completedAt?: string;
+}
+
 export interface StructuredLogEntry {
   id: string;
   tenantId: string;
@@ -1161,6 +1295,17 @@ export interface TenantWorkspace {
   userInvitations: UserInvitation[];
   kpiTargets: KpiTarget[];
   webhookRetryLogs: WebhookRetryLog[];
+  stockQuarantines: StockQuarantine[];
+  deliveryProofs: DeliveryProof[];
+  customerContracts: CustomerContract[];
+  supplierContracts: SupplierContract[];
+  pricingRules: PricingRule[];
+  discountApprovals: DiscountApproval[];
+  recurringInvoiceBatches: RecurringInvoiceBatch[];
+  recurringPurchaseSchedules: RecurringPurchaseSchedule[];
+  expenseClaims: ExpenseClaim[];
+  pettyCashJournals: PettyCashJournal[];
+  employeeChecklists: EmployeeChecklist[];
   structuredLogs: StructuredLogEntry[];
   metricSamples: MetricSample[];
   backgroundJobs: BackgroundJob[];

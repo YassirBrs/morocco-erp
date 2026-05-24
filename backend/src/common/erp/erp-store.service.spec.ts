@@ -1847,4 +1847,76 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(regions.map((row) => row.city)).toEqual(expect.arrayContaining(['Casablanca', 'Rabat', 'Agadir']));
     expect(risk[0]).toHaveProperty('score');
   });
+
+  it('covers operational controls for supplier reliability, product lifecycle, contracts, recurring work, cash, VAT, CNSS, and HR checklists', () => {
+    const supplierScore = store.supplierReliabilityScores()[0];
+    const lifecycle = store.setProductLifecycleState('prd-raw', 'BLOCKED');
+    const lifecycleBoard = store.productLifecycleBoard();
+    const quarantine = store.createStockQuarantine({ productId: 'prd-1', quantity: 2, reason: 'COMPLIANCE_HOLD', documentReference: 'CTRL-2026-001' });
+    const releasedQuarantine = store.releaseStockQuarantine(quarantine.id);
+
+    const salesOrder = store.createSalesOrder({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    const delivery = store.createDeliveryNoteFromOrder(salesOrder.id);
+    const proof = store.captureDeliveryProof({ deliveryNoteId: delivery.id, signer: 'Youssef Amrani', documentReference: 'POD-001' });
+    const invoice = store.convertOrderToInvoice(salesOrder.id);
+    store.recordPayment({ invoiceId: invoice.id, amount: invoice.totals.total, method: 'BANK' });
+    const commission = store.salesCommissionReport({ period: invoice.date.slice(0, 7), ratePercent: 3 });
+
+    const customerContract = store.createCustomerContract({ customerId: 'cus-1', name: 'Contrat cadre retail', renewalDate: '2026-06-20', priceList: 'Retail 2026', creditTermsDays: 45, documentStatus: 'RECEIVED' });
+    const supplierContract = store.createSupplierContract({ supplierId: 'sup-1', name: 'Contrat import', renewalDate: '2026-06-25', sla: 'Livraison 72h', paymentTermsDays: 45 });
+    const pricingRule = store.createPricingRule({ customerSegment: 'Retail', productFamily: 'GOODS', startDate: '2026-01-01', endDate: '2026-12-31', minQuantity: 10, discountPercent: 5 });
+    const pricePreview = store.pricingPreview({ customerSegment: 'Retail', productFamily: 'GOODS', quantity: 12, unitPrice: 100 });
+    const discount = store.requestDiscountApproval({ invoiceId: invoice.id, requestedBy: 'sales@atlas.ma', discountPercent: 18, marginImpact: 600 });
+    const approvedDiscount = store.approveDiscountApproval(discount.id);
+
+    const staleOrder = store.createSalesOrder({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    staleOrder.date = '2026-05-01';
+    const releasedReservations = store.releaseExpiredStockReservations({ maxAgeDays: 7 });
+    const recurringInvoice = store.generateRecurringInvoiceBatch({ customerId: 'cus-1', period: '2026-05', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    const recurringPurchase = store.createRecurringPurchaseSchedule({ supplierId: 'sup-1', category: 'RENT', amount: 12000, nextRunDate: '2026-06-01' });
+    const recurringPurchaseRun = store.runRecurringPurchaseSchedule(recurringPurchase.id);
+
+    const expense = store.createExpenseClaim({ employeeId: 'emp-1', category: 'Déplacement client', amount: 350, receiptReference: 'REC-001' });
+    store.approveExpenseClaim(expense.id);
+    const expenseExport = store.exportExpenseClaims();
+    const pettyCash = store.openPettyCashJournal({ custodian: 'Nadia Benali', openingBalance: 1000 });
+    store.addPettyCashMovement(pettyCash.id, { type: 'OUT', amount: 200, label: 'Taxi client', attachmentReference: 'PC-001' });
+    const closedPettyCash = store.closePettyCashJournal(pettyCash.id, 790);
+
+    const matching = store.bankStatementMatchingSuggestions({ amount: invoice.totals.total, reference: invoice.number, party: 'Rabat' });
+    const weakCustomer = store.addCustomer({ name: 'Client Sans ICE', paymentTermsDays: 15 });
+    store.createInvoice({ customerId: weakCustomer.id, lines: [{ productId: 'prd-2', quantity: 1 }] });
+    const vatExceptions = store.vatExceptionDrilldown();
+    store.updateEmployee('emp-1', { cnssNumber: '' });
+    const cnssAnomalies = store.cnssEmployeeAnomalyDrilldown();
+    const payrollRun = store.createPayrollRun({ year: 2026, month: 5 });
+    store.calculatePayrollRun(payrollRun.id);
+    const payrollVariance = store.payrollVarianceReport({ period: '2026-05' });
+    const onboarding = store.employeeChecklist({ employeeId: 'emp-1', type: 'ONBOARDING' });
+    const completedChecklist = store.completeEmployeeChecklistItem(onboarding.id, { key: onboarding.items[0].key, evidence: 'cin.pdf' });
+    const offboarding = store.employeeChecklist({ employeeId: 'emp-1', type: 'OFFBOARDING' });
+
+    expect(supplierScore).toHaveProperty('score');
+    expect(lifecycle).toMatchObject({ lifecycleState: 'BLOCKED' });
+    expect(lifecycleBoard.counts.BLOCKED).toBe(1);
+    expect(releasedQuarantine).toMatchObject({ status: 'RELEASED' });
+    expect(proof).toMatchObject({ signer: 'Youssef Amrani', status: 'CAPTURED' });
+    expect(commission.totalCommission).toBeGreaterThan(0);
+    expect(customerContract).toMatchObject({ status: 'RENEWAL_DUE', priceList: 'Retail 2026' });
+    expect(supplierContract).toMatchObject({ status: 'RENEWAL_DUE', sla: 'Livraison 72h' });
+    expect(pricingRule.discountPercent).toBe(5);
+    expect(pricePreview).toMatchObject({ appliedPercent: 5, discount: 60 });
+    expect(approvedDiscount).toMatchObject({ status: 'APPROVED', requiredRole: 'ADMIN' });
+    expect(releasedReservations.count).toBe(1);
+    expect(recurringInvoice.invoiceIds).toHaveLength(1);
+    expect(recurringPurchaseRun.order.supplierId).toBe('sup-1');
+    expect(expenseExport).toMatchObject({ count: 1 });
+    expect(closedPettyCash).toMatchObject({ status: 'CLOSED', variance: -10 });
+    expect(matching.rows[0]).toHaveProperty('score');
+    expect(vatExceptions.count).toBeGreaterThan(0);
+    expect(cnssAnomalies.rows[0]).toMatchObject({ employeeName: 'Ahmed Taleb' });
+    expect(payrollVariance.rows[0]).toHaveProperty('varianceVsContract');
+    expect(completedChecklist.items[0]).toMatchObject({ done: true, evidence: 'cin.pdf' });
+    expect(offboarding.items.map((item) => item.label)).toEqual(expect.arrayContaining(['Dernière paie', 'Restitution équipement']));
+  });
 });

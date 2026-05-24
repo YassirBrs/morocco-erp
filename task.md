@@ -282,26 +282,26 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T188 P1 - Add accountant evidence binder generation per fiscal period.
 - [x] T189 P1 - Add Moroccan city and region reference data for addresses, delivery, and reporting.
 - [x] T190 P1 - Add customer risk scoring using overdue balance, document age, and credit-limit usage.
-- [ ] T191 P1 - Add supplier reliability scoring using delivery delays, document status, and purchase volume.
-- [ ] T192 P1 - Add product lifecycle states for draft, active, blocked, discontinued, and archived.
-- [ ] T193 P1 - Add stock quarantine workflow for damaged, returned, or compliance-held goods.
-- [ ] T194 P1 - Add delivery proof capture placeholders with signer, timestamp, and document reference.
-- [ ] T195 P1 - Add sales commission report by salesperson, margin, payment status, and period.
-- [ ] T196 P1 - Add customer contract register with renewal, price list, and credit-term reminders.
-- [ ] T197 P1 - Add supplier contract register with renewal, SLA, payment terms, and document checks.
-- [ ] T198 P1 - Add pricing rules by customer segment, product family, date range, and quantity break.
-- [ ] T199 P1 - Add discount approval workflow by threshold, role, and margin impact.
-- [ ] T200 P1 - Add stock reservation expiry and automatic release for stale sales orders.
-- [ ] T201 P1 - Add batch invoice generation for recurring services and subscriptions.
-- [ ] T202 P1 - Add recurring purchase schedule for rent, utilities, insurance, and service contracts.
-- [ ] T203 P1 - Add expense claim workflow with categories, receipts, approval, and accounting export.
-- [ ] T204 P1 - Add petty cash journal with opening balance, movements, attachments, and variance.
-- [ ] T205 P1 - Add bank statement matching suggestions by amount, date, customer, supplier, and reference.
-- [ ] T206 P1 - Add VAT exception drilldown by invoice, customer, product rate, and missing identifier.
-- [ ] T207 P1 - Add CNSS employee anomaly drilldown for missing identifiers and inconsistent salary bases.
-- [ ] T208 P1 - Add payroll variance report compared with previous month and contract salary.
-- [ ] T209 P1 - Add employee onboarding checklist with documents, contract, payroll identifiers, and equipment.
-- [ ] T210 P1 - Add employee offboarding checklist with final payroll, asset return, and document archive.
+- [x] T191 P1 - Add supplier reliability scoring using delivery delays, document status, and purchase volume.
+- [x] T192 P1 - Add product lifecycle states for draft, active, blocked, discontinued, and archived.
+- [x] T193 P1 - Add stock quarantine workflow for damaged, returned, or compliance-held goods.
+- [x] T194 P1 - Add delivery proof capture placeholders with signer, timestamp, and document reference.
+- [x] T195 P1 - Add sales commission report by salesperson, margin, payment status, and period.
+- [x] T196 P1 - Add customer contract register with renewal, price list, and credit-term reminders.
+- [x] T197 P1 - Add supplier contract register with renewal, SLA, payment terms, and document checks.
+- [x] T198 P1 - Add pricing rules by customer segment, product family, date range, and quantity break.
+- [x] T199 P1 - Add discount approval workflow by threshold, role, and margin impact.
+- [x] T200 P1 - Add stock reservation expiry and automatic release for stale sales orders.
+- [x] T201 P1 - Add batch invoice generation for recurring services and subscriptions.
+- [x] T202 P1 - Add recurring purchase schedule for rent, utilities, insurance, and service contracts.
+- [x] T203 P1 - Add expense claim workflow with categories, receipts, approval, and accounting export.
+- [x] T204 P1 - Add petty cash journal with opening balance, movements, attachments, and variance.
+- [x] T205 P1 - Add bank statement matching suggestions by amount, date, customer, supplier, and reference.
+- [x] T206 P1 - Add VAT exception drilldown by invoice, customer, product rate, and missing identifier.
+- [x] T207 P1 - Add CNSS employee anomaly drilldown for missing identifiers and inconsistent salary bases.
+- [x] T208 P1 - Add payroll variance report compared with previous month and contract salary.
+- [x] T209 P1 - Add employee onboarding checklist with documents, contract, payroll identifiers, and equipment.
+- [x] T210 P1 - Add employee offboarding checklist with final payroll, asset return, and document archive.
 - [ ] T211 P1 - Add HR disciplinary and performance note register with role-restricted visibility.
 - [ ] T212 P1 - Add asset assignment tracking for laptops, phones, vehicles, tools, and return status.
 - [ ] T213 P1 - Add fleet fuel efficiency report by vehicle, driver, route, and month.

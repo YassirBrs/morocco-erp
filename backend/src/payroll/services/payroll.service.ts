@@ -150,6 +150,11 @@ export class PayrollService {
   grantPortalAccess(data: any) { return this.store.grantEmployeePortalAccess(data); }
   portalDashboard(employeeId: string) { return this.store.employeePortalDashboard(employeeId); }
   employeeDocumentReminders() { return this.store.employeeDocumentReminders(); }
+  cnssEmployeeAnomalies() { return this.store.cnssEmployeeAnomalyDrilldown(); }
+  payrollVarianceReport(period?: string) { return this.store.payrollVarianceReport({ period }); }
+  employeeChecklist(data: any) { return this.store.employeeChecklist(data); }
+  completeEmployeeChecklistItem(id: string, data: any) { return this.store.completeEmployeeChecklistItem(id, data); }
+  listEmployeeChecklists() { return this.store.listEmployeeChecklists(); }
   employeeImportTemplateCsv() { return this.store.importTemplateCsv('employees'); }
   payrollRunTimeline(id: string) { return this.store.entityTimeline('PAYROLL_RUN', id); }
   addPayrollRunNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'PAYROLL_RUN', entityId: id, ...data }); }

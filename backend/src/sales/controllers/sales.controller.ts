@@ -23,6 +23,8 @@ export class SalesController {
   @Post('orders/:id/invoice') convertOrderToInvoice(@Param('id') id: string) { return this.salesService.convertOrderToInvoice(id); }
   @Get('delivery-notes') deliveryNotes() { return this.salesService.listDeliveryNotes(); }
   @Get('delivery-route-plan') deliveryRoutePlan() { return this.salesService.deliveryRoutePlanning(); }
+  @Get('delivery-proofs') deliveryProofs() { return this.salesService.listDeliveryProofs(); }
+  @Post('delivery-proofs') captureDeliveryProof(@Body() body: any) { return this.salesService.captureDeliveryProof(body); }
   @Get('delivery-notes/:id/pdf') deliveryNotePdf(@Param('id') id: string) { return this.salesService.exportDeliveryNotePdf(id); }
   @Delete('delivery-notes/:id') cancelDeliveryNote(@Param('id') id: string) { return this.salesService.cancelDeliveryNote(id); }
   @Get('invoices') invoices() { return this.salesService.listInvoices(); }
@@ -38,6 +40,17 @@ export class SalesController {
   @Post('credit-notes/:id/approve') approveCreditNote(@Param('id') id: string) { return this.salesService.approveCreditNote(id); }
   @Get('customers/:id/statement') customerStatement(@Param('id') id: string) { return this.salesService.customerStatement(id); }
   @Get('customers/:id/statement.pdf') customerStatementPdf(@Param('id') id: string) { return this.salesService.customerStatementPdf(id); }
+  @Get('commission-report') salesCommissionReport(@Query('period') period?: string) { return this.salesService.salesCommissionReport({ period }); }
+  @Get('customer-contracts') customerContracts() { return this.salesService.listCustomerContracts(); }
+  @Post('customer-contracts') createCustomerContract(@Body() body: any) { return this.salesService.createCustomerContract(body); }
+  @Get('pricing-rules') pricingRules() { return this.salesService.listPricingRules(); }
+  @Post('pricing-rules') createPricingRule(@Body() body: any) { return this.salesService.createPricingRule(body); }
+  @Post('pricing-rules/preview') pricingPreview(@Body() body: any) { return this.salesService.pricingPreview(body); }
+  @Get('discount-approvals') discountApprovals() { return this.salesService.listDiscountApprovals(); }
+  @Post('discount-approvals') requestDiscountApproval(@Body() body: any) { return this.salesService.requestDiscountApproval(body); }
+  @Post('discount-approvals/:id/approve') approveDiscountApproval(@Param('id') id: string) { return this.salesService.approveDiscountApproval(id); }
+  @Get('recurring-invoices') recurringInvoices() { return this.salesService.listRecurringInvoiceBatches(); }
+  @Post('recurring-invoices/generate') generateRecurringInvoice(@Body() body: any) { return this.salesService.generateRecurringInvoiceBatch(body); }
   @Get('payment-reminders') paymentReminders() { return this.salesService.paymentReminderSchedule(); }
   @Post('payments') payment(@Body() body: any) { return this.salesService.recordPayment(body); }
 }

@@ -31,6 +31,9 @@ export class InventoryService {
   supplierRiskReminders(filter?: string) { return this.store.supplierRiskReminders({ filter }); }
   supplierPaymentCalendar() { return this.store.supplierPaymentCalendar(); }
   supplierStatement(id: string) { return this.store.supplierStatement(id); }
+  supplierReliabilityScores() { return this.store.supplierReliabilityScores(); }
+  listSupplierContracts() { return this.store.listSupplierContracts(); }
+  createSupplierContract(data: any) { return this.store.createSupplierContract(data); }
   addSupplierDocumentPlaceholder(id: string, data: any) { return this.store.addSupplierDocumentPlaceholder(id, data); }
   listWarehouses() { return this.store.listWarehouses(); }
   createWarehouse(data: any) { return this.store.createWarehouse(data); }
@@ -44,6 +47,12 @@ export class InventoryService {
   createTraceabilityLot(data: any) { return this.store.createTraceabilityLot(data); }
   stockExpiryAlerts() { return this.store.stockExpiryAlerts(); }
   movementAudit() { return this.store.inventoryMovementAudit(); }
+  lifecycleBoard() { return this.store.productLifecycleBoard(); }
+  setProductLifecycleState(id: string, data: any) { return this.store.setProductLifecycleState(id, data.state); }
+  listStockQuarantines() { return this.store.listStockQuarantines(); }
+  createStockQuarantine(data: any) { return this.store.createStockQuarantine(data); }
+  releaseStockQuarantine(id: string) { return this.store.releaseStockQuarantine(id); }
+  releaseExpiredReservations(data: any) { return this.store.releaseExpiredStockReservations(data); }
   adjustStock(productId: string, qty: number, reason?: string) { return this.store.adjustStock(productId, qty, reason); }
   approveStockMove(id: string) { return this.store.approveStockMove(id); }
   listPurchaseRequests() { return this.store.listPurchaseRequests(); }
@@ -52,6 +61,9 @@ export class InventoryService {
   convertPurchaseRequestToOrder(id: string, data: any) { return this.store.convertPurchaseRequestToOrder(id, data); }
   addSupplierQuoteComparison(data: any) { return this.store.addSupplierQuoteComparison(data); }
   supplierQuoteMatrix(id: string) { return this.store.supplierQuoteMatrix(id); }
+  listRecurringPurchaseSchedules() { return this.store.listRecurringPurchaseSchedules(); }
+  createRecurringPurchaseSchedule(data: any) { return this.store.createRecurringPurchaseSchedule(data); }
+  runRecurringPurchaseSchedule(id: string) { return this.store.runRecurringPurchaseSchedule(id); }
   listPurchaseOrders() { return this.store.listPurchaseOrders(); }
   createPurchaseOrder(data: any) { return this.store.createPurchaseOrder(data); }
   purchaseOrderPdf(id: string) { return this.store.exportPurchaseOrderPdf(id); }

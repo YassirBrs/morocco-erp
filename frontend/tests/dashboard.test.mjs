@@ -386,3 +386,15 @@ test('Next primary workspace exposes governance, audit, export, onboarding, KPI,
     assert.ok(api.includes(endpoint), `${endpoint} governance API route is wired`);
   }
 });
+
+test('Next primary workspace exposes operational control workflows for suppliers, stock, contracts, finance, payroll, and HR', () => {
+  for (const text of ['Pilotage opérationnel avancé', 'Fiabilité fournisseurs', 'Cycle articles', 'TVA exceptions', 'CNSS anomalies', 'Stock et livraison', 'Contrats et pricing', 'Finance et RH', 'Réservations expirées avec libération automatique', 'États article: brouillon, actif, bloqué, discontinué, archivé']) {
+    assert.ok(page.includes(text), `${text} operational control label is present`);
+  }
+  for (const marker of ['getOperationalControlReadiness', 'operationalControls.supplierReliability', 'operationalControls.lifecycleBoard', 'operationalControls.bankMatching', 'operationalControls.employeeChecklists']) {
+    assert.ok(page.includes(marker), `${marker} operational control helper is present`);
+  }
+  for (const endpoint of ['/inventory/suppliers/reliability-scores', '/inventory/product-lifecycle-board', '/inventory/quarantines', '/sales/delivery-proofs', '/sales/commission-report', '/sales/customer-contracts', '/inventory/supplier-contracts', '/sales/pricing-rules', '/sales/discount-approvals', '/sales/recurring-invoices', '/inventory/recurring-purchases', '/ledger/expense-claims', '/ledger/petty-cash', '/ledger/bank-matching/suggestions', '/ledger/vat-exceptions', '/payroll/employees/cnss-anomalies', '/payroll/variance-report', '/payroll/employee-checklists']) {
+    assert.ok(api.includes(endpoint), `${endpoint} operational control API route is wired`);
+  }
+});
