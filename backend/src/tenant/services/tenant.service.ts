@@ -29,6 +29,18 @@ export class TenantService {
     return this.store.roleNavigation(role);
   }
 
+  uxRecentRecords(role?: string) { return this.store.uxRecentRecords(role); }
+  uxFavorites() { return this.store.uxFavorites(); }
+  uxPinnedModules(role?: string) { return this.store.uxPinnedModules(role); }
+  uxNotificationCounts() { return this.store.uxNotificationCounts(); }
+  uxCommandPalette(query?: string) { return this.store.uxCommandPalette(query); }
+  uxContextualNextActions(data: any) { return this.store.uxContextualNextActions(data); }
+  uxRelationshipGraph(entityId?: string) { return this.store.uxRelationshipGraph(entityId); }
+  uxActivityTimeline(entityId?: string) { return this.store.uxActivityTimeline(entityId); }
+  uxTaskSummary() { return this.store.uxTaskSummary(); }
+  uxWorkspaceHealthCards() { return this.store.uxWorkspaceHealthCards(); }
+  uxContractValidation(data: any) { return this.store.uxContractValidation(data); }
+
   subscriptionGate() {
     return this.store.subscriptionGate();
   }

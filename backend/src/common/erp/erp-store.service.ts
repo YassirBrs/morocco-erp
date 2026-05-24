@@ -1119,6 +1119,174 @@ export class ErpStoreService {
     };
   }
 
+  uxRecentRecords(role: string = this.cls.get<string>('userRole') ?? 'OWNER', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = [
+      ...workspace.invoices.slice(-3).map((invoice) => ({ module: 'Ventes', type: 'Facture', label: invoice.number, status: invoice.status, updatedAt: today(), href: `/ventes#${invoice.id}` })),
+      ...workspace.purchaseReceipts.slice(-2).map((receipt) => ({ module: 'Achats/Stock', type: 'Réception', label: receipt.number, status: receipt.approvalStatus, updatedAt: today(), href: `/achats-stock#${receipt.id}` })),
+      ...workspace.payrollRuns.slice(-2).map((run) => ({ module: 'Paie/RH', type: 'Run paie', label: run.number, status: run.status, updatedAt: today(), href: `/paie#${run.id}` })),
+    ];
+    return { tenantId: workspace.tenant.id, role, rows };
+  }
+
+  uxFavorites(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      rows: [
+        { kind: 'record', label: 'FAC-2026-014', href: '/ventes#facture-preview', module: 'Ventes' },
+        { kind: 'report', label: 'Cockpit TVA', href: '/comptabilite#tva', module: 'Comptabilité' },
+        { kind: 'dashboard', label: 'Stock sous seuil', href: '/achats-stock#stock', module: 'Achats/Stock' },
+        { kind: 'saved-view', label: 'Paie à valider', href: '/paie#run', module: 'Paie/RH' },
+      ],
+    };
+  }
+
+  uxPinnedModules(role: string = this.cls.get<string>('userRole') ?? 'OWNER', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const presets: Record<string, { defaultLanding: string; modules: string[] }> = {
+      OWNER: { defaultLanding: '/', modules: ['Ventes', 'Achats/Stock', 'Comptabilité', 'Paie/RH', 'Admin/Conformité'] },
+      ACCOUNTANT: { defaultLanding: '/comptabilite', modules: ['Comptabilité', 'Ventes', 'Achats/Stock', 'Admin/Conformité'] },
+      SALES: { defaultLanding: '/ventes', modules: ['Ventes', 'Workflows'] },
+      WAREHOUSE: { defaultLanding: '/achats-stock', modules: ['Achats/Stock', 'Workflows'] },
+      PAYROLL: { defaultLanding: '/paie', modules: ['Paie/RH', 'Workflows'] },
+      CASHIER: { defaultLanding: '/pos', modules: ['POS', 'Achats/Stock'] },
+    };
+    return { tenantId: workspace.tenant.id, role, ...(presets[role] ?? presets.OWNER) };
+  }
+
+  uxNotificationCounts(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const overdueInvoices = workspace.invoices.filter((invoice) => invoice.status !== 'PAID').length;
+    const stockLow = workspace.products.filter((product) => product.stockOnHand <= product.reorderPoint).length;
+    const payrollBlockers = workspace.employees.filter((employee) => !employee.cnssNumber).length;
+    const approvals = this.approvalLimitReview(workspace.tenant.id).pending;
+    const taxDates = 2;
+    const total = overdueInvoices + stockLow + payrollBlockers + approvals + taxDates;
+    return {
+      tenantId: workspace.tenant.id,
+      total,
+      bySeverity: { danger: payrollBlockers + approvals, warning: overdueInvoices + stockLow, info: taxDates },
+      byModule: { Ventes: overdueInvoices, 'Achats/Stock': stockLow, 'Paie/RH': payrollBlockers, Comptabilité: taxDates, Approbations: approvals },
+    };
+  }
+
+  uxCommandPalette(query: string = '', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const normalized = this.searchText(query);
+    const baseActions = [
+      { label: 'Créer devis', type: 'create', href: '/ventes#nouveau-devis', shortcut: 'N', module: 'Ventes' },
+      { label: 'Ouvrir facture FAC-2026-014', type: 'record', href: '/ventes#facture-preview', shortcut: 'F', module: 'Ventes' },
+      { label: 'Préparer télédéclaration TVA', type: 'report', href: '/comptabilite#tva', shortcut: 'T', module: 'Comptabilité' },
+      { label: 'Importer CSV clients', type: 'workflow', href: '/workflows#import', shortcut: 'I', module: 'Workflows' },
+      { label: 'Valider Damancom', type: 'workflow', href: '/paie#damancom', shortcut: 'D', module: 'Paie/RH' },
+    ];
+    return {
+      tenantId: workspace.tenant.id,
+      query,
+      actions: baseActions.filter((action) => !normalized || this.searchText(`${action.label} ${action.module}`).includes(normalized)).slice(0, 8),
+    };
+  }
+
+  uxContextualNextActions(input: { entity?: string; status?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const entity = input.entity ?? 'invoice';
+    const status = input.status ?? 'DRAFT';
+    const actions = [
+      { label: 'Valider document', enabled: status === 'DRAFT', disabledReason: status !== 'DRAFT' ? 'Document déjà validé' : undefined },
+      { label: 'Envoyer PDF', enabled: ['POSTED', 'APPROVED', 'PAID'].includes(status), disabledReason: ['POSTED', 'APPROVED', 'PAID'].includes(status) ? undefined : 'PDF disponible après validation' },
+      { label: 'Capturer paiement', enabled: entity === 'invoice' && status !== 'DRAFT', disabledReason: entity !== 'invoice' ? 'Action réservée aux factures' : status === 'DRAFT' ? 'Facture brouillon' : undefined },
+      { label: 'Archiver preuve', enabled: true },
+    ];
+    return { tenantId: workspace.tenant.id, entity, status, actions };
+  }
+
+  uxRelationshipGraph(entityId: string = 'FAC-2026-014', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      entityId,
+      nodes: [
+        { id: 'cus-1', label: 'Atlas Bureautique SARL', type: 'Client' },
+        { id: 'fac-2026-014', label: 'FAC-2026-014', type: 'Facture' },
+        { id: 'bl-2026-031', label: 'BL-2026-031', type: 'Bon de livraison' },
+        { id: 'jrn-ventes-05', label: 'JRN-VENTES-05', type: 'Journal' },
+        { id: 'pdf-fac-014', label: 'PDF facture', type: 'Preuve' },
+      ],
+      edges: [
+        { from: 'cus-1', to: 'fac-2026-014', label: 'facturé à' },
+        { from: 'bl-2026-031', to: 'fac-2026-014', label: 'source livraison' },
+        { from: 'fac-2026-014', to: 'jrn-ventes-05', label: 'écriture comptable' },
+        { from: 'fac-2026-014', to: 'pdf-fac-014', label: 'archive PDF' },
+      ],
+    };
+  }
+
+  uxActivityTimeline(entityId: string = 'FAC-2026-014', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      entityId,
+      rows: [
+        { at: `${today()}T09:10:00.000Z`, actor: 'Salma Commercial', type: 'Note', message: 'Relance client planifiée en français.', evidence: entityId },
+        { at: `${today()}T10:18:00.000Z`, actor: 'Youssef Comptable', type: 'Journal', message: 'Écriture liée au document avec balance vérifiée.', evidence: 'JRN-VENTES-05' },
+        { at: `${today()}T11:32:00.000Z`, actor: 'Système', type: 'Export', message: 'PDF généré avec checksum et mentions légales.', evidence: 'sha256:fac014' },
+      ],
+    };
+  }
+
+  uxTaskSummary(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const tasks = workspace.internalTasks;
+    const overdue = tasks.filter((task) => task.status !== 'DONE' && task.dueDate < today()).length;
+    return {
+      tenantId: workspace.tenant.id,
+      total: tasks.length,
+      overdue,
+      byWorkspace: {
+        Ventes: tasks.filter((task) => task.entityType === 'CUSTOMER' || task.entityType === 'INVOICE').length,
+        'Achats/Stock': tasks.filter((task) => task.entityType === 'SUPPLIER').length,
+        'Paie/RH': tasks.filter((task) => task.entityType === 'PAYROLL_RUN').length,
+        Comptabilité: workspace.accountantReviewComments.length,
+      },
+    };
+  }
+
+  uxWorkspaceHealthCards(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      cards: [
+        { workspace: 'Ventes', status: 'warning', blocker: `${workspace.invoices.filter((invoice) => invoice.status !== 'PAID').length} facture(s) à encaisser`, nextDeadline: addDays(today(), 2) },
+        { workspace: 'Achats/Stock', status: 'danger', blocker: `${workspace.products.filter((product) => product.stockOnHand <= product.reorderPoint).length} article(s) sous seuil`, nextDeadline: today() },
+        { workspace: 'Comptabilité', status: 'warning', blocker: 'TVA à préparer et pièces à joindre', nextDeadline: '2026-06-20' },
+        { workspace: 'Paie/RH', status: 'danger', blocker: `${workspace.employees.filter((employee) => !employee.cnssNumber).length} identifiant(s) CNSS manquant(s)`, nextDeadline: addDays(today(), 4) },
+        { workspace: 'Admin/Conformité', status: 'info', blocker: 'Adaptateurs DGI/CNSS en sandbox', nextDeadline: addDays(today(), 14) },
+      ],
+    };
+  }
+
+  uxContractValidation(input: { module?: string; fieldPath?: string; value?: unknown } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    if (!input.module || !input.fieldPath) {
+      throw new BadRequestException({
+        message: 'Contrat UX invalide',
+        errors: [
+          { fieldPath: 'module', messageFr: 'Le module est obligatoire', severity: 'error', suggestion: 'Renseigner sales, inventory, accounting, payroll, pos ou admin' },
+          { fieldPath: 'fieldPath', messageFr: 'Le champ à valider est obligatoire', severity: 'error', suggestion: 'Renseigner un chemin DTO comme customer.ice' },
+        ],
+      });
+    }
+    const errors = [];
+    if (input.fieldPath.toLowerCase().includes('ice') && !String(input.value ?? '').trim()) {
+      errors.push({ fieldPath: input.fieldPath, messageFr: 'ICE obligatoire pour les documents marocains', severity: 'error', suggestion: 'Saisir un ICE valide ou marquer le tiers comme incomplet' });
+    }
+    if (input.fieldPath.toLowerCase().includes('vat') && !['0', '0.07', '0.1', '0.14', '0.2', '20%', '14%', '10%', '7%', '0%'].includes(String(input.value ?? '').trim())) {
+      errors.push({ fieldPath: input.fieldPath, messageFr: 'Taux TVA marocain non autorisé', severity: 'error', suggestion: 'Utiliser 0 %, 7 %, 10 %, 14 % ou 20 %' });
+    }
+    return { tenantId: workspace.tenant.id, valid: errors.length === 0, errors };
+  }
+
   subscriptionGate(tenantId?: string) {
     const workspace = this.workspace(tenantId);
     return {

@@ -166,6 +166,51 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(reviewWithException.exceptions.map((item) => item.message)).toEqual(expect.arrayContaining(['ICE client manquant', 'IF client manquant']));
   });
 
+  it('returns tenant-scoped UX support contracts for recents, favorites, commands, graph, tasks, and workspace health', () => {
+    const invoice = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-1', quantity: 1, unitCost: 620 }] });
+
+    const recents = store.uxRecentRecords('ACCOUNTANT');
+    const favorites = store.uxFavorites();
+    const pins = store.uxPinnedModules('ACCOUNTANT');
+    const notifications = store.uxNotificationCounts();
+    const commands = store.uxCommandPalette('facture');
+    const nextActions = store.uxContextualNextActions({ entity: 'invoice', status: invoice.status });
+    const graph = store.uxRelationshipGraph(invoice.number);
+    const timeline = store.uxActivityTimeline(invoice.number);
+    const tasks = store.uxTaskSummary();
+    const health = store.uxWorkspaceHealthCards();
+
+    expect(recents.tenantId).toBe('tenant-demo');
+    expect(recents.role).toBe('ACCOUNTANT');
+    expect(recents.rows.map((row) => row.module)).toEqual(expect.arrayContaining(['Ventes', 'Achats/Stock']));
+    expect(favorites.rows.map((row) => row.label)).toEqual(expect.arrayContaining(['FAC-2026-014', 'Cockpit TVA']));
+    expect(pins.defaultLanding).toBe('/comptabilite');
+    expect(pins.modules).toEqual(expect.arrayContaining(['Comptabilité', 'Admin/Conformité']));
+    expect(notifications.byModule).toHaveProperty('Paie/RH');
+    expect(commands.actions.map((action) => action.label)).toEqual(expect.arrayContaining(['Ouvrir facture FAC-2026-014']));
+    expect(nextActions.actions.map((action) => action.label)).toEqual(expect.arrayContaining(['Envoyer PDF', 'Capturer paiement']));
+    expect(graph.edges.map((edge) => edge.label)).toEqual(expect.arrayContaining(['écriture comptable', 'archive PDF']));
+    expect(timeline.rows[0].message).toContain('Relance client');
+    expect(tasks.byWorkspace).toHaveProperty('Ventes');
+    expect(health.cards.map((card) => card.workspace)).toEqual(expect.arrayContaining(['Ventes', 'Comptabilité', 'Paie/RH']));
+  });
+
+  it('validates UX support DTO contracts with French field-level correction messages', () => {
+    const invalidIce = store.uxContractValidation({ module: 'sales', fieldPath: 'customer.ice', value: '' });
+    const invalidVat = store.uxContractValidation({ module: 'sales', fieldPath: 'lines[0].vatRate', value: '19%' });
+
+    expect(invalidIce.valid).toBe(false);
+    expect(invalidIce.errors[0]).toMatchObject({
+      fieldPath: 'customer.ice',
+      messageFr: 'ICE obligatoire pour les documents marocains',
+      severity: 'error',
+    });
+    expect(invalidVat.errors[0].suggestion).toContain('20 %');
+    expect(store.uxContractValidation({ module: 'sales', fieldPath: 'lines[0].vatRate', value: '20%' }).valid).toBe(true);
+    expect(() => store.uxContractValidation({ module: 'sales' })).toThrow(BadRequestException);
+  });
+
   it('revises, approves, exports, and converts a quote to order, delivery note, and invoice', () => {
     const quote = store.createQuote({
       customerId: 'cus-1',

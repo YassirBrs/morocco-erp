@@ -862,26 +862,26 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T753 P1 - Add Arabic-ready display rules for names, addresses, PDFs, and bilingual document previews.
 - [x] T754 P1 - Add contextual help drawer per workspace with short operational explanations, not marketing text.
 - [x] T755 P1 - Add onboarding sample journeys for trading company, services company, retail/POS, and payroll-heavy SME.
-- [ ] T756 P1 - Add import assistant with CSV upload, field mapping, validation preview, duplicate detection, and import report.
-- [ ] T757 P1 - Add export center with saved export templates, permissions, filters, file history, and checksums.
-- [ ] T758 P1 - Add PDF preview UX for invoices, delivery notes, credit notes, purchase orders, payslips, and statements.
-- [ ] T759 P1 - Add email/send workflow with recipient preview, template selection, attachments, delivery status, and audit.
-- [ ] T760 P1 - Add attachment upload UX with drag-drop, file type validation, evidence classification, checksum, and retention tag.
-- [ ] T761 P1 - Add activity timeline component for notes, tasks, status changes, emails, payments, journals, and document exports.
-- [ ] T762 P1 - Add task management drawer with assigned user, due date, priority, entity link, completion, and reminders.
-- [ ] T763 P1 - Add approval inbox for quotes, discounts, purchases, stock write-offs, payroll, refunds, and fiscal exceptions.
-- [ ] T764 P1 - Add manager approval detail view with requested change, financial impact, policy rule, comments, approve, and reject.
-- [ ] T765 P1 - Add cross-module related-record links so users can jump from invoice to customer, delivery note, journal, payment, and PDF.
-- [ ] T766 P1 - Add optimistic UI refresh pattern after create/update/post actions with clear rollback on backend validation failure.
-- [ ] T767 P1 - Add unsaved changes guard for all forms, including browser navigation and workspace switching.
-- [ ] T768 P1 - Add multi-step wizard pattern for onboarding, payroll run, VAT declaration, inventory count, and bank import.
-- [ ] T769 P1 - Add page-level performance budgets for dashboard, list pages, record pages, and search.
-- [ ] T770 P1 - Add frontend telemetry events for module open, create action, validation error, export, and completed workflow.
-- [ ] T771 P2 - Add customizable dashboard widgets per role with drag ordering, visibility toggles, saved layout, and reset to default.
-- [ ] T772 P2 - Add Kanban board for CRM leads, support tickets, project tasks, and internal tasks with drag/drop status changes.
-- [ ] T773 P2 - Add calendar views for deliveries, tax deadlines, payroll dates, employee leave, maintenance, and contract renewals.
-- [ ] T774 P2 - Add spreadsheet-like editable grids for quote lines, invoice lines, purchase lines, stock count lines, and journal lines.
-- [ ] T775 P2 - Add AI-assisted navigation suggestions that recommend the next best action while preserving auditability and human approval.
+- [x] T756 P1 - Add import assistant with CSV upload, field mapping, validation preview, duplicate detection, and import report.
+- [x] T757 P1 - Add export center with saved export templates, permissions, filters, file history, and checksums.
+- [x] T758 P1 - Add PDF preview UX for invoices, delivery notes, credit notes, purchase orders, payslips, and statements.
+- [x] T759 P1 - Add email/send workflow with recipient preview, template selection, attachments, delivery status, and audit.
+- [x] T760 P1 - Add attachment upload UX with drag-drop, file type validation, evidence classification, checksum, and retention tag.
+- [x] T761 P1 - Add activity timeline component for notes, tasks, status changes, emails, payments, journals, and document exports.
+- [x] T762 P1 - Add task management drawer with assigned user, due date, priority, entity link, completion, and reminders.
+- [x] T763 P1 - Add approval inbox for quotes, discounts, purchases, stock write-offs, payroll, refunds, and fiscal exceptions.
+- [x] T764 P1 - Add manager approval detail view with requested change, financial impact, policy rule, comments, approve, and reject.
+- [x] T765 P1 - Add cross-module related-record links so users can jump from invoice to customer, delivery note, journal, payment, and PDF.
+- [x] T766 P1 - Add optimistic UI refresh pattern after create/update/post actions with clear rollback on backend validation failure.
+- [x] T767 P1 - Add unsaved changes guard for all forms, including browser navigation and workspace switching.
+- [x] T768 P1 - Add multi-step wizard pattern for onboarding, payroll run, VAT declaration, inventory count, and bank import.
+- [x] T769 P1 - Add page-level performance budgets for dashboard, list pages, record pages, and search.
+- [x] T770 P1 - Add frontend telemetry events for module open, create action, validation error, export, and completed workflow.
+- [x] T771 P2 - Add customizable dashboard widgets per role with drag ordering, visibility toggles, saved layout, and reset to default.
+- [x] T772 P2 - Add Kanban board for CRM leads, support tickets, project tasks, and internal tasks with drag/drop status changes.
+- [x] T773 P2 - Add calendar views for deliveries, tax deadlines, payroll dates, employee leave, maintenance, and contract renewals.
+- [x] T774 P2 - Add spreadsheet-like editable grids for quote lines, invoice lines, purchase lines, stock count lines, and journal lines.
+- [x] T775 P2 - Add AI-assisted navigation suggestions that recommend the next best action while preserving auditability and human approval.
 - [x] T876 P1 - Add shared ERP workspace fixtures for Moroccan demo records, role presets, saved views, notifications, and validation examples.
 - [x] T877 P1 - Add a reusable dense table interaction contract that covers sortable headers, pagination copy, visible columns, export, and bulk actions.
 - [x] T878 P1 - Add a reusable workspace feedback pattern for empty, loading, error, success, forbidden, and validation summary states.
@@ -893,29 +893,34 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T884 P1 - Add a French ERP design-system catalog page covering tokens, component states, icon badges, glossary, and Arabic-ready fields.
 - [x] T885 P1 - Add contextual help and onboarding journey panels for trading, services, retail/POS, and payroll-heavy Moroccan SMEs.
 - [x] T886 P1 - Add route-level verification tests for Accounting, Payroll, POS, Admin/Conformité, and design-system responsiveness.
+- [x] T887 P1 - Add shared workflow-productization fixtures for imports, exports, PDFs, emails, attachments, timelines, approvals, and related records.
+- [x] T888 P1 - Add a dedicated operational workflow center view that exposes import/export, document, task, approval, and productivity UX in French.
+- [x] T889 P1 - Add tenant UX-support API contract endpoints for recents, favorites, pins, notifications, command palette, next actions, graph, timeline, tasks, health, and validation.
+- [x] T890 P1 - Add backend tests proving UX-support endpoints return tenant-scoped French contract payloads and validation errors.
+- [x] T891 P1 - Add frontend verification tests covering the operational workflow center and UX-support API route wiring.
 
 ## Competitive UX Execution And Productization
 
-- [ ] T776 P0 - Define the Odoo/Sage comparison scorecard with navigation, workflow speed, data density, document quality, and accounting confidence criteria.
-- [ ] T777 P0 - Add a UX baseline audit test that screenshots each major workspace and flags missing headings, primary actions, and empty states.
-- [ ] T778 P0 - Create a user journey map for Moroccan trading SMEs from onboarding to first invoice to first VAT report.
-- [ ] T779 P0 - Create a user journey map for Moroccan service companies from contract to recurring invoice to accountant handoff.
-- [ ] T780 P0 - Create a user journey map for Moroccan retailers from POS session to stock deduction to Z report.
-- [ ] T781 P0 - Create a user journey map for payroll-heavy SMEs from employee onboarding to CNSS/Damancom export.
-- [ ] T782 P0 - Add workspace information architecture docs that define menus, submenus, record types, and primary user goals.
-- [ ] T783 P0 - Add navigation acceptance tests that verify every role sees only relevant workspaces and actions.
-- [ ] T784 P0 - Add a home dashboard decision tree that routes users to Sales, Stock, Accounting, Payroll, POS, or Compliance based on urgent work.
-- [ ] T785 P0 - Add backend endpoints for recent records per tenant, grouped by module and user role.
-- [ ] T786 P0 - Add backend endpoints for user favorites including records, reports, dashboards, and saved views.
-- [ ] T787 P0 - Add backend endpoints for per-user pinned modules and default landing workspace.
-- [ ] T788 P0 - Add backend endpoints for notification counts by severity, module, due date, and assigned user.
-- [ ] T789 P0 - Add backend endpoints for command palette search with actions, records, reports, and shortcuts in one response.
-- [ ] T790 P0 - Add backend endpoints for contextual next actions on quotes, orders, deliveries, invoices, payments, payroll runs, and stock moves.
-- [ ] T791 P0 - Add backend endpoints for record relationship graphs across customer, supplier, invoice, journal, payment, stock, and payroll entities.
-- [ ] T792 P0 - Add backend endpoints for activity timelines with consistent event types, actors, timestamps, and linked evidence.
-- [ ] T793 P0 - Add backend endpoints for user task counts and overdue task summaries by workspace.
-- [ ] T794 P0 - Add backend endpoints for workspace health cards with blockers, pending approvals, exceptions, and next deadline.
-- [ ] T795 P0 - Add backend DTO validation for all UX-support endpoints with tenant isolation tests.
+- [x] T776 P0 - Define the Odoo/Sage comparison scorecard with navigation, workflow speed, data density, document quality, and accounting confidence criteria.
+- [x] T777 P0 - Add a UX baseline audit test that screenshots each major workspace and flags missing headings, primary actions, and empty states.
+- [x] T778 P0 - Create a user journey map for Moroccan trading SMEs from onboarding to first invoice to first VAT report.
+- [x] T779 P0 - Create a user journey map for Moroccan service companies from contract to recurring invoice to accountant handoff.
+- [x] T780 P0 - Create a user journey map for Moroccan retailers from POS session to stock deduction to Z report.
+- [x] T781 P0 - Create a user journey map for payroll-heavy SMEs from employee onboarding to CNSS/Damancom export.
+- [x] T782 P0 - Add workspace information architecture docs that define menus, submenus, record types, and primary user goals.
+- [x] T783 P0 - Add navigation acceptance tests that verify every role sees only relevant workspaces and actions.
+- [x] T784 P0 - Add a home dashboard decision tree that routes users to Sales, Stock, Accounting, Payroll, POS, or Compliance based on urgent work.
+- [x] T785 P0 - Add backend endpoints for recent records per tenant, grouped by module and user role.
+- [x] T786 P0 - Add backend endpoints for user favorites including records, reports, dashboards, and saved views.
+- [x] T787 P0 - Add backend endpoints for per-user pinned modules and default landing workspace.
+- [x] T788 P0 - Add backend endpoints for notification counts by severity, module, due date, and assigned user.
+- [x] T789 P0 - Add backend endpoints for command palette search with actions, records, reports, and shortcuts in one response.
+- [x] T790 P0 - Add backend endpoints for contextual next actions on quotes, orders, deliveries, invoices, payments, payroll runs, and stock moves.
+- [x] T791 P0 - Add backend endpoints for record relationship graphs across customer, supplier, invoice, journal, payment, stock, and payroll entities.
+- [x] T792 P0 - Add backend endpoints for activity timelines with consistent event types, actors, timestamps, and linked evidence.
+- [x] T793 P0 - Add backend endpoints for user task counts and overdue task summaries by workspace.
+- [x] T794 P0 - Add backend endpoints for workspace health cards with blockers, pending approvals, exceptions, and next deadline.
+- [x] T795 P0 - Add backend DTO validation for all UX-support endpoints with tenant isolation tests.
 - [ ] T796 P1 - Add list-view API contracts with filtering, sorting, pagination, search, column metadata, and totals.
 - [ ] T797 P1 - Add detail-view API contracts that return header fields, status, allowed actions, tabs, timeline, and audit summary.
 - [ ] T798 P1 - Add form-schema API contracts for dynamic required fields, Moroccan validation rules, defaults, and help text.

@@ -1100,6 +1100,89 @@ kbd {
   line-height: 1.45;
 }
 
+.uxWorkflowCenter textarea {
+  min-height: 94px;
+  resize: vertical;
+}
+
+.uxWizardSteps,
+.uxWorkflowCards,
+.uxApprovalDetail {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.uxWizardSteps {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  list-style: none;
+}
+
+.uxWizardSteps li,
+.uxWorkflowCards article,
+.uxApprovalDetail > div,
+.uxApprovalDetail label,
+.uxDropzone {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+}
+
+.uxWizardSteps li.done {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.uxWizardSteps li.current {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.uxDropzone {
+  margin: 12px;
+  min-height: 96px;
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+  color: var(--muted);
+  text-align: center;
+}
+
+.uxDropzone:focus-visible {
+  outline: 3px solid var(--color-primary-hover);
+  outline-offset: 2px;
+}
+
+.uxApprovalDetail {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.uxApprovalDetail label {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 6px;
+}
+
+.uxWorkflowCards {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.uxWorkflowCards article {
+  display: grid;
+  gap: 8px;
+}
+
+.uxWorkflowCards span,
+.uxWorkflowCards em,
+.uxApprovalDetail span {
+  color: var(--muted);
+}
+
 @media (max-width: 980px) {
   .shell {
     grid-template-columns: 1fr;
@@ -1138,7 +1221,10 @@ kbd {
   .uxTotalsPanel,
   .uxCommandPalette,
   .uxPosGrid,
-  .uxDesignCatalog {
+  .uxDesignCatalog,
+  .uxWizardSteps,
+  .uxWorkflowCards,
+  .uxApprovalDetail {
     grid-template-columns: 1fr;
   }
 

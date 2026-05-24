@@ -10,6 +10,17 @@ export class TenantController {
   @Get('dashboard-filters') dashboardFilters() { return this.tenantService.dashboardFilters(); }
   @Get('role-widgets') roleWidgets() { return this.tenantService.roleWidgets(); }
   @Get('role-navigation/:role') roleNavigation(@Param('role') role: string) { return this.tenantService.roleNavigation(role); }
+  @Get('ux/recent-records') uxRecentRecords(@Query('role') role?: string) { return this.tenantService.uxRecentRecords(role); }
+  @Get('ux/favorites') uxFavorites() { return this.tenantService.uxFavorites(); }
+  @Get('ux/pinned-modules') uxPinnedModules(@Query('role') role?: string) { return this.tenantService.uxPinnedModules(role); }
+  @Get('ux/notification-counts') uxNotificationCounts() { return this.tenantService.uxNotificationCounts(); }
+  @Get('ux/command-palette') uxCommandPalette(@Query('q') query?: string) { return this.tenantService.uxCommandPalette(query); }
+  @Get('ux/next-actions') uxNextActions(@Query('entity') entity?: string, @Query('status') status?: string) { return this.tenantService.uxContextualNextActions({ entity, status }); }
+  @Get('ux/relationship-graph') uxRelationshipGraph(@Query('entityId') entityId?: string) { return this.tenantService.uxRelationshipGraph(entityId); }
+  @Get('ux/activity-timeline') uxActivityTimeline(@Query('entityId') entityId?: string) { return this.tenantService.uxActivityTimeline(entityId); }
+  @Get('ux/task-summary') uxTaskSummary() { return this.tenantService.uxTaskSummary(); }
+  @Get('ux/workspace-health') uxWorkspaceHealth() { return this.tenantService.uxWorkspaceHealthCards(); }
+  @Post('ux/contracts/validate') uxContractValidation(@Body() body: any) { return this.tenantService.uxContractValidation(body); }
   @Get('subscription-gate') subscriptionGate() { return this.tenantService.subscriptionGate(); }
   @Patch('subscription-gate') updateSubscriptionGate(@Body() body: any) { return this.tenantService.updateSubscriptionGate(body); }
   @Get('retention-policy') retentionPolicy() { return this.tenantService.retentionPolicy(); }

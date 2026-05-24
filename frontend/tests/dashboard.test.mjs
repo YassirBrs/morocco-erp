@@ -12,6 +12,7 @@ const modulePages = [
   '../app/pos/page.tsx',
   '../app/conformite/page.tsx',
   '../app/admin/page.tsx',
+  '../app/workflows/page.tsx',
 ].map((path) => readFileSync(new URL(path, import.meta.url), 'utf8'));
 const staticPage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
@@ -51,6 +52,8 @@ const accountingWorkspacePage = readFileSync(new URL('../features/ux-organizatio
 const payrollWorkspacePage = readFileSync(new URL('../features/ux-organization/payroll-hr-workspace-page.tsx', import.meta.url), 'utf8');
 const posWorkspacePage = readFileSync(new URL('../features/ux-organization/pos-workspace-page.tsx', import.meta.url), 'utf8');
 const adminComplianceWorkspacePage = readFileSync(new URL('../features/ux-organization/admin-compliance-workspace-page.tsx', import.meta.url), 'utf8');
+const workflowProductizationFixtures = readFileSync(new URL('../features/ux-organization/workflow-productization-fixtures.ts', import.meta.url), 'utf8');
+const operationalWorkflowCenterPage = readFileSync(new URL('../features/ux-organization/operational-workflow-center-page.tsx', import.meta.url), 'utf8');
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -456,6 +459,31 @@ test('Design-system catalog covers tokens, glossary, Arabic-ready fields, help, 
   }
   for (const cssToken of ['.uxPosGrid', '.uxDesignCatalog', '.uxPosMode button', '.uxDesignCatalog span']) {
     assert.ok(css.includes(cssToken), `${cssToken} responsive design style exists`);
+  }
+});
+
+test('Operational workflow center covers import, export, documents, tasks, approvals, and productivity UX', () => {
+  assert.ok(modulePages[8].includes('OperationalWorkflowCenterPage'), 'Workflows route delegates to the operational workflow center');
+  for (const text of ['Assistant import CSV', 'Centre exports', 'Aperçus PDF', 'Workflow email et envoi', 'Pièces jointes et preuves', 'Timeline activité', 'Tiroir tâches', 'Boîte d’approbation', 'Détail approbation manager', 'Liens records transverses']) {
+    assert.ok(operationalWorkflowCenterPage.includes(text), `${text} workflow section exists`);
+  }
+  for (const text of ['Widgets personnalisables', 'Kanban opérationnels', 'Calendriers métier', 'Grilles éditables', 'Suggestions IA auditables', 'Scorecard Odoo/Sage', 'Cartes de parcours utilisateurs', 'Architecture informationnelle']) {
+    assert.ok(operationalWorkflowCenterPage.includes(text), `${text} productization section exists`);
+  }
+  for (const text of ['Téléverser CSV', 'Pack TVA mai', 'FAC-2026-014', 'Damancom mai', 'module_open', 'Négoce marocain', 'Comparable Odoo']) {
+    assert.ok(workflowProductizationFixtures.includes(text), `${text} workflow fixture exists`);
+  }
+  for (const cssToken of ['.uxWorkflowCenter textarea', '.uxWizardSteps', '.uxDropzone', '.uxApprovalDetail', '.uxWorkflowCards']) {
+    assert.ok(css.includes(cssToken), `${cssToken} workflow style exists`);
+  }
+});
+
+test('Frontend wires UX-support backend contracts for role-aware workspace APIs', () => {
+  for (const endpoint of ['/tenant/ux/recent-records?role=OWNER', '/tenant/ux/favorites', '/tenant/ux/pinned-modules?role=ACCOUNTANT', '/tenant/ux/notification-counts', '/tenant/ux/command-palette?q=facture', '/tenant/ux/next-actions?entity=invoice&status=DRAFT', '/tenant/ux/relationship-graph?entityId=FAC-2026-014', '/tenant/ux/activity-timeline?entityId=FAC-2026-014', '/tenant/ux/task-summary', '/tenant/ux/workspace-health', '/tenant/ux/contracts/validate']) {
+    assert.ok(api.includes(endpoint), `${endpoint} UX support API route is wired`);
+  }
+  for (const typeToken of ['recentRecords', 'favorites', 'pinnedModules', 'notificationCounts', 'commandPalette', 'nextActions', 'relationshipGraph', 'activityTimeline', 'taskSummary', 'workspaceHealth', 'validationContract']) {
+    assert.ok(api.includes(typeToken), `${typeToken} UX support contract is represented`);
   }
 });
 

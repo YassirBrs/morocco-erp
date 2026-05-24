@@ -1181,3 +1181,48 @@ export async function getEnterpriseResilienceReadiness(): Promise<EnterpriseResi
     executiveResilienceScorecard: { continuityScore: 0, openIncidents: 0, evidenceGaps: 0, complianceBlockers: 0, nextAction: 'A definir' },
   });
 }
+
+export type UxSupportContracts = {
+  recentRecords: { rows: Array<{ module: string; type: string; label: string; status: string; updatedAt: string }> };
+  favorites: { rows: Array<{ kind: string; label: string; href: string; module: string }> };
+  pinnedModules: { role: string; defaultLanding: string; modules: string[] };
+  notificationCounts: { total: number; bySeverity: Record<string, number>; byModule: Record<string, number> };
+  commandPalette: { query: string; actions: Array<{ label: string; type: string; href: string; shortcut: string }> };
+  nextActions: { entity: string; actions: Array<{ label: string; enabled: boolean; disabledReason?: string }> };
+  relationshipGraph: { nodes: Array<{ id: string; label: string; type: string }>; edges: Array<{ from: string; to: string; label: string }> };
+  activityTimeline: { rows: Array<{ at: string; actor: string; type: string; message: string; evidence?: string }> };
+  taskSummary: { total: number; overdue: number; byWorkspace: Record<string, number> };
+  workspaceHealth: { cards: Array<{ workspace: string; status: string; blocker: string; nextDeadline: string }> };
+  validationContract: { valid: boolean; errors: Array<{ fieldPath: string; messageFr: string; severity: string; suggestion: string }> };
+};
+
+export const uxSupportRoutes = [
+  '/tenant/ux/recent-records?role=OWNER',
+  '/tenant/ux/favorites',
+  '/tenant/ux/pinned-modules?role=ACCOUNTANT',
+  '/tenant/ux/notification-counts',
+  '/tenant/ux/command-palette?q=facture',
+  '/tenant/ux/next-actions?entity=invoice&status=DRAFT',
+  '/tenant/ux/relationship-graph?entityId=FAC-2026-014',
+  '/tenant/ux/activity-timeline?entityId=FAC-2026-014',
+  '/tenant/ux/task-summary',
+  '/tenant/ux/workspace-health',
+  '/tenant/ux/contracts/validate',
+];
+
+export async function getUxSupportContracts(): Promise<UxSupportContracts> {
+  const [recentRecords, favorites, pinnedModules, notificationCounts, commandPalette, nextActions, relationshipGraph, activityTimeline, taskSummary, workspaceHealth, validationContract] = await Promise.all([
+    getJson('/tenant/ux/recent-records?role=OWNER', { rows: [] }),
+    getJson('/tenant/ux/favorites', { rows: [] }),
+    getJson('/tenant/ux/pinned-modules?role=ACCOUNTANT', { role: 'ACCOUNTANT', defaultLanding: '/comptabilite', modules: [] }),
+    getJson('/tenant/ux/notification-counts', { total: 0, bySeverity: {}, byModule: {} }),
+    getJson('/tenant/ux/command-palette?q=facture', { query: 'facture', actions: [] }),
+    getJson('/tenant/ux/next-actions?entity=invoice&status=DRAFT', { entity: 'invoice', actions: [] }),
+    getJson('/tenant/ux/relationship-graph?entityId=FAC-2026-014', { nodes: [], edges: [] }),
+    getJson('/tenant/ux/activity-timeline?entityId=FAC-2026-014', { rows: [] }),
+    getJson('/tenant/ux/task-summary', { total: 0, overdue: 0, byWorkspace: {} }),
+    getJson('/tenant/ux/workspace-health', { cards: [] }),
+    postJson('/tenant/ux/contracts/validate', { module: 'sales', fieldPath: 'customer.ice', value: '' }, { valid: false, errors: [] }),
+  ]);
+  return { recentRecords, favorites, pinnedModules, notificationCounts, commandPalette, nextActions, relationshipGraph, activityTimeline, taskSummary, workspaceHealth, validationContract };
+}
