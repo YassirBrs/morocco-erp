@@ -181,7 +181,7 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T124 P0 - Add a French CRM lead pipeline panel to the dashboard with stage, owner, source, next action, and expected value.
 - [x] T125 P0 - Add a French supplier directory panel to the dashboard with ICE, IF, payment terms, and bank details.
 - [x] T126 P0 - Add lead-to-quote conversion that creates or links the customer before issuing a quote.
-- [ ] T127 P0 - Add supplier duplicate detection by ICE/IF and warning states in the supplier form.
+- [x] T127 P0 - Add supplier duplicate detection by ICE/IF and warning states in the supplier form.
 - [ ] T128 P1 - Add Moroccan RIB format validation and bank-name normalization for suppliers.
 - [ ] T129 P1 - Add a unified business search across customers, prospects, suppliers, products, invoices, and orders.
 - [ ] T130 P1 - Add dashboard filters for overdue next actions, unpaid customer balances, and supplier payment terms.

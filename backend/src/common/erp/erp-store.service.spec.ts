@@ -437,6 +437,27 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(() => store.updateSupplier(supplier.id, { bankDetails: [{ bankName: '', rib: '' }] })).toThrow(BadRequestException);
   });
 
+  it('flags supplier duplicates by ICE and IF without blocking creation or update', () => {
+    const duplicate = store.addSupplier({
+      name: 'Casa Import Duplicate',
+      ice: '009998887776665',
+      ifNumber: '445566',
+      paymentTermsDays: 30,
+    });
+
+    expect(duplicate.duplicateWarnings).toEqual([
+      'ICE déjà utilisé par Casa Import SA',
+      'IF déjà utilisé par Casa Import SA',
+    ]);
+    expect(store.listSuppliers()).toHaveLength(2);
+
+    const unique = store.addSupplier({ name: 'Unique Supplier', ice: '100200300400500', ifNumber: '111222' });
+    const updated = store.updateSupplier(unique.id, { ice: '009998887776665' });
+
+    expect(updated.duplicateWarnings).toEqual(['ICE déjà utilisé par Casa Import SA']);
+    expect(store.auditLogs().filter((log) => log.entity === 'Supplier')).toHaveLength(3);
+  });
+
   it('supports full product CRUD, SKU uniqueness, VAT rule validation, and stock behavior', () => {
     const product = store.addProduct({
       sku: 'sku-desk',

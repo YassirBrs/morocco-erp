@@ -641,6 +641,7 @@ export class ErpStoreService {
     };
     this.validateContacts(supplier.contacts);
     this.validateBankDetails(supplier.bankDetails);
+    supplier.duplicateWarnings = this.supplierDuplicateWarnings(workspace, supplier);
     workspace.suppliers.push(supplier);
     this.audit(workspace, 'supplier.created', 'Supplier', supplier.id, supplier);
     return supplier;
@@ -677,6 +678,7 @@ export class ErpStoreService {
       supplier.bankDetails = input.bankDetails;
     }
     if (input.active !== undefined) supplier.active = input.active;
+    supplier.duplicateWarnings = this.supplierDuplicateWarnings(workspace, supplier);
     supplier.updatedAt = today();
     this.audit(workspace, 'supplier.updated', 'Supplier', supplier.id, supplier);
     return supplier;
@@ -1526,6 +1528,22 @@ export class ErpStoreService {
       throw new NotFoundException('Fournisseur introuvable');
     }
     return supplier;
+  }
+
+  private supplierDuplicateWarnings(workspace: TenantWorkspace, supplier: Supplier): string[] {
+    const warnings: string[] = [];
+    const ice = supplier.ice?.trim();
+    const ifNumber = supplier.ifNumber?.trim();
+    const duplicateIce = ice
+      ? workspace.suppliers.find((candidate) => candidate.id !== supplier.id && candidate.active && candidate.ice?.trim() === ice)
+      : undefined;
+    const duplicateIf = ifNumber
+      ? workspace.suppliers.find((candidate) => candidate.id !== supplier.id && candidate.active && candidate.ifNumber?.trim() === ifNumber)
+      : undefined;
+
+    if (duplicateIce) warnings.push(`ICE déjà utilisé par ${duplicateIce.name}`);
+    if (duplicateIf) warnings.push(`IF déjà utilisé par ${duplicateIf.name}`);
+    return warnings;
   }
 
   private lead(workspace: TenantWorkspace, leadId: string): Lead {

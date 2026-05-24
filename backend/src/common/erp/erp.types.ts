@@ -82,6 +82,7 @@ export interface Supplier {
   paymentTermsDays: number;
   contacts: Array<{ name: string; role?: string; email?: string; phone?: string }>;
   bankDetails: Array<{ bankName: string; rib: string; iban?: string }>;
+  duplicateWarnings?: string[];
   active: boolean;
   createdAt: string;
   updatedAt: string;

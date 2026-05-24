@@ -494,7 +494,7 @@
         qs('#supplierCount').textContent = suppliers.filter((supplier) => supplier.active).length;
         qs('#supplierRows').innerHTML = suppliers.length ? suppliers.map((supplier) => `
           <tr class="${supplier.active ? '' : 'mutedRow'}">
-            <td><strong>${supplier.name}</strong><small>${supplier.ifNumber || '-'}</small></td>
+            <td><strong>${supplier.name}</strong><small>${supplier.ifNumber || '-'}</small>${supplier.duplicateWarnings?.length ? `<small class="warningText">${supplier.duplicateWarnings.join(' · ')}</small>` : ''}</td>
             <td>${supplier.ice || '-'}</td>
             <td>${supplier.paymentTermsDays} j</td>
             <td>${supplier.bankDetails?.[0]?.bankName || '-'}</td>
@@ -826,7 +826,9 @@
           });
           formEl.reset();
           formEl.paymentTermsDays.value = 30;
-          showMessage('success', `Fournisseur ${supplier.name} ajouté.`);
+          showMessage(supplier.duplicateWarnings?.length ? 'warning' : 'success', supplier.duplicateWarnings?.length
+            ? `Fournisseur ${supplier.name} ajouté avec alerte doublon: ${supplier.duplicateWarnings.join(' · ')}.`
+            : `Fournisseur ${supplier.name} ajouté.`);
           await load();
         } catch (error) {
           showMessage('error', error.message);
