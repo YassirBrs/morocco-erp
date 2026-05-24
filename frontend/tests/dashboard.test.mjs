@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const page = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
@@ -17,6 +17,9 @@ const staticPage = readFileSync(new URL('../index.html', import.meta.url), 'utf8
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
 const staticCss = readFileSync(new URL('../static.css', import.meta.url), 'utf8');
 const api = readFileSync(new URL('../lib/api.ts', import.meta.url), 'utf8');
+const enterpriseDepthConfig = readFileSync(new URL('../features/enterprise-depth/enterprise-depth-feature-config.ts', import.meta.url), 'utf8');
+const enterpriseDepthFeaturePage = readFileSync(new URL('../features/enterprise-depth/enterprise-depth-feature-page.tsx', import.meta.url), 'utf8');
+const enterpriseDepthPageFiles = readdirSync(new URL('../pages/enterprise-depth', import.meta.url));
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -470,4 +473,71 @@ test('Next primary workspace exposes 40-task Morocco scale-up controls batch', (
   for (const token of ['generalLedger', 'customerLedger', 'supplierLedger', 'numberingAudit', 'cancellation', 'transferApproval', 'inventorySnapshot', 'negativePrevention', 'payrollVariance', 'contractRenewal', 'absenceSandbox', 'payrollJournalPreview', 'payrollEvidencePack', 'dgiSandbox', 'cnssSandbox', 'bankImportPreview', 'automatedPaymentMatching', 'paymentAllocationAudit', 'planEnforcement', 'usageMeter', 'goLiveRisk', 'demoScenarios', 'migrationImporter', 'autoFixSuggestions', 'complianceCockpit', 'branchRegistry', 'multiBranchStock', 'deliveryZonePricing', 'customerSectors', 'supplierVault', 'delegatedApprovals', 'documentRedaction', 'ocrQueue', 'cashCollection', 'creditInsurance', 'guaranteeRegister', 'supplierAdvance', 'landedCostSimulation', 'abcClassification', 'cycleCount']) {
     assert.ok(api.includes(token), `${token} scale-up data key is represented`);
   }
+});
+
+test('Next primary workspace exposes 40-task Morocco enterprise depth controls batch', () => {
+  for (const text of ['Profondeur entreprise Maroc', 'Trésorerie nette', 'Recouvrement', 'Rétention légale', 'OCR livraison', 'Ventes, crédit et prix', 'Recouvrement et trésorerie', 'RH, paie et gouvernance', 'Opérations, flotte et production', 'Portails et data room', 'Archive, signature et onboarding']) {
+    assert.ok(page.includes(text), `${text} enterprise depth label is present`);
+  }
+  for (const marker of ['getEnterpriseDepthReadiness', 'enterpriseDepth.treasury', 'enterpriseDepth.collectionQueue', 'enterpriseDepth.retentionPolicy', 'enterpriseDepth.deliveryOcr']) {
+    assert.ok(page.includes(marker), `${marker} enterprise depth helper is present`);
+  }
+  assert.ok(api.includes('/tenant/enterprise-depth-readiness'), 'enterprise depth endpoint is wired');
+  for (const token of ['stockDamage', 'substituteMapping', 'priceListImport', 'marginGuardrails', 'salesTargets', 'commissionAccrual', 'collectionQueue', 'customerDispute', 'supplierDispute', 'treasury', 'chequeDepositSlip', 'bouncedCheque', 'bankCategorization', 'recurringExpenses', 'expenseMatrix', 'employeeAdvance', 'employeeLoans', 'overtime', 'attendance', 'leaveConflicts', 'cnssRegistration', 'offboarding', 'maintenanceConsumption', 'fleetAlerts', 'fleetAccident', 'productionQuality', 'productionCapacity', 'projectChange', 'projectWip', 'customerPortalInvoices', 'supplierPortalUpload', 'dataRoom', 'checklistTemplates', 'telemetry', 'competitiveHeatmap', 'retentionPolicy', 'eSignature', 'customerRiskQuestionnaire', 'supplierRiskQuestionnaire', 'deliveryOcr']) {
+    assert.ok(api.includes(token), `${token} enterprise depth data key is represented`);
+  }
+});
+
+test('Enterprise depth batch has one descriptive dedicated frontend page per feature', () => {
+  const expectedFiles = [
+    'stock-damage-claim-page.tsx',
+    'product-substitute-mapping-page.tsx',
+    'customer-price-list-import-page.tsx',
+    'margin-guardrails-page.tsx',
+    'sales-target-dashboard-page.tsx',
+    'sales-commission-accrual-page.tsx',
+    'receivable-collection-queue-page.tsx',
+    'customer-dispute-resolution-page.tsx',
+    'supplier-dispute-resolution-page.tsx',
+    'treasury-cash-position-page.tsx',
+    'cheque-deposit-slip-page.tsx',
+    'bounced-cheque-workflow-page.tsx',
+    'bank-statement-categorization-page.tsx',
+    'recurring-expense-calendar-page.tsx',
+    'expense-approval-matrix-page.tsx',
+    'employee-advance-request-page.tsx',
+    'employee-loan-ledger-page.tsx',
+    'overtime-planning-approval-page.tsx',
+    'attendance-import-validation-page.tsx',
+    'leave-calendar-conflicts-page.tsx',
+    'cnss-registration-checklist-page.tsx',
+    'employee-offboarding-workflow-page.tsx',
+    'maintenance-spare-part-consumption-page.tsx',
+    'fleet-document-alerts-page.tsx',
+    'fleet-accident-case-page.tsx',
+    'production-quality-checklist-page.tsx',
+    'production-capacity-planning-page.tsx',
+    'project-change-request-page.tsx',
+    'project-wip-dashboard-page.tsx',
+    'customer-portal-invoice-view-page.tsx',
+    'supplier-portal-document-upload-page.tsx',
+    'tenant-data-room-page.tsx',
+    'implementation-checklist-templates-page.tsx',
+    'usage-telemetry-dashboard-page.tsx',
+    'competitive-gap-heatmap-page.tsx',
+    'electronic-document-retention-page.tsx',
+    'invoice-e-signature-readiness-page.tsx',
+    'customer-onboarding-risk-questionnaire-page.tsx',
+    'supplier-onboarding-risk-questionnaire-page.tsx',
+    'delivery-proof-photo-ocr-page.tsx',
+  ];
+  assert.equal(enterpriseDepthPageFiles.filter((file) => file.endsWith('-page.tsx')).length, 40);
+  for (const file of expectedFiles) {
+    assert.ok(enterpriseDepthPageFiles.includes(file), `${file} dedicated page exists`);
+    const source = readFileSync(new URL(`../pages/enterprise-depth/${file}`, import.meta.url), 'utf8');
+    assert.ok(source.includes('makeEnterpriseDepthServerSideProps'), `${file} has server-side data wiring`);
+  }
+  assert.ok(enterpriseDepthFeaturePage.includes('EnterpriseDepthFeaturePage'), 'shared feature page component exists');
+  assert.ok(enterpriseDepthConfig.includes('enterpriseDepthFeatureDefinitions'), 'feature definitions are centralized');
+  assert.ok(page.includes('enterpriseDepthFeatureDefinitions'), 'dashboard links to dedicated feature pages');
 });

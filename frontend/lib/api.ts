@@ -317,6 +317,7 @@ export type AccountingRiskReadiness = {
 };
 
 export type ScaleControlsReadiness = Record<string, any>;
+export type EnterpriseDepthReadiness = Record<string, any>;
 
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
@@ -806,5 +807,50 @@ export async function getScaleControlsReadiness(): Promise<ScaleControlsReadines
     landedCostSimulation: { totalEstimatedCost: 0, base: 0 },
     abcClassification: { rows: [] },
     cycleCount: { rows: [], status: 'SCHEDULED' },
+  });
+}
+
+export async function getEnterpriseDepthReadiness(): Promise<EnterpriseDepthReadiness> {
+  return getJson('/tenant/enterprise-depth-readiness', {
+    stockDamage: { status: 'OPEN', accountingImpact: 0 },
+    substituteMapping: { substitutions: [], status: 'NEEDS_MAPPING' },
+    priceListImport: { importedRows: 0, approvalAudit: {} },
+    marginGuardrails: { rows: [], blocked: 0 },
+    salesTargets: { rows: [], variance: 0 },
+    commissionAccrual: { approvalStatus: 'REQUIRED', accruedAmount: 0 },
+    collectionQueue: { rows: [] },
+    customerDispute: { status: 'OPEN' },
+    supplierDispute: { blockedPayments: [], settlementNotes: [] },
+    treasury: { netPosition: 0 },
+    chequeDepositSlip: { reconciliationStatus: 'PENDING_BANK_STATEMENT', cheques: [] },
+    bouncedCheque: { holdPolicy: 'BLOCK_ORDERS' },
+    bankCategorization: { rows: [], rules: [] },
+    recurringExpenses: { rows: [] },
+    expenseMatrix: { rows: [] },
+    employeeAdvance: { status: 'APPROVED' },
+    employeeLoans: { rows: [] },
+    overtime: { payrollImpactPreview: 0 },
+    attendance: { rows: [] },
+    leaveConflicts: { rows: [] },
+    cnssRegistration: { rows: [] },
+    offboarding: { accessRevocation: 'SCHEDULED' },
+    maintenanceConsumption: { status: 'CONSUMED' },
+    fleetAlerts: { rows: [] },
+    fleetAccident: { insuranceClaim: 'OPEN' },
+    productionQuality: { status: 'FAIL' },
+    productionCapacity: { rows: [] },
+    projectChange: { status: 'IN_PROGRESS' },
+    projectWip: { rows: [] },
+    customerPortalInvoices: { invoices: [] },
+    supplierPortalUpload: { uploadSlots: [] },
+    dataRoom: { checksum: '' },
+    checklistTemplates: { templates: [] },
+    telemetry: { moduleAdoption: [], trainingNeeds: [] },
+    competitiveHeatmap: { rows: [] },
+    retentionPolicy: { rows: [] },
+    eSignature: { immutableArchiveStatus: 'ARCHIVED' },
+    customerRiskQuestionnaire: { items: [] },
+    supplierRiskQuestionnaire: { items: [] },
+    deliveryOcr: { ocrStatus: 'PLACEHOLDER_READY' },
   });
 }

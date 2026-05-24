@@ -4,6 +4,7 @@ import {
   getDashboardSummary,
   getDocumentOperations,
   getEnterpriseControlReadiness,
+  getEnterpriseDepthReadiness,
   getGovernanceReadiness,
   getGrowthControlReadiness,
   getInvoices,
@@ -21,6 +22,7 @@ import {
   getStock,
   searchBusiness,
 } from '../lib/api';
+import { enterpriseDepthFeatureDefinitions } from '../features/enterprise-depth/enterprise-depth-feature-config';
 
 const formatMad = (value: number) =>
   new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(value);
@@ -49,7 +51,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -71,6 +73,7 @@ export default async function DashboardPage() {
     getRegulatedServiceReadiness(),
     getAccountingRiskReadiness(),
     getScaleControlsReadiness(),
+    getEnterpriseDepthReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -678,6 +681,75 @@ export default async function DashboardPage() {
               `Avance fournisseur ${scaleControls.supplierAdvance.status}`,
               `Simulation landed cost ${formatMad(scaleControls.landedCostSimulation.totalEstimatedCost)}`,
             ]} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Profondeur entreprise Maroc batch">
+          <PanelHeader title="Profondeur entreprise Maroc" action="Suivre exécution" />
+          <div className="reportGrid">
+            <Metric label="Trésorerie nette" value={formatMad(enterpriseDepth.treasury.netPosition)} />
+            <Metric label="Recouvrement" value={String(enterpriseDepth.collectionQueue.rows.length)} />
+            <Metric label="Rétention légale" value={`${enterpriseDepth.retentionPolicy.retentionYears} ans`} />
+            <Metric label="OCR livraison" value={enterpriseDepth.deliveryOcr.ocrStatus} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Ventes, crédit et prix" rows={[
+              `Dommage stock ${enterpriseDepth.stockDamage.status} · impact ${formatMad(enterpriseDepth.stockDamage.accountingImpact)}`,
+              `Substituts ${enterpriseDepth.substituteMapping.substitutions.length} · ${enterpriseDepth.substituteMapping.status}`,
+              `Tarifs importés ${enterpriseDepth.priceListImport.importedRows}`,
+              `Guardrails marge bloqués ${enterpriseDepth.marginGuardrails.blocked}`,
+              `Objectifs ventes écart ${formatMad(enterpriseDepth.salesTargets.variance)}`,
+              `Commissions ${enterpriseDepth.commissionAccrual.approvalStatus} · ${formatMad(enterpriseDepth.commissionAccrual.accruedAmount)}`,
+            ]} empty="-" />
+            <MiniList title="Recouvrement et trésorerie" rows={[
+              `Litige client ${enterpriseDepth.customerDispute.status}`,
+              `Litige fournisseur paiements bloqués ${enterpriseDepth.supplierDispute.blockedPayments.length}`,
+              `Bordereau chèques ${enterpriseDepth.chequeDepositSlip.reconciliationStatus}`,
+              `Chèque impayé politique ${enterpriseDepth.bouncedCheque.holdPolicy}`,
+              `Règles banque ${enterpriseDepth.bankCategorization.rules.length}`,
+              `Charges récurrentes ${enterpriseDepth.recurringExpenses.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="RH, paie et gouvernance" rows={[
+              `Matrice frais ${enterpriseDepth.expenseMatrix.rows.length}`,
+              `Avance salarié ${enterpriseDepth.employeeAdvance.status}`,
+              `Prêts salariés ${enterpriseDepth.employeeLoans.rows.length}`,
+              `Overtime impact ${formatMad(enterpriseDepth.overtime.payrollImpactPreview)}`,
+              `Présence anomalies ${enterpriseDepth.attendance.rows.length}`,
+              `CNSS salariés ${enterpriseDepth.cnssRegistration.rows.length}`,
+              `Offboarding accès ${enterpriseDepth.offboarding.accessRevocation}`,
+            ]} empty="-" />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Opérations, flotte et production" rows={[
+              `Pièce maintenance ${enterpriseDepth.maintenanceConsumption.status}`,
+              `Alertes flotte ${enterpriseDepth.fleetAlerts.rows.length}`,
+              `Accident assurance ${enterpriseDepth.fleetAccident.insuranceClaim}`,
+              `Qualité production ${enterpriseDepth.productionQuality.status}`,
+              `Capacité ateliers ${enterpriseDepth.productionCapacity.rows.length}`,
+              `Change request projet ${enterpriseDepth.projectChange.status}`,
+              `WIP projet ${enterpriseDepth.projectWip.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="Portails et data room" rows={[
+              `Portail client factures ${enterpriseDepth.customerPortalInvoices.invoices.length}`,
+              `Portail fournisseur uploads ${enterpriseDepth.supplierPortalUpload.uploadSlots.length}`,
+              `Data room checksum ${enterpriseDepth.dataRoom.checksum.slice(0, 10) || 'prêt'}`,
+              `Templates industries ${enterpriseDepth.checklistTemplates.templates.length}`,
+              `Télémetrie modules ${enterpriseDepth.telemetry.moduleAdoption.length}`,
+              `Heatmap concurrents ${enterpriseDepth.competitiveHeatmap.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="Archive, signature et onboarding" rows={[
+              `Archives légales ${enterpriseDepth.retentionPolicy.rows.length}`,
+              `E-signature ${enterpriseDepth.eSignature.immutableArchiveStatus}`,
+              `Questionnaire client ${enterpriseDepth.customerRiskQuestionnaire.items.length}`,
+              `Questionnaire fournisseur ${enterpriseDepth.supplierRiskQuestionnaire.items.length}`,
+              `POD OCR ${enterpriseDepth.deliveryOcr.manualValidation ? 'validation manuelle' : 'auto'}`,
+              `Signature chauffeur ${enterpriseDepth.deliveryOcr.driverSignature}`,
+            ]} empty="-" />
+          </div>
+          <div className="featureLinks" aria-label="Pages dédiées profondeur entreprise">
+            {enterpriseDepthFeatureDefinitions.map((feature) => (
+              <a key={feature.key} href={feature.route}>{feature.title}</a>
+            ))}
           </div>
         </section>
 
