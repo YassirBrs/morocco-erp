@@ -26,5 +26,7 @@ export class InventoryController {
   @Post('adjustments') adjust(@Body() body: { productId: string; quantity: number; reason?: string }) {
     return this.inventoryService.adjustStock(body.productId, body.quantity, body.reason);
   }
+  @Post('stock-moves/:id/approve') approveStockMove(@Param('id') id: string) { return this.inventoryService.approveStockMove(id); }
   @Post('purchase-receipts') purchaseReceipt(@Body() body: any) { return this.inventoryService.receivePurchase(body); }
+  @Post('purchase-receipts/:id/approve') approvePurchaseReceipt(@Param('id') id: string) { return this.inventoryService.approvePurchaseReceipt(id); }
 }

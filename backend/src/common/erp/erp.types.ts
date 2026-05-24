@@ -8,6 +8,7 @@ export type SalesOrderStatus = 'CONFIRMED' | 'DELIVERED' | 'INVOICED' | 'CANCELL
 export type DeliveryNoteStatus = 'POSTED' | 'CANCELLED';
 export type StockMoveType = 'RECEIPT' | 'DELIVERY' | 'DELIVERY_REVERSAL' | 'ADJUSTMENT' | 'PRODUCTION_CONSUME' | 'PRODUCTION_OUTPUT' | 'POS_SALE' | 'RESERVATION' | 'RESERVATION_RELEASE';
 export type BusinessSearchType = 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
+export type ApprovalStatus = 'AUTO_APPROVED' | 'REQUIRED' | 'APPROVED';
 
 export interface BusinessSearchInput {
   q: string;
@@ -44,6 +45,12 @@ export interface TenantSettings {
   invoiceSeries: string;
   fiscalYearStartMonth: number;
   vatStatus: 'ENABLED' | 'EXEMPT';
+  approvalLimits: {
+    quote: number;
+    creditNote: number;
+    purchase: number;
+    stockAdjustment: number;
+  };
 }
 
 export interface Tenant {
@@ -199,6 +206,7 @@ export interface Quote {
   date: string;
   validUntil: string;
   approvedAt?: string;
+  approvalStatus: ApprovalStatus;
   lines: DocumentLine[];
   totals: DocumentTotals;
 }
@@ -257,6 +265,7 @@ export interface CreditNote {
   status: 'POSTED' | 'VOID';
   date: string;
   reason: string;
+  approvalStatus: ApprovalStatus;
   lines: DocumentLine[];
   totals: DocumentTotals;
 }
@@ -280,6 +289,7 @@ export interface StockMove {
   unitCost: number;
   value: number;
   reference: string;
+  approvalStatus: ApprovalStatus;
   createdAt: string;
 }
 
@@ -291,6 +301,7 @@ export interface PurchaseReceipt {
   date: string;
   lines: Array<{ productId: string; quantity: number; unitCost: number; value: number }>;
   total: number;
+  approvalStatus: ApprovalStatus;
 }
 
 export interface JournalEntry {

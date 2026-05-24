@@ -23,6 +23,7 @@ export class SalesService {
   createInvoice(data: any) { return this.store.createInvoice(data); }
   listCreditNotes() { return this.store.listCreditNotes(); }
   createCreditNote(data: any) { return this.store.createCreditNote(data); }
+  approveCreditNote(id: string) { return this.store.approveCreditNote(id); }
   customerStatement(customerId: string) { return this.store.customerStatement(customerId); }
   recordPayment(data: any) { return this.store.recordPayment(data); }
 }

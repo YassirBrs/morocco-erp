@@ -22,6 +22,7 @@ export class SalesController {
   @Post('invoices') createInvoice(@Body() body: any) { return this.salesService.createInvoice(body); }
   @Get('credit-notes') creditNotes() { return this.salesService.listCreditNotes(); }
   @Post('credit-notes') createCreditNote(@Body() body: any) { return this.salesService.createCreditNote(body); }
+  @Post('credit-notes/:id/approve') approveCreditNote(@Param('id') id: string) { return this.salesService.approveCreditNote(id); }
   @Get('customers/:id/statement') customerStatement(@Param('id') id: string) { return this.salesService.customerStatement(id); }
   @Post('payments') payment(@Body() body: any) { return this.salesService.recordPayment(body); }
 }

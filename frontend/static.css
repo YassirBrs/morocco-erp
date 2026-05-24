@@ -475,8 +475,36 @@ button:disabled {
   border-top: 1px solid var(--line);
 }
 
-.analyticsBox {
+.analyticsBox,
+.approvalBox {
   border-top: 1px solid var(--line);
+}
+
+.approvalLimits {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.approvalLimits span {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.approvalLimits strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.approvalActions {
+  justify-content: flex-start;
+  padding: 0 16px 12px;
 }
 
 .segmented {

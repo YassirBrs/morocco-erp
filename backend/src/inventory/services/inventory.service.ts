@@ -23,5 +23,7 @@ export class InventoryService {
   addSupplierDocumentPlaceholder(id: string, data: any) { return this.store.addSupplierDocumentPlaceholder(id, data); }
   listWarehouses() { return this.store.listWarehouses(); }
   adjustStock(productId: string, qty: number, reason?: string) { return this.store.adjustStock(productId, qty, reason); }
+  approveStockMove(id: string) { return this.store.approveStockMove(id); }
   receivePurchase(data: any) { return this.store.createPurchaseReceipt(data); }
+  approvePurchaseReceipt(id: string) { return this.store.approvePurchaseReceipt(id); }
 }

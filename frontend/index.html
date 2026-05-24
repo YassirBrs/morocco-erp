@@ -167,6 +167,22 @@
               <button id="refreshStatement">Relevé client</button>
             </div>
             <div id="salesFlowState" class="flowState"></div>
+            <div class="approvalBox">
+              <div class="statementHeader">
+                <span>Limites approbation</span>
+                <strong id="approvalPendingCount">0 en attente</strong>
+              </div>
+              <div class="approvalLimits" id="approvalLimitValues"></div>
+              <div class="headerActions approvalActions">
+                <button id="tightenApprovalLimits" type="button">Limiter approbations démo</button>
+              </div>
+              <div class="tableWrap">
+                <table class="miniTable">
+                  <thead><tr><th>Type</th><th>Référence</th><th>Montant</th><th>Limite</th><th>Statut</th></tr></thead>
+                  <tbody id="approvalLimitRows"></tbody>
+                </table>
+              </div>
+            </div>
             <div class="resultLine">
               <span>Dernière opération</span>
               <strong id="invoiceResult">Aucune facture créée dans cette session</strong>
@@ -434,7 +450,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, customerCreditControls: [], customerReminders: [], productMarginAlerts: [], leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, approvalReview: null, customerCreditControls: [], customerReminders: [], productMarginAlerts: [], leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -535,7 +551,7 @@
       }
 
       async function load() {
-        const [summary, stock, customers, customerCreditControls, customerReminders, products, productMarginAlerts, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, customerCreditControls, customerReminders, products, productMarginAlerts, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, approvalReview, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
@@ -549,6 +565,7 @@
           get('/inventory/suppliers/risk-reminders'),
           get('/tenant/setup-checklist'),
           get('/tenant/dashboard-filters'),
+          get('/tenant/approval-limits'),
           get('/tenant/company-profile'),
           get('/ledger/audit'),
           get('/sales/quotes'),
@@ -572,6 +589,7 @@
         state.supplierReminders = supplierReminders;
         state.statement = statement;
         state.dashboardFilters = dashboardFilters;
+        state.approvalReview = approvalReview;
         state.profile = profile;
         state.audit = audit;
         const entity = summary.tenant.legalEntity;
@@ -593,6 +611,7 @@
         qs('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
         renderProfile();
         renderDashboardFilters();
+        renderApprovalReview();
         renderCustomerCreditControls();
         renderCustomerReminders();
         renderProductMarginAlerts();
@@ -764,6 +783,28 @@
         qs('#supplierTermsSummary').textContent = supplier ? `${supplier.name} · ${supplier.paymentTermsDays} j` : 'Aucun fournisseur actif';
       }
 
+      function renderApprovalReview() {
+        const review = state.approvalReview;
+        if (!review) return;
+        const limits = review.limits;
+        qs('#approvalPendingCount').textContent = `${review.pending} en attente`;
+        qs('#approvalLimitValues').innerHTML = [
+          ['Devis', limits.quote],
+          ['Avoir', limits.creditNote],
+          ['Achat', limits.purchase],
+          ['Stock', limits.stockAdjustment],
+        ].map(([label, value]) => `<span>${label}<strong>${mad(value)}</strong></span>`).join('');
+        qs('#approvalLimitRows').innerHTML = review.rows.length ? review.rows.slice(0, 6).map((row) => `
+          <tr>
+            <td>${row.type}</td>
+            <td><strong>${row.reference}</strong></td>
+            <td>${mad(row.amount)}</td>
+            <td>${mad(row.limit)}</td>
+            <td>${row.requiresApproval ? '<span class="statusPill warning">Approbation requise</span>' : '<span class="statusPill success">Approuvé</span>'}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun dépassement de limite', 5);
+      }
+
       function renderLeadAnalytics() {
         qs('#leadAnalyticsCount').textContent = `${state.leadAnalytics.length} segment${state.leadAnalytics.length > 1 ? 's' : ''}`;
         qs('#leadAnalyticsRows').innerHTML = state.leadAnalytics.length ? state.leadAnalytics.slice(0, 5).map((row) => `
@@ -933,6 +974,19 @@
       qs('#filterSupplierTerms').addEventListener('click', () => {
         switchModuleView('stock');
         showMessage('success', 'Filtre appliqué: délais fournisseurs.');
+      });
+
+      qs('#tightenApprovalLimits').addEventListener('click', async () => {
+        await runAction('#tightenApprovalLimits', 'Limites...', async () => {
+          state.approvalReview = await patch('/tenant/approval-limits', {
+            quote: 500,
+            creditNote: 100,
+            purchase: 500,
+            stockAdjustment: 100,
+          });
+          renderApprovalReview();
+          showMessage('success', 'Limites d’approbation démo mises à jour.');
+        });
       });
 
       qs('#createQuote').addEventListener('click', async () => {

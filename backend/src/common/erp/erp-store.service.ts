@@ -38,6 +38,12 @@ import {
 const r2 = (value: number): number => Math.round(value * 100) / 100;
 const today = (): string => new Date().toISOString().slice(0, 10);
 const allowedVatRates: VatRate[] = [0, 0.07, 0.1, 0.14, 0.2];
+const defaultApprovalLimits: TenantSettings['approvalLimits'] = {
+  quote: 50000,
+  creditNote: 10000,
+  purchase: 25000,
+  stockAdjustment: 10000,
+};
 
 @Injectable()
 export class ErpStoreService {
@@ -100,6 +106,7 @@ export class ErpStoreService {
         invoiceSeries: 'FAC',
         fiscalYearStartMonth: 1,
         vatStatus: 'ENABLED',
+        approvalLimits: { ...defaultApprovalLimits },
       },
       plan: 'ENTERPRISE',
       status: 'ACTIVE',
@@ -302,6 +309,7 @@ export class ErpStoreService {
         invoiceSeries: 'FAC',
         fiscalYearStartMonth: 1,
         vatStatus: input.vatEnabled === false ? 'EXEMPT' : 'ENABLED',
+        approvalLimits: { ...defaultApprovalLimits },
       },
       plan: input.plan ?? 'INTILAQ',
       status: 'ACTIVE',
@@ -519,6 +527,104 @@ export class ErpStoreService {
       ready: completed === checks.length,
       checks,
     };
+  }
+
+  approvalLimitReview(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const limits = workspace.tenant.settings.approvalLimits ?? defaultApprovalLimits;
+    const rows = [
+      ...workspace.quotes
+        .filter((quote) => quote.totals.total > limits.quote)
+        .map((quote) => ({
+          type: 'QUOTE',
+          reference: quote.number,
+          entityId: quote.id,
+          status: quote.status,
+          amount: quote.totals.total,
+          limit: limits.quote,
+          approvalStatus: quote.approvalStatus,
+          requiresApproval: quote.approvalStatus === 'REQUIRED',
+        })),
+      ...workspace.creditNotes
+        .filter((creditNote) => creditNote.totals.total > limits.creditNote)
+        .map((creditNote) => ({
+          type: 'CREDIT_NOTE',
+          reference: creditNote.number,
+          entityId: creditNote.id,
+          status: creditNote.status,
+          amount: creditNote.totals.total,
+          limit: limits.creditNote,
+          approvalStatus: creditNote.approvalStatus,
+          requiresApproval: creditNote.approvalStatus === 'REQUIRED',
+        })),
+      ...workspace.purchaseReceipts
+        .filter((receipt) => receipt.total > limits.purchase)
+        .map((receipt) => ({
+          type: 'PURCHASE',
+          reference: receipt.number,
+          entityId: receipt.id,
+          status: 'POSTED',
+          amount: receipt.total,
+          limit: limits.purchase,
+          approvalStatus: receipt.approvalStatus,
+          requiresApproval: receipt.approvalStatus === 'REQUIRED',
+        })),
+      ...workspace.stockMoves
+        .filter((move) => move.type === 'ADJUSTMENT' && Math.abs(move.value) > limits.stockAdjustment)
+        .map((move) => ({
+          type: 'STOCK_ADJUSTMENT',
+          reference: move.reference,
+          entityId: move.id,
+          status: 'POSTED',
+          amount: Math.abs(move.value),
+          limit: limits.stockAdjustment,
+          approvalStatus: move.approvalStatus,
+          requiresApproval: move.approvalStatus === 'REQUIRED',
+        })),
+    ].sort((left, right) => right.amount - left.amount || left.reference.localeCompare(right.reference));
+    return { limits, rows, pending: rows.filter((row) => row.requiresApproval).length };
+  }
+
+  updateApprovalLimits(input: Partial<TenantSettings['approvalLimits']>, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const before = { ...(workspace.tenant.settings.approvalLimits ?? defaultApprovalLimits) };
+    const next = {
+      quote: input.quote !== undefined ? this.nonNegative(input.quote, 'Le plafond devis doit être nul ou positif') : before.quote,
+      creditNote: input.creditNote !== undefined ? this.nonNegative(input.creditNote, 'Le plafond avoir doit être nul ou positif') : before.creditNote,
+      purchase: input.purchase !== undefined ? this.nonNegative(input.purchase, 'Le plafond achat doit être nul ou positif') : before.purchase,
+      stockAdjustment: input.stockAdjustment !== undefined ? this.nonNegative(input.stockAdjustment, 'Le plafond ajustement stock doit être nul ou positif') : before.stockAdjustment,
+    };
+    workspace.tenant.settings.approvalLimits = next;
+    this.audit(workspace, 'tenant.approval-limits-updated', 'Tenant', workspace.tenant.id, { before, after: next });
+    return this.approvalLimitReview(workspace.tenant.id);
+  }
+
+  approveCreditNote(creditNoteId: string, tenantId?: string): CreditNote {
+    const workspace = this.workspace(tenantId);
+    const creditNote = workspace.creditNotes.find((candidate) => candidate.id === creditNoteId || candidate.number === creditNoteId);
+    if (!creditNote) throw new NotFoundException('Avoir introuvable');
+    creditNote.approvalStatus = 'APPROVED';
+    this.audit(workspace, 'credit-note.approved', 'CreditNote', creditNote.id, creditNote);
+    return creditNote;
+  }
+
+  approvePurchaseReceipt(receiptId: string, tenantId?: string): PurchaseReceipt {
+    const workspace = this.workspace(tenantId);
+    const receipt = workspace.purchaseReceipts.find((candidate) => candidate.id === receiptId || candidate.number === receiptId);
+    if (!receipt) throw new NotFoundException('Réception achat introuvable');
+    receipt.approvalStatus = 'APPROVED';
+    this.audit(workspace, 'purchase-receipt.approved', 'PurchaseReceipt', receipt.id, receipt);
+    return receipt;
+  }
+
+  approveStockMove(moveId: string, tenantId?: string): StockMove {
+    const workspace = this.workspace(tenantId);
+    const move = workspace.stockMoves.find((candidate) => candidate.id === moveId || candidate.reference === moveId);
+    if (!move) throw new NotFoundException('Mouvement de stock introuvable');
+    move.approvalStatus = 'APPROVED';
+    this.audit(workspace, 'stock-move.approved', 'StockMove', move.id, move);
+    return move;
   }
 
   dashboardFilters(tenantId?: string) {
@@ -1268,6 +1374,7 @@ export class ErpStoreService {
       throw new BadRequestException('Le stock ne peut pas devenir négatif');
     }
     const move = this.stockMove(workspace, product, quantity, product.weightedAverageCost, 'ADJUSTMENT', reason);
+    move.approvalStatus = this.approvalStatus(workspace, 'stockAdjustment', Math.abs(move.value));
     this.audit(workspace, 'stock.adjusted', 'StockMove', move.id, move);
     return move;
   }
@@ -1302,6 +1409,7 @@ export class ErpStoreService {
       date: today(),
       lines,
       total: r2(total),
+      approvalStatus: this.approvalStatus(workspace, 'purchase', r2(total)),
     };
     workspace.purchaseReceipts.push(receipt);
     this.postJournal(workspace, `Réception achat ${number}`, number, [
@@ -1327,7 +1435,9 @@ export class ErpStoreService {
       validUntil: input.validUntil ?? today(),
       lines,
       totals: this.totals(lines),
+      approvalStatus: 'AUTO_APPROVED',
     };
+    quote.approvalStatus = this.approvalStatus(workspace, 'quote', quote.totals.total);
     workspace.quotes.push(quote);
     this.audit(workspace, 'quote.created', 'Quote', quote.id, quote);
     return quote;
@@ -1350,12 +1460,14 @@ export class ErpStoreService {
     if (input.lines) {
       quote.lines = this.documentLines(workspace, input.lines);
       quote.totals = this.totals(quote.lines);
+      quote.approvalStatus = this.approvalStatus(workspace, 'quote', quote.totals.total);
     }
     if (input.validUntil) {
       quote.validUntil = input.validUntil;
     }
     quote.status = 'DRAFT';
     quote.approvedAt = undefined;
+    quote.approvalStatus = this.approvalStatus(workspace, 'quote', quote.totals.total);
     quote.revision += 1;
     this.audit(workspace, 'quote.revised', 'Quote', quote.id, quote);
     return quote;
@@ -1368,6 +1480,7 @@ export class ErpStoreService {
       throw new BadRequestException('Le devis ne peut pas être approuvé');
     }
     quote.status = 'APPROVED';
+    quote.approvalStatus = 'APPROVED';
     quote.approvedAt = today();
     this.audit(workspace, 'quote.approved', 'Quote', quote.id, quote);
     return quote;
@@ -1620,6 +1733,7 @@ export class ErpStoreService {
       status: 'POSTED',
       date: today(),
       reason: this.nonEmpty(input.reason ?? 'Avoir client', 'Le motif de l’avoir est obligatoire'),
+      approvalStatus: this.approvalStatus(workspace, 'creditNote', totals.total),
       lines,
       totals,
     };
@@ -2085,10 +2199,16 @@ export class ErpStoreService {
       unitCost,
       value: r2(quantity * unitCost),
       reference,
+      approvalStatus: 'AUTO_APPROVED',
       createdAt: today(),
     };
     workspace.stockMoves.push(move);
     return move;
+  }
+
+  private approvalStatus(workspace: TenantWorkspace, key: keyof TenantSettings['approvalLimits'], amount: number): 'AUTO_APPROVED' | 'REQUIRED' {
+    const limit = (workspace.tenant.settings.approvalLimits ?? defaultApprovalLimits)[key];
+    return limit > 0 && amount > limit ? 'REQUIRED' : 'AUTO_APPROVED';
   }
 
   private invoiceCreditTotal(workspace: TenantWorkspace, invoiceId: string): number {

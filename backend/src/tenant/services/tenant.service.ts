@@ -21,6 +21,14 @@ export class TenantService {
     return this.store.dashboardFilters();
   }
 
+  approvalLimits() {
+    return this.store.approvalLimitReview();
+  }
+
+  updateApprovalLimits(data: any) {
+    return this.store.updateApprovalLimits(data);
+  }
+
   profile() {
     return this.store.companyProfile();
   }

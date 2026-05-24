@@ -66,6 +66,37 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(store.createInvoice({ customerId: creditedCustomer.id, lines: [{ productId: 'prd-2', quantity: 1 }] }).number).toMatch(/^FAC-\d{4}-00004$/);
   });
 
+  it('applies configurable approval limits to quotes, credit notes, purchases, and stock adjustments', () => {
+    store.updateApprovalLimits({ quote: 500, creditNote: 100, purchase: 500, stockAdjustment: 100 });
+    const quote = store.createQuote({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    const invoice = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    const creditNote = store.createCreditNote({ invoiceId: invoice.id, lines: [{ productId: 'prd-2', quantity: 0.25 }] });
+    const receipt = store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-1', quantity: 1, unitCost: 600 }] });
+    const adjustment = store.adjustStock('prd-1', 1, 'Ajustement approbation');
+
+    const review = store.approvalLimitReview();
+
+    expect(quote.approvalStatus).toBe('REQUIRED');
+    expect(creditNote.approvalStatus).toBe('REQUIRED');
+    expect(receipt.approvalStatus).toBe('REQUIRED');
+    expect(adjustment.approvalStatus).toBe('REQUIRED');
+    expect(review.pending).toBeGreaterThanOrEqual(4);
+    expect(review.rows.map((row) => row.type)).toEqual(expect.arrayContaining(['QUOTE', 'CREDIT_NOTE', 'PURCHASE', 'STOCK_ADJUSTMENT']));
+
+    store.approveQuote(quote.id);
+    store.approveCreditNote(creditNote.id);
+    store.approvePurchaseReceipt(receipt.id);
+    store.approveStockMove(adjustment.id);
+
+    expect(store.getQuote(quote.id).approvalStatus).toBe('APPROVED');
+    expect(store.approvalLimitReview().rows.filter((row) => row.requiresApproval)).toHaveLength(0);
+    expect(() => store.updateApprovalLimits({ purchase: -1 })).toThrow(BadRequestException);
+
+    store.updateApprovalLimits({ quote: quote.totals.total });
+    const exactLimitQuote = store.createQuote({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    expect(exactLimitQuote.approvalStatus).toBe('AUTO_APPROVED');
+  });
+
   it('revises, approves, exports, and converts a quote to order, delivery note, and invoice', () => {
     const quote = store.createQuote({
       customerId: 'cus-1',
