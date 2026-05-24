@@ -479,6 +479,30 @@ describe('ErpStoreService working ERP workflows', () => {
     })).toThrow(BadRequestException);
   });
 
+  it('tracks supplier risk notes, preferred flags, and document expiry reminders', () => {
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const supplier = store.addSupplier({
+      name: 'Preferred Risk Supplier',
+      preferred: true,
+      riskNotes: 'Attestation fiscale à renouveler avant achat.',
+      documentExpiries: [{ type: 'Attestation fiscale', expiresAt: tomorrow, reference: 'AF-2026' }],
+    });
+
+    const reminders = store.supplierRiskReminders();
+
+    expect(supplier.preferred).toBe(true);
+    expect(reminders).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        supplierId: supplier.id,
+        supplierName: 'Preferred Risk Supplier',
+        preferred: true,
+        riskNotes: 'Attestation fiscale à renouveler avant achat.',
+        expiringDocuments: [expect.objectContaining({ type: 'Attestation fiscale', daysUntilExpiry: 1 })],
+      }),
+    ]));
+    expect(() => store.updateSupplier(supplier.id, { documentExpiries: [{ type: '', expiresAt: 'bad-date' }] })).toThrow(BadRequestException);
+  });
+
   it('imports and exports leads CSV with validation summaries', () => {
     const result = store.importLeadsCsv([
       'customerName,stage,owner,source,nextActionDate,expectedValue',

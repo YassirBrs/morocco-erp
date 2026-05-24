@@ -625,7 +625,8 @@ button:disabled {
 }
 
 input,
-select {
+select,
+textarea {
   min-width: 0;
   width: 100%;
   min-height: 38px;
@@ -638,9 +639,14 @@ select {
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: var(--primary);
   outline: 2px solid var(--blue-soft);
+}
+
+textarea {
+  resize: vertical;
 }
 
 .checkField {
@@ -649,9 +655,16 @@ select:focus {
   gap: 7px;
 }
 
-.checkField input {
+.checkField input,
+.checkboxField input {
   width: auto;
   min-height: auto;
+}
+
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .tableWrap {
@@ -672,6 +685,25 @@ select:focus {
 .miniTable .warningText {
   color: var(--gold);
   font-weight: 700;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 7px;
+}
+
+.statusPill.success {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.statusPill.neutral {
+  background: var(--bg);
+  color: var(--muted);
 }
 
 .emptyState {

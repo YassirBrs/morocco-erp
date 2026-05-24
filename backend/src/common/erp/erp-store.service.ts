@@ -165,6 +165,9 @@ export class ErpStoreService {
           paymentTermsDays: 45,
           contacts: [{ name: 'Samir Achat', role: 'Commercial', email: 'sales@casa-import.ma', phone: '+212522111111' }],
           bankDetails: [{ bankName: 'Attijariwafa bank', rib: '007780000000000000000123' }],
+          preferred: true,
+          riskNotes: 'Contrat import à revoir avant renouvellement.',
+          documentExpiries: [{ type: 'Attestation fiscale', expiresAt: '2026-06-30', reference: 'AF-2026' }],
           active: true,
           createdAt: today(),
           updatedAt: today(),
@@ -782,6 +785,9 @@ export class ErpStoreService {
       paymentTermsDays: this.nonNegative(input.paymentTermsDays ?? 30, 'Le délai de paiement fournisseur doit être nul ou positif'),
       contacts: input.contacts ?? [],
       bankDetails: input.bankDetails ?? [],
+      preferred: input.preferred ?? false,
+      riskNotes: this.clean(input.riskNotes),
+      documentExpiries: this.validateSupplierDocumentExpiries(input.documentExpiries ?? []),
       active: input.active ?? true,
       createdAt: today(),
       updatedAt: today(),
@@ -824,6 +830,9 @@ export class ErpStoreService {
       this.validateBankDetails(input.bankDetails);
       supplier.bankDetails = input.bankDetails;
     }
+    if (input.preferred !== undefined) supplier.preferred = input.preferred;
+    if (input.riskNotes !== undefined) supplier.riskNotes = this.clean(input.riskNotes);
+    if (input.documentExpiries !== undefined) supplier.documentExpiries = this.validateSupplierDocumentExpiries(input.documentExpiries);
     if (input.active !== undefined) supplier.active = input.active;
     supplier.duplicateWarnings = this.supplierDuplicateWarnings(workspace, supplier);
     supplier.updatedAt = today();
@@ -877,6 +886,34 @@ export class ErpStoreService {
       }
     });
     return { created: created.length, failed: errors.length, errors, records: created };
+  }
+
+  supplierRiskReminders(tenantId?: string) {
+    const reminderWindowDays = 60;
+    return this.workspace(tenantId).suppliers
+      .filter((supplier) => supplier.active)
+      .map((supplier) => {
+        const documents = supplier.documentExpiries
+          .map((document) => ({
+            ...document,
+            daysUntilExpiry: this.daysUntil(document.expiresAt),
+          }))
+          .sort((left, right) => left.daysUntilExpiry - right.daysUntilExpiry);
+        const expiredDocuments = documents.filter((document) => document.daysUntilExpiry < 0);
+        const expiringDocuments = documents.filter((document) => document.daysUntilExpiry >= 0 && document.daysUntilExpiry <= reminderWindowDays);
+        return {
+          supplierId: supplier.id,
+          supplierName: supplier.name,
+          preferred: supplier.preferred,
+          riskNotes: supplier.riskNotes ?? '',
+          expiredDocuments,
+          expiringDocuments,
+          nextExpiryDate: documents[0]?.expiresAt,
+          nextExpiryDays: documents[0]?.daysUntilExpiry,
+        };
+      })
+      .filter((row) => row.preferred || row.riskNotes || row.expiredDocuments.length || row.expiringDocuments.length)
+      .sort((left, right) => (left.nextExpiryDays ?? 9999) - (right.nextExpiryDays ?? 9999) || left.supplierName.localeCompare(right.supplierName));
   }
 
   addLead(input: Partial<Lead> & { customerName: string; value?: number }, tenantId?: string): Lead {
@@ -2141,6 +2178,28 @@ export class ErpStoreService {
       bank.bankName = this.normalizeBankName(this.nonEmpty(bank.bankName, 'Le nom de la banque est obligatoire'));
       bank.rib = this.moroccanRib(this.nonEmpty(bank.rib, 'Le RIB fournisseur est obligatoire'));
     }
+  }
+
+  private validateSupplierDocumentExpiries(documents: Supplier['documentExpiries']): Supplier['documentExpiries'] {
+    return documents.map((document) => ({
+      type: this.nonEmpty(document.type, 'Le type du document fournisseur est obligatoire'),
+      expiresAt: this.isoDate(document.expiresAt, 'La date d’expiration du document fournisseur est obligatoire'),
+      reference: this.clean(document.reference),
+    }));
+  }
+
+  private isoDate(value: string | undefined, message: string): string {
+    const date = this.nonEmpty(value, message);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(`${date}T00:00:00Z`))) {
+      throw new BadRequestException('La date doit être au format AAAA-MM-JJ');
+    }
+    return date;
+  }
+
+  private daysUntil(date: string): number {
+    const todayMs = Date.parse(`${today()}T00:00:00Z`);
+    const targetMs = Date.parse(`${date}T00:00:00Z`);
+    return Math.ceil((targetMs - todayMs) / 86400000);
   }
 
   private normalizeBankName(value: string): string {

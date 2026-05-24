@@ -318,13 +318,29 @@
               <label class="field"><span>Délai paiement</span><input name="paymentTermsDays" type="number" min="0" value="30" /></label>
               <label class="field"><span>Banque</span><input name="bankName" placeholder="Banque" /></label>
               <label class="field"><span>RIB marocain</span><input name="rib" inputmode="numeric" pattern="[0-9\\s-]{24,}" placeholder="24 chiffres" /></label>
+              <label class="field checkboxField"><input name="preferred" type="checkbox" /> <span>Fournisseur préféré</span></label>
+              <label class="field"><span>Notes risque</span><textarea name="riskNotes" rows="2" placeholder="Documents, litiges, vigilance achats"></textarea></label>
+              <label class="field"><span>Document suivi</span><input name="documentType" placeholder="Attestation fiscale" /></label>
+              <label class="field"><span>Expiration document</span><input name="documentExpiresAt" type="date" /></label>
               <button type="submit">Ajouter fournisseur</button>
             </form>
             <div class="tableWrap">
               <table class="miniTable">
-                <thead><tr><th>Fournisseur</th><th>ICE</th><th>Délai</th><th>Banque</th></tr></thead>
+                <thead><tr><th>Fournisseur</th><th>ICE</th><th>Délai</th><th>Banque</th><th>Risque</th></tr></thead>
                 <tbody id="supplierRows"></tbody>
               </table>
+            </div>
+            <div class="analyticsBox">
+              <div class="statementHeader">
+                <span>Alertes fournisseurs</span>
+                <strong id="supplierReminderCount">0 alerte</strong>
+              </div>
+              <div class="tableWrap">
+                <table class="miniTable">
+                  <thead><tr><th>Fournisseur</th><th>Priorité</th><th>Document</th><th>Échéance</th></tr></thead>
+                  <tbody id="supplierReminderRows"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </section>
@@ -370,7 +386,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, leadAnalytics: [], quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, leadAnalytics: [], supplierReminders: [], quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -471,7 +487,7 @@
       }
 
       async function load() {
-        const [summary, stock, customers, products, leads, leadAnalytics, suppliers, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, products, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
@@ -479,6 +495,7 @@
           get('/crm/leads'),
           get('/crm/leads/analytics'),
           get('/inventory/suppliers'),
+          get('/inventory/suppliers/risk-reminders'),
           get('/tenant/setup-checklist'),
           get('/tenant/dashboard-filters'),
           get('/tenant/company-profile'),
@@ -498,6 +515,7 @@
         state.leads = leads;
         state.leadAnalytics = leadAnalytics;
         state.suppliers = suppliers;
+        state.supplierReminders = supplierReminders;
         state.statement = statement;
         state.dashboardFilters = dashboardFilters;
         state.profile = profile;
@@ -523,6 +541,7 @@
         renderDashboardFilters();
         renderSalesFlow();
         renderLeadAnalytics();
+        renderSupplierReminders();
         renderStatement();
         switchModuleView(state.activeView);
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
@@ -568,8 +587,9 @@
             <td>${supplier.ice || '-'}</td>
             <td>${supplier.paymentTermsDays} j</td>
             <td>${supplier.bankDetails?.[0]?.bankName || '-'}<small>${supplier.bankDetails?.[0]?.rib || ''}</small></td>
+            <td>${supplier.preferred ? '<span class="statusPill success">Préféré</span>' : '<span class="statusPill neutral">Standard</span>'}<small>${supplier.riskNotes || 'Aucune note'}</small></td>
           </tr>
-        `).join('') : emptyRow('Aucun fournisseur créé', 4);
+        `).join('') : emptyRow('Aucun fournisseur créé', 5);
         qs('#stockRows').innerHTML = stock.map((line) => `
           <tr>
             <td><strong>${line.sku}</strong></td>
@@ -694,6 +714,22 @@
             <td>${pct(row.lostRate)}</td>
           </tr>
         `).join('') : emptyRow('Aucune analytics prospect', 6);
+      }
+
+      function renderSupplierReminders() {
+        qs('#supplierReminderCount').textContent = `${state.supplierReminders.length} alerte${state.supplierReminders.length > 1 ? 's' : ''}`;
+        qs('#supplierReminderRows').innerHTML = state.supplierReminders.length ? state.supplierReminders.slice(0, 5).map((row) => {
+          const document = row.expiredDocuments?.[0] || row.expiringDocuments?.[0];
+          const priority = row.expiredDocuments?.length ? 'Expiré' : row.expiringDocuments?.length ? 'À renouveler' : row.preferred ? 'Préféré' : 'Risque';
+          return `
+            <tr>
+              <td><strong>${row.supplierName}</strong><small>${row.riskNotes || 'Suivi fournisseur actif'}</small></td>
+              <td>${priority}</td>
+              <td>${document?.type || '-'}</td>
+              <td>${document?.expiresAt || row.nextExpiryDate || '-'}</td>
+            </tr>
+          `;
+        }).join('') : emptyRow('Aucune alerte fournisseur', 4);
       }
 
       async function runBusinessSearch(query) {
@@ -988,6 +1024,8 @@
         const button = formEl.querySelector('button');
         const bankName = String(form.get('bankName') || '').trim();
         const rib = String(form.get('rib') || '').trim();
+        const documentType = String(form.get('documentType') || '').trim();
+        const documentExpiresAt = String(form.get('documentExpiresAt') || '').trim();
         button.disabled = true;
         clearMessage();
         try {
@@ -997,7 +1035,10 @@
             ifNumber: form.get('ifNumber'),
             email: form.get('email'),
             paymentTermsDays: formNumber(form, 'paymentTermsDays'),
-            bankDetails: bankName || rib ? [{ bankName, rib }] : []
+            bankDetails: bankName || rib ? [{ bankName, rib }] : [],
+            preferred: form.get('preferred') === 'on',
+            riskNotes: form.get('riskNotes'),
+            documentExpiries: documentType || documentExpiresAt ? [{ type: documentType, expiresAt: documentExpiresAt }] : []
           });
           formEl.reset();
           formEl.paymentTermsDays.value = 30;

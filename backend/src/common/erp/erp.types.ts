@@ -102,6 +102,9 @@ export interface Supplier {
   contacts: Array<{ name: string; role?: string; email?: string; phone?: string }>;
   bankDetails: Array<{ bankName: string; rib: string; iban?: string }>;
   duplicateWarnings?: string[];
+  preferred: boolean;
+  riskNotes?: string;
+  documentExpiries: Array<{ type: string; expiresAt: string; reference?: string }>;
   active: boolean;
   createdAt: string;
   updatedAt: string;
