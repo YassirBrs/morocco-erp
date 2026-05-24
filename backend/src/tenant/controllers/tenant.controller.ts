@@ -95,6 +95,7 @@ export class TenantController {
   @Post('accountant-review-comments/:id/resolve') resolveAccountantReviewComment(@Param('id') id: string) { return this.tenantService.resolveAccountantReviewComment(id); }
   @Get('scale-controls-readiness') scaleControlsReadiness() { return this.tenantService.scaleControlsReadiness(); }
   @Get('enterprise-depth-readiness') enterpriseDepthReadiness() { return this.tenantService.enterpriseDepthReadiness(); }
+  @Get('enterprise-operations-readiness') enterpriseOperationsReadiness() { return this.tenantService.enterpriseOperationsReadiness(); }
   @Get('branches') branchDashboard() { return this.tenantService.branchDashboard(); }
   @Post('branches') createBranch(@Body() body: any) { return this.tenantService.createBranch(body); }
   @Get('localization-settings') localizationSettings() { return this.tenantService.localizationSettings(); }

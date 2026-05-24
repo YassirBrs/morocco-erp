@@ -20,6 +20,9 @@ const api = readFileSync(new URL('../lib/api.ts', import.meta.url), 'utf8');
 const enterpriseDepthConfig = readFileSync(new URL('../features/enterprise-depth/enterprise-depth-feature-config.ts', import.meta.url), 'utf8');
 const enterpriseDepthFeaturePage = readFileSync(new URL('../features/enterprise-depth/enterprise-depth-feature-page.tsx', import.meta.url), 'utf8');
 const enterpriseDepthPageFiles = readdirSync(new URL('../pages/enterprise-depth', import.meta.url));
+const enterpriseOperationsConfig = readFileSync(new URL('../features/enterprise-operations/enterprise-operations-feature-config.ts', import.meta.url), 'utf8');
+const enterpriseOperationsFeaturePage = readFileSync(new URL('../features/enterprise-operations/enterprise-operations-feature-page.tsx', import.meta.url), 'utf8');
+const enterpriseOperationsPageFiles = readdirSync(new URL('../pages/enterprise-operations', import.meta.url));
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -540,4 +543,71 @@ test('Enterprise depth batch has one descriptive dedicated frontend page per fea
   assert.ok(enterpriseDepthFeaturePage.includes('EnterpriseDepthFeaturePage'), 'shared feature page component exists');
   assert.ok(enterpriseDepthConfig.includes('enterpriseDepthFeatureDefinitions'), 'feature definitions are centralized');
   assert.ok(page.includes('enterpriseDepthFeatureDefinitions'), 'dashboard links to dedicated feature pages');
+});
+
+test('Next primary workspace exposes 40-task Morocco enterprise operations controls batch', () => {
+  for (const text of ['Opérations entreprise Maroc', 'Transport', 'Provision stock', 'Paie banque', 'P&L agence', 'Achats, stock et transport', 'Recouvrement, POS et banque', 'RH, paie et conformité sociale', 'Production, flotte et projets', 'Portails, archives et déclarations', 'Pilotage, sécurité et marge']) {
+    assert.ok(page.includes(text), `${text} enterprise operations label is present`);
+  }
+  for (const marker of ['getEnterpriseOperationsReadiness', 'enterpriseOperations.transporterReconciliation', 'enterpriseOperations.payrollBankTransfer', 'enterpriseOperations.branchPnl', 'enterpriseOperations.auditAnomalies']) {
+    assert.ok(page.includes(marker), `${marker} enterprise operations helper is present`);
+  }
+  assert.ok(api.includes('/tenant/enterprise-operations-readiness'), 'enterprise operations endpoint is wired');
+  for (const token of ['transporterReconciliation', 'securityIncident', 'obsolescenceProvision', 'importVatRecovery', 'threeWayMatch', 'supplierPaymentRun', 'dunningTemplates', 'collectionCallLog', 'cashReceiptAudit', 'posZReport', 'bankReconciliationPdf', 'bankTransferAdapter', 'payrollBankTransfer', 'benefitInKind', 'endOfContract', 'occupationalHealth', 'disciplinaryWorkflow', 'headcountDashboard', 'componentShortage', 'subcontracting', 'downtimeAnalytics', 'mileageReimbursement', 'fuelCardImport', 'projectCommitments', 'timesheetApproval', 'portalPaymentPromise', 'supplierCertificateRenewal', 'accountantAnnotations', 'legalArchiveBundle', 'dgiVatPayload', 'irSalaryPayload', 'cnssAmendment', 'publicProcurement', 'retentionGuarantee', 'branchPnl', 'multiCompanyDashboard', 'securityChecklist', 'permissionSimulator', 'auditAnomalies', 'customerProfitability']) {
+    assert.ok(api.includes(token), `${token} enterprise operations data key is represented`);
+  }
+});
+
+test('Enterprise operations batch has one descriptive dedicated frontend page per feature', () => {
+  const expectedFiles = [
+    'transporter-invoice-reconciliation-page.tsx',
+    'warehouse-security-incident-log-page.tsx',
+    'inventory-obsolescence-provision-page.tsx',
+    'moroccan-import-vat-recovery-page.tsx',
+    'purchase-three-way-match-page.tsx',
+    'supplier-payment-run-approval-page.tsx',
+    'customer-dunning-email-templates-page.tsx',
+    'collection-call-log-page.tsx',
+    'cash-receipt-numbering-audit-page.tsx',
+    'pos-z-report-closure-page.tsx',
+    'bank-reconciliation-statement-pdf-page.tsx',
+    'bank-transfer-payment-file-adapter-page.tsx',
+    'payroll-bank-transfer-export-page.tsx',
+    'payroll-benefit-in-kind-tracking-page.tsx',
+    'payroll-end-of-contract-settlement-page.tsx',
+    'occupational-health-reminders-page.tsx',
+    'employee-disciplinary-workflow-page.tsx',
+    'hr-headcount-dashboard-page.tsx',
+    'production-component-shortage-forecast-page.tsx',
+    'production-subcontracting-workflow-page.tsx',
+    'maintenance-downtime-analytics-page.tsx',
+    'fleet-mileage-reimbursement-page.tsx',
+    'fleet-fuel-card-import-sandbox-page.tsx',
+    'project-procurement-commitment-report-page.tsx',
+    'project-timesheet-approval-workflow-page.tsx',
+    'customer-portal-payment-promise-page.tsx',
+    'supplier-portal-certificate-renewal-page.tsx',
+    'accountant-review-annotations-page.tsx',
+    'legal-archive-export-bundle-page.tsx',
+    'dgi-vat-declaration-payload-page.tsx',
+    'ir-salary-declaration-payload-page.tsx',
+    'cnss-declaration-amendment-workflow-page.tsx',
+    'moroccan-public-procurement-customer-page.tsx',
+    'construction-retention-guarantee-tracking-page.tsx',
+    'branch-profit-center-pnl-page.tsx',
+    'multi-company-accountant-dashboard-page.tsx',
+    'tenant-security-review-checklist-page.tsx',
+    'role-permission-simulator-page.tsx',
+    'audit-anomaly-detector-page.tsx',
+    'customer-profitability-report-page.tsx',
+  ];
+  assert.equal(enterpriseOperationsPageFiles.filter((file) => file.endsWith('-page.tsx')).length, 40);
+  for (const file of expectedFiles) {
+    assert.ok(enterpriseOperationsPageFiles.includes(file), `${file} dedicated page exists`);
+    const source = readFileSync(new URL(`../pages/enterprise-operations/${file}`, import.meta.url), 'utf8');
+    assert.ok(source.includes('makeEnterpriseOperationsServerSideProps'), `${file} has server-side data wiring`);
+  }
+  assert.ok(enterpriseOperationsFeaturePage.includes('EnterpriseOperationsFeaturePage'), 'shared operations feature page component exists');
+  assert.ok(enterpriseOperationsConfig.includes('enterpriseOperationsFeatureDefinitions'), 'operations feature definitions are centralized');
+  assert.ok(page.includes('enterpriseOperationsFeatureDefinitions'), 'dashboard links to dedicated operations feature pages');
 });

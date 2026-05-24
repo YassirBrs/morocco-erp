@@ -494,48 +494,88 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T388 P1 - Add customer onboarding risk questionnaire for ICE/IF/RC validation, sector, credit terms, and sanctions notes.
 - [x] T389 P1 - Add supplier onboarding risk questionnaire for tax status, CNSS certificate, RIB ownership, and contract evidence.
 - [x] T390 P1 - Add delivery proof photo OCR placeholder with manual validation, geotag, timestamp, and driver signature.
-- [ ] T391 P1 - Add transporter invoice reconciliation against route pricing, delivery proofs, penalties, and fuel surcharge.
-- [ ] T392 P1 - Add warehouse security incident log with product, quantity, CCTV reference, insurance claim, and stock adjustment proposal.
-- [ ] T393 P1 - Add inventory obsolescence provision proposal by age bucket, family, CUMP value, and accountant approval.
-- [ ] T394 P1 - Add Moroccan import VAT recovery tracker by DUM, customs receipt, supplier invoice, and deductible period.
-- [ ] T395 P1 - Add purchase three-way match between PO, receipt, supplier invoice, landed costs, and approval exceptions.
-- [ ] T396 P1 - Add supplier payment run approval with bank balance, due invoices, blocked disputes, and treasury forecast.
-- [ ] T397 P1 - Add customer dunning email template variants by French/Arabic preference, dunning level, and legal identifiers.
-- [ ] T398 P1 - Add collection call log with promise tracking, dispute escalation, next owner, and evidence attachments.
-- [ ] T399 P1 - Add cash receipt numbering audit for gaps, duplicates, branch series, and cashier accountability.
-- [ ] T400 P1 - Add POS Z-report closure with tax totals, cash/card split, refunds, and supervisor signature.
-- [ ] T401 P1 - Add bank reconciliation statement PDF with matched/unmatched lines, balances, and reviewer sign-off.
-- [ ] T402 P1 - Add bank transfer payment file adapter interface with bank format, approval chain, and status polling.
-- [ ] T403 P1 - Add payroll bank transfer export with employee RIB validation, net salary totals, and approval evidence.
-- [ ] T404 P1 - Add payroll benefit-in-kind tracking for car, housing, phone, and taxable base preview.
-- [ ] T405 P1 - Add payroll end-of-contract settlement with leave balance, indemnity placeholders, final payslip, and archive.
-- [ ] T406 P1 - Add occupational health document reminders with restricted access, renewal date, and HR evidence vault.
-- [ ] T407 P1 - Add employee disciplinary workflow with restricted notes, decision, appeal status, and legal evidence.
-- [ ] T408 P1 - Add HR headcount dashboard by contract type, city, department, salary band, and CNSS readiness.
-- [ ] T409 P1 - Add production component shortage forecast by BOM, open orders, reservations, and purchase lead time.
-- [ ] T410 P1 - Add production subcontracting workflow with supplier, components issued, receipt, quality check, and cost rollup.
-- [ ] T411 P1 - Add maintenance downtime analytics by asset, cause, spare parts, technician, and lost production estimate.
-- [ ] T412 P1 - Add fleet mileage reimbursement workflow with route, driver, rate, approval, and payroll/accounting linkage.
-- [ ] T413 P1 - Add fleet fuel card import sandbox with card number, vehicle, duplicate transaction, and exception preview.
-- [ ] T414 P1 - Add project procurement commitment report by budget, PO, receipt, supplier invoice, and remaining forecast.
-- [ ] T415 P1 - Add project timesheet approval workflow with employee, rate, billable flag, customer approval, and WIP impact.
-- [ ] T416 P1 - Add customer portal payment promise workflow with secure token, message thread, due date, and audit trail.
-- [ ] T417 P1 - Add supplier portal certificate renewal workflow with upload placeholder, validation status, and blocker alerts.
-- [ ] T418 P1 - Add accountant review annotations on invoices, journals, payroll runs, and tax declarations with resolution status.
-- [ ] T419 P1 - Add legal archive export bundle by fiscal year with manifest, evidence checksums, and restore verification.
-- [ ] T420 P1 - Add DGI VAT declaration sandbox payload builder with line totals, prorata, validation messages, and archive.
-- [ ] T421 P1 - Add IR salary declaration sandbox payload builder with payslip totals, employee identifiers, and validation messages.
-- [ ] T422 P1 - Add CNSS declaration amendment workflow with corrected lines, reason, approval, and Damancom archive.
-- [ ] T423 P1 - Add Moroccan public procurement customer flag with withholding/payment terms, documents, and exposure reporting.
-- [ ] T424 P1 - Add construction retention guarantee tracking with invoice holdback, release milestone, and accounting proposal.
-- [ ] T425 P1 - Add branch profit center P&L by sales, COGS, payroll allocation, rent, and shared overhead.
-- [ ] T426 P1 - Add multi-company accountant dashboard with compliance status, blockers, due declarations, and workload scoring.
-- [ ] T427 P1 - Add tenant security review checklist with MFA, API keys, inactive users, data exports, and admin actions.
-- [ ] T428 P1 - Add role permission simulator with module, action, branch, amount, and expected allow/deny explanation.
-- [ ] T429 P1 - Add audit anomaly detector for after-hours changes, large discounts, manual journals, and payroll edits.
-- [ ] T430 P1 - Add customer profitability report by invoice margin, support tickets, delivery cost, discounts, and payment delay.
+- [x] T391 P1 - Add transporter invoice reconciliation against route pricing, delivery proofs, penalties, and fuel surcharge.
+- [x] T392 P1 - Add warehouse security incident log with product, quantity, CCTV reference, insurance claim, and stock adjustment proposal.
+- [x] T393 P1 - Add inventory obsolescence provision proposal by age bucket, family, CUMP value, and accountant approval.
+- [x] T394 P1 - Add Moroccan import VAT recovery tracker by DUM, customs receipt, supplier invoice, and deductible period.
+- [x] T395 P1 - Add purchase three-way match between PO, receipt, supplier invoice, landed costs, and approval exceptions.
+- [x] T396 P1 - Add supplier payment run approval with bank balance, due invoices, blocked disputes, and treasury forecast.
+- [x] T397 P1 - Add customer dunning email template variants by French/Arabic preference, dunning level, and legal identifiers.
+- [x] T398 P1 - Add collection call log with promise tracking, dispute escalation, next owner, and evidence attachments.
+- [x] T399 P1 - Add cash receipt numbering audit for gaps, duplicates, branch series, and cashier accountability.
+- [x] T400 P1 - Add POS Z-report closure with tax totals, cash/card split, refunds, and supervisor signature.
+- [x] T401 P1 - Add bank reconciliation statement PDF with matched/unmatched lines, balances, and reviewer sign-off.
+- [x] T402 P1 - Add bank transfer payment file adapter interface with bank format, approval chain, and status polling.
+- [x] T403 P1 - Add payroll bank transfer export with employee RIB validation, net salary totals, and approval evidence.
+- [x] T404 P1 - Add payroll benefit-in-kind tracking for car, housing, phone, and taxable base preview.
+- [x] T405 P1 - Add payroll end-of-contract settlement with leave balance, indemnity placeholders, final payslip, and archive.
+- [x] T406 P1 - Add occupational health document reminders with restricted access, renewal date, and HR evidence vault.
+- [x] T407 P1 - Add employee disciplinary workflow with restricted notes, decision, appeal status, and legal evidence.
+- [x] T408 P1 - Add HR headcount dashboard by contract type, city, department, salary band, and CNSS readiness.
+- [x] T409 P1 - Add production component shortage forecast by BOM, open orders, reservations, and purchase lead time.
+- [x] T410 P1 - Add production subcontracting workflow with supplier, components issued, receipt, quality check, and cost rollup.
+- [x] T411 P1 - Add maintenance downtime analytics by asset, cause, spare parts, technician, and lost production estimate.
+- [x] T412 P1 - Add fleet mileage reimbursement workflow with route, driver, rate, approval, and payroll/accounting linkage.
+- [x] T413 P1 - Add fleet fuel card import sandbox with card number, vehicle, duplicate transaction, and exception preview.
+- [x] T414 P1 - Add project procurement commitment report by budget, PO, receipt, supplier invoice, and remaining forecast.
+- [x] T415 P1 - Add project timesheet approval workflow with employee, rate, billable flag, customer approval, and WIP impact.
+- [x] T416 P1 - Add customer portal payment promise workflow with secure token, message thread, due date, and audit trail.
+- [x] T417 P1 - Add supplier portal certificate renewal workflow with upload placeholder, validation status, and blocker alerts.
+- [x] T418 P1 - Add accountant review annotations on invoices, journals, payroll runs, and tax declarations with resolution status.
+- [x] T419 P1 - Add legal archive export bundle by fiscal year with manifest, evidence checksums, and restore verification.
+- [x] T420 P1 - Add DGI VAT declaration sandbox payload builder with line totals, prorata, validation messages, and archive.
+- [x] T421 P1 - Add IR salary declaration sandbox payload builder with payslip totals, employee identifiers, and validation messages.
+- [x] T422 P1 - Add CNSS declaration amendment workflow with corrected lines, reason, approval, and Damancom archive.
+- [x] T423 P1 - Add Moroccan public procurement customer flag with withholding/payment terms, documents, and exposure reporting.
+- [x] T424 P1 - Add construction retention guarantee tracking with invoice holdback, release milestone, and accounting proposal.
+- [x] T425 P1 - Add branch profit center P&L by sales, COGS, payroll allocation, rent, and shared overhead.
+- [x] T426 P1 - Add multi-company accountant dashboard with compliance status, blockers, due declarations, and workload scoring.
+- [x] T427 P1 - Add tenant security review checklist with MFA, API keys, inactive users, data exports, and admin actions.
+- [x] T428 P1 - Add role permission simulator with module, action, branch, amount, and expected allow/deny explanation.
+- [x] T429 P1 - Add audit anomaly detector for after-hours changes, large discounts, manual journals, and payroll edits.
+- [x] T430 P1 - Add customer profitability report by invoice margin, support tickets, delivery cost, discounts, and payment delay.
 - [ ] T431 P1 - Add supplier profitability and risk report by purchase volume, disputes, lead time, price variance, and documents.
 - [ ] T432 P1 - Add SaaS onboarding wizard state persistence with completed steps, owner, deadline, and blocker escalation.
 - [ ] T433 P1 - Add training checklist by role with completed lessons, failed actions, module adoption, and support nudges.
 - [ ] T434 P1 - Add tenant success score combining activation, data quality, compliance, support SLA, and payment status.
 - [ ] T435 P1 - Add competitor migration ROI calculator comparing license cost, implementation time, feature gaps, and local compliance fit.
+- [ ] T436 P1 - Add Moroccan SME cashflow stress test by VAT due date, payroll due date, supplier aging, and bank balance.
+- [ ] T437 P1 - Add certified accountant collaboration timeline with document requests, answers, blockers, and sign-off trail.
+- [ ] T438 P1 - Add customer credit committee pack with exposure, guarantees, payment history, litigation, and proposed limit.
+- [ ] T439 P1 - Add supplier renewal scorecard with documents, pricing trend, delivery SLA, disputes, and negotiated terms.
+- [ ] T440 P1 - Add branch stock transfer profitability impact with freight, shrinkage, destination margin, and approval route.
+- [ ] T441 P1 - Add restaurant/hospitality POS service charge workflow with VAT split, cashier close, and tip accounting proposal.
+- [ ] T442 P1 - Add retail loyalty liability ledger with earned points, redemption, expiry, and accounting provision preview.
+- [ ] T443 P1 - Add school/private education billing cycle with registration fees, monthly invoices, discounts, and parent portal promises.
+- [ ] T444 P1 - Add clinic service invoicing compliance with practitioner, acte, insurance share, patient share, and archive evidence.
+- [ ] T445 P1 - Add construction progress billing certificate workflow with BOQ line, retention, tax, and client approval.
+- [ ] T446 P1 - Add importer landed cost variance analysis by DUM, exchange rate, transit invoice, and stock valuation delta.
+- [ ] T447 P1 - Add exporter foreign currency invoice pack with exchange rate, customs proof, VAT exemption note, and bank repatriation.
+- [ ] T448 P1 - Add cooperative/agri purchase intake workflow with producer identity, weighing, quality grade, and withholding note.
+- [ ] T449 P1 - Add manufacturing scrap cost recovery workflow with reason, responsible center, rework, and accounting recovery proposal.
+- [ ] T450 P1 - Add service company retainer revenue recognition schedule with contract, consumed hours, deferred revenue, and invoice trigger.
+- [ ] T451 P1 - Add SaaS plan downgrade risk simulator with module locks, data limits, exports, and customer communication.
+- [ ] T452 P1 - Add tenant legal identity change workflow with RC/ICE/IF proof, approval, historical invoice protection, and audit.
+- [ ] T453 P1 - Add data residency checklist for Moroccan customers with storage region, backups, access logs, and subcontractor register.
+- [ ] T454 P1 - Add incident response report builder with impact, timeline, affected tenants, remediation, and customer notices.
+- [ ] T455 P1 - Add release readiness gate with migrations, tests, rollback plan, support notes, and customer-visible changes.
+- [ ] T456 P1 - Add AI bookkeeping suggestion queue with source document, proposed journal, confidence, reviewer decision, and audit.
+- [ ] T457 P1 - Add OCR vendor benchmark dashboard with accuracy, cost, latency, Arabic/French support, and fallback rule.
+- [ ] T458 P1 - Add bank feed consent lifecycle with mandate, expiration, refresh, revoked state, and evidence archive.
+- [ ] T459 P1 - Add e-invoicing readiness gap tracker with legal mentions, signature, archiving, numbering, and adapter status.
+- [ ] T460 P1 - Add payroll rule pack version diff viewer with old/new CNSS, AMO, IR, effective date, and impacted employees.
+- [ ] T461 P1 - Add VAT audit trail explorer from invoice line to declaration line, payment, archive, and accountant note.
+- [ ] T462 P1 - Add fixed asset depreciation module with acquisition, component split, fiscal method, disposal, and journal proposal.
+- [ ] T463 P1 - Add leasing contract tracker with payment schedule, option value, VAT treatment, and accounting classification.
+- [ ] T464 P1 - Add insurance policy register with covered assets, premiums, claims, expiry alerts, and document vault.
+- [ ] T465 P1 - Add petty cash replenishment workflow with receipts, caps, reviewer, journal preview, and cashbox impact.
+- [ ] T466 P1 - Add corporate card expense import with cardholder, merchant, VAT eligibility, duplicate detection, and approval.
+- [ ] T467 P1 - Add employee travel mission workflow with per diem, transport, lodging, client billable flag, and settlement.
+- [ ] T468 P1 - Add customer contract SLA penalty tracker with breach evidence, invoice adjustment, approval, and legal note.
+- [ ] T469 P1 - Add supplier rebate accrual tracker with purchase thresholds, credit note expectation, period close, and evidence.
+- [ ] T470 P1 - Add inventory reservation expiry workflow with sales order, customer priority, release date, and stock availability.
+- [ ] T471 P1 - Add consignment stock workflow with owner, receipt, consumption, supplier invoice trigger, and valuation exclusion.
+- [ ] T472 P1 - Add warranty reserve calculation with sales family, claim rate, repair cost, and accounting provision.
+- [ ] T473 P1 - Add after-sales RMA workflow with customer proof, serial/lot, repair decision, credit note link, and stock movement.
+- [ ] T474 P1 - Add subscription billing proration for SaaS customers with plan change, period split, VAT, and invoice note.
+- [ ] T475 P1 - Add Moroccan competitor battlecard dashboard by vertical, feature gap, price objection, compliance proof, and win/loss reason.

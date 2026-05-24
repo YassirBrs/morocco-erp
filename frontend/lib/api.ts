@@ -318,6 +318,7 @@ export type AccountingRiskReadiness = {
 
 export type ScaleControlsReadiness = Record<string, any>;
 export type EnterpriseDepthReadiness = Record<string, any>;
+export type EnterpriseOperationsReadiness = Record<string, any>;
 
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
@@ -852,5 +853,50 @@ export async function getEnterpriseDepthReadiness(): Promise<EnterpriseDepthRead
     customerRiskQuestionnaire: { items: [] },
     supplierRiskQuestionnaire: { items: [] },
     deliveryOcr: { ocrStatus: 'PLACEHOLDER_READY' },
+  });
+}
+
+export async function getEnterpriseOperationsReadiness(): Promise<EnterpriseOperationsReadiness> {
+  return getJson('/tenant/enterprise-operations-readiness', {
+    transporterReconciliation: { reconciliationStatus: 'NEEDS_REVIEW', invoiceAmount: 0 },
+    securityIncident: { status: 'OPEN', stockAdjustmentProposal: {} },
+    obsolescenceProvision: { rows: [], totalProvision: 0 },
+    importVatRecovery: { rows: [] },
+    threeWayMatch: { status: 'MATCHED', approvalExceptions: [] },
+    supplierPaymentRun: { approvalStatus: 'AUTO_APPROVED', treasuryForecast: 0 },
+    dunningTemplates: { variants: [] },
+    collectionCallLog: { rows: [] },
+    cashReceiptAudit: { gaps: [], duplicates: [] },
+    posZReport: { closureStatus: 'SIGNED', cashCardSplit: {} },
+    bankReconciliationPdf: { matchedLines: 0, unmatchedLines: 0 },
+    bankTransferAdapter: { submissionState: 'PENDING_CREDENTIALS', statusPolling: [] },
+    payrollBankTransfer: { rows: [], netSalaryTotal: 0 },
+    benefitInKind: { benefits: [], taxableBasePreview: 0 },
+    endOfContract: { finalPayslipStatus: 'PREPARED' },
+    occupationalHealth: { rows: [] },
+    disciplinaryWorkflow: { decision: 'WARNING_PENDING_REVIEW' },
+    headcountDashboard: { rows: [], cnssReadiness: 'READY' },
+    componentShortage: { rows: [] },
+    subcontracting: { receiptStatus: 'WAITING_SUBCONTRACTOR' },
+    downtimeAnalytics: { rows: [] },
+    mileageReimbursement: { amount: 0 },
+    fuelCardImport: { rows: [], exceptionPreview: [] },
+    projectCommitments: { remainingForecast: 0 },
+    timesheetApproval: { entries: [], approvalStatus: 'MANAGER_APPROVED' },
+    portalPaymentPromise: { messageThread: [] },
+    supplierCertificateRenewal: { blockerAlerts: [] },
+    accountantAnnotations: { comments: [] },
+    legalArchiveBundle: { manifest: [], restoreVerification: false },
+    dgiVatPayload: { validationMessages: [] },
+    irSalaryPayload: { employeeIdentifiers: [] },
+    cnssAmendment: { status: 'AMENDMENT_READY' },
+    publicProcurement: { exposure: 0 },
+    retentionGuarantee: { holdback: 0 },
+    branchPnl: { pnl: 0 },
+    multiCompanyDashboard: { rows: [] },
+    securityChecklist: { checks: [] },
+    permissionSimulator: { expected: 'DENY' },
+    auditAnomalies: { rows: [], summary: {} },
+    customerProfitability: { rows: [] },
   });
 }

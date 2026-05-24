@@ -5,6 +5,7 @@ import {
   getDocumentOperations,
   getEnterpriseControlReadiness,
   getEnterpriseDepthReadiness,
+  getEnterpriseOperationsReadiness,
   getGovernanceReadiness,
   getGrowthControlReadiness,
   getInvoices,
@@ -23,6 +24,7 @@ import {
   searchBusiness,
 } from '../lib/api';
 import { enterpriseDepthFeatureDefinitions } from '../features/enterprise-depth/enterprise-depth-feature-config';
+import { enterpriseOperationsFeatureDefinitions } from '../features/enterprise-operations/enterprise-operations-feature-config';
 
 const formatMad = (value: number) =>
   new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(value);
@@ -51,7 +53,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -74,6 +76,7 @@ export default async function DashboardPage() {
     getAccountingRiskReadiness(),
     getScaleControlsReadiness(),
     getEnterpriseDepthReadiness(),
+    getEnterpriseOperationsReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -748,6 +751,76 @@ export default async function DashboardPage() {
           </div>
           <div className="featureLinks" aria-label="Pages dédiées profondeur entreprise">
             {enterpriseDepthFeatureDefinitions.map((feature) => (
+              <a key={feature.key} href={feature.route}>{feature.title}</a>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Opérations entreprise Maroc batch">
+          <PanelHeader title="Opérations entreprise Maroc" action="Piloter risques" />
+          <div className="reportGrid">
+            <Metric label="Transport" value={enterpriseOperations.transporterReconciliation.reconciliationStatus} />
+            <Metric label="Provision stock" value={formatMad(enterpriseOperations.obsolescenceProvision.totalProvision)} />
+            <Metric label="Paie banque" value={formatMad(enterpriseOperations.payrollBankTransfer.netSalaryTotal)} />
+            <Metric label="P&L agence" value={formatMad(enterpriseOperations.branchPnl.pnl)} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Achats, stock et transport" rows={[
+              `Transporteur ${enterpriseOperations.transporterReconciliation.reconciliationStatus} · ${formatMad(enterpriseOperations.transporterReconciliation.invoiceAmount)}`,
+              `Incident dépôt ${enterpriseOperations.securityIncident.status}`,
+              `Provision obsolescence ${enterpriseOperations.obsolescenceProvision.rows.length} ligne(s)`,
+              `TVA import ${enterpriseOperations.importVatRecovery.rows.length} DUM`,
+              `Three-way match ${enterpriseOperations.threeWayMatch.status}`,
+              `Paiements fournisseurs ${enterpriseOperations.supplierPaymentRun.approvalStatus}`,
+            ]} empty="-" />
+            <MiniList title="Recouvrement, POS et banque" rows={[
+              `Templates relance ${enterpriseOperations.dunningTemplates.variants.length}`,
+              `Appels recouvrement ${enterpriseOperations.collectionCallLog.rows.length}`,
+              `Audit reçus gaps ${enterpriseOperations.cashReceiptAudit.gaps.length}`,
+              `Z-report ${enterpriseOperations.posZReport.closureStatus}`,
+              `PDF rapprochement ${enterpriseOperations.bankReconciliationPdf.matchedLines} ligne(s)`,
+              `Adapter virement ${enterpriseOperations.bankTransferAdapter.submissionState}`,
+            ]} empty="-" />
+            <MiniList title="RH, paie et conformité sociale" rows={[
+              `Export banque paie ${enterpriseOperations.payrollBankTransfer.rows.length} salarié(s)`,
+              `Avantages en nature ${enterpriseOperations.benefitInKind.benefits.length}`,
+              `Solde tout compte ${enterpriseOperations.endOfContract.finalPayslipStatus}`,
+              `Santé au travail ${enterpriseOperations.occupationalHealth.rows.length}`,
+              `Discipline ${enterpriseOperations.disciplinaryWorkflow.decision}`,
+              `CNSS RH ${enterpriseOperations.headcountDashboard.cnssReadiness}`,
+            ]} empty="-" />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Production, flotte et projets" rows={[
+              `Ruptures composants ${enterpriseOperations.componentShortage.rows.length}`,
+              `Sous-traitance ${enterpriseOperations.subcontracting.receiptStatus}`,
+              `Downtime ${enterpriseOperations.downtimeAnalytics.rows.length}`,
+              `Remboursement km ${formatMad(enterpriseOperations.mileageReimbursement.amount)}`,
+              `Cartes carburant exceptions ${enterpriseOperations.fuelCardImport.exceptionPreview.length}`,
+              `Engagement projet ${formatMad(enterpriseOperations.projectCommitments.remainingForecast)}`,
+              `Timesheets ${enterpriseOperations.timesheetApproval.approvalStatus}`,
+            ]} empty="-" />
+            <MiniList title="Portails, archives et déclarations" rows={[
+              `Promesse portail ${enterpriseOperations.portalPaymentPromise.messageThread.length} message(s)`,
+              `Certificats fournisseur ${enterpriseOperations.supplierCertificateRenewal.blockerAlerts.length}`,
+              `Annotations comptables ${enterpriseOperations.accountantAnnotations.comments.length}`,
+              `Archive légale ${enterpriseOperations.legalArchiveBundle.restoreVerification ? 'vérifiée' : 'à contrôler'}`,
+              `Payload TVA messages ${enterpriseOperations.dgiVatPayload.validationMessages.length}`,
+              `Payload IR salariés ${enterpriseOperations.irSalaryPayload.employeeIdentifiers.length}`,
+              `Amendement CNSS ${enterpriseOperations.cnssAmendment.status}`,
+            ]} empty="-" />
+            <MiniList title="Pilotage, sécurité et marge" rows={[
+              `Marché public exposition ${formatMad(enterpriseOperations.publicProcurement.exposure)}`,
+              `Retenue garantie ${formatMad(enterpriseOperations.retentionGuarantee.holdback)}`,
+              `Multi-société ${enterpriseOperations.multiCompanyDashboard.rows.length}`,
+              `Checklist sécurité ${enterpriseOperations.securityChecklist.checks.length}`,
+              `Permission ${enterpriseOperations.permissionSimulator.expected}`,
+              `Anomalies audit ${enterpriseOperations.auditAnomalies.rows.length}`,
+              `Profitabilité clients ${enterpriseOperations.customerProfitability.rows.length}`,
+            ]} empty="-" />
+          </div>
+          <div className="featureLinks" aria-label="Pages dédiées opérations entreprise">
+            {enterpriseOperationsFeatureDefinitions.map((feature) => (
               <a key={feature.key} href={feature.route}>{feature.title}</a>
             ))}
           </div>
