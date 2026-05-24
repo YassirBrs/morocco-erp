@@ -264,6 +264,8 @@
               </div>
               <div class="headerActions">
                 <span id="leadCount" class="badge">0</span>
+                <button id="exportLeadsCsv" type="button">Exporter CSV prospects</button>
+                <button id="importLeadsCsv" type="button">Importer CSV démo</button>
                 <button id="convertLeadToQuote" type="button">Convertir en devis</button>
               </div>
             </div>
@@ -290,7 +292,11 @@
                 <p class="eyebrow">Achats</p>
                 <h2>Fournisseurs</h2>
               </div>
-              <span id="supplierCount" class="badge">0</span>
+              <div class="headerActions">
+                <span id="supplierCount" class="badge">0</span>
+                <button id="exportSuppliersCsv" type="button">Exporter CSV fournisseurs</button>
+                <button id="importSuppliersCsv" type="button">Importer CSV démo</button>
+              </div>
             </div>
             <form id="supplierForm" class="compactForm">
               <label class="field"><span>Fournisseur</span><input name="name" required placeholder="Fournisseur SA" /></label>
@@ -411,6 +417,12 @@
         const response = await fetch(API + path, { headers });
         if (!response.ok) throw new Error(await response.text());
         return response.json();
+      }
+
+      async function getText(path) {
+        const response = await fetch(API + path, { headers });
+        if (!response.ok) throw new Error(await response.text());
+        return response.text();
       }
 
       async function post(path, body) {
@@ -839,6 +851,22 @@
         });
       });
 
+      qs('#exportLeadsCsv').addEventListener('click', async () => {
+        await runAction('#exportLeadsCsv', 'Export...', async () => {
+          const csv = await getText('/crm/leads/export.csv');
+          showMessage('success', `Export CSV prospects prêt: ${csv.split('\\n').length - 1} ligne(s).`);
+        });
+      });
+
+      qs('#importLeadsCsv').addEventListener('click', async () => {
+        await runAction('#importLeadsCsv', 'Import...', async () => {
+          const result = await post('/crm/leads/import', {
+            csv: 'customerName,stage,owner,source,nextActionDate,expectedValue\nProspect CSV Démo,QUALIFIED,Nadia,Import CSV,2026-06-15,42000'
+          });
+          showMessage(result.failed ? 'warning' : 'success', `Import CSV prospects: ${result.created} créé(s), ${result.failed} rejeté(s).`);
+        });
+      });
+
       qs('#editProfile').addEventListener('click', async () => {
         await runAction('#editProfile', 'Modification...', async () => {
           const nextCity = state.profile?.tenant?.legalEntity?.city === 'Casablanca' ? 'Tanger' : 'Casablanca';
@@ -953,6 +981,22 @@
         } finally {
           button.disabled = false;
         }
+      });
+
+      qs('#exportSuppliersCsv').addEventListener('click', async () => {
+        await runAction('#exportSuppliersCsv', 'Export...', async () => {
+          const csv = await getText('/inventory/suppliers/export.csv');
+          showMessage('success', `Export CSV fournisseurs prêt: ${csv.split('\\n').length - 1} ligne(s).`);
+        });
+      });
+
+      qs('#importSuppliersCsv').addEventListener('click', async () => {
+        await runAction('#importSuppliersCsv', 'Import...', async () => {
+          const result = await post('/inventory/suppliers/import', {
+            csv: 'name,ice,ifNumber,email,paymentTermsDays,bankName,rib\nFournisseur CSV Démo,003333444555666,300400,csv-supplier@example.ma,60,awb,007 780 000000000000000654'
+          });
+          showMessage(result.failed ? 'warning' : 'success', `Import CSV fournisseurs: ${result.created} créé(s), ${result.failed} rejeté(s).`);
+        });
       });
 
       qs('#productForm').addEventListener('submit', async (event) => {

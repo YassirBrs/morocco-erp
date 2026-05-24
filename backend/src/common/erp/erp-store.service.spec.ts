@@ -479,6 +479,39 @@ describe('ErpStoreService working ERP workflows', () => {
     })).toThrow(BadRequestException);
   });
 
+  it('imports and exports leads CSV with validation summaries', () => {
+    const result = store.importLeadsCsv([
+      'customerName,stage,owner,source,nextActionDate,expectedValue',
+      'Hotel CSV,QUALIFIED,Nadia,Salon,2026-06-01,35000',
+      ',INVALID,,,,-1',
+    ].join('\n'));
+    const csv = store.exportLeadsCsv();
+
+    expect(result.created).toBe(1);
+    expect(result.failed).toBe(1);
+    expect(result.errors[0].row).toBe(3);
+    expect(result.records[0].customerName).toBe('Hotel CSV');
+    expect(csv).toContain('customerName,stage,owner,source,nextActionDate,expectedValue');
+    expect(csv).toContain('Hotel CSV,QUALIFIED,Nadia,Salon,2026-06-01,35000');
+  });
+
+  it('imports and exports supplier CSV with bank normalization and validation summaries', () => {
+    const result = store.importSuppliersCsv([
+      'name,ice,ifNumber,email,paymentTermsDays,bankName,rib',
+      'Supplier CSV,001000111222333,889900,csv@example.ma,60,awb,007 780 000000000000000321',
+      'Bad Supplier,,,,30,CIH,12345',
+    ].join('\n'));
+    const csv = store.exportSuppliersCsv();
+
+    expect(result.created).toBe(1);
+    expect(result.failed).toBe(1);
+    expect(result.errors[0]).toEqual(expect.objectContaining({ row: 3 }));
+    expect(result.records[0].bankDetails[0].bankName).toBe('Attijariwafa bank');
+    expect(result.records[0].bankDetails[0].rib).toBe('007780000000000000000321');
+    expect(csv).toContain('name,ice,ifNumber,email,paymentTermsDays,bankName,rib');
+    expect(csv).toContain('Supplier CSV,001000111222333,889900,csv@example.ma,60,Attijariwafa bank,007780000000000000000321');
+  });
+
   it('searches tenant business records across CRM, suppliers, products, invoices, and orders', () => {
     const lead = store.addLead({ customerName: 'Clinique Atlas Search', source: 'Web', expectedValue: 30000 });
     const order = store.createSalesOrder({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });

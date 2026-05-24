@@ -378,11 +378,14 @@ h2 {
 .headerActions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .headerActions button {
   min-height: 34px;
+  padding: 0 10px;
 }
 
 .badge {

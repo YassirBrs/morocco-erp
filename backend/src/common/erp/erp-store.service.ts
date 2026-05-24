@@ -840,6 +840,45 @@ export class ErpStoreService {
     return supplier;
   }
 
+  exportSuppliersCsv(tenantId?: string): string {
+    const workspace = this.workspace(tenantId);
+    return this.toCsv(
+      ['name', 'ice', 'ifNumber', 'email', 'paymentTermsDays', 'bankName', 'rib'],
+      workspace.suppliers.map((supplier) => ({
+        name: supplier.name,
+        ice: supplier.ice ?? '',
+        ifNumber: supplier.ifNumber ?? '',
+        email: supplier.email ?? '',
+        paymentTermsDays: supplier.paymentTermsDays,
+        bankName: supplier.bankDetails[0]?.bankName ?? '',
+        rib: supplier.bankDetails[0]?.rib ?? '',
+      })),
+    );
+  }
+
+  importSuppliersCsv(csv: string, tenantId?: string) {
+    const rows = this.parseCsv(csv);
+    const created: Supplier[] = [];
+    const errors: Array<{ row: number; message: string }> = [];
+    rows.forEach((row, index) => {
+      try {
+        const bankName = this.clean(row.bankName);
+        const rib = this.clean(row.rib);
+        created.push(this.addSupplier({
+          name: row.name,
+          ice: row.ice,
+          ifNumber: row.ifNumber,
+          email: row.email,
+          paymentTermsDays: Number(row.paymentTermsDays || 30),
+          bankDetails: bankName || rib ? [{ bankName: bankName ?? '', rib: rib ?? '' }] : [],
+        }, tenantId));
+      } catch (error) {
+        errors.push({ row: index + 2, message: error instanceof Error ? error.message : 'Ligne fournisseur invalide' });
+      }
+    });
+    return { created: created.length, failed: errors.length, errors, records: created };
+  }
+
   addLead(input: Partial<Lead> & { customerName: string; value?: number }, tenantId?: string): Lead {
     const workspace = this.workspace(tenantId);
     const lead: Lead = {
@@ -909,6 +948,42 @@ export class ErpStoreService {
     });
 
     return { lead, customer, quote };
+  }
+
+  exportLeadsCsv(tenantId?: string): string {
+    const workspace = this.workspace(tenantId);
+    return this.toCsv(
+      ['customerName', 'stage', 'owner', 'source', 'nextActionDate', 'expectedValue'],
+      workspace.leads.map((lead) => ({
+        customerName: lead.customerName,
+        stage: lead.stage,
+        owner: lead.owner ?? '',
+        source: lead.source ?? '',
+        nextActionDate: lead.nextActionDate ?? '',
+        expectedValue: lead.expectedValue,
+      })),
+    );
+  }
+
+  importLeadsCsv(csv: string, tenantId?: string) {
+    const rows = this.parseCsv(csv);
+    const created: Lead[] = [];
+    const errors: Array<{ row: number; message: string }> = [];
+    rows.forEach((row, index) => {
+      try {
+        created.push(this.addLead({
+          customerName: row.customerName,
+          stage: row.stage as Lead['stage'],
+          owner: row.owner,
+          source: row.source,
+          nextActionDate: row.nextActionDate,
+          expectedValue: Number(row.expectedValue || 0),
+        }, tenantId));
+      } catch (error) {
+        errors.push({ row: index + 2, message: error instanceof Error ? error.message : 'Ligne prospect invalide' });
+      }
+    });
+    return { created: created.length, failed: errors.length, errors, records: created };
   }
 
   addProduct(input: Partial<Product> & { sku: string; name: string; salePrice: number }, tenantId?: string): Product {
@@ -2092,6 +2167,53 @@ export class ErpStoreService {
       else if (text.includes(query)) best = Math.max(best, 45);
     }
     return best;
+  }
+
+  private parseCsv(csv: string): Array<Record<string, string>> {
+    const lines = String(csv ?? '').split(/\r?\n/).filter((line) => line.trim().length > 0);
+    if (lines.length < 2) return [];
+    const headers = this.csvLine(lines[0]).map((header) => header.trim());
+    return lines.slice(1).map((line) => {
+      const values = this.csvLine(line);
+      return headers.reduce<Record<string, string>>((record, header, index) => {
+        record[header] = values[index]?.trim() ?? '';
+        return record;
+      }, {});
+    });
+  }
+
+  private toCsv(headers: string[], rows: Array<Record<string, unknown>>): string {
+    return [
+      headers.join(','),
+      ...rows.map((row) => headers.map((header) => this.csvCell(row[header])).join(',')),
+    ].join('\n');
+  }
+
+  private csvCell(value: unknown): string {
+    const text = String(value ?? '');
+    return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  }
+
+  private csvLine(line: string): string[] {
+    const cells: string[] = [];
+    let cell = '';
+    let quoted = false;
+    for (let index = 0; index < line.length; index += 1) {
+      const char = line[index];
+      if (char === '"' && quoted && line[index + 1] === '"') {
+        cell += '"';
+        index += 1;
+      } else if (char === '"') {
+        quoted = !quoted;
+      } else if (char === ',' && !quoted) {
+        cells.push(cell);
+        cell = '';
+      } else {
+        cell += char;
+      }
+    }
+    cells.push(cell);
+    return cells;
   }
 
   private validateAddresses(addresses: Customer['addresses']): void {

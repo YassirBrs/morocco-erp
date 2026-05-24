@@ -5,6 +5,8 @@ import { CrmService } from '../services/crm.service';
 export class CrmController {
   constructor(private readonly crmService: CrmService) {}
   @Get('leads') list() { return this.crmService.listLeads(); }
+  @Get('leads/export.csv') exportLeadsCsv() { return this.crmService.exportLeadsCsv(); }
+  @Post('leads/import') importLeadsCsv(@Body() body: { csv?: string }) { return this.crmService.importLeadsCsv(body); }
   @Post('leads') create(@Body() body: any) { return this.crmService.createLead(body); }
   @Patch('leads/:id') updateLead(@Param('id') id: string, @Body() body: any) { return this.crmService.updateLead(id, body); }
   @Post('leads/:id/quote') convertLeadToQuote(@Param('id') id: string, @Body() body: any) { return this.crmService.convertLeadToQuote(id, body); }

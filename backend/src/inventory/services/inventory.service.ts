@@ -16,6 +16,8 @@ export class InventoryService {
   createSupplier(data: any) { return this.store.addSupplier(data); }
   updateSupplier(id: string, data: any) { return this.store.updateSupplier(id, data); }
   archiveSupplier(id: string) { return this.store.archiveSupplier(id); }
+  exportSuppliersCsv() { return this.store.exportSuppliersCsv(); }
+  importSuppliersCsv(data: { csv?: string }) { return this.store.importSuppliersCsv(data.csv ?? ''); }
   listWarehouses() { return this.store.listWarehouses(); }
   adjustStock(productId: string, qty: number, reason?: string) { return this.store.adjustStock(productId, qty, reason); }
   receivePurchase(data: any) { return this.store.createPurchaseReceipt(data); }
