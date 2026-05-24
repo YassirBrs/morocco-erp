@@ -523,6 +523,32 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(store.supplierRiskReminders({ filter: 'noted' }).map((row) => row.supplierName)).toContain('Noted Only Supplier');
   });
 
+  it('adds supplier document upload placeholders linked to expiry reminders', () => {
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const supplier = store.addSupplier({ name: 'Document Placeholder Supplier' });
+
+    const result = store.addSupplierDocumentPlaceholder(supplier.id, {
+      type: 'Attestation CNSS',
+      expiresAt: tomorrow,
+      fileName: 'attestation-cnss.pdf',
+    });
+
+    expect(result.document).toMatchObject({
+      type: 'Attestation CNSS',
+      expiresAt: tomorrow,
+      fileName: 'attestation-cnss.pdf',
+      uploadStatus: 'PLACEHOLDER',
+      uploadedAt: new Date().toISOString().slice(0, 10),
+    });
+    expect(result.document.storageKey).toContain(`suppliers/${supplier.id}/documents/doc-`);
+    expect(store.supplierRiskReminders({ filter: 'expiring' })).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        supplierId: supplier.id,
+        expiringDocuments: [expect.objectContaining({ fileName: 'attestation-cnss.pdf' })],
+      }),
+    ]));
+  });
+
   it('imports and exports leads CSV with validation summaries', () => {
     const result = store.importLeadsCsv([
       'customerName,stage,owner,source,nextActionDate,expectedValue',

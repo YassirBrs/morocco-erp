@@ -104,7 +104,15 @@ export interface Supplier {
   duplicateWarnings?: string[];
   preferred: boolean;
   riskNotes?: string;
-  documentExpiries: Array<{ type: string; expiresAt: string; reference?: string }>;
+  documentExpiries: Array<{
+    type: string;
+    expiresAt: string;
+    reference?: string;
+    fileName?: string;
+    storageKey?: string;
+    uploadStatus?: 'PLACEHOLDER' | 'RECEIVED';
+    uploadedAt?: string;
+  }>;
   active: boolean;
   createdAt: string;
   updatedAt: string;

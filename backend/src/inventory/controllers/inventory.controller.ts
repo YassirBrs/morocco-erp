@@ -14,6 +14,9 @@ export class InventoryController {
   @Get('suppliers/export.csv') exportSuppliersCsv() { return this.inventoryService.exportSuppliersCsv(); }
   @Post('suppliers/import') importSuppliersCsv(@Body() body: { csv?: string }) { return this.inventoryService.importSuppliersCsv(body); }
   @Get('suppliers/risk-reminders') supplierRiskReminders(@Query('filter') filter?: string) { return this.inventoryService.supplierRiskReminders(filter); }
+  @Post('suppliers/:id/document-placeholders') addSupplierDocumentPlaceholder(@Param('id') id: string, @Body() body: any) {
+    return this.inventoryService.addSupplierDocumentPlaceholder(id, body);
+  }
   @Get('suppliers/:id') supplier(@Param('id') id: string) { return this.inventoryService.getSupplier(id); }
   @Post('suppliers') createSupplier(@Body() body: any) { return this.inventoryService.createSupplier(body); }
   @Patch('suppliers/:id') updateSupplier(@Param('id') id: string, @Body() body: any) { return this.inventoryService.updateSupplier(id, body); }

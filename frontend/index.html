@@ -308,6 +308,7 @@
                 <span id="supplierCount" class="badge">0</span>
                 <button id="exportSuppliersCsv" type="button">Exporter CSV fournisseurs</button>
                 <button id="importSuppliersCsv" type="button">Importer CSV démo</button>
+                <button id="addSupplierDocumentPlaceholder" type="button">Placeholder document</button>
               </div>
             </div>
             <form id="supplierForm" class="compactForm">
@@ -742,7 +743,7 @@
             <tr>
               <td><strong>${row.supplierName}</strong><small>${row.riskNotes || 'Suivi fournisseur actif'}</small></td>
               <td>${priority}</td>
-              <td>${document?.type || '-'}</td>
+              <td>${document?.type || '-'}<small>${document?.fileName ? `Dossier: ${document.fileName}` : 'Aucun fichier lié'}</small></td>
               <td>${document?.expiresAt || row.nextExpiryDate || '-'}</td>
             </tr>
           `;
@@ -1083,6 +1084,21 @@
             csv: 'name,ice,ifNumber,email,paymentTermsDays,bankName,rib\nFournisseur CSV Démo,003333444555666,300400,csv-supplier@example.ma,60,awb,007 780 000000000000000654'
           });
           showMessage(result.failed ? 'warning' : 'success', `Import CSV fournisseurs: ${result.created} créé(s), ${result.failed} rejeté(s).`);
+        });
+      });
+
+      qs('#addSupplierDocumentPlaceholder').addEventListener('click', async () => {
+        await runAction('#addSupplierDocumentPlaceholder', 'Ajout...', async () => {
+          const supplier = state.suppliers.find((item) => item.active);
+          if (!supplier) throw new Error('Aucun fournisseur actif pour lier le placeholder.');
+          const result = await post(`/inventory/suppliers/${supplier.id}/document-placeholders`, {
+            type: 'Attestation CNSS',
+            expiresAt: '2026-06-10',
+            fileName: 'attestation-cnss-placeholder.pdf'
+          });
+          state.supplierReminderFilter = 'expiring';
+          showMessage('success', `Placeholder ${result.document.fileName} lié à ${supplier.name}.`);
+          await load();
         });
       });
 

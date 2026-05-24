@@ -224,7 +224,7 @@ This backlog contains concrete tasks to improve the app from the current working
 ## Additional Morocco ERP Hardening
 
 - [x] T136 P1 - Add supplier risk reminder filters for expired, expiring, preferred, and noted suppliers.
-- [ ] T137 P1 - Add supplier document upload placeholders linked to each expiry reminder.
+- [x] T137 P1 - Add supplier document upload placeholders linked to each expiry reminder.
 - [ ] T138 P1 - Add customer document expiry reminders for ICE, RC, contracts, and payment guarantees.
 - [ ] T139 P1 - Add product margin alerts when sale price drops below purchase cost plus VAT.
 - [ ] T140 P1 - Add customer credit-control holds that block new invoices when limits are exceeded.

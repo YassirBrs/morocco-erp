@@ -924,6 +924,29 @@ export class ErpStoreService {
       .sort((left, right) => (left.nextExpiryDays ?? 9999) - (right.nextExpiryDays ?? 9999) || left.supplierName.localeCompare(right.supplierName));
   }
 
+  addSupplierDocumentPlaceholder(supplierId: string, input: {
+    type: string;
+    expiresAt: string;
+    reference?: string;
+    fileName?: string;
+  }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const supplier = this.supplier(workspace, supplierId);
+    const document = this.validateSupplierDocumentExpiries([{
+      type: input.type,
+      expiresAt: input.expiresAt,
+      reference: input.reference,
+      fileName: this.clean(input.fileName) ?? `${this.clean(input.type) ?? 'document'}.pdf`,
+      storageKey: `suppliers/${supplier.id}/documents/${this.id('doc')}`,
+      uploadStatus: 'PLACEHOLDER',
+      uploadedAt: today(),
+    }])[0];
+    supplier.documentExpiries.push(document);
+    supplier.updatedAt = today();
+    this.audit(workspace, 'supplier.document-placeholder.created', 'Supplier', supplier.id, document);
+    return { supplier, document };
+  }
+
   addLead(input: Partial<Lead> & { customerName: string; value?: number }, tenantId?: string): Lead {
     const workspace = this.workspace(tenantId);
     const lead: Lead = {
@@ -2193,6 +2216,10 @@ export class ErpStoreService {
       type: this.nonEmpty(document.type, 'Le type du document fournisseur est obligatoire'),
       expiresAt: this.isoDate(document.expiresAt, 'La date d’expiration du document fournisseur est obligatoire'),
       reference: this.clean(document.reference),
+      fileName: this.clean(document.fileName),
+      storageKey: this.clean(document.storageKey),
+      uploadStatus: document.uploadStatus,
+      uploadedAt: this.clean(document.uploadedAt),
     }));
   }
 

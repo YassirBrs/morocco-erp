@@ -33,6 +33,7 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/crm/leads/${lead.id}/quote'));
   assert.ok(staticPage.includes('/inventory/suppliers'));
   assert.ok(staticPage.includes('/inventory/suppliers/risk-reminders'));
+  assert.ok(staticPage.includes('/inventory/suppliers/${supplier.id}/document-placeholders'));
   assert.ok(staticPage.includes('/inventory/suppliers/export.csv'));
   assert.ok(staticPage.includes('/inventory/suppliers/import'));
   assert.ok(staticPage.includes('duplicateWarnings'));
@@ -106,7 +107,7 @@ test('global styles expose the professional ERP palette', () => {
 });
 
 test('static dashboard exposes onboarding and master-data workflows', () => {
-  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'RIB marocain', 'Fournisseur préféré', 'Notes risque', 'Expiration document', 'Alertes fournisseurs', 'Expirés', 'À renouveler', 'Préférés', 'Créer devis', 'Convertir en devis', 'Exporter CSV prospects', 'Exporter CSV fournisseurs', 'Importer CSV démo', 'Analytics sources prospects', 'Avoir', 'Relevé client', 'Payer solde']) {
+  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'RIB marocain', 'Fournisseur préféré', 'Notes risque', 'Expiration document', 'Alertes fournisseurs', 'Placeholder document', 'Dossier:', 'Expirés', 'À renouveler', 'Préférés', 'Créer devis', 'Convertir en devis', 'Exporter CSV prospects', 'Exporter CSV fournisseurs', 'Importer CSV démo', 'Analytics sources prospects', 'Avoir', 'Relevé client', 'Payer solde']) {
     assert.ok(staticPage.includes(text), `${text} workflow is present`);
   }
   for (const text of ['Comptabilisée', 'Payée', 'Facture', 'Paiement', 'Marchandise', 'Pipeline prospects', 'Fournisseurs', 'Profil entreprise', 'Réinitialiser démo', 'En attente revue', 'Approuver', 'alerte doublon', 'Banque normalisée', 'Import CSV prospects', 'Import CSV fournisseurs']) {
