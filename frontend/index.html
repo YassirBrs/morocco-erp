@@ -68,6 +68,43 @@
           <div id="setupList" class="setupList"></div>
         </section>
 
+        <section class="panel profilePanel">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Gouvernance tenant</p>
+              <h2>Profil entreprise</h2>
+            </div>
+            <span id="profileBadge" class="badge green">Approuvé</span>
+          </div>
+          <div class="profileGrid">
+            <div>
+              <span>Raison sociale</span>
+              <strong id="profileTradeName">-</strong>
+            </div>
+            <div>
+              <span>Ville fiscale</span>
+              <strong id="profileCity">-</strong>
+            </div>
+            <div>
+              <span>Série facture</span>
+              <strong id="profileSeries">-</strong>
+            </div>
+            <div>
+              <span>Dernière revue</span>
+              <strong id="profileReview">Aucune modification</strong>
+            </div>
+          </div>
+          <div class="profileActions" aria-label="Actions profil entreprise">
+            <button id="editProfile">Modifier profil démo</button>
+            <button id="approveProfile">Approuver</button>
+            <button id="resetDemo">Réinitialiser démo</button>
+          </div>
+          <div class="auditStrip">
+            <span>Audit configuration</span>
+            <strong id="auditSummary">0 événement</strong>
+          </div>
+        </section>
+
         <section class="operations">
           <div class="panel commercialPanel">
             <div class="panelHeader">
@@ -279,7 +316,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null };
+      const state = { quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -296,7 +333,9 @@
           PAID: 'Payée',
           CANCELLED: 'Annulée',
           VOID: 'Annulée',
-          PREPARED: 'Préparé'
+          PREPARED: 'Préparé',
+          PENDING_REVIEW: 'En attente revue',
+          REJECTED: 'Rejeté'
         },
         productTypes: {
           GOODS: 'Marchandise',
@@ -336,6 +375,12 @@
         return response.json();
       }
 
+      async function patch(path, body) {
+        const response = await fetch(API + path, { method: 'PATCH', headers, body: JSON.stringify(body) });
+        if (!response.ok) throw new Error(await response.text());
+        return response.json();
+      }
+
       function showMessage(type, text) {
         const box = qs('#message');
         box.hidden = false;
@@ -358,7 +403,7 @@
       }
 
       async function load() {
-        const [summary, stock, customers, products, leads, suppliers, setup, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, products, leads, suppliers, setup, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
@@ -366,6 +411,8 @@
           get('/crm/leads'),
           get('/inventory/suppliers'),
           get('/tenant/setup-checklist'),
+          get('/tenant/company-profile'),
+          get('/ledger/audit'),
           get('/sales/quotes'),
           get('/sales/orders'),
           get('/sales/delivery-notes'),
@@ -381,6 +428,8 @@
         state.leads = leads;
         state.suppliers = suppliers;
         state.statement = statement;
+        state.profile = profile;
+        state.audit = audit;
         const entity = summary.tenant.legalEntity;
         qs('#tradeName').textContent = entity.tradeName;
         qs('#identity').innerHTML = [
@@ -398,6 +447,7 @@
         qs('#invoices').textContent = summary.metrics.invoices;
         qs('#rules').textContent = `${summary.compliance.id} · TVA ${summary.compliance.vatRates.map(pct).join(' / ')}`;
         qs('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
+        renderProfile();
         renderSalesFlow();
         renderStatement();
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
@@ -501,6 +551,23 @@
             <td>${mad(entry.balance)}</td>
           </tr>
         `).join('') : emptyRow('Aucune écriture client', 5);
+      }
+
+      function renderProfile() {
+        if (!state.profile) return;
+        const tenant = state.profile.tenant;
+        const latestChange = latest(state.profile.changes);
+        const status = state.profile.approvalStatus;
+        qs('#profileBadge').textContent = translate('statuses', status);
+        qs('#profileBadge').className = status === 'APPROVED' ? 'badge green' : 'badge warning';
+        qs('#profileTradeName').textContent = tenant.legalEntity.tradeName;
+        qs('#profileCity').textContent = tenant.legalEntity.city;
+        qs('#profileSeries').textContent = tenant.settings.invoiceSeries;
+        qs('#profileReview').textContent = latestChange
+          ? `${translate('statuses', latestChange.status)} · ${latestChange.reviewer || 'en revue'}`
+          : 'Aucune modification';
+        const profileAuditCount = state.audit.filter((entry) => entry.action.startsWith('tenant.profile') || entry.action === 'tenant.demo-reset').length;
+        qs('#auditSummary').textContent = `${profileAuditCount} événement${profileAuditCount > 1 ? 's' : ''}`;
       }
 
       async function runAction(buttonSelector, loadingText, action) {
@@ -620,6 +687,36 @@
           state.statement = await get('/sales/customers/cus-1/statement');
           renderStatement();
           showMessage('success', `Relevé client préparé avec solde ${mad(state.statement.totals.balance)}.`);
+        });
+      });
+
+      qs('#editProfile').addEventListener('click', async () => {
+        await runAction('#editProfile', 'Modification...', async () => {
+          const nextCity = state.profile?.tenant?.legalEntity?.city === 'Casablanca' ? 'Tanger' : 'Casablanca';
+          const nextSeries = state.profile?.tenant?.settings?.invoiceSeries === 'FAC' ? 'TNG' : 'FAC';
+          const change = await patch('/tenant/company-profile', {
+            city: nextCity,
+            invoiceSeries: nextSeries,
+            fiscalYearStartMonth: 1,
+            vatStatus: 'ENABLED'
+          });
+          showMessage('success', `Profil modifié: ${change.after.legalEntity.city}, série ${change.after.settings.invoiceSeries}. En attente revue.`);
+        });
+      });
+
+      qs('#approveProfile').addEventListener('click', async () => {
+        await runAction('#approveProfile', 'Approbation...', async () => {
+          const approved = await post('/tenant/company-profile/approve', { reviewer: 'Responsable démo' });
+          showMessage('success', `Profil approuvé par ${approved.reviewer}.`);
+        });
+      });
+
+      qs('#resetDemo').addEventListener('click', async () => {
+        await runAction('#resetDemo', 'Réinitialisation...', async () => {
+          const result = await post('/tenant/demo-reset', { environment: 'development' });
+          state.statement = null;
+          qs('#invoiceResult').textContent = 'Données démo réinitialisées';
+          showMessage('success', `Espace ${result.summary.tenant.id} réinitialisé.`);
         });
       });
 

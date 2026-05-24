@@ -276,6 +276,60 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(store.auditLogs(tenant.id).some((log) => log.action === 'tenant.onboarded')).toBe(true);
   });
 
+  it('resets demo data only outside production-like environments and audits the action', () => {
+    store.createInvoice({
+      customerId: 'cus-1',
+      lines: [{ productId: 'prd-1', quantity: 1 }],
+    });
+    store.updateCompanyProfile({ city: 'Tanger', invoiceSeries: 'TNG' });
+
+    expect(store.summary().metrics.invoices).toBe(1);
+    expect(store.companyProfile().changes).toHaveLength(1);
+    expect(() => store.resetDemoData('production')).toThrow(ForbiddenException);
+
+    const result = store.resetDemoData('test');
+
+    expect(result.status).toBe('RESET');
+    expect(result.environment).toBe('test');
+    expect(result.summary.tenant.id).toBe('tenant-demo');
+    expect(result.summary.metrics.invoices).toBe(0);
+    expect(store.companyProfile().approvalStatus).toBe('APPROVED');
+    expect(store.companyProfile().changes).toHaveLength(0);
+    expect(store.listCustomers()).toHaveLength(1);
+    expect(store.auditLogs().some((log) => log.action === 'tenant.demo-reset')).toBe(true);
+  });
+
+  it('edits the company profile with pending approval, snapshots, validation, and audit history', () => {
+    const change = store.updateCompanyProfile({
+      tradeName: 'Atlas Distribution Nord SARL',
+      city: 'Tanger',
+      invoiceSeries: 'TNG',
+      fiscalYearStartMonth: 4,
+      vatStatus: 'EXEMPT',
+    });
+    const pendingProfile = store.companyProfile();
+
+    expect(change.status).toBe('PENDING_REVIEW');
+    expect(change.before.legalEntity.city).toBe('Casablanca');
+    expect(change.after.legalEntity.city).toBe('Tanger');
+    expect(change.after.settings.invoiceSeries).toBe('TNG');
+    expect(pendingProfile.approvalStatus).toBe('PENDING_REVIEW');
+    expect(pendingProfile.tenant.legalEntity.tradeName).toBe('Atlas Distribution Nord SARL');
+    expect(pendingProfile.tenant.legalEntity.vatEnabled).toBe(false);
+    expect(pendingProfile.tenant.settings.fiscalYearStartMonth).toBe(4);
+    expect(store.auditLogs().some((log) => log.action === 'tenant.profile-updated')).toBe(true);
+
+    const approved = store.approveCompanyProfile('Cabinet Fiduciaire');
+
+    expect(approved.status).toBe('APPROVED');
+    expect(approved.reviewer).toBe('Cabinet Fiduciaire');
+    expect(approved.approvedAt).toBeTruthy();
+    expect(store.companyProfile().approvalStatus).toBe('APPROVED');
+    expect(store.auditLogs().some((log) => log.action === 'tenant.profile-approved')).toBe(true);
+    expect(() => store.updateCompanyProfile({ tradeName: '' })).toThrow(BadRequestException);
+    expect(() => store.updateCompanyProfile({ fiscalYearStartMonth: 13 })).toThrow(BadRequestException);
+  });
+
   it('supports full customer CRUD fields with validation and archive workflow', () => {
     const customer = store.addCustomer({
       name: 'Marrakech Retail',

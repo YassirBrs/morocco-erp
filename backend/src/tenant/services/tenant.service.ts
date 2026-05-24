@@ -17,6 +17,22 @@ export class TenantService {
     return this.store.setupChecklist();
   }
 
+  profile() {
+    return this.store.companyProfile();
+  }
+
+  updateProfile(data: any) {
+    return this.store.updateCompanyProfile(data);
+  }
+
+  approveProfile(reviewer?: string) {
+    return this.store.approveCompanyProfile(reviewer);
+  }
+
+  resetDemo(environment?: string) {
+    return this.store.resetDemoData(environment);
+  }
+
   completeOnboarding(data: any) {
     return this.store.completeTenantOnboarding(data);
   }

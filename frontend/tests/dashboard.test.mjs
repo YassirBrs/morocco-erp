@@ -28,6 +28,11 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/crm/leads'));
   assert.ok(staticPage.includes('/inventory/suppliers'));
   assert.ok(staticPage.includes('/tenant/setup-checklist'));
+  assert.ok(staticPage.includes('/tenant/company-profile'));
+  assert.ok(staticPage.includes('/tenant/company-profile/approve'));
+  assert.ok(staticPage.includes('/tenant/demo-reset'));
+  assert.ok(staticPage.includes('/ledger/audit'));
+  assert.ok(staticPage.includes("method: 'PATCH'"));
   assert.ok(staticPage.includes('/crm/customers'));
   assert.ok(staticPage.includes('/inventory/products'));
 });
@@ -42,7 +47,7 @@ test('static dashboard exposes onboarding and master-data workflows', () => {
   for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'Créer devis', 'Avoir', 'Relevé client', 'Payer solde']) {
     assert.ok(staticPage.includes(text), `${text} workflow is present`);
   }
-  for (const text of ['Comptabilisée', 'Payée', 'Facture', 'Paiement', 'Marchandise', 'Pipeline prospects', 'Fournisseurs']) {
+  for (const text of ['Comptabilisée', 'Payée', 'Facture', 'Paiement', 'Marchandise', 'Pipeline prospects', 'Fournisseurs', 'Profil entreprise', 'Réinitialiser démo', 'En attente revue', 'Approuver']) {
     assert.ok(staticPage.includes(text), `${text} French label is present`);
   }
   assert.ok(staticCss.includes('.compactForm'));
@@ -51,4 +56,6 @@ test('static dashboard exposes onboarding and master-data workflows', () => {
   assert.ok(staticCss.includes('.miniTable small'));
   assert.ok(staticCss.includes('.message.success'));
   assert.ok(staticCss.includes('.message.error'));
+  assert.ok(staticCss.includes('.profileGrid'));
+  assert.ok(staticCss.includes('.profileActions'));
 });

@@ -34,6 +34,7 @@ export interface Tenant {
   settings: TenantSettings;
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
+  profileApprovalStatus: 'APPROVED' | 'PENDING_REVIEW' | 'REJECTED';
   createdAt: string;
 }
 
@@ -325,6 +326,23 @@ export interface AuditLog {
   payload: unknown;
 }
 
+export interface CompanyProfileChange {
+  id: string;
+  tenantId: string;
+  status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+  requestedAt: string;
+  approvedAt?: string;
+  reviewer?: string;
+  before: {
+    legalEntity: LegalEntity;
+    settings: TenantSettings;
+  };
+  after: {
+    legalEntity: LegalEntity;
+    settings: TenantSettings;
+  };
+}
+
 export interface TenantWorkspace {
   tenant: Tenant;
   users: ErpUser[];
@@ -346,5 +364,6 @@ export interface TenantWorkspace {
   posTransactions: PosTransaction[];
   productionOrders: ProductionOrder[];
   auditLogs: AuditLog[];
+  profileChanges: CompanyProfileChange[];
   sequences: Record<string, number>;
 }

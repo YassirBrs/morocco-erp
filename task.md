@@ -12,8 +12,8 @@ This backlog contains concrete tasks to improve the app from the current working
 
 - [x] T001 P0 - Build a guided company onboarding wizard for ICE, IF, RC, Patente, CNSS number, VAT status, fiscal year, address, and invoice series.
 - [x] T002 P0 - Add a tenant setup checklist that shows missing legal, accounting, payroll, and invoice configuration.
-- [ ] T003 P0 - Add a first-run demo data reset action for local and staging environments only.
-- [ ] T004 P1 - Add company profile editing with full audit history and approval state.
+- [x] T003 P0 - Add a first-run demo data reset action for local and staging environments only.
+- [x] T004 P1 - Add company profile editing with full audit history and approval state.
 - [x] T005 P1 - Add French-first copy review across all screens and keep labels consistent with Moroccan business usage.
 - [ ] T006 P1 - Add Arabic-ready customer, supplier, employee, and document fields without forcing Arabic UI yet.
 - [ ] T007 P1 - Add import templates for customers, suppliers, products, employees, and chart of accounts.
@@ -188,3 +188,35 @@ This backlog contains concrete tasks to improve the app from the current working
 - [ ] T131 P1 - Add CSV import/export for leads and suppliers with validation summaries.
 - [ ] T132 P2 - Add lead source analytics by owner, expected value, won/lost rate, and month.
 - [ ] T133 P2 - Add supplier risk notes, preferred supplier flags, and document expiry reminders.
+- [ ] T134 P2 - Scan the codebase, locate the global style configuration file (e.g., tailwind.config.js, global.css, theme provider, or constants file), and        automatically update the colors to match this professional ERP palette.
+
+                Color Specification:
+
+                primary (Actions/CTA): #1E3A8A (Hover: #3B82F6)
+
+                background-main: #F8FAFC
+
+                background-surface (Cards/Tables): #FFFFFF
+
+                border: #E2E8F0
+
+                text-primary: #0F172A
+
+                text-secondary (Labels/Placeholders): #475569
+
+                status-success: Text #16A34A / Bg #DCFCE7
+
+                status-warning: Text #D97706 / Bg #FEF3C7
+
+                status-danger: Text #DC2626 / Bg #FEE2E2
+
+                status-info: Text #2563EB / Bg #DBEAFE
+
+                Execution Rules:
+
+                Do not break existing layout structures or utility classes. Only replace or extend the color variables.
+
+                Map these colors using clean, semantic names so they cascade correctly across the application (especially on tables, sidebar navigation, buttons, and form inputs).
+
+                Modify the files directly. Once done, reply with a brief summary of the modified files and a diff of the changes.
+- [ ] T135 P2 - don't campact every module in one page . use sidebar to navigate between modules

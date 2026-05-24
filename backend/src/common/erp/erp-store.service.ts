@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { ClsService } from 'nestjs-cls';
 import {
   AuditLog,
+  CompanyProfileChange,
   ComplianceRuleSet,
   CreditNote,
   Customer,
@@ -25,6 +26,7 @@ import {
   StockMove,
   Supplier,
   Tenant,
+  TenantSettings,
   TenantWorkspace,
   VatRate,
   Warehouse,
@@ -98,6 +100,7 @@ export class ErpStoreService {
       },
       plan: 'ENTERPRISE',
       status: 'ACTIVE',
+      profileApprovalStatus: 'APPROVED',
       createdAt: today(),
     };
 
@@ -257,6 +260,7 @@ export class ErpStoreService {
       posTransactions: [],
       productionOrders: [],
       auditLogs: [],
+      profileChanges: [],
       sequences: {},
     };
 
@@ -291,6 +295,7 @@ export class ErpStoreService {
       },
       plan: input.plan ?? 'INTILAQ',
       status: 'ACTIVE',
+      profileApprovalStatus: 'APPROVED',
       createdAt: today(),
     };
 
@@ -315,10 +320,25 @@ export class ErpStoreService {
       posTransactions: [],
       productionOrders: [],
       auditLogs: [],
+      profileChanges: [],
       sequences: {},
     });
 
     return tenant;
+  }
+
+  resetDemoData(environment = process.env.APP_ENV ?? process.env.NODE_ENV ?? 'development') {
+    if (!['development', 'local', 'staging', 'test'].includes(environment)) {
+      throw new ForbiddenException('La réinitialisation démo est interdite dans cet environnement');
+    }
+    this.reset();
+    const workspace = this.workspace('tenant-demo');
+    this.audit(workspace, 'tenant.demo-reset', 'Tenant', workspace.tenant.id, { environment });
+    return {
+      status: 'RESET',
+      environment,
+      summary: this.summary(workspace.tenant.id),
+    };
   }
 
   authenticate(email: string, password: string): Omit<ErpUser, 'password'> & { tenant: Tenant } {
@@ -396,6 +416,82 @@ export class ErpStoreService {
       ready: completed === checks.length,
       checks,
     };
+  }
+
+  companyProfile(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenant: workspace.tenant,
+      changes: workspace.profileChanges,
+      approvalStatus: workspace.tenant.profileApprovalStatus,
+    };
+  }
+
+  updateCompanyProfile(input: Partial<LegalEntity> & {
+    invoiceSeries?: string;
+    fiscalYearStartMonth?: number;
+    vatStatus?: 'ENABLED' | 'EXEMPT';
+  }, tenantId?: string): CompanyProfileChange {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const before = {
+      legalEntity: { ...workspace.tenant.legalEntity },
+      settings: { ...workspace.tenant.settings },
+    };
+    const nextLegalEntity: LegalEntity = {
+      ...workspace.tenant.legalEntity,
+      tradeName: input.tradeName !== undefined ? this.nonEmpty(input.tradeName, 'La raison sociale est obligatoire') : workspace.tenant.legalEntity.tradeName,
+      ice: input.ice !== undefined ? this.nonEmpty(input.ice, 'L’ICE est obligatoire') : workspace.tenant.legalEntity.ice,
+      ifNumber: input.ifNumber !== undefined ? this.nonEmpty(input.ifNumber, 'L’IF est obligatoire') : workspace.tenant.legalEntity.ifNumber,
+      rc: input.rc !== undefined ? this.nonEmpty(input.rc, 'Le RC est obligatoire') : workspace.tenant.legalEntity.rc,
+      patente: input.patente !== undefined ? this.nonEmpty(input.patente, 'La patente est obligatoire') : workspace.tenant.legalEntity.patente,
+      cnssNumber: input.cnssNumber !== undefined ? this.nonEmpty(input.cnssNumber, 'Le numéro CNSS est obligatoire') : workspace.tenant.legalEntity.cnssNumber,
+      address: input.address !== undefined ? this.nonEmpty(input.address, 'L’adresse légale est obligatoire') : workspace.tenant.legalEntity.address,
+      city: input.city !== undefined ? this.nonEmpty(input.city, 'La ville fiscale est obligatoire') : workspace.tenant.legalEntity.city,
+      country: 'MA',
+      vatEnabled: input.vatStatus !== undefined ? input.vatStatus === 'ENABLED' : workspace.tenant.legalEntity.vatEnabled,
+    };
+    const nextSettings: TenantSettings = {
+      ...workspace.tenant.settings,
+      invoiceSeries: input.invoiceSeries !== undefined
+        ? this.nonEmpty(input.invoiceSeries, 'La série de facturation est obligatoire').toUpperCase()
+        : workspace.tenant.settings.invoiceSeries,
+      fiscalYearStartMonth: input.fiscalYearStartMonth !== undefined
+        ? this.month(input.fiscalYearStartMonth)
+        : workspace.tenant.settings.fiscalYearStartMonth,
+      vatStatus: input.vatStatus ?? workspace.tenant.settings.vatStatus,
+    };
+    workspace.tenant.legalEntity = nextLegalEntity;
+    workspace.tenant.settings = nextSettings;
+    workspace.tenant.profileApprovalStatus = 'PENDING_REVIEW';
+    const change: CompanyProfileChange = {
+      id: this.id('profile-change'),
+      tenantId: workspace.tenant.id,
+      status: 'PENDING_REVIEW',
+      requestedAt: today(),
+      before,
+      after: {
+        legalEntity: { ...nextLegalEntity },
+        settings: { ...nextSettings },
+      },
+    };
+    workspace.profileChanges.push(change);
+    this.audit(workspace, 'tenant.profile-updated', 'Tenant', workspace.tenant.id, change);
+    return change;
+  }
+
+  approveCompanyProfile(reviewer = 'owner', tenantId?: string): CompanyProfileChange {
+    const workspace = this.workspace(tenantId);
+    const change = [...workspace.profileChanges].reverse().find((candidate) => candidate.status === 'PENDING_REVIEW');
+    if (!change) {
+      throw new BadRequestException('Aucune modification de profil en attente');
+    }
+    change.status = 'APPROVED';
+    change.approvedAt = today();
+    change.reviewer = this.clean(reviewer) ?? 'owner';
+    workspace.tenant.profileApprovalStatus = 'APPROVED';
+    this.audit(workspace, 'tenant.profile-approved', 'Tenant', workspace.tenant.id, change);
+    return change;
   }
 
   completeTenantOnboarding(input: Partial<LegalEntity> & {

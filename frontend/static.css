@@ -253,6 +253,11 @@ h2 {
   color: var(--green);
 }
 
+.badge.warning {
+  background: #fff7e7;
+  color: var(--gold);
+}
+
 button {
   border: 1px solid var(--green);
   border-radius: 8px;
@@ -380,6 +385,54 @@ button:disabled {
 
 .setupList .complete span {
   color: var(--green);
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.profileGrid div {
+  display: grid;
+  gap: 5px;
+  border-top: 1px solid var(--line);
+  padding: 13px 16px;
+}
+
+.profileGrid div + div {
+  border-left: 1px solid var(--line);
+}
+
+.profileGrid span,
+.auditStrip span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.profileGrid strong,
+.auditStrip strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding: 14px 16px;
+}
+
+.auditStrip {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding: 12px 16px;
 }
 
 .compactForm {
@@ -599,9 +652,15 @@ tbody tr:hover {
   }
 
   .setupList,
+  .profileGrid,
+  .profileActions,
   .compactForm,
   .productForm {
     grid-template-columns: 1fr;
+  }
+
+  .profileGrid div + div {
+    border-left: 0;
   }
 
   .setupList div:nth-child(-n + 3) {
