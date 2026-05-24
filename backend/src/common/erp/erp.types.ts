@@ -72,10 +72,18 @@ export interface Supplier {
   tenantId: string;
   name: string;
   ice?: string;
+  ifNumber?: string;
+  rc?: string;
   email?: string;
   phone?: string;
   address?: string;
+  city?: string;
+  paymentTermsDays: number;
+  contacts: Array<{ name: string; role?: string; email?: string; phone?: string }>;
+  bankDetails: Array<{ bankName: string; rib: string; iban?: string }>;
+  active: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Lead {
@@ -83,9 +91,12 @@ export interface Lead {
   tenantId: string;
   customerName: string;
   stage: 'NEW' | 'QUALIFIED' | 'PROPOSAL' | 'WON' | 'LOST';
-  value: number;
+  expectedValue: number;
   owner?: string;
+  source?: string;
+  nextActionDate?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Product {

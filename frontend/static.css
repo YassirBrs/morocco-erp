@@ -445,6 +445,13 @@ select:focus {
   min-width: 540px;
 }
 
+.miniTable small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .emptyState {
   color: var(--muted);
   text-align: center;

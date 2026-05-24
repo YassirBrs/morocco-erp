@@ -25,6 +25,8 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/sales/delivery-notes'));
   assert.ok(staticPage.includes('/sales/credit-notes'));
   assert.ok(staticPage.includes('/sales/customers/cus-1/statement'));
+  assert.ok(staticPage.includes('/crm/leads'));
+  assert.ok(staticPage.includes('/inventory/suppliers'));
   assert.ok(staticPage.includes('/tenant/setup-checklist'));
   assert.ok(staticPage.includes('/crm/customers'));
   assert.ok(staticPage.includes('/inventory/products'));
@@ -37,15 +39,16 @@ test('layout uses dense ERP panels instead of a marketing hero', () => {
 });
 
 test('static dashboard exposes onboarding and master-data workflows', () => {
-  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Nom client', 'Prix vente', 'Créer devis', 'Avoir', 'Relevé client', 'Payer solde']) {
+  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'Créer devis', 'Avoir', 'Relevé client', 'Payer solde']) {
     assert.ok(staticPage.includes(text), `${text} workflow is present`);
   }
-  for (const text of ['Comptabilisée', 'Payée', 'Facture', 'Paiement', 'Marchandise']) {
+  for (const text of ['Comptabilisée', 'Payée', 'Facture', 'Paiement', 'Marchandise', 'Pipeline prospects', 'Fournisseurs']) {
     assert.ok(staticPage.includes(text), `${text} French label is present`);
   }
   assert.ok(staticCss.includes('.compactForm'));
   assert.ok(staticCss.includes('.salesFlowActions'));
   assert.ok(staticCss.includes('.statementBox'));
+  assert.ok(staticCss.includes('.miniTable small'));
   assert.ok(staticCss.includes('.message.success'));
   assert.ok(staticCss.includes('.message.error'));
 });

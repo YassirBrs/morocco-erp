@@ -14,7 +14,7 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T002 P0 - Add a tenant setup checklist that shows missing legal, accounting, payroll, and invoice configuration.
 - [ ] T003 P0 - Add a first-run demo data reset action for local and staging environments only.
 - [ ] T004 P1 - Add company profile editing with full audit history and approval state.
-- [ ] T005 P1 - Add French-first copy review across all screens and keep labels consistent with Moroccan business usage.
+- [x] T005 P1 - Add French-first copy review across all screens and keep labels consistent with Moroccan business usage.
 - [ ] T006 P1 - Add Arabic-ready customer, supplier, employee, and document fields without forcing Arabic UI yet.
 - [ ] T007 P1 - Add import templates for customers, suppliers, products, employees, and chart of accounts.
 - [ ] T008 P2 - Add an implementation partner workspace to help onboard multiple client tenants.
@@ -41,12 +41,12 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T023 P0 - Add invoice posting rules with continuous numbering per fiscal year and series.
 - [x] T024 P0 - Add credit notes with invoice references and automatic accounting reversal entries.
 - [x] T025 P0 - Add payment capture with partial payments, overpayment rejection, and customer balance update.
-- [ ] T026 P1 - Add lead pipeline with stages, next action date, owner, source, and expected value.
+- [x] T026 P1 - Add lead pipeline with stages, next action date, owner, source, and expected value.
 - [x] T027 P1 - Add customer statement export with invoices, payments, credit notes, and aging.
 
 ## Purchases, Suppliers, And Inventory
 
-- [ ] T028 P0 - Add supplier CRUD with ICE/IF, payment terms, contacts, and bank details.
+- [x] T028 P0 - Add supplier CRUD with ICE/IF, payment terms, contacts, and bank details.
 - [ ] T029 P0 - Add purchase order workflow with draft, approved, partially received, received, cancelled states.
 - [ ] T030 P0 - Add purchase receipt posting that updates stock and CUMP valuation.
 - [ ] T031 P0 - Add supplier invoice posting and payable balance update.
@@ -175,3 +175,16 @@ This backlog contains concrete tasks to improve the app from the current working
 - [ ] T121 P1 - Add super-admin workspace for tenant support, subscription management, and compliance rule management.
 - [ ] T122 P1 - Add customer support diagnostics view with audit logs, recent errors, and module usage.
 - [ ] T123 P2 - Add in-app upgrade prompts tied to real feature gates instead of generic marketing.
+
+## Customer Pilot Hardening
+
+- [x] T124 P0 - Add a French CRM lead pipeline panel to the dashboard with stage, owner, source, next action, and expected value.
+- [x] T125 P0 - Add a French supplier directory panel to the dashboard with ICE, IF, payment terms, and bank details.
+- [ ] T126 P0 - Add lead-to-quote conversion that creates or links the customer before issuing a quote.
+- [ ] T127 P0 - Add supplier duplicate detection by ICE/IF and warning states in the supplier form.
+- [ ] T128 P1 - Add Moroccan RIB format validation and bank-name normalization for suppliers.
+- [ ] T129 P1 - Add a unified business search across customers, prospects, suppliers, products, invoices, and orders.
+- [ ] T130 P1 - Add dashboard filters for overdue next actions, unpaid customer balances, and supplier payment terms.
+- [ ] T131 P1 - Add CSV import/export for leads and suppliers with validation summaries.
+- [ ] T132 P2 - Add lead source analytics by owner, expected value, won/lost rate, and month.
+- [ ] T133 P2 - Add supplier risk notes, preferred supplier flags, and document expiry reminders.

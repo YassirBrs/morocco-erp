@@ -185,6 +185,59 @@
           </div>
         </section>
 
+        <section class="masterGrid">
+          <div class="panel">
+            <div class="panelHeader">
+              <div>
+                <p class="eyebrow">CRM</p>
+                <h2>Pipeline prospects</h2>
+              </div>
+              <span id="leadCount" class="badge">0</span>
+            </div>
+            <form id="leadForm" class="compactForm">
+              <label class="field"><span>Prospect</span><input name="customerName" required placeholder="Société prospect" /></label>
+              <label class="field"><span>Étape</span><select name="stage"><option value="NEW">Nouveau</option><option value="QUALIFIED">Qualifié</option><option value="PROPOSAL">Proposition</option><option value="WON">Gagné</option><option value="LOST">Perdu</option></select></label>
+              <label class="field"><span>Responsable</span><input name="owner" placeholder="Commercial" /></label>
+              <label class="field"><span>Source</span><input name="source" placeholder="Salon, recommandation..." /></label>
+              <label class="field"><span>Prochaine action</span><input name="nextActionDate" type="date" /></label>
+              <label class="field"><span>Montant attendu</span><input name="expectedValue" type="number" min="0" value="0" /></label>
+              <button type="submit">Ajouter prospect</button>
+            </form>
+            <div class="tableWrap">
+              <table class="miniTable">
+                <thead><tr><th>Prospect</th><th>Étape</th><th>Action</th><th>Valeur</th></tr></thead>
+                <tbody id="leadRows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panelHeader">
+              <div>
+                <p class="eyebrow">Achats</p>
+                <h2>Fournisseurs</h2>
+              </div>
+              <span id="supplierCount" class="badge">0</span>
+            </div>
+            <form id="supplierForm" class="compactForm">
+              <label class="field"><span>Fournisseur</span><input name="name" required placeholder="Fournisseur SA" /></label>
+              <label class="field"><span>ICE</span><input name="ice" placeholder="009..." /></label>
+              <label class="field"><span>IF</span><input name="ifNumber" placeholder="Identifiant fiscal" /></label>
+              <label class="field"><span>Email</span><input name="email" type="email" placeholder="achat@fournisseur.ma" /></label>
+              <label class="field"><span>Délai paiement</span><input name="paymentTermsDays" type="number" min="0" value="30" /></label>
+              <label class="field"><span>Banque</span><input name="bankName" placeholder="Banque" /></label>
+              <label class="field"><span>RIB</span><input name="rib" placeholder="24 chiffres" /></label>
+              <button type="submit">Ajouter fournisseur</button>
+            </form>
+            <div class="tableWrap">
+              <table class="miniTable">
+                <thead><tr><th>Fournisseur</th><th>ICE</th><th>Délai</th><th>Banque</th></tr></thead>
+                <tbody id="supplierRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <section class="lowerGrid">
           <div class="panel stockPanel">
             <div class="panelHeader">
@@ -226,7 +279,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], statement: null };
+      const state = { quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -250,6 +303,13 @@
           SERVICE: 'Service',
           RAW_MATERIAL: 'Matière première',
           FINISHED_GOOD: 'Produit fini'
+        },
+        leadStages: {
+          NEW: 'Nouveau',
+          QUALIFIED: 'Qualifié',
+          PROPOSAL: 'Proposition',
+          WON: 'Gagné',
+          LOST: 'Perdu'
         },
         statementTypes: {
           INVOICE: 'Facture',
@@ -298,11 +358,13 @@
       }
 
       async function load() {
-        const [summary, stock, customers, products, setup, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, products, leads, suppliers, setup, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
           get('/inventory/products'),
+          get('/crm/leads'),
+          get('/inventory/suppliers'),
           get('/tenant/setup-checklist'),
           get('/sales/quotes'),
           get('/sales/orders'),
@@ -316,6 +378,8 @@
         state.deliveryNotes = deliveryNotes;
         state.invoices = invoices;
         state.creditNotes = creditNotes;
+        state.leads = leads;
+        state.suppliers = suppliers;
         state.statement = statement;
         const entity = summary.tenant.legalEntity;
         qs('#tradeName').textContent = entity.tradeName;
@@ -363,6 +427,24 @@
             <td>${pct(product.vatRate)}</td>
           </tr>
         `).join('') : emptyRow('Aucun article créé', 5);
+        qs('#leadCount').textContent = leads.length;
+        qs('#leadRows').innerHTML = leads.length ? leads.map((lead) => `
+          <tr>
+            <td><strong>${lead.customerName}</strong><small>${lead.owner || '-'}</small></td>
+            <td>${translate('leadStages', lead.stage)}</td>
+            <td>${lead.nextActionDate || '-'}</td>
+            <td>${mad(lead.expectedValue || 0)}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun prospect créé', 4);
+        qs('#supplierCount').textContent = suppliers.filter((supplier) => supplier.active).length;
+        qs('#supplierRows').innerHTML = suppliers.length ? suppliers.map((supplier) => `
+          <tr class="${supplier.active ? '' : 'mutedRow'}">
+            <td><strong>${supplier.name}</strong><small>${supplier.ifNumber || '-'}</small></td>
+            <td>${supplier.ice || '-'}</td>
+            <td>${supplier.paymentTermsDays} j</td>
+            <td>${supplier.bankDetails?.[0]?.bankName || '-'}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun fournisseur créé', 4);
         qs('#stockRows').innerHTML = stock.map((line) => `
           <tr>
             <td><strong>${line.sku}</strong></td>
@@ -560,6 +642,63 @@
           formEl.paymentTermsDays.value = 30;
           formEl.creditLimit.value = 0;
           showMessage('success', `Client ${customer.name} ajouté.`);
+          await load();
+        } catch (error) {
+          showMessage('error', error.message);
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      qs('#leadForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formEl = event.currentTarget;
+        const form = new FormData(formEl);
+        const button = formEl.querySelector('button');
+        button.disabled = true;
+        clearMessage();
+        try {
+          const lead = await post('/crm/leads', {
+            customerName: form.get('customerName'),
+            stage: form.get('stage'),
+            owner: form.get('owner'),
+            source: form.get('source'),
+            nextActionDate: form.get('nextActionDate'),
+            expectedValue: formNumber(form, 'expectedValue')
+          });
+          formEl.reset();
+          formEl.stage.value = 'NEW';
+          formEl.expectedValue.value = 0;
+          showMessage('success', `Prospect ${lead.customerName} ajouté au pipeline.`);
+          await load();
+        } catch (error) {
+          showMessage('error', error.message);
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      qs('#supplierForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formEl = event.currentTarget;
+        const form = new FormData(formEl);
+        const button = formEl.querySelector('button');
+        const bankName = String(form.get('bankName') || '').trim();
+        const rib = String(form.get('rib') || '').trim();
+        button.disabled = true;
+        clearMessage();
+        try {
+          const supplier = await post('/inventory/suppliers', {
+            name: form.get('name'),
+            ice: form.get('ice'),
+            ifNumber: form.get('ifNumber'),
+            email: form.get('email'),
+            paymentTermsDays: formNumber(form, 'paymentTermsDays'),
+            bankDetails: bankName || rib ? [{ bankName, rib }] : []
+          });
+          formEl.reset();
+          formEl.paymentTermsDays.value = 30;
+          showMessage('success', `Fournisseur ${supplier.name} ajouté.`);
           await load();
         } catch (error) {
           showMessage('error', error.message);

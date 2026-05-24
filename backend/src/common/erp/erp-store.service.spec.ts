@@ -301,6 +301,61 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(() => store.addCustomer({ name: '', creditLimit: -1 })).toThrow(BadRequestException);
   });
 
+  it('manages the CRM lead pipeline with stage, source, owner, next action, and expected value', () => {
+    const lead = store.addLead({
+      customerName: 'Hotel Atlas Marrakech',
+      stage: 'NEW',
+      owner: 'Nadia',
+      source: 'Salon Casablanca',
+      nextActionDate: '2026-06-01',
+      expectedValue: 48000,
+    });
+
+    const updated = store.updateLead(lead.id, {
+      stage: 'PROPOSAL',
+      nextActionDate: '2026-06-10',
+      expectedValue: 52000,
+    });
+
+    expect(updated.stage).toBe('PROPOSAL');
+    expect(updated.source).toBe('Salon Casablanca');
+    expect(updated.owner).toBe('Nadia');
+    expect(updated.nextActionDate).toBe('2026-06-10');
+    expect(updated.expectedValue).toBe(52000);
+    expect(store.listLeads()).toHaveLength(1);
+    expect(store.auditLogs().filter((log) => log.entity === 'Lead')).toHaveLength(2);
+    expect(() => store.addLead({ customerName: '', expectedValue: -1 })).toThrow(BadRequestException);
+    expect(() => store.updateLead(lead.id, { stage: 'INVALID' as any })).toThrow(BadRequestException);
+  });
+
+  it('supports supplier CRUD fields with payment terms, contacts, bank details, and archive workflow', () => {
+    const supplier = store.addSupplier({
+      name: 'Fournitures Rabat SA',
+      ice: '001222333444555',
+      ifNumber: '998877',
+      rc: 'RABAT-7788',
+      email: 'contact@fournitures-rabat.ma',
+      city: 'Rabat',
+      paymentTermsDays: 60,
+      contacts: [{ name: 'Mina Achat', role: 'Commerciale', email: 'mina@example.ma' }],
+      bankDetails: [{ bankName: 'Bank of Africa', rib: '011780000000000000000456' }],
+    });
+
+    const updated = store.updateSupplier(supplier.id, {
+      paymentTermsDays: 75,
+      bankDetails: [{ bankName: 'CIH Bank', rib: '230780000000000000000789' }],
+    });
+    const archived = store.archiveSupplier(supplier.id);
+
+    expect(store.getSupplier(supplier.id).ifNumber).toBe('998877');
+    expect(updated.paymentTermsDays).toBe(75);
+    expect(updated.bankDetails[0].bankName).toBe('CIH Bank');
+    expect(archived.active).toBe(false);
+    expect(store.auditLogs().filter((log) => log.entity === 'Supplier')).toHaveLength(3);
+    expect(() => store.addSupplier({ name: '', paymentTermsDays: -1 })).toThrow(BadRequestException);
+    expect(() => store.updateSupplier(supplier.id, { bankDetails: [{ bankName: '', rib: '' }] })).toThrow(BadRequestException);
+  });
+
   it('supports full product CRUD, SKU uniqueness, VAT rule validation, and stock behavior', () => {
     const product = store.addProduct({
       sku: 'sku-desk',

@@ -150,10 +150,18 @@ export class ErpStoreService {
           tenantId: tenant.id,
           name: 'Casa Import SA',
           ice: '009998887776665',
+          ifNumber: '445566',
+          rc: 'CASA-99001',
           email: 'sales@casa-import.ma',
           phone: '+212522111111',
           address: 'Zone industrielle Ain Sebaa',
+          city: 'Casablanca',
+          paymentTermsDays: 45,
+          contacts: [{ name: 'Samir Achat', role: 'Commercial', email: 'sales@casa-import.ma', phone: '+212522111111' }],
+          bankDetails: [{ bankName: 'Attijariwafa bank', rib: '007780000000000000000123' }],
+          active: true,
           createdAt: today(),
+          updatedAt: today(),
         },
       ],
       leads: [],
@@ -520,13 +528,23 @@ export class ErpStoreService {
     const supplier: Supplier = {
       id: this.id('sup'),
       tenantId: workspace.tenant.id,
-      name: input.name,
-      ice: input.ice,
-      email: input.email,
-      phone: input.phone,
-      address: input.address,
+      name: this.nonEmpty(input.name, 'Le nom du fournisseur est obligatoire'),
+      ice: this.clean(input.ice),
+      ifNumber: this.clean(input.ifNumber),
+      rc: this.clean(input.rc),
+      email: this.clean(input.email),
+      phone: this.clean(input.phone),
+      address: this.clean(input.address),
+      city: this.clean(input.city),
+      paymentTermsDays: this.nonNegative(input.paymentTermsDays ?? 30, 'Le délai de paiement fournisseur doit être nul ou positif'),
+      contacts: input.contacts ?? [],
+      bankDetails: input.bankDetails ?? [],
+      active: input.active ?? true,
       createdAt: today(),
+      updatedAt: today(),
     };
+    this.validateContacts(supplier.contacts);
+    this.validateBankDetails(supplier.bankDetails);
     workspace.suppliers.push(supplier);
     this.audit(workspace, 'supplier.created', 'Supplier', supplier.id, supplier);
     return supplier;
@@ -536,16 +554,60 @@ export class ErpStoreService {
     return this.workspace(tenantId).suppliers;
   }
 
+  getSupplier(supplierId: string, tenantId?: string): Supplier {
+    return this.supplier(this.workspace(tenantId), supplierId);
+  }
+
+  updateSupplier(supplierId: string, input: Partial<Supplier>, tenantId?: string): Supplier {
+    const workspace = this.workspace(tenantId);
+    const supplier = this.supplier(workspace, supplierId);
+    if (input.name !== undefined) supplier.name = this.nonEmpty(input.name, 'Le nom du fournisseur est obligatoire');
+    if (input.ice !== undefined) supplier.ice = this.clean(input.ice);
+    if (input.ifNumber !== undefined) supplier.ifNumber = this.clean(input.ifNumber);
+    if (input.rc !== undefined) supplier.rc = this.clean(input.rc);
+    if (input.email !== undefined) supplier.email = this.clean(input.email);
+    if (input.phone !== undefined) supplier.phone = this.clean(input.phone);
+    if (input.address !== undefined) supplier.address = this.clean(input.address);
+    if (input.city !== undefined) supplier.city = this.clean(input.city);
+    if (input.paymentTermsDays !== undefined) {
+      supplier.paymentTermsDays = this.nonNegative(input.paymentTermsDays, 'Le délai de paiement fournisseur doit être nul ou positif');
+    }
+    if (input.contacts !== undefined) {
+      this.validateContacts(input.contacts);
+      supplier.contacts = input.contacts;
+    }
+    if (input.bankDetails !== undefined) {
+      this.validateBankDetails(input.bankDetails);
+      supplier.bankDetails = input.bankDetails;
+    }
+    if (input.active !== undefined) supplier.active = input.active;
+    supplier.updatedAt = today();
+    this.audit(workspace, 'supplier.updated', 'Supplier', supplier.id, supplier);
+    return supplier;
+  }
+
+  archiveSupplier(supplierId: string, tenantId?: string): Supplier {
+    const workspace = this.workspace(tenantId);
+    const supplier = this.supplier(workspace, supplierId);
+    supplier.active = false;
+    supplier.updatedAt = today();
+    this.audit(workspace, 'supplier.archived', 'Supplier', supplier.id, supplier);
+    return supplier;
+  }
+
   addLead(input: Partial<Lead> & { customerName: string; value?: number }, tenantId?: string): Lead {
     const workspace = this.workspace(tenantId);
     const lead: Lead = {
       id: this.id('lead'),
       tenantId: workspace.tenant.id,
-      customerName: input.customerName,
-      stage: input.stage ?? 'NEW',
-      value: input.value ?? 0,
-      owner: input.owner,
+      customerName: this.nonEmpty(input.customerName, 'Le nom du prospect est obligatoire'),
+      stage: this.leadStage(input.stage ?? 'NEW'),
+      expectedValue: this.nonNegative(input.expectedValue ?? input.value ?? 0, 'Le montant attendu doit être nul ou positif'),
+      owner: this.clean(input.owner),
+      source: this.clean(input.source),
+      nextActionDate: this.clean(input.nextActionDate),
       createdAt: today(),
+      updatedAt: today(),
     };
     workspace.leads.push(lead);
     this.audit(workspace, 'lead.created', 'Lead', lead.id, lead);
@@ -554,6 +616,22 @@ export class ErpStoreService {
 
   listLeads(tenantId?: string): Lead[] {
     return this.workspace(tenantId).leads;
+  }
+
+  updateLead(leadId: string, input: Partial<Lead> & { value?: number }, tenantId?: string): Lead {
+    const workspace = this.workspace(tenantId);
+    const lead = this.lead(workspace, leadId);
+    if (input.customerName !== undefined) lead.customerName = this.nonEmpty(input.customerName, 'Le nom du prospect est obligatoire');
+    if (input.stage !== undefined) lead.stage = this.leadStage(input.stage);
+    if (input.expectedValue !== undefined || input.value !== undefined) {
+      lead.expectedValue = this.nonNegative(input.expectedValue ?? input.value, 'Le montant attendu doit être nul ou positif');
+    }
+    if (input.owner !== undefined) lead.owner = this.clean(input.owner);
+    if (input.source !== undefined) lead.source = this.clean(input.source);
+    if (input.nextActionDate !== undefined) lead.nextActionDate = this.clean(input.nextActionDate);
+    lead.updatedAt = today();
+    this.audit(workspace, 'lead.updated', 'Lead', lead.id, lead);
+    return lead;
   }
 
   addProduct(input: Partial<Product> & { sku: string; name: string; salePrice: number }, tenantId?: string): Product {
@@ -1322,6 +1400,14 @@ export class ErpStoreService {
     return supplier;
   }
 
+  private lead(workspace: TenantWorkspace, leadId: string): Lead {
+    const lead = workspace.leads.find((candidate) => candidate.id === leadId);
+    if (!lead) {
+      throw new NotFoundException('Prospect introuvable');
+    }
+    return lead;
+  }
+
   private product(workspace: TenantWorkspace, productId: string): Product {
     const product = workspace.products.find((candidate) => candidate.id === productId || candidate.sku === productId);
     if (!product) {
@@ -1619,9 +1705,24 @@ export class ErpStoreService {
     return rate;
   }
 
+  private leadStage(value: Lead['stage'] | undefined): Lead['stage'] {
+    const stage = value ?? 'NEW';
+    if (!['NEW', 'QUALIFIED', 'PROPOSAL', 'WON', 'LOST'].includes(stage)) {
+      throw new BadRequestException('Étape prospect invalide');
+    }
+    return stage;
+  }
+
   private validateContacts(contacts: Customer['contacts']): void {
     for (const contact of contacts) {
       this.nonEmpty(contact.name, 'Le nom du contact est obligatoire');
+    }
+  }
+
+  private validateBankDetails(bankDetails: Supplier['bankDetails']): void {
+    for (const bank of bankDetails) {
+      this.nonEmpty(bank.bankName, 'Le nom de la banque est obligatoire');
+      this.nonEmpty(bank.rib, 'Le RIB fournisseur est obligatoire');
     }
   }
 
