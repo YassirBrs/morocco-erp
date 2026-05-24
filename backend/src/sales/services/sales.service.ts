@@ -25,6 +25,11 @@ export class SalesService {
   cancelDeliveryNote(id: string) { return this.store.cancelDeliveryNote(id); }
   listDeliveryNotes() { return this.store.listDeliveryNotes(); }
   deliveryRoutePlanning() { return this.store.deliveryRoutePlanning(); }
+  deliveryInvoiceExceptions() { return this.store.deliveryInvoiceExceptionReport(); }
+  upsertCustomerDeliveryInstruction(data: any) { return this.store.upsertCustomerDeliveryInstruction(data); }
+  customerDeliveryInstructions() { return this.store.customerDeliveryInstructions(); }
+  createTransporter(data: any) { return this.store.createTransporter(data); }
+  transporterRegistry() { return this.store.transporterRegistry(); }
   listDeliveryProofs() { return this.store.listDeliveryProofs(); }
   captureDeliveryProof(data: any) { return this.store.captureDeliveryProof(data); }
   convertOrderToInvoice(id: string) { return this.store.convertOrderToInvoice(id); }

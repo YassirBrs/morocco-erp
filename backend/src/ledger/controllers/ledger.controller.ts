@@ -56,6 +56,12 @@ export class LedgerController {
   @Post('evidence') archiveEvidence(@Body() body: any) { return this.ledgerService.archiveEvidence(body); }
   @Get('audit') audit() { return this.ledgerService.auditLogs(); }
   @Get('chart-of-accounts/import-template.csv') chartOfAccountsImportTemplateCsv() { return this.ledgerService.chartOfAccountsImportTemplateCsv(); }
+  @Get('attachment-requirements') attachmentRequirements() { return this.ledgerService.attachmentRequirements(); }
+  @Post('attachment-requirements') createAttachmentRequirement(@Body() body: any) { return this.ledgerService.createAttachmentRequirement(body); }
+  @Get('pre-closing-accruals') preClosingAccruals() { return this.ledgerService.preClosingAccrualSuggestions(); }
+  @Get('tax-calendar') taxCalendar() { return this.ledgerService.taxCalendar(); }
+  @Get('compliance-owner-reminders') complianceOwnerReminders() { return this.ledgerService.complianceOwnerReminders(); }
+  @Post('compliance-owner-reminders') assignComplianceOwner(@Body() body: any) { return this.ledgerService.assignComplianceOwner(body); }
   @Get('expense-claims') expenseClaims() { return this.ledgerService.listExpenseClaims(); }
   @Post('expense-claims') createExpenseClaim(@Body() body: any) { return this.ledgerService.createExpenseClaim(body); }
   @Post('expense-claims/:id/approve') approveExpenseClaim(@Param('id') id: string) { return this.ledgerService.approveExpenseClaim(id); }

@@ -1242,6 +1242,118 @@ export interface PaymentAdjustmentSuggestion {
   status: 'SUGGESTED' | 'POSTED';
 }
 
+export interface CustomerDeliveryInstruction {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  city: string;
+  constraints: string[];
+  preferredTransporter?: string;
+  deliveryWindow?: string;
+}
+
+export interface Transporter {
+  id: string;
+  tenantId: string;
+  name: string;
+  vehicle: string;
+  driver: string;
+  license: string;
+  insuranceExpiry: string;
+  deliveries: number;
+  onTimeDeliveries: number;
+}
+
+export interface ProcurementApprovalMatrix {
+  id: string;
+  tenantId: string;
+  department: string;
+  budgetOwner: string;
+  amountThreshold: number;
+  category: string;
+  approverRole: UserRole;
+}
+
+export interface AccountingAttachmentRequirement {
+  id: string;
+  tenantId: string;
+  journalType: string;
+  amountThreshold: number;
+  evidenceCategory: 'INVOICE' | 'CONTRACT' | 'BANK_STATEMENT' | 'PAYROLL' | 'TAX_DECLARATION';
+  required: boolean;
+}
+
+export interface ComplianceOwnerAssignment {
+  id: string;
+  tenantId: string;
+  declaration: 'VAT' | 'IR' | 'CNSS' | 'IS' | 'PAYROLL';
+  owner: string;
+  dueDay: number;
+  reminderDaysBefore: number;
+}
+
+export interface PayrollLoan {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  amount: number;
+  outstanding: number;
+  monthlyDeductionLimit: number;
+  approvalEvidence: string;
+  status: 'ACTIVE' | 'PAID';
+}
+
+export interface EmployeeReimbursement {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  expenseClaimId?: string;
+  amount: number;
+  channel: 'PAYROLL' | 'ACCOUNTS_PAYABLE';
+  journalEntryId?: string;
+  status: 'PLANNED' | 'POSTED';
+}
+
+export interface OvertimeApproval {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  department: string;
+  reason: string;
+  hours: number;
+  rateMultiplier: number;
+  payrollImpact: number;
+  status: 'PENDING' | 'APPROVED';
+}
+
+export interface ContractAmendment {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  previousSalary: number;
+  newSalary: number;
+  effectiveDate: string;
+  signedDocumentEvidence: string;
+}
+
+export interface HrAuditTrailEntry {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  category: 'SALARY' | 'DISCIPLINARY' | 'MEDICAL' | 'IDENTITY';
+  actor: string;
+  redactedForRoles: UserRole[];
+  createdAt: string;
+}
+
+export interface ProjectBillingPlan {
+  id: string;
+  tenantId: string;
+  projectId: string;
+  retainerAmount: number;
+  milestones: Array<{ label: string; amount: number; revenueRecognitionNote: string; accountantReview: boolean }>;
+}
+
 export interface StructuredLogEntry {
   id: string;
   tenantId: string;
@@ -1569,6 +1681,17 @@ export interface TenantWorkspace {
   dunningPolicies: DunningPolicy[];
   supplierPaymentProposalRuns: SupplierPaymentProposalRun[];
   paymentAdjustmentSuggestions: PaymentAdjustmentSuggestion[];
+  customerDeliveryInstructions: CustomerDeliveryInstruction[];
+  transporters: Transporter[];
+  procurementApprovalMatrices: ProcurementApprovalMatrix[];
+  accountingAttachmentRequirements: AccountingAttachmentRequirement[];
+  complianceOwnerAssignments: ComplianceOwnerAssignment[];
+  payrollLoans: PayrollLoan[];
+  employeeReimbursements: EmployeeReimbursement[];
+  overtimeApprovals: OvertimeApproval[];
+  contractAmendments: ContractAmendment[];
+  hrAuditTrailEntries: HrAuditTrailEntry[];
+  projectBillingPlans: ProjectBillingPlan[];
   structuredLogs: StructuredLogEntry[];
   metricSamples: MetricSample[];
   backgroundJobs: BackgroundJob[];

@@ -24,5 +24,7 @@ export class ProductionService {
   createProject(data: any) { return this.store.createProject(data); }
   updateProject(id: string, data: any) { return this.store.updateProject(id, data); }
   projectWipReport() { return this.store.projectWipReport(); }
+  createProjectBillingPlan(data: any) { return this.store.createProjectBillingPlan(data); }
+  projectBillingPlans() { return this.store.projectBillingPlans(); }
   profitability() { return this.store.profitabilityView(); }
 }

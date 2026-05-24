@@ -26,6 +26,7 @@ import {
   ComplianceRuleRollout,
   CreditNote,
   Customer,
+  CustomerDeliveryInstruction,
   CustomerKycChecklist,
   DeliveryNote,
   DisputeCase,
@@ -38,6 +39,7 @@ import {
   DeliveryProof,
   Employee,
   EmployeeChecklist,
+  EmployeeReimbursement,
   EmailDelivery,
   ExpenseClaim,
   EmployeePortalAccess,
@@ -64,6 +66,7 @@ import {
   FleetLog,
   FleetVehicle,
   HrPrivateNote,
+  HrAuditTrailEntry,
   MaintenanceAsset,
   MaintenanceWorkOrder,
   MultiCurrencyPreparation,
@@ -74,6 +77,7 @@ import {
   PartnerImplementationChecklist,
   PartnerApiKey,
   PayrollExportArchive,
+  PayrollLoan,
   PayrollRun,
   Payslip,
   PosOfflineQueueItem,
@@ -81,10 +85,12 @@ import {
   PosTransaction,
   PreferredLanguage,
   PreventiveMaintenanceSchedule,
+  ProcurementApprovalMatrix,
   Product,
   ProductLifecycleState,
   ProductionOrder,
   ProjectRecord,
+  ProjectBillingPlan,
   PurchaseOrder,
   ProcurementBudgetControl,
   PurchaseRequest,
@@ -123,6 +129,11 @@ import {
   PromiseToPay,
   ReleaseNote,
   SupportImpersonationApproval,
+  AccountingAttachmentRequirement,
+  ComplianceOwnerAssignment,
+  ContractAmendment,
+  OvertimeApproval,
+  Transporter,
 } from './erp.types';
 
 const r2 = (value: number): number => Math.round(value * 100) / 100;
@@ -522,6 +533,17 @@ export class ErpStoreService {
       dunningPolicies: [],
       supplierPaymentProposalRuns: [],
       paymentAdjustmentSuggestions: [],
+      customerDeliveryInstructions: [],
+      transporters: [],
+      procurementApprovalMatrices: [],
+      accountingAttachmentRequirements: [],
+      complianceOwnerAssignments: [],
+      payrollLoans: [],
+      employeeReimbursements: [],
+      overtimeApprovals: [],
+      contractAmendments: [],
+      hrAuditTrailEntries: [],
+      projectBillingPlans: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -668,6 +690,17 @@ export class ErpStoreService {
       dunningPolicies: [],
       supplierPaymentProposalRuns: [],
       paymentAdjustmentSuggestions: [],
+      customerDeliveryInstructions: [],
+      transporters: [],
+      procurementApprovalMatrices: [],
+      accountingAttachmentRequirements: [],
+      complianceOwnerAssignments: [],
+      payrollLoans: [],
+      employeeReimbursements: [],
+      overtimeApprovals: [],
+      contractAmendments: [],
+      hrAuditTrailEntries: [],
+      projectBillingPlans: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -6882,6 +6915,268 @@ export class ErpStoreService {
 
   paymentAdjustmentSuggestions(tenantId?: string): PaymentAdjustmentSuggestion[] {
     return this.workspace(tenantId).paymentAdjustmentSuggestions;
+  }
+
+  stockReservationAgingReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.salesOrders
+      .filter((order) => order.status === 'CONFIRMED')
+      .flatMap((order) => order.lines.map((line) => {
+        const product = this.product(workspace, line.productId);
+        const customer = this.customer(workspace, order.customerId);
+        return {
+          orderId: order.id,
+          orderNumber: order.number,
+          customerName: customer.name,
+          productId: product.id,
+          sku: product.sku,
+          warehouseId: workspace.warehouses[0].id,
+          reservedQuantity: line.quantity,
+          ageDays: daysBetween(order.date, today()),
+          expiryPolicy: daysBetween(order.date, today()) > 7 ? 'AUTO_RELEASE' : 'KEEP_RESERVED',
+        };
+      }));
+    return { rows, autoReleaseCandidates: rows.filter((row) => row.expiryPolicy === 'AUTO_RELEASE').length };
+  }
+
+  upsertCustomerDeliveryInstruction(input: { customerId: string; city?: string; constraints?: string[]; preferredTransporter?: string; deliveryWindow?: string }, tenantId?: string): CustomerDeliveryInstruction {
+    const workspace = this.workspace(tenantId);
+    const customer = this.customer(workspace, input.customerId);
+    const existing = workspace.customerDeliveryInstructions.find((instruction) => instruction.customerId === customer.id);
+    const instruction: CustomerDeliveryInstruction = existing ?? { id: this.id('delinst'), tenantId: workspace.tenant.id, customerId: customer.id, city: customer.city ?? 'Casablanca', constraints: [] };
+    instruction.city = input.city ?? customer.city ?? instruction.city;
+    instruction.constraints = input.constraints ?? instruction.constraints;
+    instruction.preferredTransporter = this.clean(input.preferredTransporter);
+    instruction.deliveryWindow = this.clean(input.deliveryWindow);
+    if (!existing) workspace.customerDeliveryInstructions.push(instruction);
+    return instruction;
+  }
+
+  customerDeliveryInstructions(tenantId?: string): CustomerDeliveryInstruction[] {
+    return this.workspace(tenantId).customerDeliveryInstructions;
+  }
+
+  createTransporter(input: { name: string; vehicle: string; driver: string; license: string; insuranceExpiry: string; deliveries?: number; onTimeDeliveries?: number }, tenantId?: string): Transporter {
+    const workspace = this.workspace(tenantId);
+    const transporter: Transporter = {
+      id: this.id('trans'),
+      tenantId: workspace.tenant.id,
+      name: this.nonEmpty(input.name, 'Nom transporteur obligatoire'),
+      vehicle: this.nonEmpty(input.vehicle, 'Véhicule transporteur obligatoire'),
+      driver: this.nonEmpty(input.driver, 'Chauffeur transporteur obligatoire'),
+      license: this.nonEmpty(input.license, 'Licence transporteur obligatoire'),
+      insuranceExpiry: this.isoDate(input.insuranceExpiry, 'Date assurance transporteur invalide'),
+      deliveries: input.deliveries ?? 0,
+      onTimeDeliveries: input.onTimeDeliveries ?? 0,
+    };
+    workspace.transporters.push(transporter);
+    return transporter;
+  }
+
+  transporterRegistry(tenantId?: string) {
+    const transporters = this.workspace(tenantId).transporters;
+    return { rows: transporters.map((transporter) => ({ ...transporter, onTimeRate: transporter.deliveries ? r2((transporter.onTimeDeliveries / transporter.deliveries) * 100) : 0 })) };
+  }
+
+  deliveryInvoiceExceptionReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const deliveredNotInvoiced = workspace.deliveryNotes.filter((delivery) => delivery.status === 'POSTED' && !workspace.invoices.some((invoice) => invoice.sourceDeliveryNoteId === delivery.id));
+    const invoicedNotDelivered = workspace.invoices.filter((invoice) => invoice.sourceOrderId && !invoice.sourceDeliveryNoteId);
+    return { deliveredNotInvoiced, invoicedNotDelivered, status: deliveredNotInvoiced.length || invoicedNotDelivered.length ? 'NEEDS_REVIEW' : 'OK' };
+  }
+
+  createProcurementApprovalMatrix(input: { department: string; budgetOwner: string; amountThreshold: number; category: string; approverRole?: UserRole }, tenantId?: string): ProcurementApprovalMatrix {
+    const workspace = this.workspace(tenantId);
+    const matrix: ProcurementApprovalMatrix = {
+      id: this.id('pam'),
+      tenantId: workspace.tenant.id,
+      department: this.nonEmpty(input.department, 'Département matrice achat obligatoire'),
+      budgetOwner: this.nonEmpty(input.budgetOwner, 'Budget owner obligatoire'),
+      amountThreshold: this.nonNegative(input.amountThreshold, 'Seuil matrice achat invalide'),
+      category: this.nonEmpty(input.category, 'Catégorie matrice achat obligatoire'),
+      approverRole: input.approverRole ?? 'ADMIN',
+    };
+    workspace.procurementApprovalMatrices.push(matrix);
+    return matrix;
+  }
+
+  procurementApprovalMatrices(tenantId?: string): ProcurementApprovalMatrix[] {
+    return this.workspace(tenantId).procurementApprovalMatrices;
+  }
+
+  supplierPriceHistoryReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.purchaseReceipts.flatMap((receipt) => receipt.lines.map((line) => ({ supplierId: receipt.supplierId, productId: line.productId, date: receipt.date, unitCost: line.unitCost })));
+    return {
+      rows: rows.map((row) => {
+        const history = rows.filter((candidate) => candidate.supplierId === row.supplierId && candidate.productId === row.productId);
+        const averagePrice = r2(history.reduce((sum, candidate) => sum + candidate.unitCost, 0) / history.length);
+        return { ...row, supplierName: this.supplier(workspace, row.supplierId).name, sku: this.product(workspace, row.productId).sku, averagePrice, variance: r2(row.unitCost - averagePrice), alert: Math.abs(row.unitCost - averagePrice) > averagePrice * 0.15 ? 'PRICE_VARIANCE' : 'OK' };
+      }),
+    };
+  }
+
+  substituteProductRecommendations(input: { productId: string; customerSegment?: string }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const product = this.product(workspace, input.productId);
+    const rows = workspace.products
+      .filter((candidate) => candidate.id !== product.id && candidate.type === product.type && candidate.active && this.availableStock(candidate) > 0)
+      .map((candidate) => ({ productId: candidate.id, sku: candidate.sku, name: candidate.name, availableStock: this.availableStock(candidate), margin: r2(candidate.salePrice - candidate.weightedAverageCost), customerSegment: input.customerSegment ?? 'standard' }))
+      .sort((left, right) => right.margin - left.margin);
+    return { productId: product.id, rows };
+  }
+
+  inventoryDeadStockReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const soldProductIds = new Set(workspace.invoices.flatMap((invoice) => invoice.lines.map((line) => line.productId)));
+    const rows = workspace.products
+      .filter((product) => product.trackStock && product.stockOnHand > 0)
+      .map((product) => ({ productId: product.id, sku: product.sku, stockValue: r2(product.stockOnHand * product.weightedAverageCost), lastSaleDate: soldProductIds.has(product.id) ? workspace.invoices.find((invoice) => invoice.lines.some((line) => line.productId === product.id))?.date : undefined, recommendedAction: soldProductIds.has(product.id) ? 'MONITOR' : 'PROMOTE_OR_WRITE_DOWN' }));
+    return { rows };
+  }
+
+  cumpRecalculationRehearsal(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      lockedPeriodProtected: workspace.fiscalPeriods.some((period) => period.locked),
+      rows: workspace.products.filter((product) => product.trackStock).map((product) => {
+        const receiptMoves = workspace.stockMoves.filter((move) => move.productId === product.id && move.type === 'RECEIPT');
+        const totalQty = receiptMoves.reduce((sum, move) => sum + move.quantity, 0);
+        const totalValue = receiptMoves.reduce((sum, move) => sum + move.value, 0);
+        const recalculated = totalQty ? r2(totalValue / totalQty) : product.weightedAverageCost;
+        return { productId: product.id, sku: product.sku, beforeCump: product.weightedAverageCost, afterCump: recalculated, valuationDelta: r2((recalculated - product.weightedAverageCost) * product.stockOnHand) };
+      }),
+    };
+  }
+
+  createAccountingAttachmentRequirement(input: { journalType: string; amountThreshold: number; evidenceCategory: AccountingAttachmentRequirement['evidenceCategory']; required?: boolean }, tenantId?: string): AccountingAttachmentRequirement {
+    const workspace = this.workspace(tenantId);
+    const requirement: AccountingAttachmentRequirement = { id: this.id('attreq'), tenantId: workspace.tenant.id, journalType: this.nonEmpty(input.journalType, 'Type journal obligatoire'), amountThreshold: this.nonNegative(input.amountThreshold, 'Seuil pièce invalide'), evidenceCategory: input.evidenceCategory, required: input.required ?? true };
+    workspace.accountingAttachmentRequirements.push(requirement);
+    return requirement;
+  }
+
+  accountingAttachmentRequirements(tenantId?: string): AccountingAttachmentRequirement[] {
+    return this.workspace(tenantId).accountingAttachmentRequirements;
+  }
+
+  preClosingAccrualSuggestions(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = today().slice(0, 7);
+    return {
+      period,
+      rows: [
+        { category: 'RENT', label: 'Loyer mensuel', amount: 12000, source: 'recurring-purchase' },
+        { category: 'UTILITIES', label: 'Eau/électricité estimée', amount: 2500, source: 'estimate' },
+        { category: 'SALARIES', label: 'Salaires à payer', amount: workspace.employees.reduce((sum, employee) => sum + employee.baseSalary, 0), source: 'payroll' },
+        { category: 'PURCHASES', label: 'Achats reçus non facturés', amount: this.deliveryInvoiceExceptionReport(workspace.tenant.id).deliveredNotInvoiced.length * 1000, source: 'exceptions' },
+      ],
+    };
+  }
+
+  moroccoTaxCalendar(tenantId?: string) {
+    this.workspace(tenantId);
+    return {
+      rows: [
+        { declaration: 'VAT', label: 'TVA', dueDay: 20, frequency: 'MONTHLY' },
+        { declaration: 'IR', label: 'IR salaires', dueDay: 30, frequency: 'MONTHLY' },
+        { declaration: 'CNSS', label: 'CNSS/AMO', dueDay: 10, frequency: 'MONTHLY' },
+        { declaration: 'IS', label: 'Acomptes IS', dueDay: 31, frequency: 'QUARTERLY' },
+        { declaration: 'PAYROLL', label: 'Livre de paie', dueDay: 5, frequency: 'MONTHLY' },
+      ],
+    };
+  }
+
+  assignComplianceOwner(input: { declaration: ComplianceOwnerAssignment['declaration']; owner: string; dueDay: number; reminderDaysBefore?: number }, tenantId?: string): ComplianceOwnerAssignment {
+    const workspace = this.workspace(tenantId);
+    const assignment: ComplianceOwnerAssignment = { id: this.id('compown'), tenantId: workspace.tenant.id, declaration: input.declaration, owner: this.nonEmpty(input.owner, 'Owner conformité obligatoire'), dueDay: this.nonNegative(input.dueDay, 'Jour échéance invalide'), reminderDaysBefore: input.reminderDaysBefore ?? 5 };
+    workspace.complianceOwnerAssignments.push(assignment);
+    return assignment;
+  }
+
+  complianceOwnerReminders(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: workspace.complianceOwnerAssignments.map((assignment) => ({ ...assignment, reminderDay: Math.max(1, assignment.dueDay - assignment.reminderDaysBefore) })) };
+  }
+
+  createPayrollLoan(input: { employeeId: string; amount: number; monthlyDeductionLimit: number; approvalEvidence: string }, tenantId?: string): PayrollLoan {
+    const workspace = this.workspace(tenantId);
+    this.employee(workspace, input.employeeId);
+    const loan: PayrollLoan = { id: this.id('loan'), tenantId: workspace.tenant.id, employeeId: input.employeeId, amount: this.positive(input.amount, 'Montant prêt obligatoire'), outstanding: input.amount, monthlyDeductionLimit: this.positive(input.monthlyDeductionLimit, 'Plafond deduction obligatoire'), approvalEvidence: this.nonEmpty(input.approvalEvidence, 'Preuve approbation obligatoire'), status: 'ACTIVE' };
+    workspace.payrollLoans.push(loan);
+    return loan;
+  }
+
+  listPayrollLoans(tenantId?: string): PayrollLoan[] {
+    return this.workspace(tenantId).payrollLoans;
+  }
+
+  createEmployeeReimbursement(input: { employeeId: string; expenseClaimId?: string; amount: number; channel?: EmployeeReimbursement['channel'] }, tenantId?: string): EmployeeReimbursement {
+    const workspace = this.workspace(tenantId);
+    this.employee(workspace, input.employeeId);
+    let journalEntryId: string | undefined;
+    if ((input.channel ?? 'ACCOUNTS_PAYABLE') === 'ACCOUNTS_PAYABLE') {
+      journalEntryId = this.postJournal(workspace, 'Remboursement frais salarié', `REIMB-${input.employeeId}`, [
+        { account: '6198', label: 'Frais remboursés', debit: input.amount, credit: 0 },
+        { account: '4441', label: 'Dette salarié', debit: 0, credit: input.amount },
+      ]).id;
+    }
+    const reimbursement: EmployeeReimbursement = { id: this.id('reimb'), tenantId: workspace.tenant.id, employeeId: input.employeeId, expenseClaimId: this.clean(input.expenseClaimId), amount: this.positive(input.amount, 'Montant remboursement obligatoire'), channel: input.channel ?? 'ACCOUNTS_PAYABLE', journalEntryId, status: journalEntryId ? 'POSTED' : 'PLANNED' };
+    workspace.employeeReimbursements.push(reimbursement);
+    return reimbursement;
+  }
+
+  createOvertimeApproval(input: { employeeId: string; department: string; reason: string; hours: number; rateMultiplier?: number }, tenantId?: string): OvertimeApproval {
+    const workspace = this.workspace(tenantId);
+    const employee = this.employee(workspace, input.employeeId);
+    const hours = this.positive(input.hours, 'Heures supplémentaires obligatoires');
+    const rateMultiplier = input.rateMultiplier ?? 1.25;
+    const hourlyRate = employee.baseSalary / 191;
+    const approval: OvertimeApproval = { id: this.id('ot'), tenantId: workspace.tenant.id, employeeId: employee.id, department: this.nonEmpty(input.department, 'Département overtime obligatoire'), reason: this.nonEmpty(input.reason, 'Motif overtime obligatoire'), hours, rateMultiplier, payrollImpact: r2(hours * hourlyRate * rateMultiplier), status: 'APPROVED' };
+    workspace.overtimeApprovals.push(approval);
+    return approval;
+  }
+
+  amendEmploymentContract(input: { employeeId: string; newSalary: number; effectiveDate: string; signedDocumentEvidence: string }, tenantId?: string): ContractAmendment {
+    const workspace = this.workspace(tenantId);
+    const employee = this.employee(workspace, input.employeeId);
+    const amendment: ContractAmendment = { id: this.id('amend'), tenantId: workspace.tenant.id, employeeId: employee.id, previousSalary: employee.baseSalary, newSalary: this.positive(input.newSalary, 'Nouveau salaire obligatoire'), effectiveDate: this.isoDate(input.effectiveDate, 'Date effet avenant invalide'), signedDocumentEvidence: this.nonEmpty(input.signedDocumentEvidence, 'Preuve avenant signée obligatoire') };
+    workspace.contractAmendments.push(amendment);
+    employee.baseSalary = amendment.newSalary;
+    this.addHrAuditTrail({ employeeId: employee.id, category: 'SALARY', actor: 'payroll@atlas.ma', redactedForRoles: ['READ_ONLY', 'SALES'] }, workspace.tenant.id);
+    return amendment;
+  }
+
+  payrollSocialDeclarationReconciliation(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const payslipTotals = workspace.payrollRuns.reduce((sum, run) => sum + run.totals.cnssEmployee + run.totals.amoEmployee + run.totals.employerCharges, 0);
+    const damancomExports = workspace.payrollExportArchives.length;
+    const accountingCnss = workspace.journalEntries.flatMap((entry) => entry.lines).filter((line) => line.account === '4443').reduce((sum, line) => sum + line.credit - line.debit, 0);
+    return { payslipTotals: r2(payslipTotals), damancomExports, accountingCnss: r2(accountingCnss), variance: r2(payslipTotals - accountingCnss), status: Math.abs(payslipTotals - accountingCnss) < 1 ? 'OK' : 'NEEDS_REVIEW' };
+  }
+
+  addHrAuditTrail(input: { employeeId: string; category: HrAuditTrailEntry['category']; actor: string; redactedForRoles?: UserRole[] }, tenantId?: string): HrAuditTrailEntry {
+    const workspace = this.workspace(tenantId);
+    this.employee(workspace, input.employeeId);
+    const entry: HrAuditTrailEntry = { id: this.id('hraudit'), tenantId: workspace.tenant.id, employeeId: input.employeeId, category: input.category, actor: this.nonEmpty(input.actor, 'Acteur audit RH obligatoire'), redactedForRoles: input.redactedForRoles ?? ['READ_ONLY'], createdAt: today() };
+    workspace.hrAuditTrailEntries.push(entry);
+    return entry;
+  }
+
+  hrAuditTrail(role: UserRole = 'OWNER', tenantId?: string): HrAuditTrailEntry[] {
+    return this.workspace(tenantId).hrAuditTrailEntries.filter((entry) => !entry.redactedForRoles.includes(role));
+  }
+
+  createProjectBillingPlan(input: { projectId: string; retainerAmount: number; milestones: ProjectBillingPlan['milestones'] }, tenantId?: string): ProjectBillingPlan {
+    const workspace = this.workspace(tenantId);
+    this.project(workspace, input.projectId);
+    const plan: ProjectBillingPlan = { id: this.id('pbill'), tenantId: workspace.tenant.id, projectId: input.projectId, retainerAmount: this.nonNegative(input.retainerAmount, 'Retainer projet invalide'), milestones: input.milestones };
+    workspace.projectBillingPlans.push(plan);
+    return plan;
+  }
+
+  projectBillingPlans(tenantId?: string): ProjectBillingPlan[] {
+    return this.workspace(tenantId).projectBillingPlans;
   }
 
   upgradePrompts(tenantId?: string) {

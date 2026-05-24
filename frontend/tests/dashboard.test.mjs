@@ -422,3 +422,15 @@ test('Next primary workspace exposes growth, restore, SLA, KYC, dispute, collect
     assert.ok(api.includes(endpoint), `${endpoint} growth control API route is wired`);
   }
 });
+
+test('Next primary workspace exposes logistics, close, compliance, payroll, HR audit, and project billing batch', () => {
+  for (const text of ['Logistique clôture et paie', 'Réservations âgées', 'Exceptions BL/facture', 'Calendrier fiscal', 'Social paie', 'Stock et transport', 'Clôture comptable', 'Paie et projets', 'Avenants, overtime et remboursements reliés aux journaux']) {
+    assert.ok(page.includes(text), `${text} logistics/close label is present`);
+  }
+  for (const marker of ['getLogisticsCloseReadiness', 'logisticsClose.reservationAging', 'logisticsClose.taxCalendar', 'logisticsClose.socialReconciliation', 'logisticsClose.projectBillingPlans']) {
+    assert.ok(page.includes(marker), `${marker} logistics/close helper is present`);
+  }
+  for (const endpoint of ['/inventory/reservations/aging', '/sales/delivery-instructions', '/sales/transporters', '/sales/delivery-invoice-exceptions', '/inventory/procurement-approval-matrices', '/inventory/supplier-price-history', '/inventory/substitute-recommendations', '/inventory/dead-stock', '/inventory/cump-recalculation-rehearsal', '/ledger/attachment-requirements', '/ledger/pre-closing-accruals', '/ledger/tax-calendar', '/ledger/compliance-owner-reminders', '/payroll/loans', '/payroll/social-declaration-reconciliation', '/payroll/hr-audit-trail?role=OWNER', '/production/project-billing-plans']) {
+    assert.ok(api.includes(endpoint), `${endpoint} logistics/close API route is wired`);
+  }
+});

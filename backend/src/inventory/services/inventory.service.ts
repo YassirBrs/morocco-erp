@@ -45,6 +45,7 @@ export class InventoryService {
   barcodeLookup(code: string) { return this.store.barcodeLookup(code); }
   stockAlerts() { return this.store.stockAlerts(); }
   reservationVisibility() { return this.store.stockReservationVisibility(); }
+  reservationAging() { return this.store.stockReservationAgingReport(); }
   landedCostAllocation(data: any) { return this.store.landedCostAllocation(data); }
   listTraceabilityLots() { return this.store.listTraceabilityLots(); }
   createTraceabilityLot(data: any) { return this.store.createTraceabilityLot(data); }
@@ -70,6 +71,12 @@ export class InventoryService {
   createProcurementBudget(data: any) { return this.store.createProcurementBudget(data); }
   procurementBudgetControls() { return this.store.procurementBudgetControls(); }
   supplierPaymentProposalRun(data: any) { return this.store.supplierPaymentProposalRun(data); }
+  procurementApprovalMatrices() { return this.store.procurementApprovalMatrices(); }
+  createProcurementApprovalMatrix(data: any) { return this.store.createProcurementApprovalMatrix(data); }
+  supplierPriceHistoryReport() { return this.store.supplierPriceHistoryReport(); }
+  substituteRecommendations(data: any) { return this.store.substituteProductRecommendations(data); }
+  deadStockReport() { return this.store.inventoryDeadStockReport(); }
+  cumpRecalculationRehearsal() { return this.store.cumpRecalculationRehearsal(); }
   listPurchaseOrders() { return this.store.listPurchaseOrders(); }
   createPurchaseOrder(data: any) { return this.store.createPurchaseOrder(data); }
   purchaseOrderPdf(id: string) { return this.store.exportPurchaseOrderPdf(id); }

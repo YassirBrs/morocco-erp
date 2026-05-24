@@ -2053,4 +2053,61 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(chequeAudit.rows.map((row) => row.number)).toContain(cheque.number);
     expect(adjustment).toMatchObject({ bankFee: 15, withholdingTax: 10, status: 'SUGGESTED' });
   });
+
+  it('covers logistics, close, compliance, payroll control, HR audit, and project billing workflows', () => {
+    const order = store.createSalesOrder({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 2 }] });
+    order.date = '2026-05-01';
+    const reservationAging = store.stockReservationAgingReport();
+    const instruction = store.upsertCustomerDeliveryInstruction({ customerId: 'cus-1', city: 'Rabat', constraints: ['Accès médina interdit camion'], preferredTransporter: 'TransMaroc', deliveryWindow: '09:00-12:00' });
+    const transporter = store.createTransporter({ name: 'TransMaroc', vehicle: 'Camion 3.5T', driver: 'Karim Routier', license: 'TR-2026', insuranceExpiry: '2026-12-31', deliveries: 10, onTimeDeliveries: 8 });
+    const transporterRegistry = store.transporterRegistry();
+    const delivery = store.createDeliveryNoteFromOrder(order.id);
+    const exceptions = store.deliveryInvoiceExceptionReport();
+
+    const matrix = store.createProcurementApprovalMatrix({ department: 'Logistique', budgetOwner: 'Directeur opérations', amountThreshold: 20000, category: 'Transport', approverRole: 'ADMIN' });
+    const receipt = store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 4, unitCost: 95 }] });
+    const priceHistory = store.supplierPriceHistoryReport();
+    store.addProduct({ sku: 'SKU-CHAIR-ALT', name: 'Chaise alternative', type: 'GOODS', salePrice: 780, purchaseCost: 430, stockOnHand: 12, weightedAverageCost: 430 });
+    const substitutes = store.substituteProductRecommendations({ productId: 'prd-1', customerSegment: 'Retail' });
+    const deadStock = store.inventoryDeadStockReport();
+    const cump = store.cumpRecalculationRehearsal();
+
+    const requirement = store.createAccountingAttachmentRequirement({ journalType: 'ACHAT', amountThreshold: 10000, evidenceCategory: 'INVOICE' });
+    const accruals = store.preClosingAccrualSuggestions();
+    const taxCalendar = store.moroccoTaxCalendar();
+    const owner = store.assignComplianceOwner({ declaration: 'VAT', owner: 'fiscaliste@atlas.ma', dueDay: 20, reminderDaysBefore: 5 });
+    const reminders = store.complianceOwnerReminders();
+
+    const loan = store.createPayrollLoan({ employeeId: 'emp-1', amount: 5000, monthlyDeductionLimit: 800, approvalEvidence: 'loan-approval.pdf' });
+    const expense = store.createExpenseClaim({ employeeId: 'emp-1', category: 'Taxi', amount: 120, receiptReference: 'TX-1' });
+    const reimbursement = store.createEmployeeReimbursement({ employeeId: 'emp-1', expenseClaimId: expense.id, amount: 120, channel: 'ACCOUNTS_PAYABLE' });
+    const overtime = store.createOvertimeApproval({ employeeId: 'emp-1', department: 'Logistique', reason: 'Inventaire nuit', hours: 4, rateMultiplier: 1.5 });
+    const amendment = store.amendEmploymentContract({ employeeId: 'emp-1', newSalary: 6500, effectiveDate: '2026-06-01', signedDocumentEvidence: 'avenant-emp-1.pdf' });
+    const social = store.payrollSocialDeclarationReconciliation();
+    const hrAudit = store.hrAuditTrail('OWNER');
+
+    const project = store.createProject({ customerId: 'cus-1', name: 'Projet retainer', budget: 30000 });
+    const billing = store.createProjectBillingPlan({ projectId: project.id, retainerAmount: 5000, milestones: [{ label: 'Livraison 1', amount: 10000, revenueRecognitionNote: 'Reconnaissance à validation client', accountantReview: true }] });
+
+    expect(reservationAging.rows[0]).toMatchObject({ orderId: order.id, expiryPolicy: 'AUTO_RELEASE' });
+    expect(instruction).toMatchObject({ city: 'Rabat', preferredTransporter: 'TransMaroc' });
+    expect(transporterRegistry.rows[0]).toMatchObject({ id: transporter.id, onTimeRate: 80 });
+    expect(exceptions.deliveredNotInvoiced[0]).toMatchObject({ id: delivery.id });
+    expect(matrix).toMatchObject({ department: 'Logistique', approverRole: 'ADMIN' });
+    expect(priceHistory.rows[0]).toMatchObject({ supplierId: 'sup-1', productId: receipt.lines[0].productId });
+    expect(substitutes.rows[0]).toHaveProperty('margin');
+    expect(deadStock.rows.length).toBeGreaterThan(0);
+    expect(cump.rows[0]).toHaveProperty('afterCump');
+    expect(requirement).toMatchObject({ evidenceCategory: 'INVOICE', required: true });
+    expect(accruals.rows.map((row) => row.category)).toEqual(expect.arrayContaining(['RENT', 'SALARIES']));
+    expect(taxCalendar.rows.map((row) => row.declaration)).toEqual(['VAT', 'IR', 'CNSS', 'IS', 'PAYROLL']);
+    expect(reminders.rows[0]).toMatchObject({ id: owner.id, reminderDay: 15 });
+    expect(loan).toMatchObject({ outstanding: 5000, monthlyDeductionLimit: 800 });
+    expect(reimbursement).toMatchObject({ status: 'POSTED' });
+    expect(overtime.payrollImpact).toBeGreaterThan(0);
+    expect(amendment).toMatchObject({ previousSalary: 6000, newSalary: 6500 });
+    expect(social).toHaveProperty('variance');
+    expect(hrAudit.map((entry) => entry.category)).toContain('SALARY');
+    expect(billing).toMatchObject({ projectId: project.id, retainerAmount: 5000 });
+  });
 });

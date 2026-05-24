@@ -248,6 +248,26 @@ export type GrowthControlReadiness = {
   paymentAdjustments: unknown[];
 };
 
+export type LogisticsCloseReadiness = {
+  reservationAging: { rows: unknown[]; autoReleaseCandidates: number };
+  deliveryInstructions: unknown[];
+  transporters: { rows: unknown[] };
+  deliveryInvoiceExceptions: { status: string };
+  procurementMatrices: unknown[];
+  supplierPriceHistory: { rows: unknown[] };
+  substituteRecommendations: { rows: unknown[] };
+  deadStock: { rows: unknown[] };
+  cumpRehearsal: { rows: unknown[]; lockedPeriodProtected: boolean };
+  attachmentRequirements: unknown[];
+  accruals: { rows: unknown[] };
+  taxCalendar: { rows: unknown[] };
+  complianceOwners: { rows: unknown[] };
+  payrollLoans: unknown[];
+  socialReconciliation: { status: string };
+  hrAuditTrail: unknown[];
+  projectBillingPlans: unknown[];
+};
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -553,4 +573,27 @@ export async function getGrowthControlReadiness(): Promise<GrowthControlReadines
     getJson('/ledger/payments/adjustment-suggestions', []),
   ]);
   return { restoreChecklist, supportImpersonations, releaseNotes, onboardingNudges, competitiveScorecard, slaTimers, escalationRules, currencyPreparations, branchNumberingPolicies, regionalSalesHeatmap, customerKyc, supplierKys, customerDisputes, supplierDisputes, promisesToPay, paymentAllocationPreview, dunningPolicies, supplierPaymentProposal, chequeLifecycle, paymentAdjustments };
+}
+
+export async function getLogisticsCloseReadiness(): Promise<LogisticsCloseReadiness> {
+  const [reservationAging, deliveryInstructions, transporters, deliveryInvoiceExceptions, procurementMatrices, supplierPriceHistory, substituteRecommendations, deadStock, cumpRehearsal, attachmentRequirements, accruals, taxCalendar, complianceOwners, payrollLoans, socialReconciliation, hrAuditTrail, projectBillingPlans] = await Promise.all([
+    getJson('/inventory/reservations/aging', { rows: [], autoReleaseCandidates: 0 }),
+    getJson('/sales/delivery-instructions', []),
+    getJson('/sales/transporters', { rows: [] }),
+    getJson('/sales/delivery-invoice-exceptions', { status: 'OK' }),
+    getJson('/inventory/procurement-approval-matrices', []),
+    getJson('/inventory/supplier-price-history', { rows: [] }),
+    postJson('/inventory/substitute-recommendations', { productId: 'prd-1' }, { rows: [] }),
+    getJson('/inventory/dead-stock', { rows: [] }),
+    getJson('/inventory/cump-recalculation-rehearsal', { rows: [], lockedPeriodProtected: false }),
+    getJson('/ledger/attachment-requirements', []),
+    getJson('/ledger/pre-closing-accruals', { rows: [] }),
+    getJson('/ledger/tax-calendar', { rows: [] }),
+    getJson('/ledger/compliance-owner-reminders', { rows: [] }),
+    getJson('/payroll/loans', []),
+    getJson('/payroll/social-declaration-reconciliation', { status: 'OK' }),
+    getJson('/payroll/hr-audit-trail?role=OWNER', []),
+    getJson('/production/project-billing-plans', []),
+  ]);
+  return { reservationAging, deliveryInstructions, transporters, deliveryInvoiceExceptions, procurementMatrices, supplierPriceHistory, substituteRecommendations, deadStock, cumpRehearsal, attachmentRequirements, accruals, taxCalendar, complianceOwners, payrollLoans, socialReconciliation, hrAuditTrail, projectBillingPlans };
 }

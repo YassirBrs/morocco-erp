@@ -160,6 +160,14 @@ export class PayrollService {
   assignAsset(data: any) { return this.store.assignAsset(data); }
   returnAsset(id: string) { return this.store.returnAsset(id); }
   listAssetAssignments() { return this.store.listAssetAssignments(); }
+  createPayrollLoan(data: any) { return this.store.createPayrollLoan(data); }
+  listPayrollLoans() { return this.store.listPayrollLoans(); }
+  createEmployeeReimbursement(data: any) { return this.store.createEmployeeReimbursement(data); }
+  createOvertimeApproval(data: any) { return this.store.createOvertimeApproval(data); }
+  amendEmploymentContract(data: any) { return this.store.amendEmploymentContract(data); }
+  payrollSocialDeclarationReconciliation() { return this.store.payrollSocialDeclarationReconciliation(); }
+  addHrAuditTrail(data: any) { return this.store.addHrAuditTrail(data); }
+  hrAuditTrail(role?: any) { return this.store.hrAuditTrail(role); }
   employeeImportTemplateCsv() { return this.store.importTemplateCsv('employees'); }
   payrollRunTimeline(id: string) { return this.store.entityTimeline('PAYROLL_RUN', id); }
   addPayrollRunNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'PAYROLL_RUN', entityId: id, ...data }); }

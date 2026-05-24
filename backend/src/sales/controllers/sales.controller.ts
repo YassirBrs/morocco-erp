@@ -23,6 +23,11 @@ export class SalesController {
   @Post('orders/:id/invoice') convertOrderToInvoice(@Param('id') id: string) { return this.salesService.convertOrderToInvoice(id); }
   @Get('delivery-notes') deliveryNotes() { return this.salesService.listDeliveryNotes(); }
   @Get('delivery-route-plan') deliveryRoutePlan() { return this.salesService.deliveryRoutePlanning(); }
+  @Get('delivery-invoice-exceptions') deliveryInvoiceExceptions() { return this.salesService.deliveryInvoiceExceptions(); }
+  @Get('delivery-instructions') deliveryInstructions() { return this.salesService.customerDeliveryInstructions(); }
+  @Post('delivery-instructions') upsertDeliveryInstruction(@Body() body: any) { return this.salesService.upsertCustomerDeliveryInstruction(body); }
+  @Get('transporters') transporters() { return this.salesService.transporterRegistry(); }
+  @Post('transporters') createTransporter(@Body() body: any) { return this.salesService.createTransporter(body); }
   @Get('delivery-proofs') deliveryProofs() { return this.salesService.listDeliveryProofs(); }
   @Post('delivery-proofs') captureDeliveryProof(@Body() body: any) { return this.salesService.captureDeliveryProof(body); }
   @Get('delivery-notes/:id/pdf') deliveryNotePdf(@Param('id') id: string) { return this.salesService.exportDeliveryNotePdf(id); }

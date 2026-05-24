@@ -42,6 +42,12 @@ export class LedgerService {
   archiveEvidence(data: any) { return this.store.archiveLegalEvidence(data); }
   auditLogs() { return this.store.auditLogs(); }
   chartOfAccountsImportTemplateCsv() { return this.store.importTemplateCsv('chart-of-accounts'); }
+  createAttachmentRequirement(data: any) { return this.store.createAccountingAttachmentRequirement(data); }
+  attachmentRequirements() { return this.store.accountingAttachmentRequirements(); }
+  preClosingAccrualSuggestions() { return this.store.preClosingAccrualSuggestions(); }
+  taxCalendar() { return this.store.moroccoTaxCalendar(); }
+  assignComplianceOwner(data: any) { return this.store.assignComplianceOwner(data); }
+  complianceOwnerReminders() { return this.store.complianceOwnerReminders(); }
   listExpenseClaims() { return this.store.listExpenseClaims(); }
   createExpenseClaim(data: any) { return this.store.createExpenseClaim(data); }
   approveExpenseClaim(id: string) { return this.store.approveExpenseClaim(id); }

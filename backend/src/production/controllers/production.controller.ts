@@ -23,5 +23,7 @@ export class ProductionController {
   @Post('projects') createProject(@Body() body: any) { return this.productionService.createProject(body); }
   @Patch('projects/:id') updateProject(@Param('id') id: string, @Body() body: any) { return this.productionService.updateProject(id, body); }
   @Get('projects-wip') projectWip() { return this.productionService.projectWipReport(); }
+  @Get('project-billing-plans') projectBillingPlans() { return this.productionService.projectBillingPlans(); }
+  @Post('project-billing-plans') createProjectBillingPlan(@Body() body: any) { return this.productionService.createProjectBillingPlan(body); }
   @Get('profitability') profitability() { return this.productionService.profitability(); }
 }

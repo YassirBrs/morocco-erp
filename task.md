@@ -345,26 +345,26 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T248 P1 - Add supplier payment proposal run with due-date cutoffs, risk flags, cash balance, and approval status.
 - [x] T249 P1 - Add cheque lifecycle audit from receipt to deposit, clearing, rejection, and customer notification.
 - [x] T250 P1 - Add bank fee and withholding tax handling on payments with accounting entry suggestions.
-- [ ] T251 P1 - Add stock reservation aging report by order, customer, product, warehouse, and expiry policy.
-- [ ] T252 P1 - Add customer-specific delivery instructions and route constraints for Moroccan cities.
-- [ ] T253 P1 - Add transporter registry with vehicle, driver, license, insurance, and delivery performance metrics.
-- [ ] T254 P1 - Add delivered-not-invoiced and invoiced-not-delivered exception reports.
-- [ ] T255 P1 - Add procurement requisition approval matrix by department, budget owner, amount, and category.
-- [ ] T256 P1 - Add supplier price history per product with last price, average price, delay, and variance alerts.
-- [ ] T257 P1 - Add substitute product recommendations for stockouts using margin, availability, and customer segment.
-- [ ] T258 P1 - Add inventory dead-stock report by last sale date, stock value, and recommended action.
-- [ ] T259 P1 - Add CUMP recalculation rehearsal report with before/after valuation and locked-period protection.
-- [ ] T260 P1 - Add accounting attachment requirements by journal type, amount threshold, and Moroccan evidence category.
-- [ ] T261 P1 - Add pre-closing accrual suggestions for rent, utilities, salaries, purchases, and recurring services.
-- [ ] T262 P1 - Add tax calendar with VAT, IR, CNSS, IS, and payroll declaration deadlines for Moroccan SMEs.
-- [ ] T263 P1 - Add compliance owner assignments and reminders for tax declarations, payroll exports, and evidence archives.
-- [ ] T264 P1 - Add payroll loan and advance tracking with monthly deduction limits and approval evidence.
-- [ ] T265 P1 - Add employee expense reimbursement through payroll or accounts payable with journal linkage.
-- [ ] T266 P1 - Add overtime approval workflow with department, reason, rate, and payroll impact.
-- [ ] T267 P1 - Add employee contract amendment workflow with salary history, effective dates, and signed document evidence.
-- [ ] T268 P1 - Add payroll social declaration reconciliation between payslips, Damancom exports, and accounting entries.
-- [ ] T269 P1 - Add role-restricted HR audit trail for salary, disciplinary, medical, and identity document changes.
-- [ ] T270 P1 - Add project retainer and milestone billing with revenue recognition notes for accountant review.
+- [x] T251 P1 - Add stock reservation aging report by order, customer, product, warehouse, and expiry policy.
+- [x] T252 P1 - Add customer-specific delivery instructions and route constraints for Moroccan cities.
+- [x] T253 P1 - Add transporter registry with vehicle, driver, license, insurance, and delivery performance metrics.
+- [x] T254 P1 - Add delivered-not-invoiced and invoiced-not-delivered exception reports.
+- [x] T255 P1 - Add procurement requisition approval matrix by department, budget owner, amount, and category.
+- [x] T256 P1 - Add supplier price history per product with last price, average price, delay, and variance alerts.
+- [x] T257 P1 - Add substitute product recommendations for stockouts using margin, availability, and customer segment.
+- [x] T258 P1 - Add inventory dead-stock report by last sale date, stock value, and recommended action.
+- [x] T259 P1 - Add CUMP recalculation rehearsal report with before/after valuation and locked-period protection.
+- [x] T260 P1 - Add accounting attachment requirements by journal type, amount threshold, and Moroccan evidence category.
+- [x] T261 P1 - Add pre-closing accrual suggestions for rent, utilities, salaries, purchases, and recurring services.
+- [x] T262 P1 - Add tax calendar with VAT, IR, CNSS, IS, and payroll declaration deadlines for Moroccan SMEs.
+- [x] T263 P1 - Add compliance owner assignments and reminders for tax declarations, payroll exports, and evidence archives.
+- [x] T264 P1 - Add payroll loan and advance tracking with monthly deduction limits and approval evidence.
+- [x] T265 P1 - Add employee expense reimbursement through payroll or accounts payable with journal linkage.
+- [x] T266 P1 - Add overtime approval workflow with department, reason, rate, and payroll impact.
+- [x] T267 P1 - Add employee contract amendment workflow with salary history, effective dates, and signed document evidence.
+- [x] T268 P1 - Add payroll social declaration reconciliation between payslips, Damancom exports, and accounting entries.
+- [x] T269 P1 - Add role-restricted HR audit trail for salary, disciplinary, medical, and identity document changes.
+- [x] T270 P1 - Add project retainer and milestone billing with revenue recognition notes for accountant review.
 - [ ] T271 P1 - Add service contract recurring billing with automatic draft invoices and renewal reminders.
 - [ ] T272 P1 - Add warranty and after-sales service cases linked to products, serials, invoices, and stock replacements.
 - [ ] T273 P1 - Add production quality checks with pass/fail, scrap quantity, rework cost, and traceability evidence.

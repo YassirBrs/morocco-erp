@@ -46,6 +46,7 @@ export class InventoryController {
   @Get('barcode/:code') barcodeLookup(@Param('code') code: string) { return this.inventoryService.barcodeLookup(code); }
   @Get('stock-alerts') stockAlerts() { return this.inventoryService.stockAlerts(); }
   @Get('reservations') reservationVisibility() { return this.inventoryService.reservationVisibility(); }
+  @Get('reservations/aging') reservationAging() { return this.inventoryService.reservationAging(); }
   @Post('landed-cost-allocation') landedCostAllocation(@Body() body: any) { return this.inventoryService.landedCostAllocation(body); }
   @Get('traceability') traceabilityLots() { return this.inventoryService.listTraceabilityLots(); }
   @Post('traceability') createTraceabilityLot(@Body() body: any) { return this.inventoryService.createTraceabilityLot(body); }
@@ -74,6 +75,12 @@ export class InventoryController {
   @Post('recurring-purchases/:id/run') runRecurringPurchase(@Param('id') id: string) { return this.inventoryService.runRecurringPurchaseSchedule(id); }
   @Get('procurement-budgets') procurementBudgets() { return this.inventoryService.procurementBudgetControls(); }
   @Post('procurement-budgets') createProcurementBudget(@Body() body: any) { return this.inventoryService.createProcurementBudget(body); }
+  @Get('procurement-approval-matrices') procurementApprovalMatrices() { return this.inventoryService.procurementApprovalMatrices(); }
+  @Post('procurement-approval-matrices') createProcurementApprovalMatrix(@Body() body: any) { return this.inventoryService.createProcurementApprovalMatrix(body); }
+  @Get('supplier-price-history') supplierPriceHistory() { return this.inventoryService.supplierPriceHistoryReport(); }
+  @Post('substitute-recommendations') substituteRecommendations(@Body() body: any) { return this.inventoryService.substituteRecommendations(body); }
+  @Get('dead-stock') deadStockReport() { return this.inventoryService.deadStockReport(); }
+  @Get('cump-recalculation-rehearsal') cumpRecalculationRehearsal() { return this.inventoryService.cumpRecalculationRehearsal(); }
   @Post('supplier-payment-proposals') supplierPaymentProposalRun(@Body() body: any) { return this.inventoryService.supplierPaymentProposalRun(body); }
   @Get('purchase-orders') purchaseOrders() { return this.inventoryService.listPurchaseOrders(); }
   @Post('purchase-orders') createPurchaseOrder(@Body() body: any) { return this.inventoryService.createPurchaseOrder(body); }

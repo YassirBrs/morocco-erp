@@ -7,6 +7,7 @@ import {
   getGrowthControlReadiness,
   getInvoices,
   getIntegrationReadiness,
+  getLogisticsCloseReadiness,
   getModuleData,
   getMoroccoWorkflowReadiness,
   getOperationalControlReadiness,
@@ -45,7 +46,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -63,6 +64,7 @@ export default async function DashboardPage() {
     getOperationalControlReadiness(),
     getEnterpriseControlReadiness(),
     getGrowthControlReadiness(),
+    getLogisticsCloseReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -485,6 +487,38 @@ export default async function DashboardPage() {
               `Propositions fournisseurs ${growthControls.supplierPaymentProposal.proposals.length}`,
               `Audit chèques ${growthControls.chequeLifecycle.rows.length}`,
               `Frais banque/RAS ${growthControls.paymentAdjustments.length}`,
+            ]} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Logistique clôture et paie">
+          <PanelHeader title="Logistique clôture et paie" action="Pré-clôturer" />
+          <div className="reportGrid">
+            <Metric label="Réservations âgées" value={String(logisticsClose.reservationAging.rows.length)} />
+            <Metric label="Exceptions BL/facture" value={logisticsClose.deliveryInvoiceExceptions.status} />
+            <Metric label="Calendrier fiscal" value={String(logisticsClose.taxCalendar.rows.length)} />
+            <Metric label="Social paie" value={logisticsClose.socialReconciliation.status} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Stock et transport" rows={[
+              `Instructions livraison ${logisticsClose.deliveryInstructions.length}`,
+              `Transporteurs ${logisticsClose.transporters.rows.length}`,
+              `Historique prix fournisseurs ${logisticsClose.supplierPriceHistory.rows.length}`,
+              `Substituts stockout ${logisticsClose.substituteRecommendations.rows.length}`,
+              `Stock dormant ${logisticsClose.deadStock.rows.length}`,
+              `CUMP rehearsal ${logisticsClose.cumpRehearsal.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="Clôture comptable" rows={[
+              `Matrices achats ${logisticsClose.procurementMatrices.length}`,
+              `Exigences pièces ${logisticsClose.attachmentRequirements.length}`,
+              `Accruals pré-clôture ${logisticsClose.accruals.rows.length}`,
+              `Owners conformité ${logisticsClose.complianceOwners.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="Paie et projets" rows={[
+              `Prêts salariés ${logisticsClose.payrollLoans.length}`,
+              `Audit RH ${logisticsClose.hrAuditTrail.length}`,
+              `Plans facturation projet ${logisticsClose.projectBillingPlans.length}`,
+              'Avenants, overtime et remboursements reliés aux journaux',
             ]} empty="-" />
           </div>
         </section>

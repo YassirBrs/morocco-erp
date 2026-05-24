@@ -23,6 +23,14 @@ export class PayrollController {
   @Get('asset-assignments') assetAssignments() { return this.payrollService.listAssetAssignments(); }
   @Post('asset-assignments') assignAsset(@Body() body: any) { return this.payrollService.assignAsset(body); }
   @Post('asset-assignments/:id/return') returnAsset(@Param('id') id: string) { return this.payrollService.returnAsset(id); }
+  @Get('loans') payrollLoans() { return this.payrollService.listPayrollLoans(); }
+  @Post('loans') createPayrollLoan(@Body() body: any) { return this.payrollService.createPayrollLoan(body); }
+  @Post('reimbursements') createEmployeeReimbursement(@Body() body: any) { return this.payrollService.createEmployeeReimbursement(body); }
+  @Post('overtime-approvals') createOvertimeApproval(@Body() body: any) { return this.payrollService.createOvertimeApproval(body); }
+  @Post('contract-amendments') amendEmploymentContract(@Body() body: any) { return this.payrollService.amendEmploymentContract(body); }
+  @Get('social-declaration-reconciliation') socialDeclarationReconciliation() { return this.payrollService.payrollSocialDeclarationReconciliation(); }
+  @Get('hr-audit-trail') hrAuditTrail(@Query('role') role?: any) { return this.payrollService.hrAuditTrail(role); }
+  @Post('hr-audit-trail') addHrAuditTrail(@Body() body: any) { return this.payrollService.addHrAuditTrail(body); }
   @Get('employees/:id') employee(@Param('id') id: string) { return this.payrollService.getEmployee(id); }
   @Post('employees') addEmployee(@Body() body: any) { return this.payrollService.addEmployee(body); }
   @Patch('employees/:id') updateEmployee(@Param('id') id: string, @Body() body: any) { return this.payrollService.updateEmployee(id, body); }
