@@ -506,6 +506,39 @@ describe('ErpStoreService working ERP workflows', () => {
     });
   });
 
+  it('summarizes dashboard filters for overdue actions, unpaid balances, and supplier terms', () => {
+    store.addLead({
+      customerName: 'Action Retard',
+      stage: 'QUALIFIED',
+      nextActionDate: '2026-01-15',
+      owner: 'Nadia',
+      expectedValue: 8000,
+    });
+    store.addLead({
+      customerName: 'Action Gagnée',
+      stage: 'WON',
+      nextActionDate: '2026-01-10',
+      expectedValue: 1000,
+    });
+    const invoice = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    store.addSupplier({ name: 'Long Terms Supplier', paymentTermsDays: 90 });
+
+    const filters = store.dashboardFilters();
+
+    expect(filters.overdueNextActions).toEqual([
+      expect.objectContaining({ customerName: 'Action Retard', owner: 'Nadia' }),
+    ]);
+    expect(filters.unpaidCustomerBalances).toEqual([
+      expect.objectContaining({ number: invoice.number, customerName: 'Rabat Retail SARL', balance: 1020 }),
+    ]);
+    expect(filters.supplierPaymentTerms[0]).toMatchObject({ name: 'Long Terms Supplier', paymentTermsDays: 90 });
+    expect(filters.counts).toMatchObject({
+      overdueNextActions: 1,
+      unpaidCustomerBalances: 1,
+      supplierPaymentTerms: 2,
+    });
+  });
+
   it('supports full product CRUD, SKU uniqueness, VAT rule validation, and stock behavior', () => {
     const product = store.addProduct({
       sku: 'sku-desk',

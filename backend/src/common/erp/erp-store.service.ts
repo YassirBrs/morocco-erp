@@ -514,6 +514,57 @@ export class ErpStoreService {
     };
   }
 
+  dashboardFilters(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const currentDate = today();
+    const overdueNextActions = workspace.leads
+      .filter((lead) => lead.nextActionDate && lead.nextActionDate < currentDate && !['WON', 'LOST'].includes(lead.stage))
+      .map((lead) => ({
+        id: lead.id,
+        customerName: lead.customerName,
+        nextActionDate: lead.nextActionDate,
+        owner: lead.owner,
+        stage: lead.stage,
+        expectedValue: lead.expectedValue,
+      }));
+    const unpaidCustomerBalances = workspace.invoices
+      .map((invoice) => {
+        const balance = r2(invoice.totals.total - invoice.paidAmount - this.invoiceCreditTotal(workspace, invoice.id));
+        const customer = this.customer(workspace, invoice.customerId);
+        return {
+          id: invoice.id,
+          number: invoice.number,
+          customerName: customer.name,
+          dueDate: invoice.dueDate,
+          balance,
+          status: invoice.status,
+        };
+      })
+      .filter((invoice) => invoice.balance > 0);
+    const supplierPaymentTerms = workspace.suppliers
+      .filter((supplier) => supplier.active)
+      .sort((left, right) => right.paymentTermsDays - left.paymentTermsDays)
+      .map((supplier) => ({
+        id: supplier.id,
+        name: supplier.name,
+        ice: supplier.ice,
+        ifNumber: supplier.ifNumber,
+        paymentTermsDays: supplier.paymentTermsDays,
+        bankName: supplier.bankDetails[0]?.bankName,
+      }));
+
+    return {
+      overdueNextActions,
+      unpaidCustomerBalances,
+      supplierPaymentTerms,
+      counts: {
+        overdueNextActions: overdueNextActions.length,
+        unpaidCustomerBalances: unpaidCustomerBalances.length,
+        supplierPaymentTerms: supplierPaymentTerms.length,
+      },
+    };
+  }
+
   companyProfile(tenantId?: string) {
     const workspace = this.workspace(tenantId);
     return {

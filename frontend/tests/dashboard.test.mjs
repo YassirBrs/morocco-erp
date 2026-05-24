@@ -31,6 +31,7 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/inventory/suppliers'));
   assert.ok(staticPage.includes('duplicateWarnings'));
   assert.ok(staticPage.includes('/tenant/setup-checklist'));
+  assert.ok(staticPage.includes('/tenant/dashboard-filters'));
   assert.ok(staticPage.includes('/tenant/company-profile'));
   assert.ok(staticPage.includes('/tenant/company-profile/approve'));
   assert.ok(staticPage.includes('/tenant/demo-reset'));
@@ -63,6 +64,18 @@ test('static dashboard exposes unified business search', () => {
   assert.ok(staticCss.includes('.businessSearch'));
   assert.ok(staticCss.includes('.searchResults'));
   assert.ok(staticCss.includes('.searchResult'));
+});
+
+test('static dashboard exposes operational filter cards', () => {
+  for (const text of ['Filtres tableau de bord', 'Actions en retard', 'Soldes impayés', 'Délais fournisseurs']) {
+    assert.ok(staticPage.includes(text), `${text} dashboard filter is present`);
+  }
+  assert.ok(staticPage.includes('renderDashboardFilters'));
+  assert.ok(staticPage.includes("Filtre appliqué: actions en retard."));
+  assert.ok(staticPage.includes("Filtre appliqué: soldes impayés."));
+  assert.ok(staticPage.includes("Filtre appliqué: délais fournisseurs."));
+  assert.ok(staticCss.includes('.filterCards'));
+  assert.ok(staticCss.includes('.filterCard'));
 });
 
 test('layout uses dense ERP panels instead of a marketing hero', () => {

@@ -7,6 +7,7 @@ export class TenantController {
   @Get() list() { return this.tenantService.findAll(); }
   @Get('current') current() { return this.tenantService.current(); }
   @Get('setup-checklist') setupChecklist() { return this.tenantService.setupChecklist(); }
+  @Get('dashboard-filters') dashboardFilters() { return this.tenantService.dashboardFilters(); }
   @Get('company-profile') profile() { return this.tenantService.profile(); }
   @Patch('company-profile') updateProfile(@Body() body: any) { return this.tenantService.updateProfile(body); }
   @Post('company-profile/approve') approveProfile(@Body() body: { reviewer?: string }) { return this.tenantService.approveProfile(body?.reviewer); }

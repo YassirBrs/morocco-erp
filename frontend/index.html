@@ -63,6 +63,33 @@
           <div><span>Factures</span><strong id="invoices">0</strong><small>Numérotation continue</small></div>
         </section>
 
+        <section class="panel dashboardFilters" data-view-section="dashboard">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Filtres tableau de bord</p>
+              <h2>Priorités opérationnelles</h2>
+            </div>
+            <span class="badge">Filtres actifs</span>
+          </div>
+          <div class="filterCards">
+            <button class="filterCard" id="filterOverdueActions" type="button">
+              <span>Actions en retard</span>
+              <strong id="overdueActionCount">0</strong>
+              <small id="overdueActionSummary">Aucune action CRM en retard</small>
+            </button>
+            <button class="filterCard" id="filterUnpaidBalances" type="button">
+              <span>Soldes impayés</span>
+              <strong id="unpaidBalanceCount">0</strong>
+              <small id="unpaidBalanceSummary">Aucune facture ouverte</small>
+            </button>
+            <button class="filterCard" id="filterSupplierTerms" type="button">
+              <span>Délais fournisseurs</span>
+              <strong id="supplierTermsCount">0</strong>
+              <small id="supplierTermsSummary">Aucun fournisseur actif</small>
+            </button>
+          </div>
+        </section>
+
         <section class="panel setupPanel" data-view-section="dashboard compliance">
           <div class="panelHeader">
             <div>
@@ -325,7 +352,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -420,7 +447,7 @@
       }
 
       async function load() {
-        const [summary, stock, customers, products, leads, suppliers, setup, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, products, leads, suppliers, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
@@ -428,6 +455,7 @@
           get('/crm/leads'),
           get('/inventory/suppliers'),
           get('/tenant/setup-checklist'),
+          get('/tenant/dashboard-filters'),
           get('/tenant/company-profile'),
           get('/ledger/audit'),
           get('/sales/quotes'),
@@ -445,6 +473,7 @@
         state.leads = leads;
         state.suppliers = suppliers;
         state.statement = statement;
+        state.dashboardFilters = dashboardFilters;
         state.profile = profile;
         state.audit = audit;
         const entity = summary.tenant.legalEntity;
@@ -465,6 +494,7 @@
         qs('#rules').textContent = `${summary.compliance.id} · TVA ${summary.compliance.vatRates.map(pct).join(' / ')}`;
         qs('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
         renderProfile();
+        renderDashboardFilters();
         renderSalesFlow();
         renderStatement();
         switchModuleView(state.activeView);
@@ -612,6 +642,19 @@
         });
       }
 
+      function renderDashboardFilters() {
+        if (!state.dashboardFilters) return;
+        const overdue = state.dashboardFilters.overdueNextActions[0];
+        const unpaid = state.dashboardFilters.unpaidCustomerBalances[0];
+        const supplier = state.dashboardFilters.supplierPaymentTerms[0];
+        qs('#overdueActionCount').textContent = state.dashboardFilters.counts.overdueNextActions;
+        qs('#unpaidBalanceCount').textContent = state.dashboardFilters.counts.unpaidCustomerBalances;
+        qs('#supplierTermsCount').textContent = state.dashboardFilters.counts.supplierPaymentTerms;
+        qs('#overdueActionSummary').textContent = overdue ? `${overdue.customerName} · ${overdue.nextActionDate}` : 'Aucune action CRM en retard';
+        qs('#unpaidBalanceSummary').textContent = unpaid ? `${unpaid.customerName} · ${mad(unpaid.balance)}` : 'Aucune facture ouverte';
+        qs('#supplierTermsSummary').textContent = supplier ? `${supplier.name} · ${supplier.paymentTermsDays} j` : 'Aucun fournisseur actif';
+      }
+
       async function runBusinessSearch(query) {
         state.searchQuery = query.trim();
         if (state.searchQuery.length < 2) {
@@ -685,6 +728,21 @@
       qs('#businessSearchInput').addEventListener('input', (event) => {
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => runBusinessSearch(event.target.value), 180);
+      });
+
+      qs('#filterOverdueActions').addEventListener('click', () => {
+        switchModuleView('crm');
+        showMessage('success', 'Filtre appliqué: actions en retard.');
+      });
+
+      qs('#filterUnpaidBalances').addEventListener('click', () => {
+        switchModuleView('sales');
+        showMessage('success', 'Filtre appliqué: soldes impayés.');
+      });
+
+      qs('#filterSupplierTerms').addEventListener('click', () => {
+        switchModuleView('stock');
+        showMessage('success', 'Filtre appliqué: délais fournisseurs.');
       });
 
       qs('#createQuote').addEventListener('click', async () => {

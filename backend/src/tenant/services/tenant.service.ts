@@ -17,6 +17,10 @@ export class TenantService {
     return this.store.setupChecklist();
   }
 
+  dashboardFilters() {
+    return this.store.dashboardFilters();
+  }
+
   profile() {
     return this.store.companyProfile();
   }

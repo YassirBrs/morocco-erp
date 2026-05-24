@@ -314,6 +314,42 @@ h2 {
   font-size: 25px;
 }
 
+.filterCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.filterCard {
+  display: grid;
+  min-height: 112px;
+  gap: 7px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 15px 16px;
+  text-align: left;
+}
+
+.filterCard:last-child {
+  border-right: 0;
+}
+
+.filterCard span,
+.filterCard small {
+  color: var(--muted);
+}
+
+.filterCard strong {
+  color: var(--primary);
+  font-size: 24px;
+}
+
+.filterCard:hover {
+  background: var(--blue-soft);
+}
+
 .operations,
 .masterGrid,
 .lowerGrid {
@@ -773,6 +809,7 @@ tbody tr:hover {
   .operations,
   .masterGrid,
   .lowerGrid,
+  .filterCards,
   .kpis {
     grid-template-columns: 1fr;
   }
