@@ -408,49 +408,49 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T308 P1 - Add accountant workspace review mode with comments per journal, invoice, payroll run, and period.
 - [x] T309 P1 - Add fiscal lock exception workflow with reason, approver, time limit, and reverse audit evidence.
 - [x] T310 P1 - Add accounting trial balance report by PCGE class, period, debit, credit, and balance.
-- [ ] T311 P1 - Add general ledger report with account drilldown, source document links, and export checksum.
-- [ ] T312 P1 - Add auxiliary customer ledger with invoice, credit note, payment, and residual balance per customer.
-- [ ] T313 P1 - Add auxiliary supplier ledger with receipt, supplier invoice, payment, and residual balance per supplier.
-- [ ] T314 P1 - Add Moroccan invoice numbering audit report for gaps, duplicates, cancelled documents, and fiscal year.
-- [ ] T315 P1 - Add document cancellation workflow with reason, reversal entries, stock rollback, and legal archive.
-- [ ] T316 P1 - Add warehouse transfer approval for controlled products, high value moves, and branch restrictions.
-- [ ] T317 P1 - Add inventory valuation snapshots at period close with CUMP, quantity, value, and lock evidence.
-- [ ] T318 P1 - Add stock negative prevention report by module, user, product, and attempted transaction.
-- [ ] T319 P1 - Add payroll variance report comparing current month with previous month by employee and contribution.
-- [ ] T320 P1 - Add employee contract renewal workflow with alerts, signed documents, salary change, and audit.
-- [ ] T321 P1 - Add employee absence import sandbox with validation, payroll impact preview, and approval.
-- [ ] T322 P1 - Add payroll journal preview before posting with PCGE accounts and lock-period validation.
-- [ ] T323 P1 - Add payroll evidence pack per month with payslips, Damancom file, journal, and checksums.
-- [ ] T324 P1 - Add DGI adapter sandbox log with payload rendering, validation errors, submission state, and archive.
-- [ ] T325 P1 - Add CNSS adapter sandbox log with Damancom validation, line errors, submission state, and archive.
-- [ ] T326 P1 - Add bank statement import preview with duplicates, unknown counterparties, and suggested matches.
-- [ ] T327 P1 - Add automated payment matching for invoices using amount, reference, customer RIB, and date window.
-- [ ] T328 P1 - Add payment allocation audit with before/after residuals and reviewer approval for manual overrides.
-- [ ] T329 P1 - Add SaaS plan comparison enforcement with module limits, record limits, and export permissions.
-- [ ] T330 P1 - Add tenant billing usage meter for invoices, payslips, storage, exports, and active users.
-- [ ] T331 P1 - Add implementation go-live risk radar by missing legal IDs, stock quality, payroll readiness, and integrations.
-- [ ] T332 P1 - Add guided demo scenarios for trading, services, payroll-heavy, POS retail, and production tenants.
-- [ ] T333 P1 - Add competitive migration importer for common Moroccan Excel templates and legacy ERP exports.
-- [ ] T334 P1 - Add data quality auto-fix suggestions for duplicate tiers, missing ICE, invalid RIB, and inactive products.
-- [ ] T335 P1 - Add executive compliance cockpit with tax calendar, pending evidence, locked periods, and risk alerts.
+- [x] T311 P1 - Add general ledger report with account drilldown, source document links, and export checksum.
+- [x] T312 P1 - Add auxiliary customer ledger with invoice, credit note, payment, and residual balance per customer.
+- [x] T313 P1 - Add auxiliary supplier ledger with receipt, supplier invoice, payment, and residual balance per supplier.
+- [x] T314 P1 - Add Moroccan invoice numbering audit report for gaps, duplicates, cancelled documents, and fiscal year.
+- [x] T315 P1 - Add document cancellation workflow with reason, reversal entries, stock rollback, and legal archive.
+- [x] T316 P1 - Add warehouse transfer approval for controlled products, high value moves, and branch restrictions.
+- [x] T317 P1 - Add inventory valuation snapshots at period close with CUMP, quantity, value, and lock evidence.
+- [x] T318 P1 - Add stock negative prevention report by module, user, product, and attempted transaction.
+- [x] T319 P1 - Add payroll variance report comparing current month with previous month by employee and contribution.
+- [x] T320 P1 - Add employee contract renewal workflow with alerts, signed documents, salary change, and audit.
+- [x] T321 P1 - Add employee absence import sandbox with validation, payroll impact preview, and approval.
+- [x] T322 P1 - Add payroll journal preview before posting with PCGE accounts and lock-period validation.
+- [x] T323 P1 - Add payroll evidence pack per month with payslips, Damancom file, journal, and checksums.
+- [x] T324 P1 - Add DGI adapter sandbox log with payload rendering, validation errors, submission state, and archive.
+- [x] T325 P1 - Add CNSS adapter sandbox log with Damancom validation, line errors, submission state, and archive.
+- [x] T326 P1 - Add bank statement import preview with duplicates, unknown counterparties, and suggested matches.
+- [x] T327 P1 - Add automated payment matching for invoices using amount, reference, customer RIB, and date window.
+- [x] T328 P1 - Add payment allocation audit with before/after residuals and reviewer approval for manual overrides.
+- [x] T329 P1 - Add SaaS plan comparison enforcement with module limits, record limits, and export permissions.
+- [x] T330 P1 - Add tenant billing usage meter for invoices, payslips, storage, exports, and active users.
+- [x] T331 P1 - Add implementation go-live risk radar by missing legal IDs, stock quality, payroll readiness, and integrations.
+- [x] T332 P1 - Add guided demo scenarios for trading, services, payroll-heavy, POS retail, and production tenants.
+- [x] T333 P1 - Add competitive migration importer for common Moroccan Excel templates and legacy ERP exports.
+- [x] T334 P1 - Add data quality auto-fix suggestions for duplicate tiers, missing ICE, invalid RIB, and inactive products.
+- [x] T335 P1 - Add executive compliance cockpit with tax calendar, pending evidence, locked periods, and risk alerts.
 
 ## Morocco Scale-Up Backlog
 
-- [ ] T336 P1 - Add branch and establishment registry with IF/RC/patente references, city, manager, and invoice series policy.
-- [ ] T337 P1 - Add multi-branch stock visibility with transfer lead times, branch reorder thresholds, and exception alerts.
-- [ ] T338 P1 - Add Moroccan delivery zone pricing by city, route, weight band, delivery promise, and transporter.
-- [ ] T339 P1 - Add customer sector classification for Moroccan SME analytics, risk scoring, and benchmark dashboards.
-- [ ] T340 P1 - Add supplier compliance vault with tax certificate, CNSS certificate, RIB, contract, and renewal workflow.
-- [ ] T341 P1 - Add delegated approval chains for branch managers, accountants, HR managers, and substitute approvers.
-- [ ] T342 P1 - Add role-based document redaction for salary, tax ID, bank RIB, and private HR evidence.
-- [ ] T343 P1 - Add accounting attachment OCR queue with manual verification, confidence score, and journal linking.
-- [ ] T344 P1 - Add cash collection route planning with collector assignment, receipt numbers, and variance review.
-- [ ] T345 P1 - Add customer credit insurance fields with insurer, covered amount, expiry date, and blocked exposure.
-- [ ] T346 P1 - Add customer guarantee register for deposits, bank guarantees, signed contracts, and release dates.
-- [ ] T347 P1 - Add supplier advance payment tracking with PO linkage, residual balance, and approval evidence.
-- [ ] T348 P1 - Add purchase landed-cost simulation before receipt with customs, freight, transit, insurance, and VAT treatment.
-- [ ] T349 P1 - Add inventory ABC classification by value, margin, velocity, and Moroccan warehouse location.
-- [ ] T350 P1 - Add cycle count schedule by warehouse, family, risk level, and last count variance.
+- [x] T336 P1 - Add branch and establishment registry with IF/RC/patente references, city, manager, and invoice series policy.
+- [x] T337 P1 - Add multi-branch stock visibility with transfer lead times, branch reorder thresholds, and exception alerts.
+- [x] T338 P1 - Add Moroccan delivery zone pricing by city, route, weight band, delivery promise, and transporter.
+- [x] T339 P1 - Add customer sector classification for Moroccan SME analytics, risk scoring, and benchmark dashboards.
+- [x] T340 P1 - Add supplier compliance vault with tax certificate, CNSS certificate, RIB, contract, and renewal workflow.
+- [x] T341 P1 - Add delegated approval chains for branch managers, accountants, HR managers, and substitute approvers.
+- [x] T342 P1 - Add role-based document redaction for salary, tax ID, bank RIB, and private HR evidence.
+- [x] T343 P1 - Add accounting attachment OCR queue with manual verification, confidence score, and journal linking.
+- [x] T344 P1 - Add cash collection route planning with collector assignment, receipt numbers, and variance review.
+- [x] T345 P1 - Add customer credit insurance fields with insurer, covered amount, expiry date, and blocked exposure.
+- [x] T346 P1 - Add customer guarantee register for deposits, bank guarantees, signed contracts, and release dates.
+- [x] T347 P1 - Add supplier advance payment tracking with PO linkage, residual balance, and approval evidence.
+- [x] T348 P1 - Add purchase landed-cost simulation before receipt with customs, freight, transit, insurance, and VAT treatment.
+- [x] T349 P1 - Add inventory ABC classification by value, margin, velocity, and Moroccan warehouse location.
+- [x] T350 P1 - Add cycle count schedule by warehouse, family, risk level, and last count variance.
 - [ ] T351 P1 - Add stock damage claim workflow with photo evidence placeholder, root cause, and accounting impact.
 - [ ] T352 P1 - Add product substitute mapping with stockout recommendation, margin comparison, and customer restrictions.
 - [ ] T353 P1 - Add customer price list import with date ranges, quantity breaks, and approval audit.

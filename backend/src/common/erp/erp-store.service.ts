@@ -8183,6 +8183,431 @@ export class ErpStoreService {
     };
   }
 
+  generalLedgerReport(input: { account?: string; period?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.period ?? today().slice(0, 7);
+    const entries = workspace.journalEntries.filter((entry) => entry.date.startsWith(period) && entry.status !== 'VOID');
+    const rows = entries.flatMap((entry) => entry.lines
+      .filter((line) => !input.account || line.account.startsWith(input.account))
+      .map((line) => ({
+        journalEntryId: entry.id,
+        date: entry.date,
+        source: entry.source,
+        sourceDocumentLink: this.sourceDocumentLink(entry.source),
+        description: entry.description,
+        account: line.account,
+        label: line.label,
+        debit: line.debit,
+        credit: line.credit,
+        balance: r2(line.debit - line.credit),
+      })));
+    return {
+      period,
+      account: input.account,
+      rows,
+      totals: { debit: r2(rows.reduce((sum, row) => sum + row.debit, 0)), credit: r2(rows.reduce((sum, row) => sum + row.credit, 0)), balance: r2(rows.reduce((sum, row) => sum + row.balance, 0)) },
+      checksum: createHash('sha256').update(JSON.stringify(rows)).digest('hex'),
+    };
+  }
+
+  auxiliaryCustomerLedger(input: { customerId?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const customers = input.customerId ? [this.customer(workspace, input.customerId)] : workspace.customers;
+    return customers.map((customer) => {
+      const invoices = workspace.invoices.filter((invoice) => invoice.customerId === customer.id);
+      const creditNotes = workspace.creditNotes.filter((creditNote) => creditNote.customerId === customer.id && creditNote.status !== 'VOID');
+      const payments = workspace.payments.filter((payment) => invoices.some((invoice) => invoice.id === payment.invoiceId));
+      const invoiced = r2(invoices.reduce((sum, invoice) => sum + invoice.totals.total, 0));
+      const credited = r2(creditNotes.reduce((sum, creditNote) => sum + creditNote.totals.total, 0));
+      const paid = r2(payments.reduce((sum, payment) => sum + payment.amount, 0));
+      return {
+        customerId: customer.id,
+        customerName: customer.name,
+        invoices: invoices.map((invoice) => ({ id: invoice.id, number: invoice.number, date: invoice.date, total: invoice.totals.total, paidAmount: invoice.paidAmount, residual: r2(invoice.totals.total - invoice.paidAmount - this.invoiceCreditTotal(workspace, invoice.id)) })),
+        creditNotes: creditNotes.map((creditNote) => ({ id: creditNote.id, number: creditNote.number, invoiceId: creditNote.invoiceId, total: creditNote.totals.total })),
+        payments,
+        totals: { invoiced, credited, paid, residual: r2(invoiced - credited - paid) },
+      };
+    });
+  }
+
+  auxiliarySupplierLedger(input: { supplierId?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const suppliers = input.supplierId ? [this.supplier(workspace, input.supplierId)] : workspace.suppliers;
+    return suppliers.map((supplier) => {
+      const receipts = workspace.purchaseReceipts.filter((receipt) => receipt.supplierId === supplier.id);
+      const invoices = workspace.supplierInvoices.filter((invoice) => invoice.supplierId === supplier.id);
+      const purchases = r2(invoices.reduce((sum, invoice) => sum + invoice.total, 0));
+      const paid = r2(invoices.reduce((sum, invoice) => sum + invoice.paidAmount, 0));
+      return {
+        supplierId: supplier.id,
+        supplierName: supplier.name,
+        receipts: receipts.map((receipt) => ({ id: receipt.id, number: receipt.number, total: receipt.total, purchaseOrderId: receipt.purchaseOrderId })),
+        invoices: invoices.map((invoice) => ({ id: invoice.id, number: invoice.number, dueDate: invoice.dueDate, total: invoice.total, paidAmount: invoice.paidAmount, residual: r2(invoice.total - invoice.paidAmount) })),
+        payments: invoices.filter((invoice) => invoice.paidAmount > 0).map((invoice) => ({ supplierInvoiceId: invoice.id, amount: invoice.paidAmount, status: invoice.status })),
+        totals: { receipts: r2(receipts.reduce((sum, receipt) => sum + receipt.total, 0)), purchases, paid, residual: r2(purchases - paid) },
+      };
+    });
+  }
+
+  moroccanInvoiceNumberingAuditReport(input: { year?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const year = input.year ?? Number(today().slice(0, 4));
+    const documents = [
+      ...workspace.invoices.map((document) => ({ type: 'INVOICE', id: document.id, number: document.number, status: document.status, date: document.date })),
+      ...workspace.creditNotes.map((document) => ({ type: 'CREDIT_NOTE', id: document.id, number: document.number, status: document.status, date: document.date })),
+      ...workspace.deliveryNotes.map((document) => ({ type: 'DELIVERY_NOTE', id: document.id, number: document.number, status: document.status, date: document.date })),
+    ].filter((document) => document.date.startsWith(String(year)));
+    const byNumber = new Map<string, number>();
+    documents.forEach((document) => byNumber.set(document.number, (byNumber.get(document.number) ?? 0) + 1));
+    const duplicates = documents.filter((document) => (byNumber.get(document.number) ?? 0) > 1);
+    const numeric = documents.map((document) => Number(document.number.split('-').pop())).filter((value) => Number.isFinite(value)).sort((left, right) => left - right);
+    const gaps = numeric.flatMap((value, index) => index > 0 && value - numeric[index - 1] > 1 ? [{ from: numeric[index - 1] + 1, to: value - 1 }] : []);
+    return { year, fiscalYear: year, documents, duplicates, gaps, cancelledDocuments: documents.filter((document) => ['VOID', 'CANCELLED'].includes(document.status)), status: duplicates.length || gaps.length ? 'NEEDS_REVIEW' : 'OK' };
+  }
+
+  cancelDocument(input: { type: 'INVOICE' | 'CREDIT_NOTE' | 'DELIVERY_NOTE' | 'PURCHASE_RECEIPT'; id: string; reason: string; actor?: string }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const reason = this.nonEmpty(input.reason, 'Motif annulation obligatoire');
+    let document: any;
+    if (input.type === 'INVOICE') {
+      document = this.invoice(workspace, input.id);
+      document.status = 'VOID';
+      workspace.journalEntries.push({ id: this.id('je'), tenantId: workspace.tenant.id, date: today(), source: document.number, description: `Extourne annulation ${document.number}`, lines: [{ account: '7111', label: 'Extourne ventes', debit: document.totals.subtotal, credit: 0 }, { account: '4455', label: 'Extourne TVA', debit: document.totals.vatTotal, credit: 0 }, { account: '3421', label: 'Client', debit: 0, credit: document.totals.total }].filter((line) => line.debit > 0 || line.credit > 0), posted: true, status: 'POSTED' });
+    } else if (input.type === 'CREDIT_NOTE') {
+      document = workspace.creditNotes.find((candidate) => candidate.id === input.id);
+      if (!document) throw new NotFoundException('Avoir introuvable');
+      document.status = 'VOID';
+    } else if (input.type === 'DELIVERY_NOTE') {
+      document = workspace.deliveryNotes.find((candidate) => candidate.id === input.id);
+      if (!document) throw new NotFoundException('Bon de livraison introuvable');
+      document.status = 'CANCELLED';
+    } else {
+      document = this.purchaseReceipt(workspace, input.id);
+      for (const line of document.lines) this.adjustStock(line.productId, -line.quantity, `Annulation réception ${document.number}`, workspace.tenant.id);
+    }
+    const evidence = this.archiveEvidence(workspace, 'DOCUMENT_PDF', `CANCEL-${input.type}-${input.id}`, { reason, actor: input.actor ?? this.cls.get<string>('userEmail') ?? 'system' });
+    this.audit(workspace, 'document.cancelled', input.type, input.id, { reason, evidenceId: evidence.id });
+    return { type: input.type, id: input.id, status: document.status ?? 'CANCELLED', reason, reversalEntryCreated: input.type === 'INVOICE', stockRollback: input.type === 'PURCHASE_RECEIPT', evidenceId: evidence.id };
+  }
+
+  warehouseTransferApproval(input: { productId: string; fromWarehouseId: string; toWarehouseId: string; quantity: number; branchId?: string; approver?: string }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const product = this.product(workspace, input.productId);
+    const value = r2(this.positive(input.quantity, 'Quantité transfert obligatoire') * product.weightedAverageCost);
+    const controlledProduct = product.vatRate === 0.2 || product.lifecycleState === 'BLOCKED';
+    const branchRestricted = input.branchId ? !workspace.branches.some((branch) => branch.id === input.branchId && branch.stockWarehouseId === input.toWarehouseId) : false;
+    const highValue = value >= workspace.tenant.settings.approvalLimits.stockAdjustment;
+    const transfer = this.transferStock({ productId: product.id, fromWarehouseId: input.fromWarehouseId, toWarehouseId: input.toWarehouseId, quantity: input.quantity }, workspace.tenant.id);
+    return { transferId: transfer.id, number: transfer.number, value, controlledProduct, highValue, branchRestricted, approvalStatus: highValue || controlledProduct || branchRestricted ? 'REQUIRED' : 'AUTO_APPROVED', approver: input.approver ?? 'warehouse-manager@atlas.ma' };
+  }
+
+  inventoryValuationSnapshot(input: { period?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.period ?? today().slice(0, 7);
+    const valuation = this.inventoryValuationReport(workspace.tenant.id);
+    const evidence = this.archiveEvidence(workspace, 'ACCOUNTING_EXPORT', `INV-VALUATION-${period}`, { period, totals: valuation.totals });
+    return { period, locked: workspace.fiscalPeriods.some((item) => `${item.year}-${String(item.month).padStart(2, '0')}` === period && item.status !== 'OPEN'), rows: valuation.rows, totals: valuation.totals, lockEvidenceId: evidence.id, checksum: evidence.checksum };
+  }
+
+  stockNegativePreventionReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.products.map((product) => {
+      const available = r2(product.stockOnHand - product.reservedStock);
+      return { productId: product.id, sku: product.sku, module: 'inventory', user: this.cls.get<string>('userEmail') ?? 'system', available, reorderPoint: product.reorderPoint, attemptedTransaction: available <= 0 ? 'BLOCKED_DELIVERY_OR_POS' : 'MONITORED', status: available < 0 ? 'NEGATIVE_BLOCKED' : available <= product.reorderPoint ? 'LOW_STOCK_WARNING' : 'OK' };
+    });
+    return { rows, blocked: rows.filter((row) => row.status === 'NEGATIVE_BLOCKED').length, warnings: rows.filter((row) => row.status === 'LOW_STOCK_WARNING').length };
+  }
+
+  employeeContractRenewalWorkflow(input: { employeeId?: string; newSalary?: number; signedDocumentEvidence?: string; effectiveDate?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const contracts = input.employeeId ? workspace.employmentContracts.filter((contract) => contract.employeeId === input.employeeId) : workspace.employmentContracts;
+    const alerts = contracts.map((contract) => ({ contractId: contract.id, employeeId: contract.employeeId, employeeName: this.employee(workspace, contract.employeeId).fullName, endDate: contract.endDate, daysUntilRenewal: contract.endDate ? this.daysUntil(contract.endDate) : 999, status: contract.endDate && this.daysUntil(contract.endDate) <= 45 ? 'RENEWAL_DUE' : 'ACTIVE' }));
+    const renewal = input.employeeId && input.newSalary && input.signedDocumentEvidence
+      ? this.amendEmploymentContract({ employeeId: input.employeeId, newSalary: input.newSalary, effectiveDate: input.effectiveDate ?? today(), signedDocumentEvidence: input.signedDocumentEvidence }, workspace.tenant.id)
+      : undefined;
+    return { alerts, renewal, signedDocumentRequired: true };
+  }
+
+  absenceImportSandbox(input: { csv?: string; approvedBy?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const csv = input.csv ?? 'employeeId,date,type,hours\nemp-1,2026-05-12,ABSENCE,8';
+    const rows = this.parseCsv(csv).map((row, index) => {
+      const employee = workspace.employees.find((candidate) => candidate.id === row.employeeId || candidate.employeeNumber === row.employeeId);
+      const hours = Number(row.hours ?? 0);
+      return { line: index + 1, employeeId: employee?.id ?? String(row.employeeId ?? ''), employeeName: employee?.fullName, date: row.date ?? today(), type: row.type ?? 'ABSENCE', hours, errors: [!employee ? 'EMPLOYEE_UNKNOWN' : undefined, hours <= 0 ? 'HOURS_INVALID' : undefined].filter(Boolean), payrollImpact: employee ? r2((employee.baseSalary / 191) * hours) : 0, approvalStatus: input.approvedBy ? 'APPROVED' : 'PENDING' };
+    });
+    return { status: rows.some((row) => row.errors.length) ? 'HAS_ERRORS' : 'VALIDATED', rows, totalPayrollImpact: r2(rows.reduce((sum, row) => sum + row.payrollImpact, 0)), approvedBy: input.approvedBy };
+  }
+
+  payrollJournalPreview(input: { runId?: string; period?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const run = input.runId ? this.payrollRun(workspace, input.runId) : workspace.payrollRuns.find((candidate) => candidate.period === (input.period ?? today().slice(0, 7))) ?? this.calculatePayrollRun(this.createPayrollRun({ year: Number((input.period ?? today().slice(0, 7)).slice(0, 4)), month: Number((input.period ?? today().slice(0, 7)).slice(5, 7)) }, workspace.tenant.id).id, workspace.tenant.id);
+    const lines = [
+      { account: '6171', label: 'Rémunérations du personnel', debit: r2(run.totals.grossSalary + run.totals.employerCharges), credit: 0 },
+      { account: '4441', label: 'Personnel rémunérations dues', debit: 0, credit: run.totals.netSalary },
+      { account: '4443', label: 'CNSS et AMO à payer', debit: 0, credit: r2(run.totals.cnssEmployee + run.totals.amoEmployee + run.totals.employerCharges) },
+      { account: '4456', label: 'IR salaires à payer', debit: 0, credit: run.totals.ir },
+    ].filter((line) => line.debit > 0 || line.credit > 0);
+    const locked = workspace.fiscalPeriods.some((period) => `${period.year}-${String(period.month).padStart(2, '0')}` === run.period && period.status !== 'OPEN');
+    return { runId: run.id, period: run.period, lines, totals: { debit: r2(lines.reduce((sum, line) => sum + line.debit, 0)), credit: r2(lines.reduce((sum, line) => sum + line.credit, 0)) }, lockPeriodValidation: locked ? 'LOCKED' : 'OPEN' };
+  }
+
+  payrollEvidencePack(input: { period?: string; runId?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.period ?? today().slice(0, 7);
+    const run = input.runId ? this.payrollRun(workspace, input.runId) : workspace.payrollRuns.find((candidate) => candidate.period === period) ?? this.calculatePayrollRun(this.createPayrollRun({ year: Number(period.slice(0, 4)), month: Number(period.slice(5, 7)) }, workspace.tenant.id).id, workspace.tenant.id);
+    const damancom = this.exportPayrollRunDamancom(run.id, workspace.tenant.id);
+    const journalPreview = this.payrollJournalPreview({ runId: run.id }, workspace.tenant.id);
+    const files = [{ type: 'DAMANCOM', checksum: damancom.checksum }, ...run.payslips.map((payslip) => ({ type: 'PAYSLIP', payslipId: payslip.id, checksum: createHash('sha256').update(JSON.stringify(payslip)).digest('hex') })), { type: 'JOURNAL_PREVIEW', checksum: createHash('sha256').update(JSON.stringify(journalPreview.lines)).digest('hex') }];
+    const evidence = this.archiveEvidence(workspace, 'ACCOUNTING_EXPORT', `PAYROLL-PACK-${period}`, { runId: run.id, files });
+    return { period, runId: run.id, files, checksum: evidence.checksum, evidenceId: evidence.id };
+  }
+
+  adapterSandboxLog(kind: AdapterKind, input: { reference?: string; payload?: Record<string, unknown> } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const reference = input.reference ?? `${kind}-SANDBOX-${today()}`;
+    const validation = this.runAdapterOperation(kind, { operation: 'validate', reference, payload: input.payload ?? {} }, workspace.tenant.id);
+    const render = this.runAdapterOperation(kind, { operation: 'render', reference, payload: { ...input.payload, renderedAt: new Date().toISOString() } }, workspace.tenant.id);
+    const submit = this.runAdapterOperation(kind, { operation: 'submit', reference, payload: { sandbox: true } }, workspace.tenant.id);
+    const archive = this.runAdapterOperation(kind, { operation: 'archive', reference, payload: { validationId: validation.id, renderId: render.id, submitId: submit.id } }, workspace.tenant.id);
+    return { kind, reference, validationErrors: [], lineErrors: kind === 'CNSS' ? this.cnssEmployeeAnomalyDrilldown(workspace.tenant.id).rows : [], submissions: [validation, render, submit, archive], submissionState: submit.status, archiveEvidenceId: archive.evidenceId };
+  }
+
+  enhancedBankStatementImportPreview(input: { csv?: string } = {}, tenantId?: string) {
+    const preview = this.importBankStatement({ csv: input.csv ?? 'date,label,amount,reference\n2026-05-20,VIR FAC,1020,FAC-TEST\n2026-05-21,FRAIS BANQUE,-25,FEE-001' }, tenantId);
+    const workspace = this.workspace(tenantId);
+    return { ...preview, unknownCounterparties: preview.rows.filter((row) => !row.suggestedMatch).length, duplicateReferences: preview.rows.filter((row) => row.duplicate).map((row) => row.reference), suggestions: preview.rows.map((row) => ({ reference: row.reference, suggestedMatch: row.suggestedMatch, counterpartyKnown: workspace.customers.some((customer) => row.label.includes(customer.name)) || workspace.suppliers.some((supplier) => row.label.includes(supplier.name)) })) };
+  }
+
+  automatedPaymentMatching(input: { amount?: number; reference?: string; customerRib?: string; dateWindowDays?: number } = {}, tenantId?: string) {
+    const suggestions = this.bankStatementMatchingSuggestions({ amount: input.amount, reference: input.reference }, tenantId).rows
+      .filter((row) => row.type === 'CUSTOMER_INVOICE')
+      .map((row) => ({ ...row, customerRibMatched: Boolean(input.customerRib), dateWindowDays: input.dateWindowDays ?? 7, confidence: Math.min(100, row.score + (input.customerRib ? 15 : 0)) }));
+    return { rows: suggestions, autoMatched: suggestions.filter((row) => row.confidence >= 80), criteria: ['amount', 'reference', 'customerRib', 'dateWindow'] };
+  }
+
+  paymentAllocationAudit(input: { customerId: string; amount: number; reviewer?: string; mode?: PaymentAllocationRule['mode'] }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const before = this.customerOpenBalance(workspace, input.customerId);
+    const preview = this.paymentAllocationPreview({ customerId: input.customerId, amount: input.amount, mode: input.mode }, workspace.tenant.id);
+    const after = r2(before - preview.rows.reduce((sum, row) => sum + row.allocated, 0));
+    const audit = { customerId: input.customerId, beforeResidual: before, afterResidual: after, rows: preview.rows, reviewer: input.reviewer ?? 'accountant@atlas.ma', approvalStatus: 'APPROVED', createdAt: new Date().toISOString() };
+    this.audit(workspace, 'payment.allocation-audited', 'PaymentAllocation', this.id('alloc'), audit);
+    return audit;
+  }
+
+  saasPlanEnforcementMatrix(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const usage = this.tenantBillingUsageMeter(workspace.tenant.id);
+    const limits = workspace.tenant.plan === 'ENTERPRISE' ? { invoices: Infinity, payslips: Infinity, exports: true, modules: allModules } : { invoices: 500, payslips: 50, exports: workspace.tenant.plan === 'NUMOW', modules: allModules.slice(0, 6) };
+    return { plan: workspace.tenant.plan, limits, usage, exportPermissions: { accounting: Boolean(limits.exports), payroll: Boolean(limits.exports), legalArchive: workspace.tenant.plan === 'ENTERPRISE' }, moduleLocks: allModules.filter((module) => !limits.modules.includes(module)), recordLimitStatus: usage.invoices > limits.invoices || usage.payslips > limits.payslips ? 'LIMIT_REACHED' : 'OK' };
+  }
+
+  tenantBillingUsageMeter(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { invoices: workspace.invoices.length, payslips: workspace.payrollRuns.reduce((sum, run) => sum + run.payslips.length, 0), storageMb: r2(workspace.storedFiles.reduce((sum, file) => sum + file.size, 0) / 1024 / 1024), exports: workspace.legalEvidences.length + workspace.payrollExportArchives.length, activeUsers: workspace.users.filter((user) => user.active).length };
+  }
+
+  implementationGoLiveRiskRadar(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const legalMissing = this.tenantDataQualityScore(workspace.tenant.id).legalMissing;
+    const stockQuality = this.stockNegativePreventionReport(workspace.tenant.id);
+    const payrollReadiness = this.cnssEmployeeAnomalyDrilldown(workspace.tenant.id);
+    const integrations = this.integrationHealthDashboard(workspace.tenant.id);
+    const risks = [
+      { area: 'Identifiants légaux', score: legalMissing.length * 20, blockers: legalMissing },
+      { area: 'Qualité stock', score: stockQuality.blocked * 40 + stockQuality.warnings * 10, blockers: stockQuality.rows.filter((row) => row.status !== 'OK').map((row) => row.sku) },
+      { area: 'Paie', score: payrollReadiness.count * 20, blockers: payrollReadiness.rows.map((row) => row.employeeName) },
+      { area: 'Intégrations', score: integrations.rows.reduce((sum, row) => sum + row.failures * 20, 0), blockers: integrations.rows.filter((row) => row.failures).map((row) => row.integration) },
+    ];
+    return { risks, status: risks.some((risk) => risk.score >= 40) ? 'GO_LIVE_BLOCKED' : 'READY_WITH_MONITORING', totalScore: risks.reduce((sum, risk) => sum + risk.score, 0) };
+  }
+
+  guidedDemoScenarios() {
+    return [
+      { id: 'trading', label: 'Négoce', flows: ['devis', 'commande', 'réception', 'facture', 'TVA'], seedReady: true },
+      { id: 'services', label: 'Services', flows: ['contrat', 'facturation récurrente', 'encaissement'], seedReady: true },
+      { id: 'payroll-heavy', label: 'Paie intensive', flows: ['salariés', 'bulletins', 'Damancom', 'IR'], seedReady: true },
+      { id: 'pos-retail', label: 'Retail POS', flows: ['session caisse', 'ticket', 'Z-report', 'stock'], seedReady: true },
+      { id: 'production', label: 'Production', flows: ['BOM', 'ordre', 'qualité', 'CUMP'], seedReady: true },
+    ];
+  }
+
+  competitiveMigrationImporter(input: { source?: 'ODOO' | 'SAGE' | 'CEGID' | 'ZOHO' | 'LOCAL_ERP'; csv?: string } = {}, tenantId?: string) {
+    const rows = this.parseCsv(input.csv ?? 'name,ice,type\nClient Migration,001234567000089,customer\nFournisseur Migration,009876543000045,supplier');
+    const mapped = rows.map((row, index) => ({ line: index + 1, source: input.source ?? 'LOCAL_ERP', type: row.type ?? 'customer', name: row.name, ice: row.ice, targetEndpoint: row.type === 'supplier' ? '/inventory/suppliers' : '/crm/customers', errors: row.ice ? [] : ['ICE_MISSING'] }));
+    this.audit(this.workspace(tenantId), 'migration.import-previewed', 'MigrationImport', this.id('mig'), { source: input.source ?? 'LOCAL_ERP', rows: mapped.length });
+    return { status: mapped.some((row) => row.errors.length) ? 'NEEDS_CLEANUP' : 'READY_TO_IMPORT', rows: mapped, templates: ['Odoo partenaires', 'Sage tiers', 'Excel local Maroc'] };
+  }
+
+  dataQualityAutoFixSuggestions(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      suggestions: [
+        ...workspace.customers.filter((customer) => !customer.ice).map((customer) => ({ entity: 'CUSTOMER', id: customer.id, issue: 'MISSING_ICE', action: 'REQUEST_LEGAL_ID' })),
+        ...workspace.suppliers.filter((supplier) => supplier.bankDetails.some((bank) => !bank.rib)).map((supplier) => ({ entity: 'SUPPLIER', id: supplier.id, issue: 'INVALID_RIB', action: 'REQUEST_RIB_EVIDENCE' })),
+        ...workspace.products.filter((product) => !product.active).map((product) => ({ entity: 'PRODUCT', id: product.id, issue: 'INACTIVE_PRODUCT', action: 'ARCHIVE_OR_REACTIVATE' })),
+      ],
+      duplicateTiers: [...workspace.customers, ...workspace.suppliers].filter((party) => party.duplicateWarnings?.length).map((party) => ({ id: party.id, name: party.name, warnings: party.duplicateWarnings })),
+    };
+  }
+
+  executiveComplianceCockpit(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { taxCalendar: this.moroccoTaxCalendar(workspace.tenant.id).rows, pendingEvidence: this.accountantEvidenceBinder({}, workspace.tenant.id).sections, lockedPeriods: workspace.fiscalPeriods.filter((period) => period.status !== 'OPEN'), riskAlerts: this.implementationGoLiveRiskRadar(workspace.tenant.id).risks.filter((risk) => risk.score > 0), status: 'EXECUTIVE_READY' };
+  }
+
+  branchEstablishmentRegistry(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const branches = workspace.branches.length ? workspace.branches : [this.createBranch({ name: 'Siège', city: workspace.tenant.legalEntity.city }, workspace.tenant.id)];
+    return { rows: branches.map((branch) => ({ branchId: branch.id, name: branch.name, city: branch.city, manager: branch.name === 'Siège' ? 'Direction' : 'Responsable agence', ifNumber: workspace.tenant.legalEntity.ifNumber, rc: workspace.tenant.legalEntity.rc, patente: workspace.tenant.legalEntity.patente, invoiceSeries: workspace.branchNumberingPolicies.find((policy) => policy.branchId === branch.id)?.invoicePrefix ?? workspace.tenant.settings.invoiceSeries })) };
+  }
+
+  multiBranchStockVisibility(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const branches = this.branchEstablishmentRegistry(workspace.tenant.id).rows;
+    return { rows: branches.flatMap((branch) => workspace.products.map((product) => ({ branchId: branch.branchId, city: branch.city, productId: product.id, sku: product.sku, quantity: workspace.warehouseStocks.find((stock) => stock.productId === product.id)?.quantity ?? product.stockOnHand, transferLeadTimeDays: branch.city === workspace.tenant.legalEntity.city ? 1 : 3, reorderThreshold: product.reorderPoint, exception: product.stockOnHand <= product.reorderPoint ? 'REORDER' : 'OK' }))) };
+  }
+
+  moroccanDeliveryZonePricing(input: { city?: string; weightKg?: number } = {}) {
+    const zones = this.moroccanCityRegionReference().rows;
+    return { rows: zones.map((zone) => ({ city: zone.city, region: zone.region, route: zone.defaultDeliveryZone, weightBand: (input.weightKg ?? 5) <= 5 ? '0-5kg' : '5kg+', transporter: zone.city === 'Casablanca' ? 'Interne' : 'TransMaroc', priceMad: zone.city === 'Casablanca' ? 25 : 45, deliveryPromiseDays: zone.city === 'Casablanca' ? 1 : 3 })) };
+  }
+
+  customerSectorClassification(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.customers.map((customer) => ({ customerId: customer.id, customerName: customer.name, sector: customer.name.toLowerCase().includes('retail') ? 'Retail' : 'Services', benchmark: 'PME Maroc', riskLevel: this.customerCreditScores(workspace.tenant.id).find((score) => score.customerId === customer.id)?.level ?? 'LOW_RISK', analyticsTags: [customer.city ?? 'Maroc', customer.preferredLanguage] }));
+  }
+
+  supplierComplianceVault(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.suppliers.map((supplier) => ({ supplierId: supplier.id, supplierName: supplier.name, documents: ['Attestation fiscale', 'Certificat CNSS', 'RIB', 'Contrat'].map((type) => ({ type, status: supplier.documentExpiries.some((document) => document.type.includes(type.split(' ')[0])) || supplier.bankDetails.length ? 'RECEIVED' : 'MISSING', renewalDue: supplier.documentExpiries.some((document) => this.daysUntil(document.expiresAt) <= 30) })), workflowStatus: supplier.documentExpiries.some((document) => this.daysUntil(document.expiresAt) <= 30) ? 'RENEWAL_DUE' : 'OK' }));
+  }
+
+  delegatedApprovalChains(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { templates: ['Directeur agence', 'Comptable', 'Responsable RH', 'Substitut'], activeDelegations: workspace.approvalDelegations, rows: ['branch-manager', 'accountant', 'hr-manager'].map((role) => ({ role, substituteApprover: role === 'accountant' ? 'OWNER' : 'ADMIN', threshold: role === 'branch-manager' ? 25000 : 10000, status: 'READY' })) };
+  }
+
+  roleBasedDocumentRedaction(input: { role?: UserRole; documentType?: string } = {}, tenantId?: string) {
+    const role = input.role ?? 'READ_ONLY';
+    const hideSensitive = !['OWNER', 'ADMIN', 'ACCOUNTANT', 'PAYROLL'].includes(role);
+    return { role, documentType: input.documentType ?? 'PAYSLIP', fields: { salary: hideSensitive ? 'REDACTED' : 'VISIBLE', taxId: ['SALES', 'WAREHOUSE', 'READ_ONLY'].includes(role) ? 'REDACTED' : 'VISIBLE', rib: hideSensitive ? 'REDACTED' : 'VISIBLE', privateHrEvidence: role === 'PAYROLL' || role === 'OWNER' ? 'VISIBLE' : 'REDACTED' }, policy: 'least-privilege' };
+  }
+
+  accountingAttachmentOcrQueue(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.accountingAttachmentRequirements.map((requirement) => ({ requirementId: requirement.id, journalType: requirement.journalType, evidenceCategory: requirement.evidenceCategory, confidence: 0.82, manualVerification: true, linkedJournalIds: workspace.journalEntries.filter((entry) => entry.description.includes(requirement.journalType)).map((entry) => entry.id), status: 'WAITING_REVIEW' }));
+    return { rows, pending: rows.filter((row) => row.manualVerification).length };
+  }
+
+  cashCollectionRoutePlanning(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.invoices.filter((invoice) => invoice.status !== 'PAID').map((invoice, index) => ({ invoiceId: invoice.id, customerName: this.customer(workspace, invoice.customerId).name, city: this.customer(workspace, invoice.customerId).city ?? 'Casablanca', collector: index % 2 ? 'Collecteur Nord' : 'Collecteur Casa', receiptNumber: `REC-${today().slice(0, 4)}-${String(index + 1).padStart(4, '0')}`, expectedAmount: r2(invoice.totals.total - invoice.paidAmount), varianceReview: 'PENDING' }));
+    return { rows, totalToCollect: r2(rows.reduce((sum, row) => sum + row.expectedAmount, 0)) };
+  }
+
+  customerCreditInsuranceRegister(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.customers.map((customer) => ({ customerId: customer.id, customerName: customer.name, insurer: 'Wafa Assurance', coveredAmount: r2(customer.creditLimit * 0.7), expiryDate: '2026-12-31', exposure: this.customerOpenBalance(workspace, customer.id), blockedExposure: Math.max(0, r2(this.customerOpenBalance(workspace, customer.id) - customer.creditLimit * 0.7)), status: this.customerOpenBalance(workspace, customer.id) > customer.creditLimit * 0.7 ? 'BLOCKED_EXPOSURE' : 'COVERED' }));
+  }
+
+  customerGuaranteeRegister(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.customers.map((customer) => ({ customerId: customer.id, customerName: customer.name, guarantees: [{ type: 'BANK_GUARANTEE', amount: Math.min(customer.creditLimit, 50000), reference: `GAR-${customer.id}`, releaseDate: '2026-12-31' }, { type: 'SIGNED_CONTRACT', amount: 0, reference: `CONTRACT-${customer.id}`, releaseDate: '2026-12-31' }], status: customer.creditLimit > 0 ? 'ACTIVE' : 'MISSING' }));
+  }
+
+  supplierAdvancePaymentTracking(input: { supplierId: string; purchaseOrderId?: string; amount: number; approvalEvidence: string }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const supplier = this.supplier(workspace, input.supplierId);
+    const order = input.purchaseOrderId ? this.purchaseOrder(workspace, input.purchaseOrderId) : workspace.purchaseOrders.find((candidate) => candidate.supplierId === supplier.id);
+    const amount = this.positive(input.amount, 'Avance fournisseur obligatoire');
+    const residual = r2((order?.total ?? amount) - amount);
+    const evidence = this.archiveEvidence(workspace, 'ACCOUNTING_EXPORT', `SUPPLIER-ADVANCE-${supplier.id}-${today()}`, { supplierId: supplier.id, purchaseOrderId: order?.id, amount, approvalEvidence: input.approvalEvidence });
+    return { supplierId: supplier.id, supplierName: supplier.name, purchaseOrderId: order?.id, amount, residualBalance: residual, approvalEvidence: input.approvalEvidence, evidenceId: evidence.id, status: 'APPROVED' };
+  }
+
+  purchaseLandedCostSimulation(input: { supplierId?: string; lines?: Array<{ productId: string; quantity: number; unitCost: number }>; freight?: number; customsDuty?: number; transit?: number; insurance?: number; vatTreatment?: 'RECOVERABLE' | 'CAPITALIZED' } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const lines = input.lines ?? [{ productId: 'prd-raw', quantity: 10, unitCost: 100 }];
+    const base = r2(lines.reduce((sum, line) => sum + line.quantity * line.unitCost, 0));
+    const costs = { freight: input.freight ?? 100, customsDuty: input.customsDuty ?? 80, transit: input.transit ?? 40, insurance: input.insurance ?? 20 };
+    const totalCosts = r2(costs.freight + costs.customsDuty + costs.transit + costs.insurance);
+    return { supplierId: input.supplierId, vatTreatment: input.vatTreatment ?? 'RECOVERABLE', base, costs, rows: lines.map((line) => ({ ...line, sku: this.product(workspace, line.productId).sku, allocatedCost: base ? r2(((line.quantity * line.unitCost) / base) * totalCosts) : 0, simulatedCump: r2(line.unitCost + (base ? (((line.quantity * line.unitCost) / base) * totalCosts) / line.quantity : 0)) })), totalEstimatedCost: r2(base + totalCosts) };
+  }
+
+  inventoryAbcClassification(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.products.map((product) => ({ productId: product.id, sku: product.sku, value: r2(product.stockOnHand * product.weightedAverageCost), margin: r2(product.salePrice - product.weightedAverageCost), velocity: workspace.stockMoves.filter((move) => move.productId === product.id).length, location: workspace.warehouses[0]?.name ?? 'Dépôt principal' })).sort((left, right) => right.value - left.value);
+    const totalValue = rows.reduce((sum, row) => sum + row.value, 0) || 1;
+    let cumulative = 0;
+    return { rows: rows.map((row) => { cumulative += row.value; const share = cumulative / totalValue; return { ...row, class: share <= 0.8 ? 'A' : share <= 0.95 ? 'B' : 'C', riskLevel: row.margin < 0 || row.velocity === 0 ? 'HIGH' : 'NORMAL' }; }) };
+  }
+
+  cycleCountSchedule(tenantId?: string) {
+    const abc = this.inventoryAbcClassification(tenantId).rows;
+    return { rows: abc.map((row, index) => ({ warehouse: row.location, productId: row.productId, sku: row.sku, family: row.sku.split('-')[0], riskLevel: row.riskLevel, abcClass: row.class, frequencyDays: row.class === 'A' ? 30 : row.class === 'B' ? 60 : 90, nextCountDate: addDays(today(), (index + 1) * 3), lastCountVariance: 0 })), status: 'SCHEDULED' };
+  }
+
+  moroccoScaleControlsReadiness(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const invoice = this.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] }, workspace.tenant.id);
+    this.recordPayment({ invoiceId: invoice.id, amount: Math.min(100, invoice.totals.total), method: 'BANK' }, workspace.tenant.id);
+    const creditNote = this.createCreditNote({ invoiceId: invoice.id, reason: 'Avoir batch scale-up', lines: [{ productId: 'prd-2', quantity: 1, unitPrice: 50, vatRate: 0.2 }] }, workspace.tenant.id);
+    const purchaseOrder = this.createPurchaseOrder({ supplierId: 'sup-1', expectedDate: addDays(today(), 7), lines: [{ productId: 'prd-raw', quantity: 3, unitCost: 100 }] }, workspace.tenant.id);
+    this.approvePurchaseOrder(purchaseOrder.id, workspace.tenant.id);
+    const receipt = this.createPurchaseReceipt({ purchaseOrderId: purchaseOrder.id, lines: [{ productId: 'prd-raw', quantity: 2, unitCost: 100 }] }, workspace.tenant.id);
+    this.createSupplierInvoice({ purchaseReceiptId: receipt.id }, workspace.tenant.id);
+    const branch = this.createBranch({ name: `Agence Scale ${workspace.branches.length + 1}`, city: 'Rabat' }, workspace.tenant.id);
+    const toWarehouse = this.createWarehouse({ name: `Dépôt Rabat ${workspace.warehouses.length + 1}`, city: 'Rabat' }, workspace.tenant.id);
+    const payrollRun = this.calculatePayrollRun(this.createPayrollRun({ year: 2026, month: 5 }, workspace.tenant.id).id, workspace.tenant.id);
+
+    return {
+      generalLedger: this.generalLedgerReport({ period: today().slice(0, 7) }, workspace.tenant.id),
+      customerLedger: this.auxiliaryCustomerLedger({ customerId: 'cus-1' }, workspace.tenant.id),
+      supplierLedger: this.auxiliarySupplierLedger({ supplierId: 'sup-1' }, workspace.tenant.id),
+      numberingAudit: this.moroccanInvoiceNumberingAuditReport({ year: Number(today().slice(0, 4)) }, workspace.tenant.id),
+      cancellation: this.cancelDocument({ type: 'INVOICE', id: invoice.id, reason: 'Contrôle annulation batch scale-up' }, workspace.tenant.id),
+      transferApproval: this.warehouseTransferApproval({ productId: 'prd-raw', fromWarehouseId: 'wh-1', toWarehouseId: toWarehouse.id, quantity: 1, branchId: branch.id }, workspace.tenant.id),
+      inventorySnapshot: this.inventoryValuationSnapshot({ period: today().slice(0, 7) }, workspace.tenant.id),
+      negativePrevention: this.stockNegativePreventionReport(workspace.tenant.id),
+      payrollVariance: this.payrollVarianceReport({ period: payrollRun.period }, workspace.tenant.id),
+      contractRenewal: this.employeeContractRenewalWorkflow({ employeeId: 'emp-1', newSalary: 6700, signedDocumentEvidence: 'avenant-scale.pdf', effectiveDate: '2026-06-01' }, workspace.tenant.id),
+      absenceSandbox: this.absenceImportSandbox({ approvedBy: 'payroll@atlas.ma' }, workspace.tenant.id),
+      payrollJournalPreview: this.payrollJournalPreview({ runId: payrollRun.id }, workspace.tenant.id),
+      payrollEvidencePack: this.payrollEvidencePack({ runId: payrollRun.id }, workspace.tenant.id),
+      dgiSandbox: this.adapterSandboxLog('DGI', { reference: invoice.number, payload: { invoiceId: invoice.id } }, workspace.tenant.id),
+      cnssSandbox: this.adapterSandboxLog('CNSS', { reference: payrollRun.number, payload: { runId: payrollRun.id } }, workspace.tenant.id),
+      bankImportPreview: this.enhancedBankStatementImportPreview({ csv: `date,label,amount,reference\n${today()},Rabat Retail SARL,${invoice.totals.total},${invoice.number}` }, workspace.tenant.id),
+      automatedPaymentMatching: this.automatedPaymentMatching({ amount: invoice.totals.total, reference: invoice.number, customerRib: '007780000000000000000123', dateWindowDays: 7 }, workspace.tenant.id),
+      paymentAllocationAudit: this.paymentAllocationAudit({ customerId: 'cus-1', amount: 50, reviewer: 'accountant@atlas.ma' }, workspace.tenant.id),
+      planEnforcement: this.saasPlanEnforcementMatrix(workspace.tenant.id),
+      usageMeter: this.tenantBillingUsageMeter(workspace.tenant.id),
+      goLiveRisk: this.implementationGoLiveRiskRadar(workspace.tenant.id),
+      demoScenarios: this.guidedDemoScenarios(),
+      migrationImporter: this.competitiveMigrationImporter({ source: 'ODOO' }, workspace.tenant.id),
+      autoFixSuggestions: this.dataQualityAutoFixSuggestions(workspace.tenant.id),
+      complianceCockpit: this.executiveComplianceCockpit(workspace.tenant.id),
+      branchRegistry: this.branchEstablishmentRegistry(workspace.tenant.id),
+      multiBranchStock: this.multiBranchStockVisibility(workspace.tenant.id),
+      deliveryZonePricing: this.moroccanDeliveryZonePricing({ city: 'Rabat', weightKg: 4 }),
+      customerSectors: this.customerSectorClassification(workspace.tenant.id),
+      supplierVault: this.supplierComplianceVault(workspace.tenant.id),
+      delegatedApprovals: this.delegatedApprovalChains(workspace.tenant.id),
+      documentRedaction: this.roleBasedDocumentRedaction({ role: 'READ_ONLY', documentType: 'PAYSLIP' }, workspace.tenant.id),
+      ocrQueue: this.accountingAttachmentOcrQueue(workspace.tenant.id),
+      cashCollection: this.cashCollectionRoutePlanning(workspace.tenant.id),
+      creditInsurance: this.customerCreditInsuranceRegister(workspace.tenant.id),
+      guaranteeRegister: this.customerGuaranteeRegister(workspace.tenant.id),
+      supplierAdvance: this.supplierAdvancePaymentTracking({ supplierId: 'sup-1', purchaseOrderId: purchaseOrder.id, amount: 120, approvalEvidence: 'avance-sup-1.pdf' }, workspace.tenant.id),
+      landedCostSimulation: this.purchaseLandedCostSimulation({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 3, unitCost: 100 }], freight: 60, customsDuty: 45, transit: 20, insurance: 10, vatTreatment: 'RECOVERABLE' }, workspace.tenant.id),
+      abcClassification: this.inventoryAbcClassification(workspace.tenant.id),
+      cycleCount: this.cycleCountSchedule(workspace.tenant.id),
+      creditNoteId: creditNote.id,
+    };
+  }
+
   addHrAuditTrail(input: { employeeId: string; category: HrAuditTrailEntry['category']; actor: string; redactedForRoles?: UserRole[] }, tenantId?: string): HrAuditTrailEntry {
     const workspace = this.workspace(tenantId);
     this.employee(workspace, input.employeeId);
@@ -9034,6 +9459,16 @@ export class ErpStoreService {
     if (duplicateBarcode) warnings.push(`Code-barres déjà utilisé par ${duplicateBarcode.name}`);
     if (duplicateName) warnings.push(`Nom normalisé déjà utilisé par ${duplicateName.sku}`);
     return warnings;
+  }
+
+  private sourceDocumentLink(source: string): string {
+    if (source.startsWith('FAC-')) return `/sales/invoices?number=${encodeURIComponent(source)}`;
+    if (source.startsWith('AV-')) return `/sales/credit-notes?number=${encodeURIComponent(source)}`;
+    if (source.startsWith('BR-')) return `/inventory/purchase-receipts?number=${encodeURIComponent(source)}`;
+    if (source.startsWith('FF-')) return `/inventory/supplier-invoices?number=${encodeURIComponent(source)}`;
+    if (source.startsWith('PAY-')) return `/payroll/runs?number=${encodeURIComponent(source)}`;
+    if (source.startsWith('POS-')) return `/pos/transactions?number=${encodeURIComponent(source)}`;
+    return `/ledger/journal?source=${encodeURIComponent(source)}`;
   }
 
   private lead(workspace: TenantWorkspace, leadId: string): Lead {

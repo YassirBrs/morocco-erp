@@ -93,6 +93,7 @@ export class TenantController {
   @Get('accountant-review-mode') accountantReviewMode(@Query('period') period?: string) { return this.tenantService.accountantReviewMode(period); }
   @Post('accountant-review-comments') createAccountantReviewComment(@Body() body: any) { return this.tenantService.createAccountantReviewComment(body); }
   @Post('accountant-review-comments/:id/resolve') resolveAccountantReviewComment(@Param('id') id: string) { return this.tenantService.resolveAccountantReviewComment(id); }
+  @Get('scale-controls-readiness') scaleControlsReadiness() { return this.tenantService.scaleControlsReadiness(); }
   @Get('branches') branchDashboard() { return this.tenantService.branchDashboard(); }
   @Post('branches') createBranch(@Body() body: any) { return this.tenantService.createBranch(body); }
   @Get('localization-settings') localizationSettings() { return this.tenantService.localizationSettings(); }

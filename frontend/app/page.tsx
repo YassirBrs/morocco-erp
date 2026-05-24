@@ -17,6 +17,7 @@ import {
   getPayrollSnapshot,
   getRegulatedServiceReadiness,
   getSalesDashboard,
+  getScaleControlsReadiness,
   getStock,
   searchBusiness,
 } from '../lib/api';
@@ -48,7 +49,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -69,6 +70,7 @@ export default async function DashboardPage() {
     getLogisticsCloseReadiness(),
     getRegulatedServiceReadiness(),
     getAccountingRiskReadiness(),
+    getScaleControlsReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -611,6 +613,70 @@ export default async function DashboardPage() {
               'Jours fériés reliés à paie, congés et livraison',
               'Villes/régions pour ventes, agences et analytics',
               'Contrôles alignés PME marocaines',
+            ]} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Scale-up Maroc batch contrôles">
+          <PanelHeader title="Scale-up Maroc: contrôles batch" action="Piloter scale-up" />
+          <div className="reportGrid">
+            <Metric label="Grand livre" value={String(scaleControls.generalLedger.rows.length)} />
+            <Metric label="Usage SaaS" value={`${scaleControls.usageMeter.invoices} factures`} />
+            <Metric label="Go-live" value={scaleControls.goLiveRisk.status} />
+            <Metric label="Cycle count" value={scaleControls.cycleCount.status} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Comptabilité et banques" rows={[
+              `Grand livre checksum ${scaleControls.generalLedger.checksum.slice(0, 10) || 'prêt'}`,
+              `Auxiliaire client ${scaleControls.customerLedger.length}`,
+              `Auxiliaire fournisseur ${scaleControls.supplierLedger.length}`,
+              `Audit numérotation ${scaleControls.numberingAudit.status}`,
+              `Annulation document ${scaleControls.cancellation.status}`,
+              `Import bancaire ${scaleControls.bankImportPreview.rows.length}`,
+              `Matching paiement ${scaleControls.automatedPaymentMatching.autoMatched.length}`,
+              `Allocation audit ${scaleControls.paymentAllocationAudit.approvalStatus}`,
+            ]} empty="-" />
+            <MiniList title="Stock, branches et livraison" rows={[
+              `Transfert dépôt ${scaleControls.transferApproval.approvalStatus}`,
+              `Snapshot CUMP ${scaleControls.inventorySnapshot.rows.length}`,
+              `Prévention stock négatif ${scaleControls.negativePrevention.warnings}`,
+              `Registre agences ${scaleControls.branchRegistry.rows.length}`,
+              `Stock multi-agences ${scaleControls.multiBranchStock.rows.length}`,
+              `Tarifs zones livraison ${scaleControls.deliveryZonePricing.rows.length}`,
+              `ABC stock ${scaleControls.abcClassification.rows.length}`,
+              `Comptages tournants ${scaleControls.cycleCount.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="Paie et conformité" rows={[
+              `Variance paie ${scaleControls.payrollVariance.rows.length}`,
+              `Renouvellements contrats ${scaleControls.contractRenewal.alerts.length}`,
+              `Absences import ${scaleControls.absenceSandbox.status}`,
+              `Journal paie ${scaleControls.payrollJournalPreview.lockPeriodValidation}`,
+              `Pack preuves paie ${scaleControls.payrollEvidencePack.files.length}`,
+              `DGI sandbox ${scaleControls.dgiSandbox.submissionState}`,
+              `CNSS sandbox ${scaleControls.cnssSandbox.submissionState}`,
+              `Cockpit conformité ${scaleControls.complianceCockpit.status}`,
+            ]} empty="-" />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="SaaS, migration et qualité" rows={[
+              `Plan enforcement ${scaleControls.planEnforcement.recordLimitStatus}`,
+              `Scénarios démo ${scaleControls.demoScenarios.length}`,
+              `Importer migration ${scaleControls.migrationImporter.templates.join(', ')}`,
+              `Auto-fix qualité ${scaleControls.autoFixSuggestions.suggestions.length}`,
+              `Secteurs clients ${scaleControls.customerSectors.length}`,
+              `Coffre fournisseurs ${scaleControls.supplierVault.length}`,
+            ]} empty="-" />
+            <MiniList title="Approbations et documents" rows={[
+              `Chaînes déléguées ${scaleControls.delegatedApprovals.rows.length}`,
+              `Redaction salaire ${scaleControls.documentRedaction.fields.salary}`,
+              `OCR pièces ${scaleControls.ocrQueue.pending}`,
+              `Collecte cash ${formatMad(scaleControls.cashCollection.totalToCollect)}`,
+            ]} empty="-" />
+            <MiniList title="Crédit, garanties et achats" rows={[
+              `Assurance crédit ${scaleControls.creditInsurance.length}`,
+              `Garanties client ${scaleControls.guaranteeRegister.length}`,
+              `Avance fournisseur ${scaleControls.supplierAdvance.status}`,
+              `Simulation landed cost ${formatMad(scaleControls.landedCostSimulation.totalEstimatedCost)}`,
             ]} empty="-" />
           </div>
         </section>

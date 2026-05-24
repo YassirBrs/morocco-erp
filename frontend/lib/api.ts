@@ -316,6 +316,8 @@ export type AccountingRiskReadiness = {
   trialBalance: { rows: unknown[]; totals: { debit: number; credit: number; balance: number } };
 };
 
+export type ScaleControlsReadiness = Record<string, any>;
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -760,4 +762,49 @@ export async function getAccountingRiskReadiness(): Promise<AccountingRiskReadin
     fiscalException,
     trialBalance,
   };
+}
+
+export async function getScaleControlsReadiness(): Promise<ScaleControlsReadiness> {
+  return getJson('/tenant/scale-controls-readiness', {
+    generalLedger: { rows: [], checksum: '' },
+    customerLedger: [],
+    supplierLedger: [],
+    numberingAudit: { status: 'OK' },
+    cancellation: { status: 'VOID' },
+    transferApproval: { approvalStatus: 'AUTO_APPROVED' },
+    inventorySnapshot: { rows: [], totals: { value: 0 } },
+    negativePrevention: { rows: [], blocked: 0, warnings: 0 },
+    payrollVariance: { rows: [] },
+    contractRenewal: { alerts: [] },
+    absenceSandbox: { rows: [] },
+    payrollJournalPreview: { lines: [], lockPeriodValidation: 'OPEN' },
+    payrollEvidencePack: { files: [] },
+    dgiSandbox: { submissionState: 'PENDING_CREDENTIALS' },
+    cnssSandbox: { submissionState: 'PENDING_CREDENTIALS' },
+    bankImportPreview: { rows: [] },
+    automatedPaymentMatching: { rows: [], autoMatched: [] },
+    paymentAllocationAudit: { approvalStatus: 'APPROVED' },
+    planEnforcement: { recordLimitStatus: 'OK', moduleLocks: [] },
+    usageMeter: { invoices: 0, payslips: 0, exports: 0, activeUsers: 0 },
+    goLiveRisk: { status: 'READY_WITH_MONITORING', risks: [] },
+    demoScenarios: [],
+    migrationImporter: { rows: [], templates: [] },
+    autoFixSuggestions: { suggestions: [] },
+    complianceCockpit: { status: 'EXECUTIVE_READY', riskAlerts: [] },
+    branchRegistry: { rows: [] },
+    multiBranchStock: { rows: [] },
+    deliveryZonePricing: { rows: [] },
+    customerSectors: [],
+    supplierVault: [],
+    delegatedApprovals: { rows: [] },
+    documentRedaction: { fields: {} },
+    ocrQueue: { pending: 0, rows: [] },
+    cashCollection: { rows: [], totalToCollect: 0 },
+    creditInsurance: [],
+    guaranteeRegister: [],
+    supplierAdvance: { status: 'APPROVED' },
+    landedCostSimulation: { totalEstimatedCost: 0, base: 0 },
+    abcClassification: { rows: [] },
+    cycleCount: { rows: [], status: 'SCHEDULED' },
+  });
 }

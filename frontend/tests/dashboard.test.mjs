@@ -458,3 +458,16 @@ test('Next primary workspace exposes Morocco accounting risk, bilingual document
     assert.ok(api.includes(endpoint), `${endpoint} accounting risk endpoint is wired`);
   }
 });
+
+test('Next primary workspace exposes 40-task Morocco scale-up controls batch', () => {
+  for (const text of ['Scale-up Maroc: contrôles batch', 'Grand livre', 'Usage SaaS', 'Go-live', 'Cycle count', 'Comptabilité et banques', 'Stock, branches et livraison', 'Paie et conformité', 'SaaS, migration et qualité', 'Approbations et documents', 'Crédit, garanties et achats']) {
+    assert.ok(page.includes(text), `${text} scale-up batch label is present`);
+  }
+  for (const marker of ['getScaleControlsReadiness', 'scaleControls.generalLedger', 'scaleControls.usageMeter', 'scaleControls.goLiveRisk', 'scaleControls.cycleCount']) {
+    assert.ok(page.includes(marker), `${marker} scale-up helper is present`);
+  }
+  assert.ok(api.includes('/tenant/scale-controls-readiness'), 'scale-up batch endpoint is wired');
+  for (const token of ['generalLedger', 'customerLedger', 'supplierLedger', 'numberingAudit', 'cancellation', 'transferApproval', 'inventorySnapshot', 'negativePrevention', 'payrollVariance', 'contractRenewal', 'absenceSandbox', 'payrollJournalPreview', 'payrollEvidencePack', 'dgiSandbox', 'cnssSandbox', 'bankImportPreview', 'automatedPaymentMatching', 'paymentAllocationAudit', 'planEnforcement', 'usageMeter', 'goLiveRisk', 'demoScenarios', 'migrationImporter', 'autoFixSuggestions', 'complianceCockpit', 'branchRegistry', 'multiBranchStock', 'deliveryZonePricing', 'customerSectors', 'supplierVault', 'delegatedApprovals', 'documentRedaction', 'ocrQueue', 'cashCollection', 'creditInsurance', 'guaranteeRegister', 'supplierAdvance', 'landedCostSimulation', 'abcClassification', 'cycleCount']) {
+    assert.ok(api.includes(token), `${token} scale-up data key is represented`);
+  }
+});

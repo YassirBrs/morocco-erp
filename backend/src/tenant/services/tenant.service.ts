@@ -185,6 +185,7 @@ export class TenantService {
   createAccountantReviewComment(data: any) { return this.store.createAccountantReviewComment(data); }
   resolveAccountantReviewComment(id: string) { return this.store.resolveAccountantReviewComment(id); }
   accountantReviewMode(period?: string) { return this.store.accountantReviewMode({ period }); }
+  scaleControlsReadiness() { return this.store.moroccoScaleControlsReadiness(); }
   tenantDataQualityScore() { return this.store.tenantDataQualityScore(); }
   guidedAccountantHandoffPack(period?: string) { return this.store.guidedAccountantHandoffPack({ period }); }
   implementationPartnerMarginWorkloadDashboard() { return this.store.implementationPartnerMarginWorkloadDashboard(); }
