@@ -803,6 +803,13 @@ export class ErpStoreService {
       .sort((left, right) => (left.nextExpiryDays ?? 9999) - (right.nextExpiryDays ?? 9999) || left.customerName.localeCompare(right.customerName));
   }
 
+  customerCreditControls(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.customers
+      .filter((customer) => customer.active)
+      .map((customer) => this.customerCreditControl(workspace, customer.id));
+  }
+
   addSupplier(input: Partial<Supplier> & { name: string }, tenantId?: string): Supplier {
     const workspace = this.workspace(tenantId);
     const supplier: Supplier = {
@@ -1413,8 +1420,9 @@ export class ErpStoreService {
     if (quote.status === 'VOID') {
       throw new BadRequestException('Les devis annulés ne peuvent pas être facturés');
     }
+    const invoice = this.createInvoice({ customerId: quote.customerId, lines: quote.lines, sourceQuoteId: quote.id }, workspace.tenant.id);
     quote.status = 'CONVERTED';
-    return this.createInvoice({ customerId: quote.customerId, lines: quote.lines, sourceQuoteId: quote.id }, workspace.tenant.id);
+    return invoice;
   }
 
   createSalesOrder(input: { customerId: string; lines: DocumentLineInput[] | DocumentLine[]; sourceQuoteId?: string }, tenantId?: string): SalesOrder {
@@ -1542,10 +1550,12 @@ export class ErpStoreService {
   }, tenantId?: string): Invoice {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
-    this.customer(workspace, input.customerId);
+    const customer = this.customer(workspace, input.customerId);
     this.assertPeriodOpen(workspace, today());
     this.assertInvoiceLegalIdentity(workspace.tenant.legalEntity);
     const lines = this.documentLines(workspace, input.lines);
+    const totals = this.totals(lines);
+    this.assertCustomerCreditAvailable(workspace, customer, totals.total);
     const invoice: Invoice = {
       id: this.id('fac'),
       tenantId: workspace.tenant.id,
@@ -1558,7 +1568,7 @@ export class ErpStoreService {
       sourceOrderId: input.sourceOrderId,
       sourceDeliveryNoteId: input.sourceDeliveryNoteId,
       lines,
-      totals: this.totals(lines),
+      totals,
       paidAmount: 0,
       compliance: {
         legalMentions: this.morocco2026Rules.invoiceMentions,
@@ -2085,6 +2095,38 @@ export class ErpStoreService {
     return r2(workspace.creditNotes
       .filter((creditNote) => creditNote.invoiceId === invoiceId && creditNote.status === 'POSTED')
       .reduce((sum, creditNote) => sum + creditNote.totals.total, 0));
+  }
+
+  private customerOpenBalance(workspace: TenantWorkspace, customerId: string): number {
+    return r2(workspace.invoices
+      .filter((invoice) => invoice.customerId === customerId && invoice.status !== 'VOID')
+      .reduce((sum, invoice) => sum + invoice.totals.total - invoice.paidAmount - this.invoiceCreditTotal(workspace, invoice.id), 0));
+  }
+
+  private customerCreditControl(workspace: TenantWorkspace, customerId: string, pendingInvoiceTotal = 0) {
+    const customer = this.customer(workspace, customerId);
+    const openBalance = this.customerOpenBalance(workspace, customer.id);
+    const projectedBalance = r2(openBalance + pendingInvoiceTotal);
+    const hasLimit = customer.creditLimit > 0;
+    return {
+      customerId: customer.id,
+      customerName: customer.name,
+      creditLimit: customer.creditLimit,
+      openBalance,
+      pendingInvoiceTotal: r2(pendingInvoiceTotal),
+      projectedBalance,
+      availableCredit: hasLimit ? r2(customer.creditLimit - openBalance) : null,
+      projectedAvailableCredit: hasLimit ? r2(customer.creditLimit - projectedBalance) : null,
+      onHold: hasLimit && projectedBalance > customer.creditLimit,
+      status: hasLimit && projectedBalance > customer.creditLimit ? 'HOLD' : 'OK',
+    };
+  }
+
+  private assertCustomerCreditAvailable(workspace: TenantWorkspace, customer: Customer, invoiceTotal: number): void {
+    const control = this.customerCreditControl(workspace, customer.id, invoiceTotal);
+    if (control.onHold) {
+      throw new BadRequestException(`Plafond de crédit client dépassé pour ${customer.name}: solde projeté ${control.projectedBalance.toFixed(2)} MAD / limite ${customer.creditLimit.toFixed(2)} MAD`);
+    }
   }
 
   private receivablesAging(workspace: TenantWorkspace, customerId: string) {

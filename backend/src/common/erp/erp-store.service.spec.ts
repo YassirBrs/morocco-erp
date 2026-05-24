@@ -29,6 +29,43 @@ describe('ErpStoreService working ERP workflows', () => {
       .toBeCloseTo(journals[0].lines.reduce((sum, line) => sum + line.credit, 0), 2);
   });
 
+  it('blocks invoices that exceed customer credit limits before numbering, stock, journals, or conversion mutation', () => {
+    const limited = store.addCustomer({ name: 'Client Bloqué Crédit', creditLimit: 100 });
+    const stockBefore = store.getProduct('prd-1').stockOnHand;
+
+    expect(() => store.createInvoice({
+      customerId: limited.id,
+      lines: [{ productId: 'prd-1', quantity: 1 }],
+    })).toThrow('Plafond de crédit client dépassé');
+
+    expect(store.listInvoices()).toHaveLength(0);
+    expect(store.listJournalEntries()).toHaveLength(0);
+    expect(store.getProduct('prd-1').stockOnHand).toBe(stockBefore);
+
+    const quote = store.createQuote({ customerId: limited.id, lines: [{ productId: 'prd-2', quantity: 1 }] });
+    expect(() => store.convertQuoteToInvoice(quote.id)).toThrow('Plafond de crédit client dépassé');
+    expect(store.getQuote(quote.id).status).toBe('DRAFT');
+
+    const noLimit = store.addCustomer({ name: 'Client Sans Plafond', creditLimit: 0 });
+    const invoice = store.createInvoice({ customerId: noLimit.id, lines: [{ productId: 'prd-2', quantity: 1 }] });
+    expect(invoice.number).toMatch(/^FAC-\d{4}-00001$/);
+  });
+
+  it('allows credit limit equality and releases credit holds after payment or credit note', () => {
+    const paidCustomer = store.addCustomer({ name: 'Client Paiement Crédit', creditLimit: 1440 });
+    const first = store.createInvoice({ customerId: paidCustomer.id, lines: [{ productId: 'prd-2', quantity: 1 }] });
+    expect(first.totals.total).toBe(1440);
+    expect(() => store.createInvoice({ customerId: paidCustomer.id, lines: [{ productId: 'prd-2', quantity: 1 }] })).toThrow('Plafond de crédit client dépassé');
+    store.recordPayment({ invoiceId: first.id, amount: first.totals.total });
+    expect(store.createInvoice({ customerId: paidCustomer.id, lines: [{ productId: 'prd-2', quantity: 1 }] }).number).toMatch(/^FAC-\d{4}-00002$/);
+
+    const creditedCustomer = store.addCustomer({ name: 'Client Avoir Crédit', creditLimit: 1440 });
+    const creditedInvoice = store.createInvoice({ customerId: creditedCustomer.id, lines: [{ productId: 'prd-2', quantity: 1 }] });
+    expect(() => store.createInvoice({ customerId: creditedCustomer.id, lines: [{ productId: 'prd-2', quantity: 1 }] })).toThrow('Plafond de crédit client dépassé');
+    store.createCreditNote({ invoiceId: creditedInvoice.id });
+    expect(store.createInvoice({ customerId: creditedCustomer.id, lines: [{ productId: 'prd-2', quantity: 1 }] }).number).toMatch(/^FAC-\d{4}-00004$/);
+  });
+
   it('revises, approves, exports, and converts a quote to order, delivery note, and invoice', () => {
     const quote = store.createQuote({
       customerId: 'cus-1',

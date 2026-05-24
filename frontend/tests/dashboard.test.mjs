@@ -26,6 +26,7 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/sales/delivery-notes'));
   assert.ok(staticPage.includes('/sales/credit-notes'));
   assert.ok(staticPage.includes('/sales/customers/cus-1/statement'));
+  assert.ok(staticPage.includes('/crm/customers/credit-control'));
   assert.ok(staticPage.includes('/crm/customers/document-reminders'));
   assert.ok(staticPage.includes('/crm/leads'));
   assert.ok(staticPage.includes('/crm/leads/analytics'));
@@ -109,7 +110,7 @@ test('global styles expose the professional ERP palette', () => {
 });
 
 test('static dashboard exposes onboarding and master-data workflows', () => {
-  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'RIB marocain', 'Document client', 'Expiration document client', 'Alertes documents clients', 'Garantie paiement', 'Alertes marge produits', 'Prix minimum TTC', 'Sous seuil', 'Fournisseur préféré', 'Notes risque', 'Expiration document', 'Alertes fournisseurs', 'Placeholder document', 'Dossier:', 'Expirés', 'À renouveler', 'Préférés', 'Créer devis', 'Convertir en devis', 'Exporter CSV prospects', 'Exporter CSV fournisseurs', 'Importer CSV démo', 'Analytics sources prospects', 'Avoir', 'Relevé client', 'Payer solde']) {
+  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'RIB marocain', 'Contrôle crédit clients', 'Blocage crédit', 'OK crédit', 'Document client', 'Expiration document client', 'Alertes documents clients', 'Garantie paiement', 'Alertes marge produits', 'Prix minimum TTC', 'Sous seuil', 'Fournisseur préféré', 'Notes risque', 'Expiration document', 'Alertes fournisseurs', 'Placeholder document', 'Dossier:', 'Expirés', 'À renouveler', 'Préférés', 'Créer devis', 'Convertir en devis', 'Exporter CSV prospects', 'Exporter CSV fournisseurs', 'Importer CSV démo', 'Analytics sources prospects', 'Avoir', 'Relevé client', 'Payer solde']) {
     assert.ok(staticPage.includes(text), `${text} workflow is present`);
   }
   for (const text of ['Comptabilisée', 'Payée', 'Facture', 'Paiement', 'Marchandise', 'Pipeline prospects', 'Fournisseurs', 'Profil entreprise', 'Réinitialiser démo', 'En attente revue', 'Approuver', 'alerte doublon', 'Banque normalisée', 'Import CSV prospects', 'Import CSV fournisseurs']) {

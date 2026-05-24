@@ -227,7 +227,7 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T137 P1 - Add supplier document upload placeholders linked to each expiry reminder.
 - [x] T138 P1 - Add customer document expiry reminders for ICE, RC, contracts, and payment guarantees.
 - [x] T139 P1 - Add product margin alerts when sale price drops below purchase cost plus VAT.
-- [ ] T140 P1 - Add customer credit-control holds that block new invoices when limits are exceeded.
+- [x] T140 P1 - Add customer credit-control holds that block new invoices when limits are exceeded.
 - [ ] T141 P1 - Add configurable approval limits for quotes, credit notes, purchases, and stock adjustments.
 - [ ] T142 P1 - Add per-role dashboard widgets for sales, stock, accounting, HR, and owner views.
 - [ ] T143 P1 - Add payment reminder scheduling for overdue Moroccan customer invoices.

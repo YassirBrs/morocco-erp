@@ -12,6 +12,7 @@ export class CrmController {
   @Patch('leads/:id') updateLead(@Param('id') id: string, @Body() body: any) { return this.crmService.updateLead(id, body); }
   @Post('leads/:id/quote') convertLeadToQuote(@Param('id') id: string, @Body() body: any) { return this.crmService.convertLeadToQuote(id, body); }
   @Get('customers') customers() { return this.crmService.listCustomers(); }
+  @Get('customers/credit-control') customerCreditControls() { return this.crmService.customerCreditControls(); }
   @Get('customers/document-reminders') customerDocumentReminders() { return this.crmService.customerDocumentReminders(); }
   @Get('customers/:id') customer(@Param('id') id: string) { return this.crmService.getCustomer(id); }
   @Post('customers') createCustomer(@Body() body: any) { return this.crmService.createCustomer(body); }

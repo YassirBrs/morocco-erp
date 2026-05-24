@@ -224,9 +224,21 @@
             </form>
             <div class="tableWrap">
               <table class="miniTable">
-                <thead><tr><th>Client</th><th>ICE</th><th>Délai</th><th>Crédit</th><th>Documents</th></tr></thead>
+                <thead><tr><th>Client</th><th>ICE</th><th>Délai</th><th>Crédit</th><th>Solde</th><th>Documents</th></tr></thead>
                 <tbody id="customerRows"></tbody>
               </table>
+            </div>
+            <div class="analyticsBox">
+              <div class="statementHeader">
+                <span>Contrôle crédit clients</span>
+                <strong id="customerCreditHoldCount">0 blocage</strong>
+              </div>
+              <div class="tableWrap">
+                <table class="miniTable">
+                  <thead><tr><th>Client</th><th>Solde ouvert</th><th>Disponible</th><th>Statut</th></tr></thead>
+                  <tbody id="customerCreditRows"></tbody>
+                </table>
+              </div>
             </div>
             <div class="analyticsBox">
               <div class="statementHeader">
@@ -422,7 +434,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, customerReminders: [], productMarginAlerts: [], leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, customerCreditControls: [], customerReminders: [], productMarginAlerts: [], leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -523,10 +535,11 @@
       }
 
       async function load() {
-        const [summary, stock, customers, customerReminders, products, productMarginAlerts, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, customerCreditControls, customerReminders, products, productMarginAlerts, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
+          get('/crm/customers/credit-control'),
           get('/crm/customers/document-reminders'),
           get('/inventory/products'),
           get('/inventory/products/margin-alerts'),
@@ -551,6 +564,7 @@
         state.invoices = invoices;
         state.creditNotes = creditNotes;
         state.leads = leads;
+        state.customerCreditControls = customerCreditControls;
         state.customerReminders = customerReminders;
         state.productMarginAlerts = productMarginAlerts;
         state.leadAnalytics = leadAnalytics;
@@ -579,6 +593,7 @@
         qs('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
         renderProfile();
         renderDashboardFilters();
+        renderCustomerCreditControls();
         renderCustomerReminders();
         renderProductMarginAlerts();
         renderSalesFlow();
@@ -595,15 +610,17 @@
           </div>
         `).join('');
         qs('#customerCount').textContent = customers.filter((customer) => customer.active).length;
+        const creditByCustomer = new Map(state.customerCreditControls.map((control) => [control.customerId, control]));
         qs('#customerRows').innerHTML = customers.length ? customers.map((customer) => `
           <tr class="${customer.active ? '' : 'mutedRow'}">
             <td><strong>${customer.name}</strong></td>
             <td>${customer.ice || '-'}</td>
             <td>${customer.paymentTermsDays} j</td>
             <td>${mad(customer.creditLimit || 0)}</td>
+            <td>${mad(creditByCustomer.get(customer.id)?.openBalance || 0)}<small>${creditByCustomer.get(customer.id)?.onHold ? 'Blocage crédit' : 'OK crédit'}</small></td>
             <td>${customer.documentExpiries?.length || 0}<small>${customer.documentExpiries?.[0]?.type || 'Aucun suivi'}</small></td>
           </tr>
-        `).join('') : emptyRow('Aucun client créé', 5);
+        `).join('') : emptyRow('Aucun client créé', 6);
         qs('#productCount').textContent = products.filter((product) => product.active).length;
         const marginAlertsByProduct = new Map(state.productMarginAlerts.map((alert) => [alert.productId, alert]));
         qs('#productRows').innerHTML = products.length ? products.map((product) => `
@@ -775,6 +792,19 @@
             </tr>
           `;
         }).join('') : emptyRow('Aucune alerte document client', 4);
+      }
+
+      function renderCustomerCreditControls() {
+        const holds = state.customerCreditControls.filter((row) => row.onHold);
+        qs('#customerCreditHoldCount').textContent = `${holds.length} blocage${holds.length > 1 ? 's' : ''}`;
+        qs('#customerCreditRows').innerHTML = state.customerCreditControls.length ? state.customerCreditControls.slice(0, 5).map((row) => `
+          <tr>
+            <td><strong>${row.customerName}</strong><small>Limite ${row.creditLimit ? mad(row.creditLimit) : 'non configurée'}</small></td>
+            <td>${mad(row.openBalance)}</td>
+            <td>${row.availableCredit === null ? 'Illimité' : mad(row.availableCredit)}</td>
+            <td>${row.onHold ? '<span class="statusPill warning">Blocage crédit</span>' : '<span class="statusPill success">OK crédit</span>'}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun contrôle crédit client', 4);
       }
 
       function renderProductMarginAlerts() {
