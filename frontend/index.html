@@ -208,7 +208,9 @@
                 <p class="eyebrow">Données de base</p>
                 <h2>Clients</h2>
               </div>
-              <span id="customerCount" class="badge">0</span>
+              <div class="headerActions">
+                <span id="customerCount" class="badge">0</span>
+              </div>
             </div>
             <form id="customerForm" class="compactForm">
               <label class="field"><span>Nom client</span><input name="name" required placeholder="Client SARL" /></label>
@@ -216,13 +218,27 @@
               <label class="field"><span>Email</span><input name="email" type="email" placeholder="finance@client.ma" /></label>
               <label class="field"><span>Délai paiement</span><input name="paymentTermsDays" type="number" min="0" value="30" /></label>
               <label class="field"><span>Plafond crédit</span><input name="creditLimit" type="number" min="0" value="0" /></label>
+              <label class="field"><span>Document client</span><select name="documentType"><option value="">Aucun</option><option value="ICE">ICE</option><option value="Registre de Commerce">RC</option><option value="Contrat cadre">Contrat</option><option value="Garantie de paiement">Garantie paiement</option></select></label>
+              <label class="field"><span>Expiration document client</span><input name="documentExpiresAt" type="date" /></label>
               <button type="submit">Ajouter client</button>
             </form>
             <div class="tableWrap">
               <table class="miniTable">
-                <thead><tr><th>Client</th><th>ICE</th><th>Délai</th><th>Crédit</th></tr></thead>
+                <thead><tr><th>Client</th><th>ICE</th><th>Délai</th><th>Crédit</th><th>Documents</th></tr></thead>
                 <tbody id="customerRows"></tbody>
               </table>
+            </div>
+            <div class="analyticsBox">
+              <div class="statementHeader">
+                <span>Alertes documents clients</span>
+                <strong id="customerReminderCount">0 alerte</strong>
+              </div>
+              <div class="tableWrap">
+                <table class="miniTable">
+                  <thead><tr><th>Client</th><th>ICE / RC</th><th>Document</th><th>Échéance</th></tr></thead>
+                  <tbody id="customerReminderRows"></tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -394,7 +410,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, customerReminders: [], leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -495,10 +511,11 @@
       }
 
       async function load() {
-        const [summary, stock, customers, products, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, customerReminders, products, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
+          get('/crm/customers/document-reminders'),
           get('/inventory/products'),
           get('/crm/leads'),
           get('/crm/leads/analytics'),
@@ -521,6 +538,7 @@
         state.invoices = invoices;
         state.creditNotes = creditNotes;
         state.leads = leads;
+        state.customerReminders = customerReminders;
         state.leadAnalytics = leadAnalytics;
         state.suppliers = suppliers;
         state.supplierReminders = supplierReminders;
@@ -547,6 +565,7 @@
         qs('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
         renderProfile();
         renderDashboardFilters();
+        renderCustomerReminders();
         renderSalesFlow();
         renderLeadAnalytics();
         renderSupplierReminders();
@@ -567,8 +586,9 @@
             <td>${customer.ice || '-'}</td>
             <td>${customer.paymentTermsDays} j</td>
             <td>${mad(customer.creditLimit || 0)}</td>
+            <td>${customer.documentExpiries?.length || 0}<small>${customer.documentExpiries?.[0]?.type || 'Aucun suivi'}</small></td>
           </tr>
-        `).join('') : emptyRow('Aucun client créé', 4);
+        `).join('') : emptyRow('Aucun client créé', 5);
         qs('#productCount').textContent = products.filter((product) => product.active).length;
         qs('#productRows').innerHTML = products.length ? products.map((product) => `
           <tr class="${product.active ? '' : 'mutedRow'}">
@@ -722,6 +742,22 @@
             <td>${pct(row.lostRate)}</td>
           </tr>
         `).join('') : emptyRow('Aucune analytics prospect', 6);
+      }
+
+      function renderCustomerReminders() {
+        qs('#customerReminderCount').textContent = `${state.customerReminders.length} alerte${state.customerReminders.length > 1 ? 's' : ''}`;
+        qs('#customerReminderRows').innerHTML = state.customerReminders.length ? state.customerReminders.slice(0, 5).map((row) => {
+          const document = row.expiredDocuments?.[0] || row.expiringDocuments?.[0];
+          const priority = row.expiredDocuments?.length ? 'Expiré' : 'À renouveler';
+          return `
+            <tr>
+              <td><strong>${row.customerName}</strong><small>${priority}</small></td>
+              <td>ICE ${row.ice || '-'}<small>RC ${row.rc || '-'}</small></td>
+              <td>${document?.type || '-'}</td>
+              <td>${document?.expiresAt || row.nextExpiryDate || '-'}</td>
+            </tr>
+          `;
+        }).join('') : emptyRow('Aucune alerte document client', 4);
       }
 
       function renderSupplierReminders() {
@@ -985,6 +1021,8 @@
         const formEl = event.currentTarget;
         const form = new FormData(formEl);
         const button = formEl.querySelector('button');
+        const documentType = String(form.get('documentType') || '').trim();
+        const documentExpiresAt = String(form.get('documentExpiresAt') || '').trim();
         button.disabled = true;
         clearMessage();
         try {
@@ -993,11 +1031,13 @@
             ice: form.get('ice'),
             email: form.get('email'),
             paymentTermsDays: formNumber(form, 'paymentTermsDays'),
-            creditLimit: formNumber(form, 'creditLimit')
+            creditLimit: formNumber(form, 'creditLimit'),
+            documentExpiries: documentType || documentExpiresAt ? [{ type: documentType, expiresAt: documentExpiresAt, reference: form.get('ice') }] : []
           });
           formEl.reset();
           formEl.paymentTermsDays.value = 30;
           formEl.creditLimit.value = 0;
+          formEl.documentType.value = '';
           showMessage('success', `Client ${customer.name} ajouté.`);
           await load();
         } catch (error) {

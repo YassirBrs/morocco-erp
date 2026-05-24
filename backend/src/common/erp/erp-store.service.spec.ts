@@ -355,6 +355,38 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(() => store.addCustomer({ name: '', creditLimit: -1 })).toThrow(BadRequestException);
   });
 
+  it('tracks customer document expiry reminders for ICE, RC, contracts, and payment guarantees', () => {
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const customer = store.addCustomer({
+      name: 'Client Documents',
+      ice: '001122334455667',
+      rc: 'CASA-2026',
+      documentExpiries: [
+        { type: 'ICE', expiresAt: tomorrow, reference: '001122334455667' },
+        { type: 'Registre de Commerce', expiresAt: '2026-12-31', reference: 'CASA-2026' },
+        { type: 'Contrat cadre', expiresAt: tomorrow, reference: 'CC-2026' },
+        { type: 'Garantie de paiement', expiresAt: tomorrow, reference: 'GP-2026' },
+      ],
+    });
+
+    const reminders = store.customerDocumentReminders();
+
+    expect(reminders).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        customerId: customer.id,
+        customerName: 'Client Documents',
+        ice: '001122334455667',
+        rc: 'CASA-2026',
+        expiringDocuments: expect.arrayContaining([
+          expect.objectContaining({ type: 'ICE', daysUntilExpiry: 1 }),
+          expect.objectContaining({ type: 'Contrat cadre', daysUntilExpiry: 1 }),
+          expect.objectContaining({ type: 'Garantie de paiement', daysUntilExpiry: 1 }),
+        ]),
+      }),
+    ]));
+    expect(() => store.updateCustomer(customer.id, { documentExpiries: [{ type: '', expiresAt: 'bad-date' }] })).toThrow(BadRequestException);
+  });
+
   it('manages the CRM lead pipeline with stage, source, owner, next action, and expected value', () => {
     const lead = store.addLead({
       customerName: 'Hotel Atlas Marrakech',

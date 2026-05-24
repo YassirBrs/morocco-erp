@@ -145,6 +145,10 @@ export class ErpStoreService {
           creditLimit: 100000,
           contacts: [{ name: 'Youssef Amrani', role: 'Finance', email: 'finance@rabretail.ma', phone: '+212522000000' }],
           addresses: [{ label: 'Siège', line1: 'Avenue Mohammed V', city: 'Rabat' }],
+          documentExpiries: [
+            { type: 'Garantie de paiement', expiresAt: '2026-06-20', reference: 'GP-2026-001' },
+            { type: 'Registre de Commerce', expiresAt: '2026-12-31', reference: 'RABAT-112233' },
+          ],
           active: true,
           createdAt: today(),
           updatedAt: today(),
@@ -708,6 +712,7 @@ export class ErpStoreService {
       creditLimit: this.nonNegative(input.creditLimit ?? 0, 'Le plafond de crédit doit être nul ou positif'),
       contacts: input.contacts ?? [],
       addresses: input.addresses ?? [],
+      documentExpiries: this.validateCustomerDocumentExpiries(input.documentExpiries ?? []),
       active: input.active ?? true,
       createdAt: today(),
       updatedAt: today(),
@@ -754,6 +759,7 @@ export class ErpStoreService {
       this.validateAddresses(input.addresses);
       customer.addresses = input.addresses;
     }
+    if (input.documentExpiries !== undefined) customer.documentExpiries = this.validateCustomerDocumentExpiries(input.documentExpiries);
     if (input.active !== undefined) customer.active = input.active;
     customer.updatedAt = today();
     this.audit(workspace, 'customer.updated', 'Customer', customer.id, customer);
@@ -767,6 +773,34 @@ export class ErpStoreService {
     customer.updatedAt = today();
     this.audit(workspace, 'customer.archived', 'Customer', customer.id, customer);
     return customer;
+  }
+
+  customerDocumentReminders(tenantId?: string) {
+    const reminderWindowDays = 60;
+    return this.workspace(tenantId).customers
+      .filter((customer) => customer.active)
+      .map((customer) => {
+        const documents = customer.documentExpiries
+          .map((document) => ({
+            ...document,
+            daysUntilExpiry: this.daysUntil(document.expiresAt),
+          }))
+          .sort((left, right) => left.daysUntilExpiry - right.daysUntilExpiry);
+        const expiredDocuments = documents.filter((document) => document.daysUntilExpiry < 0);
+        const expiringDocuments = documents.filter((document) => document.daysUntilExpiry >= 0 && document.daysUntilExpiry <= reminderWindowDays);
+        return {
+          customerId: customer.id,
+          customerName: customer.name,
+          ice: customer.ice,
+          rc: customer.rc,
+          expiredDocuments,
+          expiringDocuments,
+          nextExpiryDate: documents[0]?.expiresAt,
+          nextExpiryDays: documents[0]?.daysUntilExpiry,
+        };
+      })
+      .filter((row) => row.expiredDocuments.length || row.expiringDocuments.length)
+      .sort((left, right) => (left.nextExpiryDays ?? 9999) - (right.nextExpiryDays ?? 9999) || left.customerName.localeCompare(right.customerName));
   }
 
   addSupplier(input: Partial<Supplier> & { name: string }, tenantId?: string): Supplier {
@@ -2220,6 +2254,14 @@ export class ErpStoreService {
       storageKey: this.clean(document.storageKey),
       uploadStatus: document.uploadStatus,
       uploadedAt: this.clean(document.uploadedAt),
+    }));
+  }
+
+  private validateCustomerDocumentExpiries(documents: Customer['documentExpiries']): Customer['documentExpiries'] {
+    return documents.map((document) => ({
+      type: this.nonEmpty(document.type, 'Le type du document client est obligatoire'),
+      expiresAt: this.isoDate(document.expiresAt, 'La date d’expiration du document client est obligatoire'),
+      reference: this.clean(document.reference),
     }));
   }
 

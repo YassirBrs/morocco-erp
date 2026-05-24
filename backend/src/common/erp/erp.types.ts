@@ -82,6 +82,7 @@ export interface Customer {
   creditLimit: number;
   contacts: Array<{ name: string; role?: string; email?: string; phone?: string }>;
   addresses: Array<{ label: string; line1: string; city: string }>;
+  documentExpiries: Array<{ type: string; expiresAt: string; reference?: string }>;
   active: boolean;
   createdAt: string;
   updatedAt: string;
