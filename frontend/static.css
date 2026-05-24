@@ -722,6 +722,11 @@ textarea {
   color: var(--green);
 }
 
+.statusPill.warning {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
 .statusPill.neutral {
   background: var(--bg);
   color: var(--muted);

@@ -7,6 +7,7 @@ export class InventoryService {
 
   listStock() { return this.store.listStock(); }
   listProducts() { return this.store.listProducts(); }
+  productMarginAlerts() { return this.store.productMarginAlerts(); }
   getProduct(id: string) { return this.store.getProduct(id); }
   createProduct(data: any) { return this.store.addProduct(data); }
   updateProduct(id: string, data: any) { return this.store.updateProduct(id, data); }

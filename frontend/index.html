@@ -264,9 +264,21 @@
             </form>
             <div class="tableWrap">
               <table class="miniTable">
-                <thead><tr><th>SKU</th><th>Nom</th><th>Type</th><th>Prix</th><th>TVA</th></tr></thead>
+                <thead><tr><th>SKU</th><th>Nom</th><th>Type</th><th>Prix</th><th>TVA</th><th>Marge</th></tr></thead>
                 <tbody id="productRows"></tbody>
               </table>
+            </div>
+            <div class="analyticsBox">
+              <div class="statementHeader">
+                <span>Alertes marge produits</span>
+                <strong id="productMarginAlertCount">0 alerte</strong>
+              </div>
+              <div class="tableWrap">
+                <table class="miniTable">
+                  <thead><tr><th>Article</th><th>Prix vente</th><th>Prix minimum TTC</th><th>Écart</th></tr></thead>
+                  <tbody id="productMarginAlertRows"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </section>
@@ -410,7 +422,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, customerReminders: [], leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, customerReminders: [], productMarginAlerts: [], leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -511,12 +523,13 @@
       }
 
       async function load() {
-        const [summary, stock, customers, customerReminders, products, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, customerReminders, products, productMarginAlerts, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
           get('/crm/customers/document-reminders'),
           get('/inventory/products'),
+          get('/inventory/products/margin-alerts'),
           get('/crm/leads'),
           get('/crm/leads/analytics'),
           get('/inventory/suppliers'),
@@ -539,6 +552,7 @@
         state.creditNotes = creditNotes;
         state.leads = leads;
         state.customerReminders = customerReminders;
+        state.productMarginAlerts = productMarginAlerts;
         state.leadAnalytics = leadAnalytics;
         state.suppliers = suppliers;
         state.supplierReminders = supplierReminders;
@@ -566,6 +580,7 @@
         renderProfile();
         renderDashboardFilters();
         renderCustomerReminders();
+        renderProductMarginAlerts();
         renderSalesFlow();
         renderLeadAnalytics();
         renderSupplierReminders();
@@ -590,6 +605,7 @@
           </tr>
         `).join('') : emptyRow('Aucun client créé', 5);
         qs('#productCount').textContent = products.filter((product) => product.active).length;
+        const marginAlertsByProduct = new Map(state.productMarginAlerts.map((alert) => [alert.productId, alert]));
         qs('#productRows').innerHTML = products.length ? products.map((product) => `
           <tr class="${product.active ? '' : 'mutedRow'}">
             <td><strong>${product.sku}</strong></td>
@@ -597,8 +613,9 @@
             <td>${translate('productTypes', product.type)}</td>
             <td>${mad(product.salePrice)}</td>
             <td>${pct(product.vatRate)}</td>
+            <td>${marginAlertsByProduct.has(product.id) ? '<span class="statusPill warning">Sous seuil</span>' : '<span class="statusPill neutral">OK</span>'}</td>
           </tr>
-        `).join('') : emptyRow('Aucun article créé', 5);
+        `).join('') : emptyRow('Aucun article créé', 6);
         qs('#leadCount').textContent = leads.length;
         qs('#leadRows').innerHTML = leads.length ? leads.map((lead) => `
           <tr>
@@ -758,6 +775,18 @@
             </tr>
           `;
         }).join('') : emptyRow('Aucune alerte document client', 4);
+      }
+
+      function renderProductMarginAlerts() {
+        qs('#productMarginAlertCount').textContent = `${state.productMarginAlerts.length} alerte${state.productMarginAlerts.length > 1 ? 's' : ''}`;
+        qs('#productMarginAlertRows').innerHTML = state.productMarginAlerts.length ? state.productMarginAlerts.slice(0, 5).map((row) => `
+          <tr>
+            <td><strong>${row.sku}</strong><small>${row.name}</small></td>
+            <td>${mad(row.salePrice)}</td>
+            <td>${mad(row.minimumSalePrice)}</td>
+            <td><span class="warningText">${mad(row.marginGap)}</span></td>
+          </tr>
+        `).join('') : emptyRow('Aucune alerte marge produit', 4);
       }
 
       function renderSupplierReminders() {

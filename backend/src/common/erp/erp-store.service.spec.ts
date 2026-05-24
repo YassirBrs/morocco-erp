@@ -511,6 +511,51 @@ describe('ErpStoreService working ERP workflows', () => {
     })).toThrow(BadRequestException);
   });
 
+  it('warns when sellable product sale price is below purchase cost plus VAT', () => {
+    const lowMargin = store.addProduct({
+      sku: 'LOW-MARGIN',
+      name: 'Produit marge basse',
+      salePrice: 110,
+      purchaseCost: 100,
+      vatRate: 0.2,
+    });
+    const exactThreshold = store.addProduct({
+      sku: 'OK-MARGIN',
+      name: 'Produit seuil exact',
+      salePrice: 120,
+      purchaseCost: 100,
+      vatRate: 0.2,
+    });
+
+    expect(store.productMarginAlerts()).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        productId: lowMargin.id,
+        sku: 'LOW-MARGIN',
+        minimumSalePrice: 120,
+        marginGap: 10,
+      }),
+    ]));
+    expect(store.productMarginAlerts().some((alert) => alert.productId === exactThreshold.id)).toBe(false);
+
+    store.updateProduct(lowMargin.id, { salePrice: 130 });
+    expect(store.productMarginAlerts().some((alert) => alert.productId === lowMargin.id)).toBe(false);
+
+    store.createPurchaseReceipt({
+      supplierId: 'sup-1',
+      lines: [{ productId: lowMargin.id, quantity: 1, unitCost: 150 }],
+    });
+
+    expect(store.productMarginAlerts()).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        productId: lowMargin.id,
+        purchaseCost: 150,
+        minimumSalePrice: 180,
+        marginGap: 50,
+      }),
+    ]));
+    expect(store.productMarginAlerts().some((alert) => alert.sku === 'RAW-BOIS')).toBe(false);
+  });
+
   it('tracks supplier risk notes, preferred flags, and document expiry reminders', () => {
     const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
     const supplier = store.addSupplier({

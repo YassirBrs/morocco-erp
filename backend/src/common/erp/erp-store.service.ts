@@ -1158,6 +1158,27 @@ export class ErpStoreService {
     return this.workspace(tenantId).products;
   }
 
+  productMarginAlerts(tenantId?: string) {
+    return this.workspace(tenantId).products
+      .filter((product) => product.active && product.type !== 'RAW_MATERIAL' && product.purchaseCost > 0)
+      .map((product) => {
+        const minimumSalePrice = r2(product.purchaseCost * (1 + product.vatRate));
+        return {
+          productId: product.id,
+          sku: product.sku,
+          name: product.name,
+          type: product.type,
+          salePrice: product.salePrice,
+          purchaseCost: product.purchaseCost,
+          vatRate: product.vatRate,
+          minimumSalePrice,
+          marginGap: r2(minimumSalePrice - product.salePrice),
+        };
+      })
+      .filter((alert) => alert.marginGap > 0)
+      .sort((left, right) => right.marginGap - left.marginGap || left.sku.localeCompare(right.sku));
+  }
+
   getProduct(productId: string, tenantId?: string): Product {
     return this.product(this.workspace(tenantId), productId);
   }
