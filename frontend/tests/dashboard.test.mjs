@@ -43,6 +43,21 @@ test('layout uses dense ERP panels instead of a marketing hero', () => {
   assert.ok(css.includes('grid-template-columns: 260px'));
 });
 
+test('global styles expose the professional ERP palette', () => {
+  for (const token of ['--color-primary: #1E3A8A', '--color-primary-hover: #3B82F6', '--background-main: #F8FAFC', '--background-surface: #FFFFFF', '--color-border: #E2E8F0', '--text-primary: #0F172A', '--text-secondary: #475569']) {
+    assert.ok(css.includes(token), `${token} exists in Next globals`);
+    assert.ok(staticCss.includes(token), `${token} exists in static globals`);
+  }
+  for (const token of ['--status-success-text: #16A34A', '--status-warning-text: #D97706', '--status-danger-text: #DC2626', '--status-info-text: #2563EB']) {
+    assert.ok(css.includes(token), `${token} status token exists in Next globals`);
+    assert.ok(staticCss.includes(token), `${token} status token exists in static globals`);
+  }
+  assert.ok(staticCss.includes('background: var(--primary)'));
+  assert.ok(staticCss.includes('background: var(--blue-soft)'));
+  assert.ok(css.includes('background: var(--primary)'));
+  assert.ok(css.includes('background: var(--blue-soft)'));
+});
+
 test('static dashboard exposes onboarding and master-data workflows', () => {
   for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'Créer devis', 'Avoir', 'Relevé client', 'Payer solde']) {
     assert.ok(staticPage.includes(text), `${text} workflow is present`);

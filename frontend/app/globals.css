@@ -1,13 +1,33 @@
 :root {
-  --bg: #f5f7f8;
-  --ink: #17211f;
-  --muted: #62706c;
-  --line: #dce4e1;
-  --panel: #ffffff;
-  --green: #12715b;
-  --red: #a33a3a;
-  --gold: #b9852c;
-  --blue: #2d5d7b;
+  --color-primary: #1E3A8A;
+  --color-primary-hover: #3B82F6;
+  --background-main: #F8FAFC;
+  --background-surface: #FFFFFF;
+  --color-border: #E2E8F0;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --status-success-text: #16A34A;
+  --status-success-bg: #DCFCE7;
+  --status-warning-text: #D97706;
+  --status-warning-bg: #FEF3C7;
+  --status-danger-text: #DC2626;
+  --status-danger-bg: #FEE2E2;
+  --status-info-text: #2563EB;
+  --status-info-bg: #DBEAFE;
+  --bg: var(--background-main);
+  --ink: var(--text-primary);
+  --muted: var(--text-secondary);
+  --line: var(--color-border);
+  --panel: var(--background-surface);
+  --primary: var(--color-primary);
+  --green: var(--status-success-text);
+  --green-soft: var(--status-success-bg);
+  --red: var(--status-danger-text);
+  --red-soft: var(--status-danger-bg);
+  --gold: var(--status-warning-text);
+  --gold-soft: var(--status-warning-bg);
+  --blue: var(--status-info-text);
+  --blue-soft: var(--status-info-bg);
 }
 
 * {
@@ -33,7 +53,7 @@ body {
   flex-direction: column;
   gap: 28px;
   border-right: 1px solid var(--line);
-  background: #fff;
+  background: var(--panel);
   padding: 24px 18px;
 }
 
@@ -49,7 +69,7 @@ body {
   height: 42px;
   place-items: center;
   border-radius: 8px;
-  background: var(--green);
+  background: var(--primary);
   color: #fff;
   font-weight: 700;
 }
@@ -76,8 +96,8 @@ nav a {
 }
 
 nav a.active {
-  background: #e4f1ed;
-  color: var(--green);
+  background: var(--blue-soft);
+  color: var(--primary);
   font-weight: 700;
 }
 
@@ -116,7 +136,7 @@ h2 {
   gap: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--panel);
   padding: 10px 12px;
   text-align: right;
 }
@@ -170,13 +190,18 @@ h2 {
 }
 
 button {
-  border: 1px solid var(--green);
+  border: 1px solid var(--primary);
   border-radius: 7px;
-  background: var(--green);
+  background: var(--primary);
   color: white;
   font: inherit;
   font-size: 13px;
   padding: 8px 12px;
+}
+
+button:hover {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
 }
 
 .workflow {
@@ -194,9 +219,9 @@ button {
 }
 
 .workflow .done {
-  border-color: #a7d4c6;
-  background: #eef9f5;
-  color: var(--green);
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--primary);
   font-weight: 700;
 }
 
@@ -222,7 +247,7 @@ th {
 .pill {
   display: inline-block;
   border-radius: 999px;
-  background: #f0f4f3;
+  background: var(--blue-soft);
   color: var(--blue);
   padding: 4px 8px;
   font-size: 12px;

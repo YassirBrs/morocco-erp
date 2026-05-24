@@ -188,7 +188,7 @@ This backlog contains concrete tasks to improve the app from the current working
 - [ ] T131 P1 - Add CSV import/export for leads and suppliers with validation summaries.
 - [ ] T132 P2 - Add lead source analytics by owner, expected value, won/lost rate, and month.
 - [ ] T133 P2 - Add supplier risk notes, preferred supplier flags, and document expiry reminders.
-- [ ] T134 P2 - Scan the codebase, locate the global style configuration file (e.g., tailwind.config.js, global.css, theme provider, or constants file), and        automatically update the colors to match this professional ERP palette.
+- [x] T134 P2 - Scan the codebase, locate the global style configuration file (e.g., tailwind.config.js, global.css, theme provider, or constants file), and        automatically update the colors to match this professional ERP palette.
 
                 Color Specification:
 
