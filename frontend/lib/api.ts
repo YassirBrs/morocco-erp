@@ -322,6 +322,7 @@ export type EnterpriseOperationsReadiness = Record<string, any>;
 export type EnterpriseExpansionReadiness = Record<string, any>;
 export type EnterpriseAccelerationReadiness = Record<string, any>;
 export type EnterpriseIntelligenceReadiness = Record<string, any>;
+export type EnterpriseAutomationReadiness = Record<string, any>;
 
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
@@ -1041,5 +1042,50 @@ export async function getEnterpriseIntelligenceReadiness(): Promise<EnterpriseIn
     branchExpansionReadiness: { rows: [] },
     partnerReferralPipeline: { rows: [] },
     accountantWorkloadBalancing: { rows: [] },
+  });
+}
+
+export async function getEnterpriseAutomationReadiness(): Promise<EnterpriseAutomationReadiness> {
+  return getJson('/tenant/enterprise-automation-readiness', {
+    closeChecklistScoring: { score: 0, status: 'CLOSE_SCORE_READY' },
+    invoiceMatchingAssistant: { rows: [] },
+    supplierInvoiceOcrTriage: { rows: [] },
+    paymentRunOptimization: { proposals: [] },
+    promiseReliabilityScore: { rows: [] },
+    salesTaxAnomalyDetector: { rows: [] },
+    payrollVarianceExplainability: { rows: [] },
+    hrDocumentExpiryBoard: { rows: [] },
+    purchaseRequestPolicy: { rows: [] },
+    replenishmentAutopilot: { rows: [] },
+    serializedTraceability: { rows: [] },
+    recallCommunicationCenter: { affectedCustomers: [] },
+    productionFeasibility: { status: 'PLAN_FEASIBLE' },
+    maintenancePrioritizer: { rows: [] },
+    fleetRouteCompliance: { rows: [] },
+    projectMarginWarning: { rows: [] },
+    serviceContractProfitability: { rows: [] },
+    customerPortalAdoption: { invitations: 0 },
+    supplierPortalAdoption: { invitations: 0 },
+    accountantPortalSla: { rows: [] },
+    dgiReadinessScore: { score: 0 },
+    cnssReadinessScore: { employeeIdentifiers: 0 },
+    amoReconciliationInsight: { grossPayroll: 0 },
+    professionalTaxVault: { rows: [] },
+    legalArchiveCompleteness: { rows: [] },
+    bankImportDuplicateGuard: { matchedImports: 0 },
+    cashboxRootCause: { variance: 0 },
+    posOfflineRisk: { rows: [] },
+    branchStockBalancing: { rows: [] },
+    landedCostAutomation: { rows: [] },
+    fxRevaluation: { rows: [] },
+    recurringInvoiceMonitor: { rows: [] },
+    usageBillingAudit: { actualUsage: 0 },
+    tenantHealthForecast: { supportLoad: 0 },
+    migrationReadiness: { validationErrors: 0 },
+    releaseImpactSimulator: { migrationRisk: 'LOW' },
+    accessReviewCampaign: { rows: [] },
+    apiKeyRotationCampaign: { rows: [] },
+    webhookContractTesting: { rows: [] },
+    biExportCatalog: { rows: [] },
   });
 }

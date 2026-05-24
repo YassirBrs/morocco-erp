@@ -32,6 +32,9 @@ const enterpriseAccelerationPageFiles = readdirSync(new URL('../pages/enterprise
 const enterpriseIntelligenceConfig = readFileSync(new URL('../features/enterprise-intelligence/enterprise-intelligence-feature-config.ts', import.meta.url), 'utf8');
 const enterpriseIntelligenceFeaturePage = readFileSync(new URL('../features/enterprise-intelligence/enterprise-intelligence-feature-page.tsx', import.meta.url), 'utf8');
 const enterpriseIntelligencePageFiles = readdirSync(new URL('../pages/enterprise-intelligence', import.meta.url));
+const enterpriseAutomationConfig = readFileSync(new URL('../features/enterprise-automation/enterprise-automation-feature-config.ts', import.meta.url), 'utf8');
+const enterpriseAutomationFeaturePage = readFileSync(new URL('../features/enterprise-automation/enterprise-automation-feature-page.tsx', import.meta.url), 'utf8');
+const enterpriseAutomationPageFiles = readdirSync(new URL('../pages/enterprise-automation', import.meta.url));
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -825,4 +828,71 @@ test('Enterprise intelligence batch has one descriptive dedicated frontend page 
   assert.ok(enterpriseIntelligenceFeaturePage.includes('EnterpriseIntelligenceFeaturePage'), 'shared intelligence feature page component exists');
   assert.ok(enterpriseIntelligenceConfig.includes('enterpriseIntelligenceFeatureDefinitions'), 'intelligence feature definitions are centralized');
   assert.ok(page.includes('enterpriseIntelligenceFeatureDefinitions'), 'dashboard links to dedicated intelligence feature pages');
+});
+
+test('Next primary workspace exposes 40-task Morocco enterprise automation controls batch', () => {
+  for (const text of ['Automatisation entreprise Maroc', 'Score clôture', 'Paiements proposés', 'Readiness DGI', 'Santé tenant', 'Finance, fiscalité et banque', 'Achats, stock, production et service', 'RH, portails, sécurité et plateforme']) {
+    assert.ok(page.includes(text), `${text} enterprise automation label is present`);
+  }
+  for (const marker of ['getEnterpriseAutomationReadiness', 'enterpriseAutomation.closeChecklistScoring', 'enterpriseAutomation.paymentRunOptimization', 'enterpriseAutomation.dgiReadinessScore', 'enterpriseAutomation.tenantHealthForecast', 'enterpriseAutomationFeatureDefinitions']) {
+    assert.ok(page.includes(marker), `${marker} enterprise automation helper is present`);
+  }
+  assert.ok(api.includes('/tenant/enterprise-automation-readiness'), 'enterprise automation endpoint is wired');
+  for (const token of ['closeChecklistScoring', 'invoiceMatchingAssistant', 'supplierInvoiceOcrTriage', 'paymentRunOptimization', 'promiseReliabilityScore', 'salesTaxAnomalyDetector', 'payrollVarianceExplainability', 'hrDocumentExpiryBoard', 'purchaseRequestPolicy', 'replenishmentAutopilot', 'serializedTraceability', 'recallCommunicationCenter', 'productionFeasibility', 'maintenancePrioritizer', 'fleetRouteCompliance', 'projectMarginWarning', 'serviceContractProfitability', 'customerPortalAdoption', 'supplierPortalAdoption', 'accountantPortalSla', 'dgiReadinessScore', 'cnssReadinessScore', 'amoReconciliationInsight', 'professionalTaxVault', 'legalArchiveCompleteness', 'bankImportDuplicateGuard', 'cashboxRootCause', 'posOfflineRisk', 'branchStockBalancing', 'landedCostAutomation', 'fxRevaluation', 'recurringInvoiceMonitor', 'usageBillingAudit', 'tenantHealthForecast', 'migrationReadiness', 'releaseImpactSimulator', 'accessReviewCampaign', 'apiKeyRotationCampaign', 'webhookContractTesting', 'biExportCatalog']) {
+    assert.ok(api.includes(token), `${token} enterprise automation data key is represented`);
+  }
+});
+
+test('Enterprise automation batch has one descriptive dedicated frontend page per feature', () => {
+  const expectedFiles = [
+    'automated-close-checklist-scoring-page.tsx',
+    'intelligent-invoice-matching-assistant-page.tsx',
+    'supplier-invoice-ocr-triage-page.tsx',
+    'payment-run-optimization-page.tsx',
+    'receivable-promise-reliability-score-page.tsx',
+    'sales-tax-anomaly-detector-page.tsx',
+    'payroll-variance-explainability-page.tsx',
+    'hr-compliance-document-expiry-board-page.tsx',
+    'purchase-request-policy-engine-page.tsx',
+    'inventory-replenishment-autopilot-page.tsx',
+    'serialized-asset-traceability-dashboard-page.tsx',
+    'batch-recall-communication-center-page.tsx',
+    'production-plan-feasibility-checker-page.tsx',
+    'maintenance-work-order-prioritizer-page.tsx',
+    'fleet-route-compliance-monitor-page.tsx',
+    'project-margin-early-warning-page.tsx',
+    'service-contract-profitability-monitor-page.tsx',
+    'customer-portal-adoption-tracker-page.tsx',
+    'supplier-portal-adoption-tracker-page.tsx',
+    'accountant-portal-sla-board-page.tsx',
+    'dgi-declaration-readiness-score-page.tsx',
+    'cnss-declaration-readiness-score-page.tsx',
+    'amo-payroll-reconciliation-insight-page.tsx',
+    'professional-tax-evidence-vault-page.tsx',
+    'legal-archive-completeness-dashboard-page.tsx',
+    'bank-import-duplicate-guard-page.tsx',
+    'cashbox-variance-root-cause-assistant-page.tsx',
+    'pos-offline-risk-monitor-page.tsx',
+    'multi-branch-stock-balancing-assistant-page.tsx',
+    'landed-cost-automation-queue-page.tsx',
+    'foreign-currency-revaluation-dashboard-page.tsx',
+    'recurring-invoice-automation-monitor-page.tsx',
+    'subscription-usage-billing-audit-page.tsx',
+    'tenant-health-incident-forecast-page.tsx',
+    'implementation-migration-readiness-page.tsx',
+    'release-impact-simulator-page.tsx',
+    'security-access-review-campaign-page.tsx',
+    'api-key-rotation-campaign-page.tsx',
+    'webhook-contract-testing-dashboard-page.tsx',
+    'bi-export-catalog-page.tsx',
+  ];
+  assert.equal(enterpriseAutomationPageFiles.filter((file) => file.endsWith('-page.tsx')).length, 40);
+  for (const file of expectedFiles) {
+    assert.ok(enterpriseAutomationPageFiles.includes(file), `${file} dedicated page exists`);
+    const source = readFileSync(new URL(`../pages/enterprise-automation/${file}`, import.meta.url), 'utf8');
+    assert.ok(source.includes('makeEnterpriseAutomationServerSideProps'), `${file} has server-side data wiring`);
+  }
+  assert.ok(enterpriseAutomationFeaturePage.includes('EnterpriseAutomationFeaturePage'), 'shared automation feature page component exists');
+  assert.ok(enterpriseAutomationConfig.includes('enterpriseAutomationFeatureDefinitions'), 'automation feature definitions are centralized');
+  assert.ok(page.includes('enterpriseAutomationFeatureDefinitions'), 'dashboard links to dedicated automation feature pages');
 });

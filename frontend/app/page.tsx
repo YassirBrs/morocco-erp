@@ -5,6 +5,7 @@ import {
   getDocumentOperations,
   getEnterpriseControlReadiness,
   getEnterpriseAccelerationReadiness,
+  getEnterpriseAutomationReadiness,
   getEnterpriseDepthReadiness,
   getEnterpriseExpansionReadiness,
   getEnterpriseIntelligenceReadiness,
@@ -28,6 +29,7 @@ import {
 } from '../lib/api';
 import { enterpriseDepthFeatureDefinitions } from '../features/enterprise-depth/enterprise-depth-feature-config';
 import { enterpriseAccelerationFeatureDefinitions } from '../features/enterprise-acceleration/enterprise-acceleration-feature-config';
+import { enterpriseAutomationFeatureDefinitions } from '../features/enterprise-automation/enterprise-automation-feature-config';
 import { enterpriseExpansionFeatureDefinitions } from '../features/enterprise-expansion/enterprise-expansion-feature-config';
 import { enterpriseIntelligenceFeatureDefinitions } from '../features/enterprise-intelligence/enterprise-intelligence-feature-config';
 import { enterpriseOperationsFeatureDefinitions } from '../features/enterprise-operations/enterprise-operations-feature-config';
@@ -59,7 +61,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion, enterpriseAcceleration, enterpriseIntelligence] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion, enterpriseAcceleration, enterpriseIntelligence, enterpriseAutomation] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -86,6 +88,7 @@ export default async function DashboardPage() {
     getEnterpriseExpansionReadiness(),
     getEnterpriseAccelerationReadiness(),
     getEnterpriseIntelligenceReadiness(),
+    getEnterpriseAutomationReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -1042,6 +1045,53 @@ export default async function DashboardPage() {
           </div>
           <div className="featureLinks" aria-label="Pages dédiées intelligence entreprise">
             {enterpriseIntelligenceFeatureDefinitions.map((feature) => (
+              <a key={feature.key} href={feature.route}>{feature.title}</a>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Automatisation entreprise Maroc batch">
+          <PanelHeader title="Automatisation entreprise Maroc" action="Orchestrer contrôles" />
+          <div className="reportGrid">
+            <Metric label="Score clôture" value={`${enterpriseAutomation.closeChecklistScoring.score}/100`} />
+            <Metric label="Paiements proposés" value={String(enterpriseAutomation.paymentRunOptimization.proposals.length)} />
+            <Metric label="Readiness DGI" value={`${enterpriseAutomation.dgiReadinessScore.score}/100`} />
+            <Metric label="Santé tenant" value={enterpriseAutomation.tenantHealthForecast.riskLevel} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Finance, fiscalité et banque" rows={[
+              `Checklist clôture ${enterpriseAutomation.closeChecklistScoring.status}`,
+              `Matching factures ${enterpriseAutomation.invoiceMatchingAssistant.rows.length}`,
+              `Run paiement ${enterpriseAutomation.paymentRunOptimization.status}`,
+              `TVA anomalies ${enterpriseAutomation.salesTaxAnomalyDetector.rows.length}`,
+              `DGI ${enterpriseAutomation.dgiReadinessScore.adapterStatus}`,
+              `Doublon banque ${enterpriseAutomation.bankImportDuplicateGuard.preventionStatus}`,
+              `FX revaluation ${enterpriseAutomation.fxRevaluation.rows.length}`,
+              `Catalogue BI ${enterpriseAutomation.biExportCatalog.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="Achats, stock, production et service" rows={[
+              `OCR fournisseurs ${enterpriseAutomation.supplierInvoiceOcrTriage.rows.length}`,
+              `Politique demandes achat ${enterpriseAutomation.purchaseRequestPolicy.rows.length}`,
+              `Autopilot stock ${enterpriseAutomation.replenishmentAutopilot.rows.length}`,
+              `Équilibrage agences ${enterpriseAutomation.branchStockBalancing.rows.length}`,
+              `Landed cost ${enterpriseAutomation.landedCostAutomation.rows.length}`,
+              `Faisabilité production ${enterpriseAutomation.productionFeasibility.status}`,
+              `Maintenance priorisée ${enterpriseAutomation.maintenancePrioritizer.rows.length}`,
+              `Contrats service ${enterpriseAutomation.serviceContractProfitability.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="RH, portails, sécurité et plateforme" rows={[
+              `Variance paie ${enterpriseAutomation.payrollVarianceExplainability.rows.length}`,
+              `Documents RH ${enterpriseAutomation.hrDocumentExpiryBoard.rows.length}`,
+              `AMO ${formatMad(enterpriseAutomation.amoReconciliationInsight.employerShare)}`,
+              `Portail client ${enterpriseAutomation.customerPortalAdoption.invitations} invitation(s)`,
+              `Portail fournisseur ${enterpriseAutomation.supplierPortalAdoption.documentUploads} upload(s)`,
+              `Revue accès ${enterpriseAutomation.accessReviewCampaign.rows.length}`,
+              `Rotation API ${enterpriseAutomation.apiKeyRotationCampaign.rows.length}`,
+              `Contrats webhooks ${enterpriseAutomation.webhookContractTesting.rows.length}`,
+            ]} empty="-" />
+          </div>
+          <div className="featureLinks" aria-label="Pages dédiées automatisation entreprise">
+            {enterpriseAutomationFeatureDefinitions.map((feature) => (
               <a key={feature.key} href={feature.route}>{feature.title}</a>
             ))}
           </div>

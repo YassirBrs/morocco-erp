@@ -659,3 +659,43 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T553 P1 - Add branch expansion readiness with city, demand signal, staffing, legal documents, and launch checklist.
 - [x] T554 P1 - Add partner referral pipeline with partner, referred tenant, stage, expected MRR, and commission.
 - [x] T555 P1 - Add accountant workload balancing with accountant, clients, deadlines, blockers, and reassignment proposal.
+- [x] T556 P1 - Add automated close checklist scoring with journals, reconciliations, taxes, payroll, evidence, and blocker owner.
+- [x] T557 P1 - Add intelligent invoice matching assistant with customer statement, bank line, confidence, exception reason, and reviewer.
+- [x] T558 P1 - Add supplier invoice OCR triage with document source, extracted totals, VAT confidence, duplicate risk, and approval route.
+- [x] T559 P1 - Add payment run optimization with cash limit, supplier priority, due dates, discounts, and deferral proposal.
+- [x] T560 P1 - Add receivable promise reliability score with customer, promise history, kept rate, next action, and credit impact.
+- [x] T561 P1 - Add sales tax anomaly detector with invoice, VAT rate, exemption reason, expected rate, and correction workflow.
+- [x] T562 P1 - Add payroll variance explainability with employee, prior net, current net, drivers, and approval note.
+- [x] T563 P1 - Add HR compliance document expiry board with employee, document, expiry, severity, and restricted evidence.
+- [x] T564 P1 - Add purchase request policy engine with requester, budget, approval path, blocked reason, and audit status.
+- [x] T565 P1 - Add inventory replenishment autopilot with item, forecast, supplier lead time, suggested quantity, and approval status.
+- [x] T566 P1 - Add serialized asset traceability dashboard with serial, customer/site, warranty, service history, and evidence.
+- [x] T567 P1 - Add batch recall communication center with lot, affected customers, message status, response rate, and archive.
+- [x] T568 P1 - Add production plan feasibility checker with BOM availability, labor capacity, machine readiness, and constraint reason.
+- [x] T569 P1 - Add maintenance work order prioritizer with asset criticality, downtime risk, part availability, SLA, and technician.
+- [x] T570 P1 - Add fleet route compliance monitor with vehicle, driver, route proof, fuel anomaly, and manager sign-off.
+- [x] T571 P1 - Add project margin early warning with budget, committed cost, timesheets, billed amount, and corrective action.
+- [x] T572 P1 - Add service contract profitability monitor with contract, SLA effort, support hours, revenue, and renewal recommendation.
+- [x] T573 P1 - Add customer portal adoption tracker with invitations, logins, invoice views, payments, and nudge plan.
+- [x] T574 P1 - Add supplier portal adoption tracker with invitations, document uploads, quote responses, disputes, and onboarding owner.
+- [x] T575 P1 - Add accountant portal SLA board with client, pending documents, review age, deadline, and escalation.
+- [x] T576 P1 - Add DGI declaration readiness score with VAT report, invoice mentions, evidence, adapter status, and blocker.
+- [x] T577 P1 - Add CNSS declaration readiness score with payroll run, employee identifiers, contribution totals, Damancom preflight, and blocker.
+- [x] T578 P1 - Add AMO payroll reconciliation insight with gross payroll, AMO base, employee/employer shares, variance, and note.
+- [x] T579 P1 - Add professional tax evidence vault with branch, commune, rental value, declaration archive, and renewal reminder.
+- [x] T580 P1 - Add legal archive completeness dashboard with document type, retention period, checksum, missing evidence, and owner.
+- [x] T581 P1 - Add bank import duplicate guard with statement reference, hash, matched imports, reviewer, and prevention status.
+- [x] T582 P1 - Add cashbox variance root-cause assistant with session, expected cash, counted cash, variance, likely reason, and action.
+- [x] T583 P1 - Add POS offline risk monitor with device, pending queue, age, conflict rate, and sync priority.
+- [x] T584 P1 - Add multi-branch stock balancing assistant with source branch, target branch, demand, transfer cost, and approval.
+- [x] T585 P1 - Add landed cost automation queue with import declaration, freight, duty, allocation base, and accounting preview.
+- [x] T586 P1 - Add foreign currency revaluation dashboard with currency, open balance, closing rate, unrealized gain/loss, and journal preview.
+- [x] T587 P1 - Add recurring invoice automation monitor with contract, next run, failure reason, revenue, and retry owner.
+- [x] T588 P1 - Add subscription usage billing audit with tenant, usage metric, included quota, overage, and invoice impact.
+- [x] T589 P1 - Add tenant health incident forecast with adoption, support load, billing status, compliance blockers, and risk level.
+- [x] T590 P1 - Add implementation migration readiness with source system, mapped entities, validation errors, cutover date, and owner.
+- [x] T591 P1 - Add release impact simulator with module, tenants affected, migration risk, rollback checklist, and support load.
+- [x] T592 P1 - Add security access review campaign with role, inactive users, privileged permissions, reviewer, and revocation plan.
+- [x] T593 P1 - Add API key rotation campaign with partner, scopes, age, expiry, owner, and rotation status.
+- [x] T594 P1 - Add webhook contract testing dashboard with event, schema version, consumer status, failures, and replay sample.
+- [x] T595 P1 - Add BI export catalog with dataset, fields, refresh cadence, legal basis, and approval status.

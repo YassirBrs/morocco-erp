@@ -2589,4 +2589,71 @@ describe('ErpStoreService working ERP workflows', () => {
       auditLogs: store.auditLogs().length,
     }).toEqual(before);
   });
+
+  it('covers the enterprise automation batch for close, finance, operations, compliance, and platform workflows', () => {
+    const batch = store.moroccoEnterpriseAutomationReadiness();
+
+    expect(batch.closeChecklistScoring).toHaveProperty('score');
+    expect(batch.invoiceMatchingAssistant).toMatchObject({ status: 'INVOICE_MATCHING_READY' });
+    expect(Array.isArray(batch.invoiceMatchingAssistant.rows)).toBe(true);
+    expect(batch.supplierInvoiceOcrTriage).toMatchObject({ status: 'OCR_TRIAGE_READY' });
+    expect(Array.isArray(batch.supplierInvoiceOcrTriage.rows)).toBe(true);
+    expect(batch.paymentRunOptimization).toHaveProperty('proposals');
+    expect(Array.isArray(batch.paymentRunOptimization.proposals)).toBe(true);
+    expect(batch.promiseReliabilityScore.rows[0]).toHaveProperty('creditImpact');
+    expect(batch.salesTaxAnomalyDetector).toMatchObject({ status: 'SALES_TAX_ANALYZED' });
+    expect(Array.isArray(batch.salesTaxAnomalyDetector.rows)).toBe(true);
+    expect(batch.payrollVarianceExplainability.rows[0]).toHaveProperty('drivers');
+    expect(batch.hrDocumentExpiryBoard.rows[0]).toHaveProperty('restrictedEvidence');
+    expect(batch.purchaseRequestPolicy).toHaveProperty('rows');
+    expect(batch.replenishmentAutopilot.rows[0]).toHaveProperty('suggestedQuantity');
+    expect(batch.serializedTraceability.rows[0]).toHaveProperty('serviceHistory');
+    expect(batch.recallCommunicationCenter).toHaveProperty('archive');
+    expect(batch.productionFeasibility).toHaveProperty('machineReadiness');
+    expect(batch.maintenancePrioritizer.rows[0]).toHaveProperty('sla');
+    expect(batch.fleetRouteCompliance).toHaveProperty('rows');
+    expect(batch.projectMarginWarning).toHaveProperty('rows');
+    expect(batch.serviceContractProfitability).toHaveProperty('rows');
+    expect(batch.customerPortalAdoption).toHaveProperty('nudgePlan');
+    expect(batch.supplierPortalAdoption).toHaveProperty('onboardingOwner');
+    expect(batch.accountantPortalSla).toHaveProperty('rows');
+    expect(batch.dgiReadinessScore).toHaveProperty('adapterStatus', 'SANDBOX');
+    expect(batch.cnssReadinessScore).toHaveProperty('damancomPreflight', 'READY');
+    expect(batch.amoReconciliationInsight).toHaveProperty('employerShare');
+    expect(batch.professionalTaxVault.rows[0]).toHaveProperty('declarationArchive');
+    expect(batch.legalArchiveCompleteness.rows[0]).toHaveProperty('retentionPeriod');
+    expect(batch.bankImportDuplicateGuard.hash).toHaveLength(64);
+    expect(batch.cashboxRootCause).toHaveProperty('likelyReason');
+    expect(batch.posOfflineRisk).toHaveProperty('rows');
+    expect(batch.branchStockBalancing).toHaveProperty('rows');
+    expect(batch.landedCostAutomation).toHaveProperty('rows');
+    expect(batch.fxRevaluation).toHaveProperty('rows');
+    expect(batch.recurringInvoiceMonitor).toHaveProperty('rows');
+    expect(batch.usageBillingAudit).toHaveProperty('invoiceImpact');
+    expect(batch.tenantHealthForecast).toHaveProperty('riskLevel');
+    expect(batch.migrationReadiness.mappedEntities).toEqual(expect.arrayContaining(['clients', 'articles']));
+    expect(batch.releaseImpactSimulator.rollbackChecklist).toEqual(expect.arrayContaining(['backup']));
+    expect(batch.accessReviewCampaign).toHaveProperty('rows');
+    expect(batch.apiKeyRotationCampaign).toHaveProperty('rows');
+    expect(batch.webhookContractTesting.rows[0]).toHaveProperty('replaySample');
+    expect(batch.biExportCatalog.rows[0]).toHaveProperty('dataset');
+  });
+
+  it('keeps enterprise automation readiness read-only for tenant operational records', () => {
+    const before = {
+      invoices: store.listInvoices().length,
+      journalEntries: store.listJournalEntries().length,
+      auditLogs: store.auditLogs().length,
+      legalEvidences: store.listLegalEvidences().length,
+    };
+
+    store.moroccoEnterpriseAutomationReadiness();
+
+    expect({
+      invoices: store.listInvoices().length,
+      journalEntries: store.listJournalEntries().length,
+      auditLogs: store.auditLogs().length,
+      legalEvidences: store.listLegalEvidences().length,
+    }).toEqual(before);
+  });
 });
