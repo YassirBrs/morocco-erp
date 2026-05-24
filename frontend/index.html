@@ -92,12 +92,26 @@
               <button id="convertQuoteToOrder">Commande</button>
               <button id="createDelivery">BL</button>
               <button id="invoiceOrder">Facturer</button>
+              <button id="createCreditNote">Avoir</button>
               <button id="payInvoice">Payer solde</button>
+              <button id="refreshStatement">Releve client</button>
             </div>
             <div id="salesFlowState" class="flowState"></div>
             <div class="resultLine">
               <span>Derniere operation</span>
               <strong id="invoiceResult">Aucune facture creee dans cette session</strong>
+            </div>
+            <div class="statementBox">
+              <div class="statementHeader">
+                <span>Releve Rabat Retail SARL</span>
+                <strong id="statementBalance">0 MAD</strong>
+              </div>
+              <div class="tableWrap">
+                <table class="miniTable statementTable">
+                  <thead><tr><th>Type</th><th>Piece</th><th>Debit</th><th>Credit</th><th>Solde</th></tr></thead>
+                  <tbody id="statementRows"></tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -212,7 +226,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { quotes: [], orders: [], deliveryNotes: [], invoices: [] };
+      const state = { quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], statement: null };
 
       async function get(path) {
         const response = await fetch(API + path, { headers });
@@ -248,7 +262,7 @@
       }
 
       async function load() {
-        const [summary, stock, customers, products, setup, quotes, orders, deliveryNotes, invoices] = await Promise.all([
+        const [summary, stock, customers, products, setup, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
@@ -257,12 +271,16 @@
           get('/sales/quotes'),
           get('/sales/orders'),
           get('/sales/delivery-notes'),
-          get('/sales/invoices')
+          get('/sales/invoices'),
+          get('/sales/credit-notes'),
+          get('/sales/customers/cus-1/statement')
         ]);
         state.quotes = quotes;
         state.orders = orders;
         state.deliveryNotes = deliveryNotes;
         state.invoices = invoices;
+        state.creditNotes = creditNotes;
+        state.statement = statement;
         const entity = summary.tenant.legalEntity;
         qs('#tradeName').textContent = entity.tradeName;
         qs('#identity').innerHTML = [
@@ -281,6 +299,7 @@
         qs('#rules').textContent = `${summary.compliance.id} · TVA ${summary.compliance.vatRates.map(pct).join(' / ')}`;
         qs('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
         renderSalesFlow();
+        renderStatement();
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
         qs('#setupBadge').className = setup.ready ? 'badge green' : 'badge';
         qs('#setupList').innerHTML = setup.checks.map((check) => `
@@ -324,7 +343,17 @@
       }
 
       function latestInvoiceWithBalance() {
-        return [...state.invoices].reverse().find((invoice) => invoice.totals.total > invoice.paidAmount);
+        return [...state.invoices].reverse().find((invoice) => invoice.totals.total > invoice.paidAmount + invoiceCreditTotal(invoice.id));
+      }
+
+      function latestInvoiceForCredit() {
+        return [...state.invoices].reverse().find((invoice) => invoice.totals.total > invoiceCreditTotal(invoice.id));
+      }
+
+      function invoiceCreditTotal(invoiceId) {
+        return state.creditNotes
+          .filter((creditNote) => creditNote.invoiceId === invoiceId && creditNote.status === 'POSTED')
+          .reduce((sum, creditNote) => sum + creditNote.totals.total, 0);
       }
 
       function renderSalesFlow() {
@@ -332,12 +361,28 @@
         const order = latest(state.orders);
         const delivery = latest(state.deliveryNotes);
         const invoice = latest(state.invoices);
+        const creditNote = latest(state.creditNotes);
         qs('#salesFlowState').innerHTML = [
           ['Devis', quote ? `${quote.number} R${quote.revision} ${quote.status}` : '-'],
           ['Commande', order ? `${order.number} ${order.status}` : '-'],
           ['BL', delivery ? `${delivery.number} ${delivery.status}` : '-'],
-          ['Facture', invoice ? `${invoice.number} ${invoice.status}` : '-']
+          ['Facture', invoice ? `${invoice.number} ${invoice.status}` : '-'],
+          ['Avoir', creditNote ? `${creditNote.number} ${mad(creditNote.totals.total)}` : '-']
         ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join('');
+      }
+
+      function renderStatement() {
+        if (!state.statement) return;
+        qs('#statementBalance').textContent = mad(state.statement.totals.balance);
+        qs('#statementRows').innerHTML = state.statement.entries.length ? state.statement.entries.slice(-5).map((entry) => `
+          <tr>
+            <td>${entry.type}</td>
+            <td><strong>${entry.number}</strong></td>
+            <td>${entry.debit ? mad(entry.debit) : '-'}</td>
+            <td>${entry.credit ? mad(entry.credit) : '-'}</td>
+            <td>${mad(entry.balance)}</td>
+          </tr>
+        `).join('') : emptyRow('Aucune ecriture client', 5);
       }
 
       async function runAction(buttonSelector, loadingText, action) {
@@ -429,10 +474,34 @@
         await runAction('#payInvoice', 'Paiement...', async () => {
           const invoice = latestInvoiceWithBalance();
           if (!invoice) throw new Error('Aucune facture ouverte a payer');
-          const amount = Number((invoice.totals.total - invoice.paidAmount).toFixed(2));
+          const amount = Number((invoice.totals.total - invoice.paidAmount - invoiceCreditTotal(invoice.id)).toFixed(2));
           const payment = await post('/sales/payments', { invoiceId: invoice.id, amount, method: 'BANK' });
           qs('#invoiceResult').textContent = `${invoice.number} · paiement ${mad(payment.amount)} · BANK`;
           showMessage('success', `Paiement de ${mad(payment.amount)} enregistre.`);
+        });
+      });
+
+      qs('#createCreditNote').addEventListener('click', async () => {
+        await runAction('#createCreditNote', 'Avoir...', async () => {
+          const invoice = latestInvoiceForCredit();
+          if (!invoice) throw new Error('Aucune facture disponible pour avoir');
+          const firstLine = invoice.lines[0];
+          const quantity = Number(Math.min(firstLine.quantity, 0.25).toFixed(2));
+          const creditNote = await post('/sales/credit-notes', {
+            invoiceId: invoice.id,
+            reason: 'Avoir commercial',
+            lines: [{ productId: firstLine.productId, quantity }]
+          });
+          qs('#invoiceResult').textContent = `${creditNote.number} · ${mad(creditNote.totals.total)} · ${creditNote.status}`;
+          showMessage('success', `Avoir ${creditNote.number} comptabilise.`);
+        });
+      });
+
+      qs('#refreshStatement').addEventListener('click', async () => {
+        await runAction('#refreshStatement', 'Releve...', async () => {
+          state.statement = await get('/sales/customers/cus-1/statement');
+          renderStatement();
+          showMessage('success', `Releve client prepare avec solde ${mad(state.statement.totals.balance)}.`);
         });
       });
 

@@ -20,5 +20,8 @@ export class SalesController {
   @Delete('delivery-notes/:id') cancelDeliveryNote(@Param('id') id: string) { return this.salesService.cancelDeliveryNote(id); }
   @Get('invoices') invoices() { return this.salesService.listInvoices(); }
   @Post('invoices') createInvoice(@Body() body: any) { return this.salesService.createInvoice(body); }
+  @Get('credit-notes') creditNotes() { return this.salesService.listCreditNotes(); }
+  @Post('credit-notes') createCreditNote(@Body() body: any) { return this.salesService.createCreditNote(body); }
+  @Get('customers/:id/statement') customerStatement(@Param('id') id: string) { return this.salesService.customerStatement(id); }
   @Post('payments') payment(@Body() body: any) { return this.salesService.recordPayment(body); }
 }

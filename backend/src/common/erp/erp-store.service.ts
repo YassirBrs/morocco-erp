@@ -3,6 +3,7 @@ import { ClsService } from 'nestjs-cls';
 import {
   AuditLog,
   ComplianceRuleSet,
+  CreditNote,
   Customer,
   DeliveryNote,
   DocumentLine,
@@ -239,6 +240,7 @@ export class ErpStoreService {
       salesOrders: [],
       deliveryNotes: [],
       invoices: [],
+      creditNotes: [],
       payments: [],
       stockMoves: [],
       purchaseReceipts: [],
@@ -296,6 +298,7 @@ export class ErpStoreService {
       salesOrders: [],
       deliveryNotes: [],
       invoices: [],
+      creditNotes: [],
       payments: [],
       stockMoves: [],
       purchaseReceipts: [],
@@ -323,8 +326,9 @@ export class ErpStoreService {
 
   summary(tenantId?: string) {
     const workspace = this.workspace(tenantId);
-    const revenue = r2(workspace.invoices.reduce((sum, invoice) => sum + invoice.totals.total, 0));
-    const receivables = r2(workspace.invoices.reduce((sum, invoice) => sum + invoice.totals.total - invoice.paidAmount, 0));
+    const creditTotal = workspace.creditNotes.reduce((sum, creditNote) => sum + creditNote.totals.total, 0);
+    const revenue = r2(workspace.invoices.reduce((sum, invoice) => sum + invoice.totals.total, 0) - creditTotal);
+    const receivables = r2(workspace.invoices.reduce((sum, invoice) => sum + invoice.totals.total - invoice.paidAmount - this.invoiceCreditTotal(workspace, invoice.id), 0));
     return {
       tenant: workspace.tenant,
       metrics: {
@@ -994,21 +998,119 @@ export class ErpStoreService {
     return this.workspace(tenantId).invoices;
   }
 
+  createCreditNote(input: { invoiceId: string; reason?: string; lines?: DocumentLineInput[] | DocumentLine[] }, tenantId?: string): CreditNote {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    this.assertPeriodOpen(workspace, today());
+    const invoice = this.invoice(workspace, input.invoiceId);
+    if (invoice.status === 'VOID') {
+      throw new BadRequestException('Void invoices cannot receive credit notes');
+    }
+    const alreadyCredited = this.invoiceCreditTotal(workspace, invoice.id);
+    const remainingCredit = r2(invoice.totals.total - alreadyCredited);
+    if (remainingCredit <= 0) {
+      throw new BadRequestException('Invoice is already fully credited');
+    }
+    const lines = this.creditNoteLines(workspace, invoice, input.lines);
+    const totals = this.totals(lines);
+    if (totals.total > remainingCredit) {
+      throw new BadRequestException('Credit note exceeds remaining invoice amount');
+    }
+    const creditNote: CreditNote = {
+      id: this.id('cn'),
+      tenantId: workspace.tenant.id,
+      number: this.nextNumber(workspace, 'NC'),
+      invoiceId: invoice.id,
+      customerId: invoice.customerId,
+      status: 'POSTED',
+      date: today(),
+      reason: this.nonEmpty(input.reason ?? 'Avoir client', 'Credit note reason is required'),
+      lines,
+      totals,
+    };
+    workspace.creditNotes.push(creditNote);
+    this.postJournal(workspace, `Credit note ${creditNote.number}`, creditNote.number, [
+      { account: '7111', label: 'Annulation ventes', debit: creditNote.totals.subtotal, credit: 0 },
+      { account: '4455', label: 'Annulation TVA facturee', debit: creditNote.totals.vatTotal, credit: 0 },
+      { account: '3421', label: 'Clients', debit: 0, credit: creditNote.totals.total },
+    ]);
+    if (r2(invoice.paidAmount + this.invoiceCreditTotal(workspace, invoice.id)) >= invoice.totals.total) {
+      invoice.status = 'PAID';
+    }
+    this.audit(workspace, 'credit-note.posted', 'CreditNote', creditNote.id, creditNote);
+    return creditNote;
+  }
+
+  listCreditNotes(tenantId?: string): CreditNote[] {
+    return this.workspace(tenantId).creditNotes;
+  }
+
+  customerStatement(customerId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const customer = this.customer(workspace, customerId);
+    const invoices = workspace.invoices.filter((invoice) => invoice.customerId === customer.id);
+    const invoiceIds = new Set(invoices.map((invoice) => invoice.id));
+    const creditNotes = workspace.creditNotes.filter((creditNote) => invoiceIds.has(creditNote.invoiceId));
+    const payments = workspace.payments.filter((payment) => invoiceIds.has(payment.invoiceId));
+    const rawEntries = [
+      ...invoices.map((invoice) => ({
+        date: invoice.date,
+        type: 'INVOICE' as const,
+        number: invoice.number,
+        reference: invoice.id,
+        debit: invoice.totals.total,
+        credit: 0,
+      })),
+      ...creditNotes.map((creditNote) => ({
+        date: creditNote.date,
+        type: 'CREDIT_NOTE' as const,
+        number: creditNote.number,
+        reference: creditNote.invoiceId,
+        debit: 0,
+        credit: creditNote.totals.total,
+      })),
+      ...payments.map((payment) => ({
+        date: payment.date,
+        type: 'PAYMENT' as const,
+        number: payment.id,
+        reference: payment.invoiceId,
+        debit: 0,
+        credit: payment.amount,
+      })),
+    ].sort((a, b) => `${a.date}-${a.number}`.localeCompare(`${b.date}-${b.number}`));
+    let balance = 0;
+    const entries = rawEntries.map((entry) => {
+      balance = r2(balance + entry.debit - entry.credit);
+      return { ...entry, balance };
+    });
+    const totals = {
+      invoiced: r2(invoices.reduce((sum, invoice) => sum + invoice.totals.total, 0)),
+      credited: r2(creditNotes.reduce((sum, creditNote) => sum + creditNote.totals.total, 0)),
+      paid: r2(payments.reduce((sum, payment) => sum + payment.amount, 0)),
+      balance: r2(balance),
+    };
+    return {
+      customer,
+      generatedAt: new Date().toISOString(),
+      entries,
+      totals,
+      aging: this.receivablesAging(workspace, customer.id),
+      status: 'PREPARED',
+    };
+  }
+
   recordPayment(input: { invoiceId: string; amount: number; method?: Payment['method'] }, tenantId?: string): Payment {
     const workspace = this.workspace(tenantId);
-    const invoice = workspace.invoices.find((candidate) => candidate.id === input.invoiceId);
-    if (!invoice) {
-      throw new NotFoundException('Invoice not found');
-    }
+    const invoice = this.invoice(workspace, input.invoiceId);
     if (input.amount <= 0) {
       throw new BadRequestException('Payment amount must be positive');
     }
-    const remaining = r2(invoice.totals.total - invoice.paidAmount);
+    const remaining = r2(invoice.totals.total - invoice.paidAmount - this.invoiceCreditTotal(workspace, invoice.id));
     if (input.amount > remaining) {
       throw new BadRequestException('Payment exceeds remaining invoice balance');
     }
     invoice.paidAmount = r2(invoice.paidAmount + input.amount);
-    if (invoice.paidAmount === invoice.totals.total) {
+    if (r2(invoice.paidAmount + this.invoiceCreditTotal(workspace, invoice.id)) >= invoice.totals.total) {
       invoice.status = 'PAID';
     }
     const payment: Payment = {
@@ -1124,11 +1226,15 @@ export class ErpStoreService {
   exportVatReport(tenantId?: string) {
     const workspace = this.workspace(tenantId);
     const vatCollected = workspace.invoices.reduce((sum, invoice) => sum + invoice.totals.vatTotal, 0);
+    const vatReversed = workspace.creditNotes.reduce((sum, creditNote) => sum + creditNote.totals.vatTotal, 0);
     return {
       tenantId: workspace.tenant.id,
       period: today().slice(0, 7),
       vatCollected: r2(vatCollected),
+      vatReversed: r2(vatReversed),
+      netVatCollected: r2(vatCollected - vatReversed),
       invoiceCount: workspace.invoices.length,
+      creditNoteCount: workspace.creditNotes.length,
       status: 'PREPARED',
     };
   }
@@ -1200,6 +1306,14 @@ export class ErpStoreService {
     return deliveryNote;
   }
 
+  private invoice(workspace: TenantWorkspace, invoiceId: string): Invoice {
+    const invoice = workspace.invoices.find((candidate) => candidate.id === invoiceId || candidate.number === invoiceId);
+    if (!invoice) {
+      throw new NotFoundException('Invoice not found');
+    }
+    return invoice;
+  }
+
   private supplier(workspace: TenantWorkspace, supplierId: string): Supplier {
     const supplier = workspace.suppliers.find((candidate) => candidate.id === supplierId);
     if (!supplier) {
@@ -1237,6 +1351,38 @@ export class ErpStoreService {
         productId: product.id,
         sku: product.sku,
         description: line.description ?? product.name,
+        quantity,
+        unitPrice,
+        vatRate,
+        subtotal,
+        vatAmount,
+        total: r2(subtotal + vatAmount),
+      };
+    });
+  }
+
+  private creditNoteLines(workspace: TenantWorkspace, invoice: Invoice, inputLines?: DocumentLineInput[] | DocumentLine[]): DocumentLine[] {
+    if (!inputLines?.length) {
+      return invoice.lines.map((line) => ({ ...line }));
+    }
+    return inputLines.map((line) => {
+      const invoiceLine = invoice.lines.find((candidate) => candidate.productId === line.productId);
+      if (!invoiceLine) {
+        throw new BadRequestException('Credit note line must reference an invoice product');
+      }
+      const quantity = Number(line.quantity);
+      if (quantity <= 0 || quantity > invoiceLine.quantity) {
+        throw new BadRequestException('Credit note quantity is invalid for the invoice line');
+      }
+      const product = this.product(workspace, invoiceLine.productId);
+      const unitPrice = line.unitPrice ?? invoiceLine.unitPrice;
+      const vatRate = line.vatRate ?? invoiceLine.vatRate;
+      const subtotal = r2(quantity * unitPrice);
+      const vatAmount = r2(subtotal * vatRate);
+      return {
+        productId: product.id,
+        sku: product.sku,
+        description: line.description ?? invoiceLine.description,
         quantity,
         unitPrice,
         vatRate,
@@ -1307,6 +1453,37 @@ export class ErpStoreService {
     };
     workspace.stockMoves.push(move);
     return move;
+  }
+
+  private invoiceCreditTotal(workspace: TenantWorkspace, invoiceId: string): number {
+    return r2(workspace.creditNotes
+      .filter((creditNote) => creditNote.invoiceId === invoiceId && creditNote.status === 'POSTED')
+      .reduce((sum, creditNote) => sum + creditNote.totals.total, 0));
+  }
+
+  private receivablesAging(workspace: TenantWorkspace, customerId: string) {
+    const now = new Date(today()).getTime();
+    const buckets = {
+      current: 0,
+      days1To30: 0,
+      days31To60: 0,
+      days61To90: 0,
+      over90: 0,
+    };
+    for (const invoice of workspace.invoices.filter((candidate) => candidate.customerId === customerId)) {
+      const openAmount = r2(invoice.totals.total - invoice.paidAmount - this.invoiceCreditTotal(workspace, invoice.id));
+      if (openAmount <= 0) {
+        continue;
+      }
+      const due = new Date(invoice.dueDate).getTime();
+      const days = Math.max(0, Math.floor((now - due) / 86400000));
+      if (days === 0) buckets.current = r2(buckets.current + openAmount);
+      else if (days <= 30) buckets.days1To30 = r2(buckets.days1To30 + openAmount);
+      else if (days <= 60) buckets.days31To60 = r2(buckets.days31To60 + openAmount);
+      else if (days <= 90) buckets.days61To90 = r2(buckets.days61To90 + openAmount);
+      else buckets.over90 = r2(buckets.over90 + openAmount);
+    }
+    return buckets;
   }
 
   private postJournal(workspace: TenantWorkspace, description: string, source: string, lines: JournalEntry['lines']): JournalEntry {

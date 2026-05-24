@@ -104,6 +104,63 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(() => store.recordPayment({ invoiceId: invoice.id, amount: invoice.totals.total, method: 'BANK' })).toThrow(BadRequestException);
   });
 
+  it('posts credit notes against invoices and reverses customer, revenue, and VAT accounting', () => {
+    const invoice = store.createInvoice({
+      customerId: 'cus-1',
+      lines: [{ productId: 'prd-2', quantity: 1 }],
+    });
+
+    const creditNote = store.createCreditNote({
+      invoiceId: invoice.id,
+      reason: 'Remise commerciale',
+      lines: [{ productId: 'prd-2', quantity: 0.5 }],
+    });
+    const summary = store.summary();
+    const creditJournal = store.listJournalEntries().find((entry) => entry.source === creditNote.number);
+    const vat = store.exportVatReport();
+
+    expect(creditNote.number).toMatch(/^NC-/);
+    expect(creditNote.invoiceId).toBe(invoice.id);
+    expect(creditNote.totals.total).toBe(720);
+    expect(summary.metrics.revenue).toBe(720);
+    expect(summary.metrics.receivables).toBe(720);
+    expect(creditJournal?.lines.reduce((sum, line) => sum + line.debit, 0))
+      .toBeCloseTo(creditJournal!.lines.reduce((sum, line) => sum + line.credit, 0), 2);
+    expect(vat.vatCollected).toBe(240);
+    expect(vat.vatReversed).toBe(120);
+    expect(vat.netVatCollected).toBe(120);
+    expect(() => store.createCreditNote({ invoiceId: invoice.id })).toThrow(BadRequestException);
+
+    const payment = store.recordPayment({ invoiceId: invoice.id, amount: 720, method: 'BANK' });
+
+    expect(payment.amount).toBe(720);
+    expect(invoice.status).toBe('PAID');
+    expect(store.summary().metrics.receivables).toBe(0);
+  });
+
+  it('exports customer statements with invoices, credit notes, payments, and aging', () => {
+    const invoice = store.createInvoice({
+      customerId: 'cus-1',
+      lines: [{ productId: 'prd-2', quantity: 1 }],
+    });
+    store.createCreditNote({
+      invoiceId: invoice.id,
+      reason: 'Avoir partiel',
+      lines: [{ productId: 'prd-2', quantity: 0.25 }],
+    });
+    store.recordPayment({ invoiceId: invoice.id, amount: 300, method: 'BANK' });
+
+    const statement = store.customerStatement('cus-1');
+
+    expect(statement.status).toBe('PREPARED');
+    expect(statement.entries.map((entry) => entry.type)).toEqual(['INVOICE', 'CREDIT_NOTE', 'PAYMENT']);
+    expect(statement.totals.invoiced).toBe(1440);
+    expect(statement.totals.credited).toBe(360);
+    expect(statement.totals.paid).toBe(300);
+    expect(statement.totals.balance).toBe(780);
+    expect(statement.aging.current).toBe(780);
+  });
+
   it('uses tenant invoice series for continuous fiscal-year numbering', () => {
     store.completeTenantOnboarding({ invoiceSeries: 'ATLAS' });
 

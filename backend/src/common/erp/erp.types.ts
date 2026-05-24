@@ -201,6 +201,19 @@ export interface Invoice {
   };
 }
 
+export interface CreditNote {
+  id: string;
+  tenantId: string;
+  number: string;
+  invoiceId: string;
+  customerId: string;
+  status: 'POSTED' | 'VOID';
+  date: string;
+  reason: string;
+  lines: DocumentLine[];
+  totals: DocumentTotals;
+}
+
 export interface Payment {
   id: string;
   tenantId: string;
@@ -313,6 +326,7 @@ export interface TenantWorkspace {
   salesOrders: SalesOrder[];
   deliveryNotes: DeliveryNote[];
   invoices: Invoice[];
+  creditNotes: CreditNote[];
   payments: Payment[];
   stockMoves: StockMove[];
   purchaseReceipts: PurchaseReceipt[];

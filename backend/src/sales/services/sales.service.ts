@@ -21,5 +21,8 @@ export class SalesService {
   convertOrderToInvoice(id: string) { return this.store.convertOrderToInvoice(id); }
   listInvoices() { return this.store.listInvoices(); }
   createInvoice(data: any) { return this.store.createInvoice(data); }
+  listCreditNotes() { return this.store.listCreditNotes(); }
+  createCreditNote(data: any) { return this.store.createCreditNote(data); }
+  customerStatement(customerId: string) { return this.store.customerStatement(customerId); }
   recordPayment(data: any) { return this.store.recordPayment(data); }
 }
