@@ -37,6 +37,11 @@ export class LedgerController {
     return this.ledgerService.balanceSheet({ year: year ? Number(year) : undefined, month: month ? Number(month) : undefined });
   }
   @Post('bank-import/preview') bankImportPreview(@Body() body: { csv: string }) { return this.ledgerService.bankImportPreview(body); }
+  @Get('payments/reconciliation-by-method') paymentMethodReconciliation() { return this.ledgerService.paymentMethodReconciliation(); }
+  @Get('cheques') cheques() { return this.ledgerService.listCheques(); }
+  @Post('cheques') createCheque(@Body() body: any) { return this.ledgerService.createCheque(body); }
+  @Get('deposit-batches') depositBatches() { return this.ledgerService.listDepositBatches(); }
+  @Post('deposit-batches') createDepositBatch(@Body() body: any) { return this.ledgerService.createDepositBatch(body); }
   @Get('evidence') legalEvidence() { return this.ledgerService.legalEvidence(); }
   @Post('evidence') archiveEvidence(@Body() body: any) { return this.ledgerService.archiveEvidence(body); }
   @Get('audit') audit() { return this.ledgerService.auditLogs(); }

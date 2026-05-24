@@ -10,6 +10,23 @@ export const documentExportRoutes = [
   '/payroll/runs/${run.id}/payslips/${payslip.id}/pdf',
 ];
 
+export const workflowReadinessRoutes = [
+  '/sales/invoices/${invoice.id}/email-preview',
+  '/sales/quotes/${quote.id}/approval-email-preview',
+  '/sales/quotes/${quote.id}/accept',
+  '/sales/customers/${customer.id}/statement.pdf',
+  '/inventory/suppliers/${supplier.id}/statement',
+  '/inventory/purchase-requests',
+  '/inventory/purchase-requests/${request.id}/supplier-quotes',
+  '/ledger/payments/reconciliation-by-method',
+  '/ledger/cheques',
+  '/ledger/deposit-batches',
+  '/pos/cashbox-transfers',
+  '/payroll/runs/${run.id}/damancom/preflight',
+  '/payroll/exports/archive',
+  '/payroll/leave-calendar',
+];
+
 export type DashboardSummary = {
   tenant: {
     legalEntity: {
@@ -128,6 +145,21 @@ export type PlatformReadiness = {
   superAdmin: { tenants: Array<{ tradeName: string; status: string }>; complianceRuleManagement: { activeRulePack: string } };
   support: { recentAuditLogs: unknown[]; recentErrors: unknown[]; moduleUsage: Array<{ module: string; records: number }> };
   upgrades: { status: string; prompts: Array<{ module: string; reason: string; targetPlan: string }> };
+};
+
+export type MoroccoWorkflowReadiness = {
+  reservations: { rows: unknown[]; totals: unknown[] };
+  deliveryRoutes: { cities: unknown[]; routes: unknown[] };
+  paymentMethods: { rows: Array<{ method: string; amount: number }> };
+  cheques: unknown[];
+  depositBatches: unknown[];
+  cashboxTransfers: unknown[];
+  employeeDocuments: unknown[];
+  contractReminders: unknown[];
+  leaveCalendar: { rows: unknown[] };
+  damancomPreflight: { status: string; rows: unknown[] };
+  payrollExports: unknown[];
+  purchaseRequests: unknown[];
 };
 
 export type BusinessSearchResult = {
@@ -302,4 +334,22 @@ export async function getPlatformReadiness(): Promise<PlatformReadiness> {
     getJson('/tenant/upgrade-prompts', { status: 'NO_PROMPT', prompts: [] }),
   ]);
   return { persistence, environment, logs, metrics, backup, staging, jobs, flags, pricing, billing, accountant, superAdmin, support, upgrades };
+}
+
+export async function getMoroccoWorkflowReadiness(): Promise<MoroccoWorkflowReadiness> {
+  const [reservations, deliveryRoutes, paymentMethods, cheques, depositBatches, cashboxTransfers, employeeDocuments, contractReminders, leaveCalendar, damancomPreflight, payrollExports, purchaseRequests] = await Promise.all([
+    getJson('/inventory/reservations', { rows: [], totals: [] }),
+    getJson('/sales/delivery-route-plan', { cities: [], routes: [] }),
+    getJson('/ledger/payments/reconciliation-by-method', { rows: [] }),
+    getJson('/ledger/cheques', []),
+    getJson('/ledger/deposit-batches', []),
+    getJson('/pos/cashbox-transfers', []),
+    getJson('/payroll/employees/document-reminders', []),
+    getJson('/payroll/employees/contract-reminders', []),
+    getJson('/payroll/leave-calendar', { rows: [] }),
+    getJson('/payroll/damancom/preflight', { status: 'READY', rows: [] }),
+    getJson('/payroll/exports/archive', []),
+    getJson('/inventory/purchase-requests', []),
+  ]);
+  return { reservations, deliveryRoutes, paymentMethods, cheques, depositBatches, cashboxTransfers, employeeDocuments, contractReminders, leaveCalendar, damancomPreflight, payrollExports, purchaseRequests };
 }

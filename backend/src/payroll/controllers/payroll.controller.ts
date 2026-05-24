@@ -11,6 +11,7 @@ export class PayrollController {
   @Get('employees') employees() { return this.payrollService.listEmployees(); }
   @Get('employees/import-template.csv') employeeImportTemplateCsv() { return this.payrollService.employeeImportTemplateCsv(); }
   @Get('employees/document-reminders') employeeDocumentReminders() { return this.payrollService.employeeDocumentReminders(); }
+  @Get('employees/contract-reminders') contractLifecycleReminders() { return this.payrollService.contractLifecycleReminders(); }
   @Get('employees/:id') employee(@Param('id') id: string) { return this.payrollService.getEmployee(id); }
   @Post('employees') addEmployee(@Body() body: any) { return this.payrollService.addEmployee(body); }
   @Patch('employees/:id') updateEmployee(@Param('id') id: string, @Body() body: any) { return this.payrollService.updateEmployee(id, body); }
@@ -22,6 +23,7 @@ export class PayrollController {
 
   @Get('leave-balances') leaveBalances() { return this.payrollService.leaveBalances(); }
   @Get('leave-requests') leaveRequests() { return this.payrollService.leaveRequests(); }
+  @Get('leave-calendar') leaveCalendar() { return this.payrollService.leaveCalendar(); }
   @Post('leave-requests') createLeaveRequest(@Body() body: any) { return this.payrollService.createLeaveRequest(body); }
   @Post('leave-requests/:id/approve') approveLeaveRequest(@Param('id') id: string) { return this.payrollService.approveLeaveRequest(id); }
   @Post('leave-requests/:id/reject') rejectLeaveRequest(@Param('id') id: string, @Body() body: any) { return this.payrollService.rejectLeaveRequest(id, body); }
@@ -33,11 +35,15 @@ export class PayrollController {
   @Get('runs') runs() { return this.payrollService.listRuns(); }
   @Post('runs') createRun(@Body() body: any) { return this.payrollService.createRun(body); }
   @Post('runs/:id/calculate') calculateRun(@Param('id') id: string) { return this.payrollService.calculateRun(id); }
-  @Post('runs/:id/approve') approveRun(@Param('id') id: string) { return this.payrollService.approveRun(id); }
+  @Post('runs/:id/approve') approveRun(@Param('id') id: string, @Body() body: any) { return this.payrollService.approveRun(id, body); }
+  @Post('runs/:id/reject') rejectRun(@Param('id') id: string, @Body() body: any) { return this.payrollService.rejectRun(id, body); }
   @Post('runs/:id/post') postRun(@Param('id') id: string) { return this.payrollService.postRun(id); }
   @Post('runs/:id/cancel') cancelRun(@Param('id') id: string) { return this.payrollService.cancelRun(id); }
   @Get('runs/:id/summary') runSummary(@Param('id') id: string) { return this.payrollService.runSummary(id); }
   @Get('runs/:id/damancom') runDamancom(@Param('id') id: string) { return this.payrollService.runDamancom(id); }
+  @Get('runs/:id/damancom/preflight') runDamancomPreflight(@Param('id') id: string) { return this.payrollService.damancomPreflight(id); }
+  @Get('damancom/preflight') damancomPreflight() { return this.payrollService.damancomPreflight(); }
+  @Get('exports/archive') exportArchives() { return this.payrollService.exportArchives(); }
   @Get('runs/:id/payslips/:payslipId/pdf') runPayslipPdf(@Param('id') id: string, @Param('payslipId') payslipId: string) {
     return this.payrollService.runPayslipPdf(id, payslipId);
   }

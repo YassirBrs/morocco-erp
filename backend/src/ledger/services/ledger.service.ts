@@ -25,6 +25,11 @@ export class LedgerService {
   profitAndLoss(data: { year?: number; month?: number }) { return this.store.profitAndLossReport(data); }
   balanceSheet(data: { year?: number; month?: number }) { return this.store.balanceSheetReport(data); }
   bankImportPreview(data: { csv: string }) { return this.store.importBankStatement(data); }
+  paymentMethodReconciliation() { return this.store.paymentMethodReconciliation(); }
+  listCheques() { return this.store.listCheques(); }
+  createCheque(data: any) { return this.store.createCheque(data); }
+  listDepositBatches() { return this.store.listDepositBatches(); }
+  createDepositBatch(data: any) { return this.store.createDepositBatch(data); }
   legalEvidence() { return this.store.listLegalEvidences(); }
   archiveEvidence(data: any) { return this.store.archiveLegalEvidence(data); }
   auditLogs() { return this.store.auditLogs(); }

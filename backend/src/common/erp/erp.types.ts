@@ -30,6 +30,8 @@ export type DocumentExportType = 'QUOTE' | 'ORDER' | 'DELIVERY_NOTE' | 'INVOICE'
 export type AdapterKind = 'DGI' | 'CNSS';
 export type BackgroundJobKind = 'PDF' | 'EXPORT' | 'EMAIL' | 'DECLARATION' | 'IMPORT';
 export type BackgroundJobStatus = 'QUEUED' | 'RUNNING' | 'DONE' | 'FAILED';
+export type ChequeStatus = 'RECEIVED' | 'DEPOSITED' | 'CLEARED' | 'REJECTED';
+export type DepositBatchStatus = 'DRAFT' | 'DEPOSITED' | 'RECONCILED';
 
 export interface LocalizedFields {
   arabicName?: string;
@@ -375,6 +377,14 @@ export interface DeliveryNote {
   date: string;
   lines: DocumentLine[];
   totals: DocumentTotals;
+  routePlan?: {
+    city: string;
+    region: string;
+    zone: string;
+    promisedDate: string;
+    driver?: string;
+    vehicle?: string;
+  };
 }
 
 export interface Invoice {
@@ -417,7 +427,7 @@ export interface Payment {
   tenantId: string;
   invoiceId: string;
   amount: number;
-  method: 'BANK' | 'CASH' | 'CARD' | 'CHEQUE';
+  method: 'BANK' | 'CASH' | 'CARD' | 'CHEQUE' | 'MOBILE_MONEY';
   date: string;
 }
 
@@ -577,6 +587,7 @@ export interface Payslip {
   cnssEmployee: number;
   amoEmployee: number;
   ir: number;
+  irExplanation?: Array<{ label: string; amount: number | string }>;
   netSalary: number;
   employerCharges: number;
   pdf?: { fileName: string; mimeType: 'application/pdf'; contentBase64: string };
@@ -592,6 +603,9 @@ export interface PayrollRun {
   status: PayrollRunStatus;
   createdAt: string;
   approvedAt?: string;
+  approvalComment?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
   postedAt?: string;
   cancelledAt?: string;
   payslips: Payslip[];
@@ -728,6 +742,83 @@ export interface AdapterSubmission {
   payload: Record<string, unknown>;
   evidenceId?: string;
   createdAt: string;
+}
+
+export interface ChequeTracking {
+  id: string;
+  tenantId: string;
+  invoiceId?: string;
+  number: string;
+  bank: string;
+  drawer: string;
+  dueDate: string;
+  amount: number;
+  status: ChequeStatus;
+  depositBatchId?: string;
+  createdAt: string;
+}
+
+export interface DepositBatch {
+  id: string;
+  tenantId: string;
+  number: string;
+  type: 'CASH' | 'CHEQUE' | 'MIXED';
+  bankAccount: string;
+  status: DepositBatchStatus;
+  cashAmount: number;
+  chequeIds: string[];
+  total: number;
+  createdAt: string;
+  depositedAt?: string;
+}
+
+export interface CashboxTransfer {
+  id: string;
+  tenantId: string;
+  fromSessionId: string;
+  toTreasuryAccount: string;
+  amount: number;
+  status: 'RECORDED';
+  createdAt: string;
+}
+
+export interface PurchaseRequest {
+  id: string;
+  tenantId: string;
+  requester: string;
+  department: string;
+  supplierId?: string;
+  status: 'REQUESTED' | 'APPROVED' | 'CONVERTED' | 'REJECTED';
+  lines: Array<{ productId: string; quantity: number; estimatedUnitCost: number }>;
+  total: number;
+  reason?: string;
+  createdAt: string;
+  approvedAt?: string;
+  purchaseOrderId?: string;
+}
+
+export interface SupplierQuoteComparison {
+  id: string;
+  tenantId: string;
+  purchaseRequestId: string;
+  supplierId: string;
+  price: number;
+  delayDays: number;
+  risk: 'LOW' | 'MEDIUM' | 'HIGH';
+  preferred: boolean;
+  score: number;
+}
+
+export interface PayrollExportArchive {
+  id: string;
+  tenantId: string;
+  runId: string;
+  period: string;
+  type: 'DAMANCOM';
+  generatedBy: string;
+  generatedAt: string;
+  checksum: string;
+  fileName: string;
 }
 
 export interface StructuredLogEntry {
@@ -1014,6 +1105,12 @@ export interface TenantWorkspace {
   webhookEvents: WebhookEvent[];
   emailDeliveries: EmailDelivery[];
   adapterSubmissions: AdapterSubmission[];
+  cheques: ChequeTracking[];
+  depositBatches: DepositBatch[];
+  cashboxTransfers: CashboxTransfer[];
+  purchaseRequests: PurchaseRequest[];
+  supplierQuoteComparisons: SupplierQuoteComparison[];
+  payrollExportArchives: PayrollExportArchive[];
   structuredLogs: StructuredLogEntry[];
   metricSamples: MetricSample[];
   backgroundJobs: BackgroundJob[];

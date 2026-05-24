@@ -30,6 +30,7 @@ export class InventoryService {
   importSuppliersCsv(data: { csv?: string }) { return this.store.importSuppliersCsv(data.csv ?? ''); }
   supplierRiskReminders(filter?: string) { return this.store.supplierRiskReminders({ filter }); }
   supplierPaymentCalendar() { return this.store.supplierPaymentCalendar(); }
+  supplierStatement(id: string) { return this.store.supplierStatement(id); }
   addSupplierDocumentPlaceholder(id: string, data: any) { return this.store.addSupplierDocumentPlaceholder(id, data); }
   listWarehouses() { return this.store.listWarehouses(); }
   createWarehouse(data: any) { return this.store.createWarehouse(data); }
@@ -40,6 +41,12 @@ export class InventoryService {
   reservationVisibility() { return this.store.stockReservationVisibility(); }
   adjustStock(productId: string, qty: number, reason?: string) { return this.store.adjustStock(productId, qty, reason); }
   approveStockMove(id: string) { return this.store.approveStockMove(id); }
+  listPurchaseRequests() { return this.store.listPurchaseRequests(); }
+  createPurchaseRequest(data: any) { return this.store.createPurchaseRequest(data); }
+  approvePurchaseRequest(id: string) { return this.store.approvePurchaseRequest(id); }
+  convertPurchaseRequestToOrder(id: string, data: any) { return this.store.convertPurchaseRequestToOrder(id, data); }
+  addSupplierQuoteComparison(data: any) { return this.store.addSupplierQuoteComparison(data); }
+  supplierQuoteMatrix(id: string) { return this.store.supplierQuoteMatrix(id); }
   listPurchaseOrders() { return this.store.listPurchaseOrders(); }
   createPurchaseOrder(data: any) { return this.store.createPurchaseOrder(data); }
   purchaseOrderPdf(id: string) { return this.store.exportPurchaseOrderPdf(id); }

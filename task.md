@@ -220,7 +220,7 @@ This backlog contains concrete tasks to improve the app from the current working
 
                 Modify the files directly. Once done, reply with a brief summary of the modified files and a diff of the changes.
 - [x] T135 P2 - don't campact every module in one page . use sidebar to navigate between modules
-- [ ] T1351 P2 - each module should have it's own page not everything in index.html
+- [x] T1351 P2 - each module should have it's own page not everything in index.html
 
 ## Additional Morocco ERP Hardening
 
@@ -240,25 +240,25 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T149 P1 - Add customer and supplier timeline views for quotes, invoices, payments, notes, and documents.
 - [x] T150 P1 - Add internal notes and task assignments on customers, suppliers, invoices, and payroll runs.
 - [x] T151 P1 - Add bulk archive and restore flows for inactive customers, suppliers, and products.
-- [ ] T152 P1 - Add stock reservation visibility from orders and POS tickets.
-- [ ] T153 P1 - Add delivery route planning fields for Moroccan cities and delivery zones.
-- [ ] T154 P1 - Add invoice email preview with French subject, legal footer, and attachment summary.
-- [ ] T155 P1 - Add quote approval email preview and acceptance tracking.
-- [ ] T156 P1 - Add customer statement aging PDF export with Moroccan legal identifiers.
-- [ ] T157 P1 - Add supplier account statement export with purchase, payment, and balance lines.
-- [ ] T158 P1 - Add payment method reconciliation views for cash, bank transfer, cheque, card, and mobile money.
-- [ ] T159 P1 - Add cheque tracking with due date, bank, drawer, status, and deposit batch.
-- [ ] T160 P1 - Add bank deposit batch workflow for cash and cheques.
-- [ ] T161 P1 - Add cashbox transfer workflow between POS sessions and treasury accounts.
-- [ ] T162 P1 - Add employee document reminders for CIN, CNSS card, contract, diploma, and medical visits.
-- [ ] T163 P1 - Add payroll approval comments and rejection reasons.
-- [ ] T164 P1 - Add payroll export archive with generated-by, generated-at, checksum, and period.
-- [ ] T165 P1 - Add CNSS/Damancom preflight report for missing employee identifiers.
-- [ ] T166 P1 - Add IR calculation explanation lines on payslips for accountant review.
-- [ ] T167 P1 - Add leave calendar by department, employee, and approval status.
-- [ ] T168 P1 - Add probation period reminders and contract renewal reminders.
-- [ ] T169 P1 - Add purchase request workflow before purchase order approval.
-- [ ] T170 P1 - Add supplier quote comparison matrix by price, delay, risk, and preferred flag.
+- [x] T152 P1 - Add stock reservation visibility from orders and POS tickets.
+- [x] T153 P1 - Add delivery route planning fields for Moroccan cities and delivery zones.
+- [x] T154 P1 - Add invoice email preview with French subject, legal footer, and attachment summary.
+- [x] T155 P1 - Add quote approval email preview and acceptance tracking.
+- [x] T156 P1 - Add customer statement aging PDF export with Moroccan legal identifiers.
+- [x] T157 P1 - Add supplier account statement export with purchase, payment, and balance lines.
+- [x] T158 P1 - Add payment method reconciliation views for cash, bank transfer, cheque, card, and mobile money.
+- [x] T159 P1 - Add cheque tracking with due date, bank, drawer, status, and deposit batch.
+- [x] T160 P1 - Add bank deposit batch workflow for cash and cheques.
+- [x] T161 P1 - Add cashbox transfer workflow between POS sessions and treasury accounts.
+- [x] T162 P1 - Add employee document reminders for CIN, CNSS card, contract, diploma, and medical visits.
+- [x] T163 P1 - Add payroll approval comments and rejection reasons.
+- [x] T164 P1 - Add payroll export archive with generated-by, generated-at, checksum, and period.
+- [x] T165 P1 - Add CNSS/Damancom preflight report for missing employee identifiers.
+- [x] T166 P1 - Add IR calculation explanation lines on payslips for accountant review.
+- [x] T167 P1 - Add leave calendar by department, employee, and approval status.
+- [x] T168 P1 - Add probation period reminders and contract renewal reminders.
+- [x] T169 P1 - Add purchase request workflow before purchase order approval.
+- [x] T170 P1 - Add supplier quote comparison matrix by price, delay, risk, and preferred flag.
 - [ ] T171 P1 - Add landed cost allocation for import purchases and inventory valuation.
 - [ ] T172 P1 - Add serial and lot tracking for inventory items that require traceability.
 - [ ] T173 P1 - Add stock expiry date alerts for perishable or regulated goods.

@@ -21,6 +21,7 @@ export class InventoryController {
   @Post('suppliers/import') importSuppliersCsv(@Body() body: { csv?: string }) { return this.inventoryService.importSuppliersCsv(body); }
   @Get('suppliers/risk-reminders') supplierRiskReminders(@Query('filter') filter?: string) { return this.inventoryService.supplierRiskReminders(filter); }
   @Get('suppliers/payment-calendar') supplierPaymentCalendar() { return this.inventoryService.supplierPaymentCalendar(); }
+  @Get('suppliers/:id/statement') supplierStatement(@Param('id') id: string) { return this.inventoryService.supplierStatement(id); }
   @Post('suppliers/bulk-status') bulkSupplierStatus(@Body() body: any) { return this.inventoryService.bulkSupplierStatus(body); }
   @Post('suppliers/:id/document-placeholders') addSupplierDocumentPlaceholder(@Param('id') id: string, @Body() body: any) {
     return this.inventoryService.addSupplierDocumentPlaceholder(id, body);
@@ -43,6 +44,12 @@ export class InventoryController {
     return this.inventoryService.adjustStock(body.productId, body.quantity, body.reason);
   }
   @Post('stock-moves/:id/approve') approveStockMove(@Param('id') id: string) { return this.inventoryService.approveStockMove(id); }
+  @Get('purchase-requests') purchaseRequests() { return this.inventoryService.listPurchaseRequests(); }
+  @Post('purchase-requests') createPurchaseRequest(@Body() body: any) { return this.inventoryService.createPurchaseRequest(body); }
+  @Post('purchase-requests/:id/approve') approvePurchaseRequest(@Param('id') id: string) { return this.inventoryService.approvePurchaseRequest(id); }
+  @Post('purchase-requests/:id/convert-to-order') convertPurchaseRequest(@Param('id') id: string, @Body() body: any) { return this.inventoryService.convertPurchaseRequestToOrder(id, body); }
+  @Post('supplier-quotes') addSupplierQuote(@Body() body: any) { return this.inventoryService.addSupplierQuoteComparison(body); }
+  @Get('purchase-requests/:id/supplier-quotes') supplierQuoteMatrix(@Param('id') id: string) { return this.inventoryService.supplierQuoteMatrix(id); }
   @Get('purchase-orders') purchaseOrders() { return this.inventoryService.listPurchaseOrders(); }
   @Post('purchase-orders') createPurchaseOrder(@Body() body: any) { return this.inventoryService.createPurchaseOrder(body); }
   @Get('purchase-orders/:id/pdf') purchaseOrderPdf(@Param('id') id: string) { return this.inventoryService.purchaseOrderPdf(id); }

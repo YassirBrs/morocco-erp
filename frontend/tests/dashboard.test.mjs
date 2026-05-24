@@ -3,6 +3,16 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const page = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+const modulePages = [
+  '../app/ventes/page.tsx',
+  '../app/crm/page.tsx',
+  '../app/stock/page.tsx',
+  '../app/comptabilite/page.tsx',
+  '../app/paie/page.tsx',
+  '../app/pos/page.tsx',
+  '../app/conformite/page.tsx',
+  '../app/admin/page.tsx',
+].map((path) => readFileSync(new URL(path, import.meta.url), 'utf8'));
 const staticPage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
 const staticCss = readFileSync(new URL('../static.css', import.meta.url), 'utf8');
@@ -336,5 +346,31 @@ test('Next primary workspace exposes production ops, pricing, billing, accountan
   }
   for (const cssToken of ['.opsReadiness', '.workspaceGrid', '.workspaceTile']) {
     assert.ok(css.includes(cssToken), `${cssToken} platform style exists`);
+  }
+});
+
+test('Next app exposes separate module pages instead of keeping every module only on the dashboard', () => {
+  for (const href of ["'/ventes'", "'/crm'", "'/stock'", "'/comptabilite'", "'/paie'", "'/pos'", "'/conformite'", "'/admin'"]) {
+    assert.ok(page.includes(href), `${href} module navigation link exists`);
+  }
+  for (const [index, title] of ['Ventes', 'CRM', 'Stock', 'Comptabilité', 'Paie', 'POS', 'Conformité', 'Admin SaaS'].entries()) {
+    assert.ok(modulePages[index].includes(title), `${title} module page has its own route`);
+    assert.ok(modulePages[index].includes('className="modulePage"'), `${title} module page uses module layout`);
+  }
+  assert.ok(css.includes('.modulePage'));
+});
+
+test('Next primary workspace exposes advanced Morocco workflow readiness for logistics, treasury, HR, payroll, and procurement', () => {
+  for (const text of ['Workflows Maroc avancés', 'Réservations', 'Villes livraison', 'Modes paiement', 'Préflight CNSS', 'Trésorerie', 'RH et paie', 'Achats', 'Espèces, banque, chèque, carte, mobile money', 'Comparaison fournisseurs']) {
+    assert.ok(page.includes(text), `${text} advanced workflow label is present`);
+  }
+  for (const marker of ['getMoroccoWorkflowReadiness', 'moroccoWorkflows.reservations', 'moroccoWorkflows.deliveryRoutes', 'moroccoWorkflows.paymentMethods', 'moroccoWorkflows.damancomPreflight']) {
+    assert.ok(page.includes(marker), `${marker} advanced workflow helper is present`);
+  }
+  for (const endpoint of ['/inventory/reservations', '/sales/delivery-route-plan', '/ledger/payments/reconciliation-by-method', '/ledger/cheques', '/ledger/deposit-batches', '/pos/cashbox-transfers', '/payroll/employees/document-reminders', '/payroll/employees/contract-reminders', '/payroll/leave-calendar', '/payroll/damancom/preflight', '/payroll/exports/archive', '/inventory/purchase-requests']) {
+    assert.ok(api.includes(endpoint), `${endpoint} workflow API route is wired`);
+  }
+  for (const endpoint of ['/sales/invoices/${invoice.id}/email-preview', '/sales/quotes/${quote.id}/approval-email-preview', '/sales/quotes/${quote.id}/accept', '/sales/customers/${customer.id}/statement.pdf', '/inventory/suppliers/${supplier.id}/statement', '/inventory/purchase-requests/${request.id}/supplier-quotes']) {
+    assert.ok(api.includes(endpoint), `${endpoint} workflow template route is represented`);
   }
 });

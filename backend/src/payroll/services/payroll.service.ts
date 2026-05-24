@@ -130,12 +130,17 @@ export class PayrollService {
   listRuns() { return this.store.listPayrollRuns(); }
   createRun(data: any) { return this.store.createPayrollRun(data); }
   calculateRun(id: string) { return this.store.calculatePayrollRun(id); }
-  approveRun(id: string) { return this.store.approvePayrollRun(id); }
+  approveRun(id: string, data?: any) { return this.store.approvePayrollRun(id, data); }
+  rejectRun(id: string, data?: any) { return this.store.rejectPayrollRun(id, data); }
   postRun(id: string) { return this.store.postPayrollRun(id); }
   cancelRun(id: string) { return this.store.cancelPayrollRun(id); }
   runSummary(id: string) { return this.store.payrollRunSummary(id); }
   runPayslipPdf(runId: string, payslipId: string) { return this.store.generatePayslipPdf(runId, payslipId); }
   runDamancom(id: string) { return this.store.exportPayrollRunDamancom(id); }
+  exportArchives() { return this.store.listPayrollExportArchives(); }
+  damancomPreflight(id?: string) { return this.store.payrollDamancomPreflight(id); }
+  leaveCalendar() { return this.store.leaveCalendar(); }
+  contractLifecycleReminders() { return this.store.contractLifecycleReminders(); }
   leaveBalances() { return this.store.listLeaveBalances(); }
   leaveRequests() { return this.store.listLeaveRequests(); }
   createLeaveRequest(data: any) { return this.store.createLeaveRequest(data); }

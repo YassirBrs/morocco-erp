@@ -7,7 +7,7 @@ describe('ErpStoreService working ERP workflows', () => {
   const cls = { get: jest.fn(() => 'tenant-demo') } as unknown as ClsService;
 
   beforeEach(() => {
-    (cls.get as jest.Mock).mockImplementation((key?: string) => key === 'userRole' ? 'OWNER' : 'tenant-demo');
+    (cls.get as jest.Mock).mockImplementation((key?: string) => key === 'userRole' ? 'OWNER' : key === 'userEmail' ? 'owner@atlas.ma' : 'tenant-demo');
     store = new ErpStoreService(cls);
   });
 
@@ -1721,5 +1721,78 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(prompts).toMatchObject({ tiedToRealGates: true, status: 'ACTIONABLE' });
     expect(performance.status).toBe('PASS');
     expect(performance.projectedRows).toBe(6400);
+  });
+
+  it('covers advanced Morocco workflows for reservations, delivery routes, emails, treasury, payroll review, and procurement', () => {
+    const quote = store.createQuote({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    const quoteEmail = store.quoteApprovalEmailPreview(quote.id);
+    const acceptance = store.acceptQuote(quote.id, { acceptedBy: 'Youssef Amrani', comment: 'Bon pour accord' });
+    const order = store.convertQuoteToOrder(quote.id);
+    const reservations = store.stockReservationVisibility();
+    const delivery = store.createDeliveryNoteFromOrder(order.id);
+    const routePlan = store.deliveryRoutePlanning();
+    const invoice = store.convertOrderToInvoice(order.id);
+    const invoiceEmail = store.invoiceEmailPreview(invoice.id);
+    const customerStatementPdf = store.exportCustomerStatementPdf('cus-1');
+    store.recordPayment({ invoiceId: invoice.id, amount: 200, method: 'CHEQUE' });
+    const cheque = store.createCheque({ invoiceId: invoice.id, number: 'CHQ-2026-001', bank: 'Attijariwafa bank', drawer: 'Rabat Retail SARL', dueDate: '2026-06-15', amount: 200 });
+    const deposit = store.createDepositBatch({ bankAccount: '5141', cashAmount: 100, chequeIds: [cheque.id] });
+    const reconciliation = store.paymentMethodReconciliation();
+
+    const receipt = store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 1, unitCost: 100 }] });
+    store.createSupplierInvoice({ purchaseReceiptId: receipt.id });
+    const supplierStatement = store.supplierStatement('sup-1');
+
+    const session = store.openPosSession({ cashierId: 'usr-owner', openingCash: 500 });
+    const cashboxTransfer = store.createCashboxTransfer({ fromSessionId: session.id, amount: 250, toTreasuryAccount: '5161' });
+
+    const payrollRun = store.createPayrollRun({ year: 2026, month: 5 });
+    store.calculatePayrollRun(payrollRun.id);
+    const preflight = store.payrollDamancomPreflight(payrollRun.id);
+    const approvedRun = store.approvePayrollRun(payrollRun.id, { comment: 'Contrôle CNSS/IR validé', approvedBy: 'accountant@atlas.ma' });
+    const damancom = store.exportPayrollRunDamancom(approvedRun.id);
+    const leave = store.createLeaveRequest({ employeeId: 'emp-1', startDate: '2026-06-01', endDate: '2026-06-02' });
+    store.approveLeaveRequest(leave.id);
+    const leaveCalendar = store.leaveCalendar();
+    const rejectedRun = store.createPayrollRun({ year: 2026, month: 6 });
+    const rejection = store.rejectPayrollRun(rejectedRun.id, { reason: 'Prime variable manquante' });
+
+    const purchaseRequest = store.createPurchaseRequest({
+      requester: 'Responsable stock',
+      department: 'Logistique',
+      supplierId: 'sup-1',
+      lines: [{ productId: 'prd-raw', quantity: 5, estimatedUnitCost: 95 }],
+      reason: 'Réassort bois',
+    });
+    const supplierQuote = store.addSupplierQuoteComparison({ purchaseRequestId: purchaseRequest.id, supplierId: 'sup-1', price: 475, delayDays: 3, risk: 'LOW', preferred: true });
+    const matrix = store.supplierQuoteMatrix(purchaseRequest.id);
+    const purchaseOrder = store.convertPurchaseRequestToOrder(purchaseRequest.id);
+
+    expect(quoteEmail.subject).toContain(quote.number);
+    expect(acceptance).toMatchObject({ status: 'ACCEPTED', acceptedBy: 'Youssef Amrani' });
+    expect(reservations.rows).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'ORDER', productId: 'prd-1', quantity: 1 })]));
+    expect(delivery.number).toMatch(/^BL-/);
+    expect(routePlan.cities.map((city) => city.city)).toEqual(expect.arrayContaining(['Casablanca', 'Rabat', 'Tanger']));
+    expect(invoiceEmail).toMatchObject({ status: 'READY' });
+    expect(invoiceEmail.legalFooter).toContain('ICE');
+    expect(Buffer.from(customerStatementPdf.contentBase64, 'base64').toString('binary')).toContain('Relevé client');
+    expect(customerStatementPdf.requiredMentions).toEqual(expect.arrayContaining(['ICE vendeur', 'Aging']));
+    expect(supplierStatement.totals.purchases).toBeGreaterThan(0);
+    expect(supplierStatement.legalIdentifiers.tenantIce).toBe('001525678000083');
+    expect(cheque).toMatchObject({ status: 'DEPOSITED', depositBatchId: deposit.id });
+    expect(deposit.total).toBe(300);
+    expect(reconciliation.rows.map((row) => row.method)).toEqual(['CASH', 'BANK', 'CHEQUE', 'CARD', 'MOBILE_MONEY']);
+    expect(cashboxTransfer).toMatchObject({ status: 'RECORDED', amount: 250 });
+    expect(store.employeeDocumentReminders()[0].missingDocuments).toEqual(expect.arrayContaining(['Diplôme', 'Visite médicale']));
+    expect(approvedRun.approvalComment).toBe('Contrôle CNSS/IR validé');
+    expect(rejection.rejectionReason).toBe('Prime variable manquante');
+    expect(damancom.archive).toMatchObject({ generatedBy: 'owner@atlas.ma', period: '2026-05' });
+    expect(preflight.status).toBe('READY');
+    expect(payrollRun.payslips[0].irExplanation?.map((line) => line.label)).toEqual(expect.arrayContaining(['Base imposable IR', 'Taux IR']));
+    expect(leaveCalendar.rows[0]).toMatchObject({ employeeName: 'Ahmed Taleb', approvalStatus: 'APPROVED' });
+    expect(store.contractLifecycleReminders()).toEqual([]);
+    expect(supplierQuote.preferred).toBe(true);
+    expect(matrix.recommendedSupplierId).toBe('sup-1');
+    expect(purchaseOrder.supplierId).toBe('sup-1');
   });
 });

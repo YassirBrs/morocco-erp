@@ -5,6 +5,7 @@ import {
   getInvoices,
   getIntegrationReadiness,
   getModuleData,
+  getMoroccoWorkflowReadiness,
   getOperationalReports,
   getPlatformReadiness,
   getPayrollSnapshot,
@@ -40,7 +41,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -53,6 +54,7 @@ export default async function DashboardPage() {
     getOperationalReports(),
     getIntegrationReadiness(),
     getPlatformReadiness(),
+    getMoroccoWorkflowReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -93,8 +95,18 @@ export default async function DashboardPage() {
           </div>
         </div>
         <nav aria-label="Navigation principale">
-          {['Tableau de bord', 'Ventes', 'CRM', 'Stock', 'Comptabilité', 'Paie', 'POS', 'Conformité', 'Admin'].map((item) => (
-            <a key={item} className={item === 'Tableau de bord' ? 'active' : ''} href={`#${item.toLowerCase().replace('é', 'e')}`}>{item}</a>
+          {[
+            ['Tableau de bord', '/'],
+            ['Ventes', '/ventes'],
+            ['CRM', '/crm'],
+            ['Stock', '/stock'],
+            ['Comptabilité', '/comptabilite'],
+            ['Paie', '/paie'],
+            ['POS', '/pos'],
+            ['Conformité', '/conformite'],
+            ['Admin', '/admin'],
+          ].map(([item, href]) => (
+            <a key={item} className={item === 'Tableau de bord' ? 'active' : ''} href={href}>{item}</a>
           ))}
         </nav>
         <div className="personalization">
@@ -304,6 +316,36 @@ export default async function DashboardPage() {
             <WorkspaceTile title="Espace comptable" detail={`${platformReadiness.accountant.clients.length} client(s), revue TVA/paie/clôture`} />
             <WorkspaceTile title="Super-admin" detail={`${platformReadiness.superAdmin.tenants.length} tenant(s), règles ${platformReadiness.superAdmin.complianceRuleManagement.activeRulePack}`} />
             <WorkspaceTile title="Support diagnostics" detail={`${platformReadiness.support.recentAuditLogs.length} audits, ${platformReadiness.support.moduleUsage.length} modules suivis`} />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Workflows Maroc avancés">
+          <PanelHeader title="Workflows Maroc avancés" action="Ouvrir modules" />
+          <div className="reportGrid">
+            <Metric label="Réservations" value={String(moroccoWorkflows.reservations.rows.length)} />
+            <Metric label="Villes livraison" value={String(moroccoWorkflows.deliveryRoutes.cities.length)} />
+            <Metric label="Modes paiement" value={String(moroccoWorkflows.paymentMethods.rows.length)} />
+            <Metric label="Préflight CNSS" value={moroccoWorkflows.damancomPreflight.status} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Trésorerie" rows={[
+              `Chèques suivis ${moroccoWorkflows.cheques.length}`,
+              `Remises banque ${moroccoWorkflows.depositBatches.length}`,
+              `Transferts caisse ${moroccoWorkflows.cashboxTransfers.length}`,
+              'Espèces, banque, chèque, carte, mobile money',
+            ]} empty="-" />
+            <MiniList title="RH et paie" rows={[
+              `Documents salariés ${moroccoWorkflows.employeeDocuments.length}`,
+              `Rappels contrats/probation ${moroccoWorkflows.contractReminders.length}`,
+              `Congés calendrier ${moroccoWorkflows.leaveCalendar.rows.length}`,
+              `Archives paie ${moroccoWorkflows.payrollExports.length}`,
+            ]} empty="-" />
+            <MiniList title="Achats" rows={[
+              `Demandes achat ${moroccoWorkflows.purchaseRequests.length}`,
+              'Comparaison fournisseurs: prix, délai, risque, préféré',
+              'Relevés fournisseurs avec achats, paiements, soldes',
+              'Emails devis/factures avec mentions légales',
+            ]} empty="-" />
           </div>
         </section>
 

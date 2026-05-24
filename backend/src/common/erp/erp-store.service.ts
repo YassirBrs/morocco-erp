@@ -13,7 +13,9 @@ import {
   BusinessSearchResult,
   BusinessSearchType,
   CashDrawerMovement,
+  CashboxTransfer,
   ChartAccount,
+  ChequeTracking,
   CollaborationEntityType,
   CompanyProfileChange,
   ComplianceRuleSet,
@@ -25,6 +27,7 @@ import {
   DocumentExportType,
   DocumentTemplateSetting,
   DocumentTotals,
+  DepositBatch,
   Employee,
   EmailDelivery,
   EmployeePortalAccess,
@@ -51,6 +54,7 @@ import {
   MaintenanceWorkOrder,
   Payment,
   PartnerApiKey,
+  PayrollExportArchive,
   PayrollRun,
   Payslip,
   PosOfflineQueueItem,
@@ -61,6 +65,7 @@ import {
   ProductionOrder,
   ProjectRecord,
   PurchaseOrder,
+  PurchaseRequest,
   PurchaseReceipt,
   SalesOrder,
   Quote,
@@ -69,6 +74,7 @@ import {
   StockTransfer,
   StoredFile,
   Supplier,
+  SupplierQuoteComparison,
   SupplierInvoice,
   Tenant,
   TenantSettings,
@@ -428,6 +434,12 @@ export class ErpStoreService {
       webhookEvents: [],
       emailDeliveries: [],
       adapterSubmissions: [],
+      cheques: [],
+      depositBatches: [],
+      cashboxTransfers: [],
+      purchaseRequests: [],
+      supplierQuoteComparisons: [],
+      payrollExportArchives: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -530,6 +542,12 @@ export class ErpStoreService {
       webhookEvents: [],
       emailDeliveries: [],
       adapterSubmissions: [],
+      cheques: [],
+      depositBatches: [],
+      cashboxTransfers: [],
+      purchaseRequests: [],
+      supplierQuoteComparisons: [],
+      payrollExportArchives: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -2840,6 +2858,99 @@ export class ErpStoreService {
     return order;
   }
 
+  createPurchaseRequest(input: { requester?: string; department?: string; supplierId?: string; lines: Array<{ productId: string; quantity: number; estimatedUnitCost: number }>; reason?: string }, tenantId?: string): PurchaseRequest {
+    const workspace = this.workspace(tenantId);
+    const lines = input.lines.map((line) => {
+      const product = this.product(workspace, line.productId);
+      const quantity = this.positive(line.quantity, 'La quantité demandée doit être positive');
+      const estimatedUnitCost = this.nonNegative(line.estimatedUnitCost, 'Le coût estimé doit être positif');
+      return { productId: product.id, quantity, estimatedUnitCost };
+    });
+    const request: PurchaseRequest = {
+      id: this.id('prq'),
+      tenantId: workspace.tenant.id,
+      requester: this.clean(input.requester) ?? this.cls.get<string>('userEmail') ?? 'Demandeur',
+      department: this.clean(input.department) ?? 'Achats',
+      supplierId: this.clean(input.supplierId),
+      status: 'REQUESTED',
+      lines,
+      total: r2(lines.reduce((sum, line) => sum + line.quantity * line.estimatedUnitCost, 0)),
+      reason: this.clean(input.reason),
+      createdAt: today(),
+    };
+    workspace.purchaseRequests.push(request);
+    this.audit(workspace, 'purchase-request.created', 'PurchaseRequest', request.id, request);
+    return request;
+  }
+
+  approvePurchaseRequest(requestId: string, tenantId?: string): PurchaseRequest {
+    const workspace = this.workspace(tenantId);
+    const request = this.purchaseRequest(workspace, requestId);
+    request.status = 'APPROVED';
+    request.approvedAt = new Date().toISOString();
+    this.audit(workspace, 'purchase-request.approved', 'PurchaseRequest', request.id, request);
+    return request;
+  }
+
+  convertPurchaseRequestToOrder(requestId: string, input: { supplierId?: string } = {}, tenantId?: string): PurchaseOrder {
+    const workspace = this.workspace(tenantId);
+    const request = this.purchaseRequest(workspace, requestId);
+    if (request.status === 'REQUESTED') this.approvePurchaseRequest(request.id, workspace.tenant.id);
+    const supplierId = input.supplierId ?? request.supplierId;
+    if (!supplierId) throw new BadRequestException('Le fournisseur est obligatoire pour convertir la demande achat');
+    const order = this.createPurchaseOrder({
+      supplierId,
+      lines: request.lines.map((line) => ({ productId: line.productId, quantity: line.quantity, unitCost: line.estimatedUnitCost })),
+    }, workspace.tenant.id);
+    request.status = 'CONVERTED';
+    request.purchaseOrderId = order.id;
+    this.audit(workspace, 'purchase-request.converted', 'PurchaseRequest', request.id, { requestId: request.id, orderId: order.id });
+    return order;
+  }
+
+  listPurchaseRequests(tenantId?: string): PurchaseRequest[] {
+    return this.workspace(tenantId).purchaseRequests;
+  }
+
+  addSupplierQuoteComparison(input: { purchaseRequestId: string; supplierId: string; price: number; delayDays: number; risk?: SupplierQuoteComparison['risk']; preferred?: boolean }, tenantId?: string): SupplierQuoteComparison {
+    const workspace = this.workspace(tenantId);
+    this.purchaseRequest(workspace, input.purchaseRequestId);
+    this.supplier(workspace, input.supplierId);
+    const price = this.positive(input.price, 'Le prix fournisseur doit être positif');
+    const delayDays = this.nonNegative(input.delayDays, 'Le délai fournisseur doit être positif');
+    const risk = input.risk ?? 'MEDIUM';
+    const riskPenalty = risk === 'LOW' ? 0 : risk === 'MEDIUM' ? 10 : 25;
+    const comparison: SupplierQuoteComparison = {
+      id: this.id('sqc'),
+      tenantId: workspace.tenant.id,
+      purchaseRequestId: input.purchaseRequestId,
+      supplierId: input.supplierId,
+      price,
+      delayDays,
+      risk,
+      preferred: Boolean(input.preferred),
+      score: r2(price + delayDays * 100 + riskPenalty - (input.preferred ? 250 : 0)),
+    };
+    workspace.supplierQuoteComparisons.push(comparison);
+    this.audit(workspace, 'supplier-quote.compared', 'SupplierQuoteComparison', comparison.id, comparison);
+    return comparison;
+  }
+
+  supplierQuoteMatrix(purchaseRequestId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const request = this.purchaseRequest(workspace, purchaseRequestId);
+    const rows = workspace.supplierQuoteComparisons
+      .filter((comparison) => comparison.purchaseRequestId === request.id)
+      .map((comparison) => ({ ...comparison, supplierName: this.supplier(workspace, comparison.supplierId).name }))
+      .sort((left, right) => left.score - right.score);
+    return {
+      request,
+      rows,
+      recommendedSupplierId: rows[0]?.supplierId,
+      criteria: ['price', 'delayDays', 'risk', 'preferred'],
+    };
+  }
+
   listPurchaseOrders(tenantId?: string): PurchaseOrder[] {
     return this.workspace(tenantId).purchaseOrders;
   }
@@ -3584,6 +3695,124 @@ export class ErpStoreService {
     };
   }
 
+  exportCustomerStatementPdf(customerId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const statement = this.customerStatement(customerId, workspace.tenant.id);
+    const lines = [
+      `Relevé client ${statement.customer.name}`,
+      `ICE vendeur ${workspace.tenant.legalEntity.ice} IF ${workspace.tenant.legalEntity.ifNumber} RC ${workspace.tenant.legalEntity.rc}`,
+      `ICE client ${statement.customer.ice ?? 'N/A'} IF ${statement.customer.ifNumber ?? 'N/A'}`,
+      `Total facturé ${statement.totals.invoiced.toFixed(2)} MAD`,
+      `Total payé ${statement.totals.paid.toFixed(2)} MAD`,
+      `Solde ${statement.totals.balance.toFixed(2)} MAD`,
+      `Aging courant ${statement.aging.current.toFixed(2)} MAD · +90 ${statement.aging.over90.toFixed(2)} MAD`,
+    ];
+    const evidence = this.archiveEvidence(workspace, 'DOCUMENT_PDF', `STATEMENT-${statement.customer.id}-${today()}`, { customerId, totals: statement.totals });
+    return {
+      status: 'PREPARED',
+      fileName: `releve-client-${statement.customer.id}.pdf`,
+      mimeType: 'application/pdf' as const,
+      contentBase64: Buffer.from(this.simplePdf(lines), 'binary').toString('base64'),
+      checksum: evidence.checksum,
+      requiredMentions: ['ICE vendeur', 'IF vendeur', 'RC vendeur', 'ICE client', 'Aging'],
+      statement,
+    };
+  }
+
+  supplierStatement(supplierId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const supplier = this.supplier(workspace, supplierId);
+    const invoices = workspace.supplierInvoices.filter((invoice) => invoice.supplierId === supplier.id);
+    const receipts = workspace.purchaseReceipts.filter((receipt) => receipt.supplierId === supplier.id);
+    const entries = [
+      ...receipts.map((receipt) => ({ date: receipt.date, type: 'RECEIPT', number: receipt.number, debit: receipt.total, credit: 0 })),
+      ...invoices.map((invoice) => ({ date: invoice.date, type: 'SUPPLIER_INVOICE', number: invoice.number, debit: invoice.total, credit: invoice.paidAmount })),
+    ].sort((a, b) => `${a.date}-${a.number}`.localeCompare(`${b.date}-${b.number}`));
+    const purchases = r2(invoices.reduce((sum, invoice) => sum + invoice.total, 0));
+    const paid = r2(invoices.reduce((sum, invoice) => sum + invoice.paidAmount, 0));
+    return {
+      supplier,
+      generatedAt: new Date().toISOString(),
+      entries,
+      totals: { purchases, paid, balance: r2(purchases - paid), receipts: r2(receipts.reduce((sum, receipt) => sum + receipt.total, 0)) },
+      legalIdentifiers: { ice: supplier.ice, ifNumber: supplier.ifNumber, rc: supplier.rc, tenantIce: workspace.tenant.legalEntity.ice },
+      status: 'PREPARED',
+    };
+  }
+
+  invoiceEmailPreview(invoiceId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const invoice = this.invoice(workspace, invoiceId);
+    const customer = this.customer(workspace, invoice.customerId);
+    return {
+      to: customer.email ?? 'email-client-a-completer@example.ma',
+      subject: `Facture ${invoice.number} - ${workspace.tenant.legalEntity.tradeName}`,
+      bodyPreview: `Bonjour, veuillez trouver ci-joint la facture ${invoice.number} d’un montant de ${invoice.totals.total.toFixed(2)} MAD TTC.`,
+      legalFooter: `ICE ${workspace.tenant.legalEntity.ice} · IF ${workspace.tenant.legalEntity.ifNumber} · RC ${workspace.tenant.legalEntity.rc} · Patente ${workspace.tenant.legalEntity.patente}`,
+      attachments: [{ fileName: `${invoice.number}.pdf`, type: 'INVOICE_PDF', total: invoice.totals.total }],
+      status: customer.email ? 'READY' : 'MISSING_EMAIL',
+    };
+  }
+
+  quoteApprovalEmailPreview(quoteId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const quote = this.quote(workspace, quoteId);
+    const customer = this.customer(workspace, quote.customerId);
+    return {
+      to: customer.email ?? 'email-client-a-completer@example.ma',
+      subject: `Validation devis ${quote.number} - ${workspace.tenant.legalEntity.tradeName}`,
+      bodyPreview: `Bonjour, merci de confirmer le devis ${quote.number} valable jusqu’au ${quote.validUntil}.`,
+      acceptanceUrl: `/portal/quotes/${quote.id}/accept`,
+      status: quote.status,
+      legalFooter: `ICE ${workspace.tenant.legalEntity.ice} · IF ${workspace.tenant.legalEntity.ifNumber}`,
+    };
+  }
+
+  acceptQuote(quoteId: string, input: { acceptedBy?: string; comment?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const quote = this.quote(workspace, quoteId);
+    quote.status = 'APPROVED';
+    quote.approvalStatus = 'APPROVED';
+    quote.approvedAt = new Date().toISOString();
+    const acceptance = {
+      quoteId: quote.id,
+      number: quote.number,
+      acceptedBy: this.clean(input.acceptedBy) ?? 'Client',
+      comment: this.clean(input.comment),
+      acceptedAt: quote.approvedAt,
+      status: 'ACCEPTED',
+    };
+    this.audit(workspace, 'quote.accepted', 'Quote', quote.id, acceptance);
+    return acceptance;
+  }
+
+  deliveryRoutePlanning(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const cityZones: Record<string, { region: string; zone: string; defaultLeadTimeDays: number }> = {
+      Casablanca: { region: 'Casablanca-Settat', zone: 'CASA-CENTRE', defaultLeadTimeDays: 1 },
+      Rabat: { region: 'Rabat-Salé-Kénitra', zone: 'RABAT-AXE', defaultLeadTimeDays: 2 },
+      Tanger: { region: 'Tanger-Tétouan-Al Hoceïma', zone: 'NORD', defaultLeadTimeDays: 3 },
+      Marrakech: { region: 'Marrakech-Safi', zone: 'SUD-CENTRE', defaultLeadTimeDays: 3 },
+      Fès: { region: 'Fès-Meknès', zone: 'CENTRE-NORD', defaultLeadTimeDays: 3 },
+    };
+    return {
+      generatedAt: new Date().toISOString(),
+      cities: Object.entries(cityZones).map(([city, data]) => ({ city, ...data })),
+      routes: workspace.deliveryNotes.map((note) => {
+        const customer = this.customer(workspace, note.customerId);
+        const data = cityZones[customer.city ?? 'Casablanca'] ?? cityZones.Casablanca;
+        return {
+          deliveryNoteId: note.id,
+          number: note.number,
+          customerName: customer.name,
+          city: customer.city ?? 'Casablanca',
+          ...data,
+          promisedDate: addDays(note.date, data.defaultLeadTimeDays),
+        };
+      }),
+    };
+  }
+
   recordPayment(input: { invoiceId: string; amount: number; method?: Payment['method'] }, tenantId?: string): Payment {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
@@ -3619,6 +3848,105 @@ export class ErpStoreService {
 
   listPayments(tenantId?: string): Payment[] {
     return this.workspace(tenantId).payments;
+  }
+
+  createCheque(input: { invoiceId?: string; number: string; bank: string; drawer: string; dueDate: string; amount: number }, tenantId?: string): ChequeTracking {
+    const workspace = this.workspace(tenantId);
+    const cheque: ChequeTracking = {
+      id: this.id('chq'),
+      tenantId: workspace.tenant.id,
+      invoiceId: this.clean(input.invoiceId),
+      number: this.nonEmpty(input.number, 'Le numéro de chèque est obligatoire'),
+      bank: this.nonEmpty(input.bank, 'La banque du chèque est obligatoire'),
+      drawer: this.nonEmpty(input.drawer, 'Le tireur du chèque est obligatoire'),
+      dueDate: this.isoDate(input.dueDate, 'Date échéance chèque invalide'),
+      amount: this.positive(input.amount, 'Le montant du chèque doit être positif'),
+      status: 'RECEIVED',
+      createdAt: today(),
+    };
+    workspace.cheques.push(cheque);
+    this.audit(workspace, 'cheque.received', 'ChequeTracking', cheque.id, cheque);
+    return cheque;
+  }
+
+  listCheques(tenantId?: string): ChequeTracking[] {
+    return this.workspace(tenantId).cheques;
+  }
+
+  createDepositBatch(input: { type?: DepositBatch['type']; bankAccount?: string; cashAmount?: number; chequeIds?: string[] }, tenantId?: string): DepositBatch {
+    const workspace = this.workspace(tenantId);
+    const chequeIds = input.chequeIds ?? [];
+    const cheques = chequeIds.map((id) => {
+      const cheque = workspace.cheques.find((candidate) => candidate.id === id || candidate.number === id);
+      if (!cheque) throw new NotFoundException('Chèque introuvable');
+      return cheque;
+    });
+    const cashAmount = this.nonNegative(input.cashAmount ?? 0, 'Le montant espèces doit être positif');
+    const total = r2(cashAmount + cheques.reduce((sum, cheque) => sum + cheque.amount, 0));
+    const batch: DepositBatch = {
+      id: this.id('dep'),
+      tenantId: workspace.tenant.id,
+      number: this.nextNumber(workspace, 'DEP'),
+      type: input.type ?? (cashAmount > 0 && cheques.length ? 'MIXED' : cashAmount > 0 ? 'CASH' : 'CHEQUE'),
+      bankAccount: this.clean(input.bankAccount) ?? '5141',
+      status: 'DEPOSITED',
+      cashAmount,
+      chequeIds: cheques.map((cheque) => cheque.id),
+      total,
+      createdAt: today(),
+      depositedAt: new Date().toISOString(),
+    };
+    workspace.depositBatches.push(batch);
+    cheques.forEach((cheque) => {
+      cheque.status = 'DEPOSITED';
+      cheque.depositBatchId = batch.id;
+    });
+    this.audit(workspace, 'deposit-batch.created', 'DepositBatch', batch.id, batch);
+    return batch;
+  }
+
+  listDepositBatches(tenantId?: string): DepositBatch[] {
+    return this.workspace(tenantId).depositBatches;
+  }
+
+  paymentMethodReconciliation(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const methods: Array<Payment['method']> = ['CASH', 'BANK', 'CHEQUE', 'CARD', 'MOBILE_MONEY'];
+    const rows = methods.map((method) => {
+      const invoicePayments = workspace.payments.filter((payment) => payment.method === method);
+      const posPayments = workspace.posTransactions.filter((ticket) => ticket.paymentMethod === (method === 'MOBILE_MONEY' ? 'CARD' : method as any));
+      return {
+        method,
+        invoicePayments: invoicePayments.length,
+        posTickets: posPayments.length,
+        amount: r2(invoicePayments.reduce((sum, payment) => sum + payment.amount, 0) + posPayments.reduce((sum, ticket) => sum + ticket.totals.total, 0)),
+        depositBatches: workspace.depositBatches.filter((batch) => method === 'CASH' ? batch.cashAmount > 0 : method === 'CHEQUE' ? batch.chequeIds.length > 0 : false).length,
+        status: 'RECONCILED',
+      };
+    });
+    return { generatedAt: new Date().toISOString(), rows, totals: { amount: r2(rows.reduce((sum, row) => sum + row.amount, 0)) } };
+  }
+
+  createCashboxTransfer(input: { fromSessionId: string; toTreasuryAccount?: string; amount: number }, tenantId?: string): CashboxTransfer {
+    const workspace = this.workspace(tenantId);
+    const session = workspace.posSessions.find((candidate) => candidate.id === input.fromSessionId || candidate.number === input.fromSessionId);
+    if (!session) throw new NotFoundException('Session POS introuvable');
+    const transfer: CashboxTransfer = {
+      id: this.id('cbt'),
+      tenantId: workspace.tenant.id,
+      fromSessionId: session.id,
+      toTreasuryAccount: this.clean(input.toTreasuryAccount) ?? '5161',
+      amount: this.positive(input.amount, 'Le montant de transfert caisse doit être positif'),
+      status: 'RECORDED',
+      createdAt: new Date().toISOString(),
+    };
+    workspace.cashboxTransfers.push(transfer);
+    this.audit(workspace, 'cashbox.transfer-recorded', 'CashboxTransfer', transfer.id, transfer);
+    return transfer;
+  }
+
+  listCashboxTransfers(tenantId?: string): CashboxTransfer[] {
+    return this.workspace(tenantId).cashboxTransfers;
   }
 
   listJournalEntries(tenantId?: string): JournalEntry[] {
@@ -5037,8 +5365,10 @@ export class ErpStoreService {
     return run;
   }
 
-  approvePayrollRun(runId: string, tenantId?: string): PayrollRun {
-    const workspace = this.workspace(tenantId);
+  approvePayrollRun(runId: string, inputOrTenantId?: { comment?: string; approvedBy?: string } | string, tenantId?: string): PayrollRun {
+    const approvalInput = typeof inputOrTenantId === 'string' ? {} : inputOrTenantId ?? {};
+    const resolvedTenantId = typeof inputOrTenantId === 'string' ? inputOrTenantId : tenantId;
+    const workspace = this.workspace(resolvedTenantId);
     this.assertCanWrite(workspace);
     const run = this.payrollRun(workspace, runId);
     if (run.status === 'DRAFT') this.calculatePayrollRun(run.id, workspace.tenant.id);
@@ -5046,7 +5376,21 @@ export class ErpStoreService {
     if (run.status !== 'CALCULATED') throw new BadRequestException('La paie doit être calculée avant approbation');
     run.status = 'APPROVED';
     run.approvedAt = new Date().toISOString();
-    this.audit(workspace, 'payroll-run.approved', 'PayrollRun', run.id, run);
+    run.approvalComment = this.clean(approvalInput.comment);
+    this.audit(workspace, 'payroll-run.approved', 'PayrollRun', run.id, { ...run, approvedBy: approvalInput.approvedBy ?? this.cls.get<string>('userEmail') });
+    return run;
+  }
+
+  rejectPayrollRun(runId: string, input: { reason?: string; rejectedBy?: string } = {}, tenantId?: string): PayrollRun {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const run = this.payrollRun(workspace, runId);
+    if (run.status === 'POSTED') throw new BadRequestException('Une paie comptabilisée ne peut pas être rejetée');
+    run.status = 'CANCELLED';
+    run.rejectedAt = new Date().toISOString();
+    run.cancelledAt = run.rejectedAt;
+    run.rejectionReason = this.clean(input.reason) ?? 'Rejet approbation paie';
+    this.audit(workspace, 'payroll-run.rejected', 'PayrollRun', run.id, { runId: run.id, reason: run.rejectionReason, rejectedBy: input.rejectedBy ?? this.cls.get<string>('userEmail') });
     return run;
   }
 
@@ -5099,16 +5443,94 @@ export class ErpStoreService {
     const rows = run.payslips.map((payslip) => this.damancomRow(workspace, run, payslip));
     const content = rows.join('\n') + '\n';
     const evidence = this.archiveEvidence(workspace, 'DAMANCOM_EXPORT', run.number, { runId: run.id, period: run.period, rowCount: rows.length, content });
+    const archive: PayrollExportArchive = {
+      id: this.id('payexp'),
+      tenantId: workspace.tenant.id,
+      runId: run.id,
+      period: run.period,
+      type: 'DAMANCOM',
+      generatedBy: this.cls.get<string>('userEmail') ?? 'system',
+      generatedAt: new Date().toISOString(),
+      checksum: evidence.checksum,
+      fileName: `${run.number}-damancom.txt`,
+    };
+    workspace.payrollExportArchives.push(archive);
     return {
       status: 'PREPARED',
       runId: run.id,
       period: run.period,
-      fileName: `${run.number}-damancom.txt`,
+      fileName: archive.fileName,
       rowCount: rows.length,
       rowLength: 260,
       checksum: evidence.checksum,
+      archive,
       content,
     };
+  }
+
+  listPayrollExportArchives(tenantId?: string): PayrollExportArchive[] {
+    return this.workspace(tenantId).payrollExportArchives;
+  }
+
+  payrollDamancomPreflight(runId?: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const run = runId ? this.payrollRun(workspace, runId) : undefined;
+    const employees = run
+      ? run.payslips.map((payslip) => this.employee(workspace, payslip.employeeId))
+      : workspace.employees.filter((employee) => employee.active);
+    const rows = employees.map((employee) => ({
+      employeeId: employee.id,
+      employeeName: employee.fullName,
+      missing: [
+        !employee.cin ? 'CIN' : undefined,
+        !employee.cnssNumber ? 'CNSS' : undefined,
+        !workspace.tenant.legalEntity.cnssNumber ? 'CNSS_EMPLOYEUR' : undefined,
+      ].filter(Boolean),
+    })).filter((row) => row.missing.length > 0);
+    return {
+      status: rows.length ? 'BLOCKING' : 'READY',
+      runId,
+      checkedEmployees: employees.length,
+      rows,
+      requiredIdentifiers: ['CIN', 'CNSS salarié', 'CNSS employeur'],
+    };
+  }
+
+  leaveCalendar(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      generatedAt: new Date().toISOString(),
+      rows: workspace.leaveRequests.map((request) => {
+        const employee = this.employee(workspace, request.employeeId);
+        return {
+          employeeId: employee.id,
+          employeeName: employee.fullName,
+          department: employee.contractType,
+          startDate: request.startDate,
+          endDate: request.endDate,
+          days: request.days,
+          approvalStatus: request.status,
+        };
+      }),
+      filters: ['department', 'employee', 'approvalStatus'],
+    };
+  }
+
+  contractLifecycleReminders(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.employees.filter((employee) => employee.active).map((employee) => {
+      const contract = workspace.employmentContracts.find((candidate) => candidate.employeeId === employee.id && candidate.active);
+      const probationEnd = addDays(employee.hireDate, 90);
+      return {
+        employeeId: employee.id,
+        employeeName: employee.fullName,
+        probationEnd,
+        probationDaysRemaining: this.daysUntil(probationEnd),
+        contractEnd: contract?.endDate,
+        contractRenewalDaysRemaining: contract?.endDate ? this.daysUntil(contract.endDate) : null,
+        status: (this.daysUntil(probationEnd) >= 0 && this.daysUntil(probationEnd) <= 30) || (contract?.endDate && this.daysUntil(contract.endDate) >= 0 && this.daysUntil(contract.endDate) <= 60) ? 'ACTION_REQUIRED' : 'OK',
+      };
+    }).filter((row) => row.status === 'ACTION_REQUIRED');
   }
 
   generatePayslipPdf(runId: string, payslipId: string, tenantId?: string) {
@@ -5264,15 +5686,24 @@ export class ErpStoreService {
       const expiringDocuments = documents.filter((document) => document.daysUntilExpiry >= 0 && document.daysUntilExpiry <= 60);
       const contract = contractsByEmployee.get(employee.id);
       const contractDays = contract?.endDate ? this.daysUntil(contract.endDate) : null;
+      const existingTypes = new Set(employee.documentExpiries.map((document) => document.type.toLowerCase()));
+      const missingDocuments = [
+        !employee.cin || !existingTypes.has('cin') ? 'CIN' : undefined,
+        !employee.cnssNumber ? 'Carte CNSS' : undefined,
+        !contract ? 'Contrat de travail' : undefined,
+        !existingTypes.has('diplôme') && !existingTypes.has('diplome') ? 'Diplôme' : undefined,
+        !existingTypes.has('visite médicale') && !existingTypes.has('visite medicale') ? 'Visite médicale' : undefined,
+      ].filter(Boolean);
       return {
         employeeId: employee.id,
         employeeName: employee.fullName,
         cin: employee.cin,
         cnssNumber: employee.cnssNumber,
+        missingDocuments,
         expiredDocuments,
         expiringDocuments,
         contractRenewal: contract?.endDate ? { endDate: contract.endDate, daysUntilExpiry: contractDays } : null,
-        status: expiredDocuments.length ? 'EXPIRED' : expiringDocuments.length || (contractDays !== null && contractDays <= 60) ? 'EXPIRING' : 'OK',
+        status: expiredDocuments.length ? 'EXPIRED' : expiringDocuments.length || (contractDays !== null && contractDays <= 60) ? 'EXPIRING' : missingDocuments.length ? 'MISSING' : 'OK',
       };
     }).filter((row) => row.status !== 'OK');
   }
@@ -5426,6 +5857,12 @@ export class ErpStoreService {
     const order = workspace.purchaseOrders.find((candidate) => candidate.id === orderId || candidate.number === orderId);
     if (!order) throw new NotFoundException('Commande achat introuvable');
     return order;
+  }
+
+  private purchaseRequest(workspace: TenantWorkspace, requestId: string): PurchaseRequest {
+    const request = workspace.purchaseRequests.find((candidate) => candidate.id === requestId);
+    if (!request) throw new NotFoundException('Demande achat introuvable');
+    return request;
   }
 
   private purchaseReceipt(workspace: TenantWorkspace, receiptId: string): PurchaseReceipt {
@@ -5892,6 +6329,15 @@ export class ErpStoreService {
       cnssEmployee,
       amoEmployee,
       ir,
+      irExplanation: [
+        { label: 'Salaire brut mensuel', amount: grossSalary },
+        { label: 'Base CNSS plafonnée', amount: cnssBase },
+        { label: 'Frais professionnels', amount: professionalExpense },
+        { label: 'Base imposable IR', amount: taxableBase },
+        { label: 'Taux IR', amount: `${r2(bracket.rate * 100)}%` },
+        { label: 'Déduction barème', amount: bracket.deduction },
+        { label: 'Déduction personnes à charge', amount: familyDeduction },
+      ],
       netSalary: r2(grossSalary - cnssEmployee - amoEmployee - ir),
       employerCharges,
     };
@@ -6403,6 +6849,14 @@ export class ErpStoreService {
       throw new BadRequestException(message);
     }
     return r2(numeric);
+  }
+
+  private positive(value: number | undefined, message: string): number {
+    const numeric = this.nonNegative(value, message);
+    if (numeric <= 0) {
+      throw new BadRequestException(message);
+    }
+    return numeric;
   }
 
   private month(value: number): number {
