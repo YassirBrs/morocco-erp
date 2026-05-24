@@ -9,59 +9,132 @@
   <body>
     <main class="shell">
       <aside class="sidebar">
-        <div class="brand"><span>ME</span><strong>Morocco ERP</strong></div>
-        <nav>
-          <a class="active">Tableau de bord</a>
-          <a>Ventes</a>
-          <a>Stock</a>
-          <a>Comptabilite</a>
-          <a>Paie</a>
-          <a>Conformite</a>
+        <div class="brand">
+          <span class="brandMark">ME</span>
+          <div>
+            <strong>Morocco ERP</strong>
+            <small>ERP SaaS Maroc</small>
+          </div>
+        </div>
+
+        <nav aria-label="Navigation principale">
+          <a class="active"><span>Tableau de bord</span><strong>Vue live</strong></a>
+          <a><span>Ventes</span><strong>Factures</strong></a>
+          <a><span>Stock</span><strong>CUMP</strong></a>
+          <a><span>Comptabilite</span><strong>PCGE</strong></a>
+          <a><span>Paie</span><strong>CNSS</strong></a>
+          <a><span>Conformite</span><strong>DGI</strong></a>
         </nav>
+
+        <div class="sidebarNote">
+          <span>Tenant demo</span>
+          <strong>tenant-demo</strong>
+        </div>
       </aside>
+
       <section class="workspace">
         <header class="topbar">
-          <div>
+          <div class="titleBlock">
             <p class="eyebrow">Workspace actif</p>
             <h1 id="tradeName">Chargement...</h1>
-            <p id="identity" class="identity"></p>
+            <div id="identity" class="identity"></div>
           </div>
-          <div class="status"><span id="plan"></span><strong id="status"></strong></div>
-        </header>
-        <section class="kpis">
-          <div><span>Chiffre facture</span><strong id="revenue">0 MAD</strong></div>
-          <div><span>A encaisser</span><strong id="receivables">0 MAD</strong></div>
-          <div><span>Valeur stock</span><strong id="stockValue">0 MAD</strong></div>
-          <div><span>Factures</span><strong id="invoices">0</strong></div>
-        </section>
-        <section class="grid">
-          <div class="panel">
-            <h2>Flux commercial</h2>
-            <div class="workflow">
-              <span>Lead</span><span>Devis</span><span>Commande</span><span>BL</span><span>Facture</span><span>Paiement</span><span>Journal</span>
+          <div class="topActions">
+            <div class="status">
+              <span id="plan"></span>
+              <strong id="status"></strong>
             </div>
             <button id="createInvoice">Creer une facture test</button>
-            <pre id="invoiceResult"></pre>
           </div>
-          <div class="panel">
-            <h2>Conformite Maroc</h2>
-            <p id="rules">Rule pack MA-2026</p>
-            <ul id="mentions"></ul>
+        </header>
+
+        <section class="kpis" aria-label="Indicateurs">
+          <div><span>Chiffre facture</span><strong id="revenue">0 MAD</strong><small>Factures postees</small></div>
+          <div><span>A encaisser</span><strong id="receivables">0 MAD</strong><small>Solde client ouvert</small></div>
+          <div><span>Valeur stock</span><strong id="stockValue">0 MAD</strong><small>CUMP multi-articles</small></div>
+          <div><span>Factures</span><strong id="invoices">0</strong><small>Numerotation continue</small></div>
+        </section>
+
+        <section class="operations">
+          <div class="panel commercialPanel">
+            <div class="panelHeader">
+              <div>
+                <p class="eyebrow">Cycle client</p>
+                <h2>Flux commercial</h2>
+              </div>
+              <span class="badge">Automatique</span>
+            </div>
+            <div class="workflow">
+              <span class="done">Lead</span>
+              <span class="done">Devis</span>
+              <span>Commande</span>
+              <span>BL</span>
+              <span>Facture</span>
+              <span>Paiement</span>
+              <span>Journal</span>
+            </div>
+            <div class="resultLine">
+              <span>Derniere operation</span>
+              <strong id="invoiceResult">Aucune facture creee dans cette session</strong>
+            </div>
+          </div>
+
+          <div class="panel compliancePanel">
+            <div class="panelHeader">
+              <div>
+                <p class="eyebrow">Regles versionnees</p>
+                <h2>Conformite Maroc</h2>
+              </div>
+              <span class="badge green">Pret export</span>
+            </div>
+            <dl class="complianceFacts">
+              <div><dt>Rule pack</dt><dd id="rules">MA-2026</dd></div>
+              <div><dt>Ville fiscale</dt><dd id="city">-</dd></div>
+            </dl>
+            <ul id="mentions" class="checks"></ul>
           </div>
         </section>
-        <section class="panel">
-          <h2>Stock et CUMP</h2>
-          <table>
-            <thead><tr><th>SKU</th><th>Article</th><th>Qte</th><th>CUMP</th><th>Valeur</th></tr></thead>
-            <tbody id="stockRows"></tbody>
-          </table>
+
+        <section class="lowerGrid">
+          <div class="panel stockPanel">
+            <div class="panelHeader">
+              <div>
+                <p class="eyebrow">Inventaire</p>
+                <h2>Stock et CUMP</h2>
+              </div>
+              <span class="badge">Temps reel</span>
+            </div>
+            <table>
+              <thead><tr><th>SKU</th><th>Article</th><th>Qte</th><th>CUMP</th><th>Valeur</th></tr></thead>
+              <tbody id="stockRows"></tbody>
+            </table>
+          </div>
+
+          <div class="panel modulesPanel">
+            <div class="panelHeader">
+              <div>
+                <p class="eyebrow">Modules actifs</p>
+                <h2>ERP entreprise</h2>
+              </div>
+            </div>
+            <div class="moduleList">
+              <div><strong>Ventes</strong><span>Devis, BL, factures, paiements</span></div>
+              <div><strong>Achats</strong><span>Receptions, fournisseurs, stock</span></div>
+              <div><strong>Comptabilite</strong><span>Journaux PCGE, periodes, audit</span></div>
+              <div><strong>Paie</strong><span>IR, CNSS, AMO, Damancom</span></div>
+              <div><strong>POS</strong><span>Caisse, tickets, mouvements stock</span></div>
+              <div><strong>Production</strong><span>OF, composants, valorisation</span></div>
+            </div>
+          </div>
         </section>
       </section>
     </main>
+
     <script>
       const API = 'http://localhost:3100';
       const headers = { 'content-type': 'application/json', 'x-tenant-id': 'tenant-demo' };
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
+      const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
 
       async function get(path) {
         const response = await fetch(API + path, { headers });
@@ -79,24 +152,44 @@
         const [summary, stock] = await Promise.all([get('/tenant/current'), get('/inventory')]);
         const entity = summary.tenant.legalEntity;
         document.querySelector('#tradeName').textContent = entity.tradeName;
-        document.querySelector('#identity').textContent = `ICE ${entity.ice} · IF ${entity.ifNumber} · RC ${entity.rc} · Patente ${entity.patente}`;
+        document.querySelector('#identity').innerHTML = [
+          ['ICE', entity.ice],
+          ['IF', entity.ifNumber],
+          ['RC', entity.rc],
+          ['Patente', entity.patente]
+        ].map(([label, value]) => `<span><b>${label}</b>${value}</span>`).join('');
+        document.querySelector('#city').textContent = entity.city;
         document.querySelector('#plan').textContent = summary.tenant.plan;
         document.querySelector('#status').textContent = summary.tenant.status;
         document.querySelector('#revenue').textContent = mad(summary.metrics.revenue);
         document.querySelector('#receivables').textContent = mad(summary.metrics.receivables);
         document.querySelector('#stockValue').textContent = mad(summary.metrics.stockValue);
         document.querySelector('#invoices').textContent = summary.metrics.invoices;
-        document.querySelector('#rules').textContent = `${summary.compliance.id} · TVA ${summary.compliance.vatRates.map((r) => `${r * 100}%`).join(' / ')}`;
+        document.querySelector('#rules').textContent = `${summary.compliance.id} · TVA ${summary.compliance.vatRates.map(pct).join(' / ')}`;
         document.querySelector('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
         document.querySelector('#stockRows').innerHTML = stock.map((line) => `
-          <tr><td>${line.sku}</td><td>${line.name}</td><td>${line.stockOnHand}</td><td>${mad(line.weightedAverageCost)}</td><td>${mad(line.stockValue)}</td></tr>
+          <tr>
+            <td><strong>${line.sku}</strong></td>
+            <td>${line.name}</td>
+            <td><span class="qty">${line.stockOnHand}</span></td>
+            <td>${mad(line.weightedAverageCost)}</td>
+            <td>${mad(line.stockValue)}</td>
+          </tr>
         `).join('');
       }
 
       document.querySelector('#createInvoice').addEventListener('click', async () => {
-        const invoice = await post('/sales/invoices', { customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
-        document.querySelector('#invoiceResult').textContent = `${invoice.number} · ${mad(invoice.totals.total)} · ${invoice.status}`;
-        await load();
+        const button = document.querySelector('#createInvoice');
+        button.disabled = true;
+        button.textContent = 'Creation...';
+        try {
+          const invoice = await post('/sales/invoices', { customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+          document.querySelector('#invoiceResult').textContent = `${invoice.number} · ${mad(invoice.totals.total)} · ${invoice.status}`;
+          await load();
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Creer une facture test';
+        }
       });
 
       load().catch((error) => {
