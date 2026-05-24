@@ -1,0 +1,262 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SubscriptionPlan {
+  INTILAQ
+  NUMOW
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  ACCOUNTANT
+  SALES
+  WAREHOUSE
+  PAYROLL
+  CASHIER
+}
+
+enum DocumentStatus {
+  DRAFT
+  POSTED
+  PAID
+  VOID
+}
+
+model Tenant {
+  id                 String             @id @default(uuid())
+  slug               String             @unique
+  tradeName          String
+  ice                String
+  ifNumber           String
+  rc                 String
+  patente            String
+  cnssNumber         String
+  address            String
+  city               String
+  country            String             @default("MA")
+  vatEnabled         Boolean            @default(true)
+  plan               SubscriptionPlan   @default(INTILAQ)
+  status             SubscriptionStatus @default(ACTIVE)
+  createdAt          DateTime           @default(now())
+  users              User[]
+  customers          Customer[]
+  suppliers          Supplier[]
+  products           Product[]
+  invoices           Invoice[]
+  journalEntries     JournalEntry[]
+  stockMoves         StockMove[]
+  auditLogs          AuditLog[]
+  fiscalPeriods      FiscalPeriod[]
+  complianceRuleSets ComplianceRuleSet[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  email        String
+  passwordHash String
+  name         String
+  role         UserRole
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+}
+
+model Customer {
+  id        String    @id @default(uuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  name      String
+  ice       String?
+  ifNumber  String?
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime  @default(now())
+  invoices  Invoice[]
+
+  @@index([tenantId])
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  ice       String?
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model Product {
+  id                  String      @id @default(uuid())
+  tenantId            String
+  tenant              Tenant      @relation(fields: [tenantId], references: [id])
+  sku                 String
+  name                String
+  type                String
+  salePrice           Decimal     @db.Decimal(14, 2)
+  purchaseCost        Decimal     @db.Decimal(14, 2)
+  vatRate             Decimal     @db.Decimal(5, 4)
+  stockOnHand         Decimal     @db.Decimal(14, 3)
+  weightedAverageCost Decimal     @db.Decimal(14, 2)
+  active              Boolean     @default(true)
+  invoiceLines        InvoiceLine[]
+  stockMoves          StockMove[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId])
+}
+
+model Invoice {
+  id             String         @id @default(uuid())
+  tenantId       String
+  tenant         Tenant         @relation(fields: [tenantId], references: [id])
+  customerId     String
+  customer       Customer       @relation(fields: [customerId], references: [id])
+  number         String
+  status         DocumentStatus @default(POSTED)
+  date           DateTime
+  dueDate        DateTime
+  subtotal       Decimal        @db.Decimal(14, 2)
+  vatTotal       Decimal        @db.Decimal(14, 2)
+  total          Decimal        @db.Decimal(14, 2)
+  paidAmount     Decimal        @db.Decimal(14, 2)
+  adapterStatus  String         @default("READY_FOR_EXPORT")
+  lines          InvoiceLine[]
+  payments       Payment[]
+  createdAt      DateTime       @default(now())
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+}
+
+model InvoiceLine {
+  id          String  @id @default(uuid())
+  tenantId    String
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id])
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  description String
+  quantity    Decimal @db.Decimal(14, 3)
+  unitPrice   Decimal @db.Decimal(14, 2)
+  vatRate     Decimal @db.Decimal(5, 4)
+  subtotal    Decimal @db.Decimal(14, 2)
+  vatAmount   Decimal @db.Decimal(14, 2)
+  total       Decimal @db.Decimal(14, 2)
+
+  @@index([tenantId])
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  tenantId  String
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+  amount    Decimal  @db.Decimal(14, 2)
+  method    String
+  date      DateTime
+
+  @@index([tenantId])
+}
+
+model StockMove {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  warehouseId String
+  type        String
+  quantity    Decimal  @db.Decimal(14, 3)
+  unitCost    Decimal  @db.Decimal(14, 2)
+  value       Decimal  @db.Decimal(14, 2)
+  reference   String
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model JournalEntry {
+  id          String             @id @default(uuid())
+  tenantId    String
+  tenant      Tenant             @relation(fields: [tenantId], references: [id])
+  date        DateTime
+  source      String
+  description String
+  posted      Boolean            @default(true)
+  lines       JournalEntryLine[]
+
+  @@index([tenantId])
+}
+
+model JournalEntryLine {
+  id             String       @id @default(uuid())
+  tenantId       String
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
+  account        String
+  label          String
+  debit          Decimal      @db.Decimal(14, 2)
+  credit         Decimal      @db.Decimal(14, 2)
+
+  @@index([tenantId])
+}
+
+model FiscalPeriod {
+  id       String  @id @default(uuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  year     Int
+  month    Int
+  locked   Boolean @default(false)
+
+  @@unique([tenantId, year, month])
+}
+
+model ComplianceRuleSet {
+  id            String   @id @default(uuid())
+  tenantId      String?
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id])
+  jurisdiction  String   @default("MA")
+  effectiveFrom DateTime
+  payload       Json
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  action    String
+  entity    String
+  entityId  String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}

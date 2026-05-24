@@ -1,0 +1,11 @@
+{
+  "name": "morocco-erp",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "backend:build": "npm --prefix backend run build",
+    "backend:test": "npm --prefix backend test -- --runInBand",
+    "frontend:test": "npm --prefix frontend test",
+    "test": "npm run backend:test && npm run frontend:test"
+  }
+}
