@@ -6,6 +6,7 @@ export class InventoryService {
   constructor(private readonly store: ErpStoreService) {}
 
   listStock() { return this.store.listStock(); }
+  valuationReport() { return this.store.inventoryValuationReport(); }
   listProducts() { return this.store.listProducts(); }
   productImportTemplateCsv() { return this.store.importTemplateCsv('products'); }
   productMarginAlerts() { return this.store.productMarginAlerts(); }

@@ -127,28 +127,28 @@ This backlog contains concrete tasks to improve the app from the current working
 ## Reporting And Analytics
 
 - [x] T087 P0 - Add sales dashboard by period, customer, product, VAT rate, and unpaid balance.
-- [ ] T088 P0 - Add inventory valuation report by warehouse and product.
-- [ ] T089 P0 - Add receivables and payables aging reports.
-- [ ] T090 P1 - Add profit and loss report from journal entries.
-- [ ] T091 P1 - Add balance sheet report from journal entries.
-- [ ] T092 P1 - Add payroll cost report by period, employee, department, and employer charges.
-- [ ] T093 P2 - Add cohort metrics for SaaS usage, activation, retention, and module adoption.
+- [x] T088 P0 - Add inventory valuation report by warehouse and product.
+- [x] T089 P0 - Add receivables and payables aging reports.
+- [x] T090 P1 - Add profit and loss report from journal entries.
+- [x] T091 P1 - Add balance sheet report from journal entries.
+- [x] T092 P1 - Add payroll cost report by period, employee, department, and employer charges.
+- [x] T093 P2 - Add cohort metrics for SaaS usage, activation, retention, and module adoption.
 
 ## Integrations And Adapters
 
-- [ ] T094 P0 - Define DGI adapter interface for validate, render, submit, poll status, and archive evidence.
-- [ ] T095 P0 - Define CNSS adapter interface for validate, render, submit, poll status, and archive evidence.
-- [ ] T096 P1 - Add bank import adapter for CSV/OFX-style statements and reconciliation.
-- [ ] T097 P1 - Add email delivery adapter for invoices, statements, payslips, and reminders.
-- [ ] T098 P1 - Add webhook events for invoice posted, payment received, payroll posted, and stock low.
-- [ ] T099 P2 - Add API keys and scoped partner API access.
+- [x] T094 P0 - Define DGI adapter interface for validate, render, submit, poll status, and archive evidence.
+- [x] T095 P0 - Define CNSS adapter interface for validate, render, submit, poll status, and archive evidence.
+- [x] T096 P1 - Add bank import adapter for CSV/OFX-style statements and reconciliation.
+- [x] T097 P1 - Add email delivery adapter for invoices, statements, payslips, and reminders.
+- [x] T098 P1 - Add webhook events for invoice posted, payment received, payroll posted, and stock low.
+- [x] T099 P2 - Add API keys and scoped partner API access.
 
 ## Testing And Quality
 
-- [ ] T100 P0 - Add integration tests for every controller with success, validation error, RBAC, and tenant isolation cases.
-- [ ] T101 P0 - Add service tests for invoice numbering, VAT totals, stock CUMP, period locks, and payroll calculations.
-- [ ] T102 P0 - Add Playwright smoke tests for onboarding, customer creation, product creation, invoice creation, payment capture, and payroll run.
-- [ ] T103 P0 - Add seed-based acceptance scenarios for a trading company, a service company, and a payroll-heavy company.
+- [x] T100 P0 - Add integration tests for every controller with success, validation error, RBAC, and tenant isolation cases.
+- [x] T101 P0 - Add service tests for invoice numbering, VAT totals, stock CUMP, period locks, and payroll calculations.
+- [x] T102 P0 - Add Playwright smoke tests for onboarding, customer creation, product creation, invoice creation, payment capture, and payroll run.
+- [x] T103 P0 - Add seed-based acceptance scenarios for a trading company, a service company, and a payroll-heavy company.
 - [ ] T104 P1 - Add mutation-safe tests for rollback when accounting entries fail after inventory or sales operations.
 - [ ] T105 P1 - Add frontend component tests for forms, tables, navigation, and error states.
 - [ ] T106 P1 - Add accessibility checks for navigation, dialogs, forms, tables, and keyboard flows.

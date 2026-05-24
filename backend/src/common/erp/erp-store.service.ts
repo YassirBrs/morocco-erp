@@ -3,6 +3,8 @@ import { ClsService } from 'nestjs-cls';
 import { createHash, randomBytes } from 'crypto';
 import {
   AuditLog,
+  AdapterKind,
+  AdapterSubmission,
   AuthSession,
   BillOfMaterial,
   BusinessSearchInput,
@@ -22,6 +24,7 @@ import {
   DocumentTemplateSetting,
   DocumentTotals,
   Employee,
+  EmailDelivery,
   EmployeePortalAccess,
   EmploymentContract,
   ErpUser,
@@ -44,6 +47,7 @@ import {
   MaintenanceAsset,
   MaintenanceWorkOrder,
   Payment,
+  PartnerApiKey,
   PayrollRun,
   Payslip,
   PosOfflineQueueItem,
@@ -69,6 +73,7 @@ import {
   VatRate,
   Warehouse,
   WarehouseStock,
+  WebhookEvent,
 } from './erp.types';
 
 const r2 = (value: number): number => Math.round(value * 100) / 100;
@@ -416,6 +421,10 @@ export class ErpStoreService {
       legalEvidences: [],
       storedFiles: [],
       documentTemplates: this.defaultDocumentTemplates(tenant.id),
+      partnerApiKeys: [],
+      webhookEvents: [],
+      emailDeliveries: [],
+      adapterSubmissions: [],
       posSessions: [],
       cashDrawerMovements: [],
       posOfflineQueue: [],
@@ -510,6 +519,10 @@ export class ErpStoreService {
       legalEvidences: [],
       storedFiles: [],
       documentTemplates: this.defaultDocumentTemplates(tenantId),
+      partnerApiKeys: [],
+      webhookEvents: [],
+      emailDeliveries: [],
+      adapterSubmissions: [],
       posSessions: [],
       cashDrawerMovements: [],
       posOfflineQueue: [],
@@ -2620,6 +2633,50 @@ export class ErpStoreService {
     });
   }
 
+  inventoryValuationReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = this.listWarehouseStock(workspace.tenant.id).map((line) => {
+      const product = this.product(workspace, line.productId);
+      return {
+        warehouseId: line.warehouseId,
+        warehouseName: line.warehouseName,
+        productId: line.productId,
+        sku: line.sku,
+        name: line.name,
+        quantity: line.quantity,
+        reserved: line.reserved,
+        available: line.available,
+        weightedAverageCost: product.weightedAverageCost,
+        value: r2(line.quantity * product.weightedAverageCost),
+      };
+    });
+    const byWarehouse = workspace.warehouses.map((warehouse) => ({
+      warehouseId: warehouse.id,
+      warehouseName: warehouse.name,
+      value: r2(rows.filter((row) => row.warehouseId === warehouse.id).reduce((sum, row) => sum + row.value, 0)),
+      products: rows.filter((row) => row.warehouseId === warehouse.id).length,
+    }));
+    const byProduct = workspace.products.filter((product) => product.trackStock).map((product) => ({
+      productId: product.id,
+      sku: product.sku,
+      name: product.name,
+      quantity: r2(rows.filter((row) => row.productId === product.id).reduce((sum, row) => sum + row.quantity, 0)),
+      value: r2(rows.filter((row) => row.productId === product.id).reduce((sum, row) => sum + row.value, 0)),
+    }));
+    return {
+      generatedAt: new Date().toISOString(),
+      method: 'CUMP',
+      rows,
+      byWarehouse,
+      byProduct,
+      totals: {
+        quantity: r2(rows.reduce((sum, row) => sum + row.quantity, 0)),
+        reserved: r2(rows.reduce((sum, row) => sum + row.reserved, 0)),
+        value: r2(rows.reduce((sum, row) => sum + row.value, 0)),
+      },
+    };
+  }
+
   barcodeLookup(barcodeOrSku: string, tenantId?: string) {
     const workspace = this.workspace(tenantId);
     const key = this.nonEmpty(barcodeOrSku, 'Le code-barres ou SKU est obligatoire');
@@ -4251,6 +4308,150 @@ export class ErpStoreService {
     };
   }
 
+  agingReports(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const emptyBuckets = () => ({ current: 0, days1To30: 0, days31To60: 0, days61To90: 0, over90: 0 });
+    const receivables = workspace.customers.map((customer) => {
+      const aging = this.receivablesAging(workspace, customer.id);
+      return { type: 'CUSTOMER', id: customer.id, name: customer.name, aging, balance: r2(Object.values(aging).reduce((sum, value) => sum + value, 0)) };
+    }).filter((row) => row.balance > 0);
+    const now = new Date(today()).getTime();
+    const payables = workspace.suppliers.map((supplier) => {
+      const aging = emptyBuckets();
+      for (const invoice of workspace.supplierInvoices.filter((candidate) => candidate.supplierId === supplier.id)) {
+        const open = r2(invoice.total - invoice.paidAmount);
+        if (open <= 0) continue;
+        const days = Math.max(0, Math.floor((now - new Date(invoice.dueDate).getTime()) / 86400000));
+        if (days === 0) aging.current = r2(aging.current + open);
+        else if (days <= 30) aging.days1To30 = r2(aging.days1To30 + open);
+        else if (days <= 60) aging.days31To60 = r2(aging.days31To60 + open);
+        else if (days <= 90) aging.days61To90 = r2(aging.days61To90 + open);
+        else aging.over90 = r2(aging.over90 + open);
+      }
+      return { type: 'SUPPLIER', id: supplier.id, name: supplier.name, aging, balance: r2(Object.values(aging).reduce((sum, value) => sum + value, 0)) };
+    }).filter((row) => row.balance > 0);
+    return {
+      generatedAt: new Date().toISOString(),
+      receivables,
+      payables,
+      totals: {
+        receivables: r2(receivables.reduce((sum, row) => sum + row.balance, 0)),
+        payables: r2(payables.reduce((sum, row) => sum + row.balance, 0)),
+      },
+    };
+  }
+
+  profitAndLossReport(input: { year?: number; month?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.year && input.month ? `${input.year}-${String(this.month(input.month)).padStart(2, '0')}` : input.year ? `${input.year}` : today().slice(0, 7);
+    const entries = workspace.journalEntries.filter((entry) => entry.status === 'POSTED' && entry.date.startsWith(period));
+    const revenueLines = entries.flatMap((entry) => entry.lines.filter((line) => line.account.startsWith('7')));
+    const expenseLines = entries.flatMap((entry) => entry.lines.filter((line) => line.account.startsWith('6')));
+    const revenue = r2(revenueLines.reduce((sum, line) => sum + line.credit - line.debit, 0));
+    const expenses = r2(expenseLines.reduce((sum, line) => sum + line.debit - line.credit, 0));
+    return {
+      period,
+      revenue,
+      expenses,
+      netIncome: r2(revenue - expenses),
+      rows: [
+        { section: 'PRODUITS', amount: revenue, lineCount: revenueLines.length },
+        { section: 'CHARGES', amount: expenses, lineCount: expenseLines.length },
+        { section: 'RÉSULTAT', amount: r2(revenue - expenses), lineCount: revenueLines.length + expenseLines.length },
+      ],
+    };
+  }
+
+  balanceSheetReport(input: { year?: number; month?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.year && input.month ? `${input.year}-${String(this.month(input.month)).padStart(2, '0')}` : input.year ? `${input.year}` : today().slice(0, 7);
+    const lines = workspace.journalEntries
+      .filter((entry) => entry.status === 'POSTED' && entry.date.startsWith(period))
+      .flatMap((entry) => entry.lines);
+    const balanceFor = (starts: string[], normal: 'DEBIT' | 'CREDIT') => {
+      const selected = lines.filter((line) => starts.some((start) => line.account.startsWith(start)));
+      const debit = r2(selected.reduce((sum, line) => sum + line.debit, 0));
+      const credit = r2(selected.reduce((sum, line) => sum + line.credit, 0));
+      return { debit, credit, balance: normal === 'DEBIT' ? r2(debit - credit) : r2(credit - debit), lineCount: selected.length };
+    };
+    const assets = balanceFor(['2', '3', '5'], 'DEBIT');
+    const receivables = balanceFor(['342'], 'DEBIT');
+    const liabilities = balanceFor(['1', '4'], 'CREDIT');
+    const equityResult = this.profitAndLossReport(input, workspace.tenant.id).netIncome;
+    return {
+      period,
+      assets,
+      receivables,
+      liabilities,
+      equityResult,
+      totals: {
+        assets: r2(assets.balance + receivables.balance),
+        liabilitiesAndEquity: r2(liabilities.balance + equityResult),
+        variance: r2((assets.balance + receivables.balance) - (liabilities.balance + equityResult)),
+      },
+    };
+  }
+
+  payrollCostReport(input: { year?: number; month?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.year && input.month ? `${input.year}-${String(this.month(input.month)).padStart(2, '0')}` : undefined;
+    const runs = workspace.payrollRuns.filter((run) => !period || run.period === period);
+    const rows = runs.flatMap((run) => run.payslips.map((payslip) => {
+      const employee = this.employee(workspace, payslip.employeeId);
+      return {
+        period: run.period,
+        employeeId: employee.id,
+        employeeName: employee.fullName,
+        department: employee.contractType,
+        grossSalary: payslip.grossSalary,
+        netSalary: payslip.netSalary,
+        employerCharges: payslip.employerCharges,
+        employerCost: r2(payslip.grossSalary + payslip.employerCharges),
+      };
+    }));
+    return {
+      period: period ?? 'ALL',
+      rows,
+      byDepartment: [...new Set(rows.map((row) => row.department))].map((department) => ({
+        department,
+        employeeCount: rows.filter((row) => row.department === department).length,
+        employerCost: r2(rows.filter((row) => row.department === department).reduce((sum, row) => sum + row.employerCost, 0)),
+      })),
+      totals: {
+        grossSalary: r2(rows.reduce((sum, row) => sum + row.grossSalary, 0)),
+        netSalary: r2(rows.reduce((sum, row) => sum + row.netSalary, 0)),
+        employerCharges: r2(rows.reduce((sum, row) => sum + row.employerCharges, 0)),
+        employerCost: r2(rows.reduce((sum, row) => sum + row.employerCost, 0)),
+      },
+    };
+  }
+
+  cohortMetrics(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const moduleSignals = [
+      { module: 'crm', records: workspace.customers.length + workspace.leads.length },
+      { module: 'sales', records: workspace.quotes.length + workspace.invoices.length + workspace.payments.length },
+      { module: 'inventory', records: workspace.products.length + workspace.purchaseReceipts.length + workspace.stockMoves.length },
+      { module: 'accounting', records: workspace.journalEntries.length + workspace.legalEvidences.length },
+      { module: 'payroll', records: workspace.employees.length + workspace.payrollRuns.length },
+      { module: 'pos', records: workspace.posTransactions.length + workspace.posSessions.length },
+      { module: 'production', records: workspace.productionOrders.length + workspace.projects.length },
+    ];
+    const adopted = moduleSignals.filter((signal) => signal.records > 0);
+    return {
+      cohort: workspace.tenant.createdAt.slice(0, 7),
+      activationScore: Math.round((adopted.length / moduleSignals.length) * 100),
+      retentionRisk: workspace.auditLogs.length > 10 ? 'LOW' : 'MEDIUM',
+      activeUsers: workspace.users.filter((user) => user.active).length,
+      moduleAdoption: moduleSignals,
+      usage: {
+        auditEvents: workspace.auditLogs.length,
+        documents: workspace.storedFiles.length,
+        exports: workspace.legalEvidences.length,
+      },
+    };
+  }
+
   listLegalEvidences(tenantId?: string): LegalEvidence[] {
     return this.workspace(tenantId).legalEvidences;
   }
@@ -4280,6 +4481,159 @@ export class ErpStoreService {
     };
     this.archiveEvidence(workspace, 'DGI_ENVELOPE', invoice.number, envelope);
     return envelope;
+  }
+
+  adapterInterface(kind: AdapterKind, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      kind,
+      mode: 'SANDBOX_ADAPTER',
+      credentialsConfigured: false,
+      operations: ['validate', 'render', 'submit', 'poll', 'archive'],
+      evidenceArchive: workspace.adapterSubmissions.filter((submission) => submission.kind === kind),
+      legalWarning: 'Soumission live désactivée jusqu’aux identifiants officiels et validation légale.',
+    };
+  }
+
+  runAdapterOperation(kind: AdapterKind, input: { operation: AdapterSubmission['operation']; reference: string; payload?: Record<string, unknown> }, tenantId?: string): AdapterSubmission {
+    const workspace = this.workspace(tenantId);
+    const operation = input.operation;
+    const reference = this.nonEmpty(input.reference, 'La référence adaptateur est obligatoire');
+    const payload = input.payload ?? {};
+    const status: AdapterSubmission['status'] =
+      operation === 'validate' ? 'VALID'
+        : operation === 'render' ? 'RENDERED'
+          : operation === 'archive' ? 'ARCHIVED'
+            : operation === 'submit' ? 'PENDING_CREDENTIALS'
+              : 'QUEUED';
+    const evidence = operation === 'archive'
+      ? this.archiveEvidence(workspace, kind === 'DGI' ? 'DGI_ENVELOPE' : 'DAMANCOM_EXPORT', reference, { kind, operation, payload })
+      : undefined;
+    const submission: AdapterSubmission = {
+      id: this.id('adapter'),
+      tenantId: workspace.tenant.id,
+      kind,
+      operation,
+      reference,
+      status,
+      payload,
+      evidenceId: evidence?.id,
+      createdAt: new Date().toISOString(),
+    };
+    workspace.adapterSubmissions.push(submission);
+    this.audit(workspace, `${kind.toLowerCase()}.adapter.${operation}`, 'AdapterSubmission', submission.id, submission);
+    return submission;
+  }
+
+  importBankStatement(input: { csv: string }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = this.parseCsv(input.csv).map((row, index) => {
+      const amount = Number(row.amount ?? row.montant ?? 0);
+      const reference = String(row.reference ?? row.ref ?? `BANK-${index + 1}`);
+      const duplicate = workspace.auditLogs.some((entry) => entry.action === 'bank-import.previewed' && JSON.stringify(entry.payload).includes(reference));
+      const suggestedMatch = amount > 0
+        ? workspace.invoices.find((invoice) => r2(invoice.totals.total - invoice.paidAmount) === amount)?.number
+        : workspace.supplierInvoices.find((invoice) => r2(invoice.total - invoice.paidAmount) === Math.abs(amount))?.number;
+      return {
+        date: row.date ?? today(),
+        label: row.label ?? row.libelle ?? 'Mouvement bancaire',
+        amount,
+        reference,
+        duplicate,
+        suggestedMatch,
+        status: duplicate ? 'DUPLICATE' : suggestedMatch ? 'SUGGESTED_MATCH' : 'UNMATCHED',
+      };
+    });
+    const preview = {
+      status: 'PREVIEW',
+      rowCount: rows.length,
+      duplicates: rows.filter((row) => row.duplicate).length,
+      suggestedMatches: rows.filter((row) => row.suggestedMatch).length,
+      rows,
+    };
+    this.audit(workspace, 'bank-import.previewed', 'BankImport', this.id('bank'), preview);
+    return preview;
+  }
+
+  queueEmailDelivery(input: { type: EmailDelivery['type']; to: string; subject: string; attachmentName?: string }, tenantId?: string): EmailDelivery {
+    const workspace = this.workspace(tenantId);
+    const delivery: EmailDelivery = {
+      id: this.id('email'),
+      tenantId: workspace.tenant.id,
+      type: input.type,
+      to: this.nonEmpty(input.to, 'Le destinataire email est obligatoire'),
+      subject: this.nonEmpty(input.subject, 'Le sujet email est obligatoire'),
+      attachmentName: this.clean(input.attachmentName),
+      status: 'QUEUED',
+      createdAt: new Date().toISOString(),
+    };
+    workspace.emailDeliveries.push(delivery);
+    this.audit(workspace, 'email.queued', 'EmailDelivery', delivery.id, delivery);
+    return delivery;
+  }
+
+  listEmailDeliveries(tenantId?: string): EmailDelivery[] {
+    return this.workspace(tenantId).emailDeliveries;
+  }
+
+  emitWebhookEvent(input: { event: WebhookEvent['event']; payload: Record<string, unknown> }, tenantId?: string): WebhookEvent {
+    const workspace = this.workspace(tenantId);
+    const signature = createHash('sha256').update(JSON.stringify(input.payload)).digest('hex');
+    const event: WebhookEvent = {
+      id: this.id('wh'),
+      tenantId: workspace.tenant.id,
+      event: input.event,
+      payload: input.payload,
+      status: 'PENDING',
+      attempts: 0,
+      signaturePreview: signature.slice(0, 12),
+      createdAt: new Date().toISOString(),
+    };
+    workspace.webhookEvents.push(event);
+    this.audit(workspace, 'webhook.event-created', 'WebhookEvent', event.id, event);
+    return event;
+  }
+
+  listWebhookEvents(tenantId?: string): WebhookEvent[] {
+    return this.workspace(tenantId).webhookEvents;
+  }
+
+  createPartnerApiKey(input: { name: string; scopes: string[]; expiresAt?: string }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const rawToken = `mep_${randomBytes(18).toString('hex')}`;
+    const key: PartnerApiKey = {
+      id: this.id('apikey'),
+      tenantId: workspace.tenant.id,
+      name: this.nonEmpty(input.name, 'Le nom de clé API est obligatoire'),
+      tokenHash: createHash('sha256').update(rawToken).digest('hex'),
+      tokenPreview: `${rawToken.slice(0, 8)}...${rawToken.slice(-4)}`,
+      scopes: [...new Set(input.scopes ?? [])],
+      active: true,
+      expiresAt: input.expiresAt ? this.isoDate(input.expiresAt, 'Expiration clé API invalide') : undefined,
+      createdAt: new Date().toISOString(),
+    };
+    workspace.partnerApiKeys.push(key);
+    this.audit(workspace, 'api-key.created', 'PartnerApiKey', key.id, { ...key, rawToken: undefined });
+    return { ...key, token: rawToken };
+  }
+
+  listPartnerApiKeys(tenantId?: string): Array<Omit<PartnerApiKey, 'tokenHash'>> {
+    return this.workspace(tenantId).partnerApiKeys.map(({ tokenHash: _tokenHash, ...key }) => key);
+  }
+
+  acceptanceScenarios(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      generatedAt: new Date().toISOString(),
+      scenarios: [
+        { id: 'trading-company', label: 'Société de négoce', requiredModules: ['crm', 'sales', 'inventory', 'accounting'], ready: workspace.products.length > 0 && workspace.customers.length > 0 },
+        { id: 'service-company', label: 'Société de services', requiredModules: ['crm', 'sales', 'payroll', 'accounting'], ready: workspace.products.some((product) => product.type === 'SERVICE') },
+        { id: 'payroll-heavy-company', label: 'Entreprise paie intensive', requiredModules: ['payroll', 'compliance', 'accounting'], ready: workspace.employees.length > 0 },
+      ],
+      smokeFlows: ['onboard tenant', 'create customer', 'create product', 'issue invoice', 'record payment', 'run payroll'],
+      status: 'READY',
+    };
   }
 
   listEmploymentContracts(tenantId?: string): EmploymentContract[] {
@@ -4378,7 +4732,7 @@ export class ErpStoreService {
       { account: '4441', label: 'Personnel rémunérations dues', debit: 0, credit: run.totals.netSalary },
       { account: '4443', label: 'CNSS et AMO à payer', debit: 0, credit: r2(run.totals.cnssEmployee + run.totals.amoEmployee + run.totals.employerCharges) },
       { account: '4456', label: 'IR salaires à payer', debit: 0, credit: run.totals.ir },
-    ]);
+    ].filter((line) => line.debit > 0 || line.credit > 0));
     run.status = 'POSTED';
     run.postedAt = new Date().toISOString();
     this.audit(workspace, 'payroll-run.posted', 'PayrollRun', run.id, run);

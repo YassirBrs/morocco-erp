@@ -18,6 +18,7 @@ export class PayrollController {
 
   @Get('contracts') contracts() { return this.payrollService.listContracts(); }
   @Post('contracts') addContract(@Body() body: any) { return this.payrollService.addContract(body); }
+  @Get('cost-report') costReport() { return this.payrollService.costReport(); }
 
   @Get('leave-balances') leaveBalances() { return this.payrollService.leaveBalances(); }
   @Get('leave-requests') leaveRequests() { return this.payrollService.leaveRequests(); }

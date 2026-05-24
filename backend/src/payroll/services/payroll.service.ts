@@ -126,6 +126,7 @@ export class PayrollService {
   archiveEmployee(id: string) { return this.store.archiveEmployee(id); }
   listContracts() { return this.store.listEmploymentContracts(); }
   addContract(data: any) { return this.store.addEmploymentContract(data); }
+  costReport() { return this.store.payrollCostReport(); }
   listRuns() { return this.store.listPayrollRuns(); }
   createRun(data: any) { return this.store.createPayrollRun(data); }
   calculateRun(id: string) { return this.store.calculatePayrollRun(id); }

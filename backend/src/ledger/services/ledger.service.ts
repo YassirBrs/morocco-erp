@@ -21,6 +21,10 @@ export class LedgerService {
   vatReport(data: { year?: number; month?: number }) { return this.store.exportVatReport(data); }
   accountingExport(data: { format?: 'CSV' | 'JSON'; year?: number; month?: number }) { return this.store.exportAccounting(data.format, data); }
   reconciliation() { return this.store.accountReconciliation(); }
+  aging() { return this.store.agingReports(); }
+  profitAndLoss(data: { year?: number; month?: number }) { return this.store.profitAndLossReport(data); }
+  balanceSheet(data: { year?: number; month?: number }) { return this.store.balanceSheetReport(data); }
+  bankImportPreview(data: { csv: string }) { return this.store.importBankStatement(data); }
   legalEvidence() { return this.store.listLegalEvidences(); }
   archiveEvidence(data: any) { return this.store.archiveLegalEvidence(data); }
   auditLogs() { return this.store.auditLogs(); }

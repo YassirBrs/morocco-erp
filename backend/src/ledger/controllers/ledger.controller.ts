@@ -29,6 +29,14 @@ export class LedgerController {
     return this.ledgerService.accountingExport({ format, year: year ? Number(year) : undefined, month: month ? Number(month) : undefined });
   }
   @Get('reconciliation') reconciliation() { return this.ledgerService.reconciliation(); }
+  @Get('aging') aging() { return this.ledgerService.aging(); }
+  @Get('profit-and-loss') profitAndLoss(@Query('year') year?: string, @Query('month') month?: string) {
+    return this.ledgerService.profitAndLoss({ year: year ? Number(year) : undefined, month: month ? Number(month) : undefined });
+  }
+  @Get('balance-sheet') balanceSheet(@Query('year') year?: string, @Query('month') month?: string) {
+    return this.ledgerService.balanceSheet({ year: year ? Number(year) : undefined, month: month ? Number(month) : undefined });
+  }
+  @Post('bank-import/preview') bankImportPreview(@Body() body: { csv: string }) { return this.ledgerService.bankImportPreview(body); }
   @Get('evidence') legalEvidence() { return this.ledgerService.legalEvidence(); }
   @Post('evidence') archiveEvidence(@Body() body: any) { return this.ledgerService.archiveEvidence(body); }
   @Get('audit') audit() { return this.ledgerService.auditLogs(); }

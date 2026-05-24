@@ -32,4 +32,16 @@ export class ComplianceController {
   dgiEnvelope(@Body() body: { invoiceId: string }) {
     return this.complianceService.prepareDgiInvoiceEnvelope(body.invoiceId);
   }
+
+  @Get('dgi/adapter')
+  dgiAdapter() { return this.complianceService.adapter('DGI'); }
+
+  @Post('dgi/adapter')
+  dgiAdapterOperation(@Body() body: any) { return this.complianceService.adapterOperation('DGI', body); }
+
+  @Get('cnss/adapter')
+  cnssAdapter() { return this.complianceService.adapter('CNSS'); }
+
+  @Post('cnss/adapter')
+  cnssAdapterOperation(@Body() body: any) { return this.complianceService.adapterOperation('CNSS', body); }
 }

@@ -3,7 +3,9 @@ import {
   getDashboardSummary,
   getDocumentOperations,
   getInvoices,
+  getIntegrationReadiness,
   getModuleData,
+  getOperationalReports,
   getPayrollSnapshot,
   getSalesDashboard,
   getStock,
@@ -37,7 +39,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -47,6 +49,8 @@ export default async function DashboardPage() {
     getDocumentOperations(),
     getModuleData(),
     searchBusiness('atlas'),
+    getOperationalReports(),
+    getIntegrationReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -235,6 +239,35 @@ export default async function DashboardPage() {
             <MiniList title="États standard" rows={states.map(([label, detail]) => `${label}: ${detail}`)} empty="-" />
             <MiniList title="Validation backend" rows={validationMessages.map(([field, message]) => `${field}: ${message}`)} empty="-" />
             <MiniList title="Filtres sauvegardés" rows={['Mes impayés', 'Stock sous seuil', 'Écritures brouillon', 'Paie à approuver', 'Colonnes: statut, total, TVA, propriétaire']} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel">
+          <PanelHeader title="Rapports et intégrations" action="Préparer exports" />
+          <div className="reportGrid">
+            <Metric label="Valorisation CUMP" value={formatMad(operationalReports.valuation.totals.value)} />
+            <Metric label="Balance âgée clients" value={formatMad(operationalReports.aging.totals.receivables)} />
+            <Metric label="Résultat net" value={formatMad(operationalReports.profitAndLoss.netIncome)} />
+            <Metric label="Coût paie" value={formatMad(operationalReports.payrollCost.totals.employerCost)} />
+          </div>
+          <div className="denseControls">
+            <MiniList title="Bilan et cohorte" rows={[
+              `Actifs ${formatMad(operationalReports.balanceSheet.totals.assets)}`,
+              `Passif + capitaux ${formatMad(operationalReports.balanceSheet.totals.liabilitiesAndEquity)}`,
+              `Activation SaaS ${operationalReports.cohort.activationScore}%`,
+            ]} empty="-" />
+            <MiniList title="Adaptateurs Maroc" rows={[
+              `DGI: ${integrationReadiness.dgi.operations.join(' / ')}`,
+              `CNSS: ${integrationReadiness.cnss.operations.join(' / ')}`,
+              'Banque CSV/OFX: prévisualisation et rapprochement',
+              'Email: factures, relevés, bulletins, relances',
+            ]} empty="-" />
+            <MiniList title="Tests batch" rows={[
+              `Scénarios seed: ${operationalReports.acceptance.scenarios.length}`,
+              `Smoke Playwright: ${operationalReports.acceptance.smokeFlows.join(' > ')}`,
+              `Webhooks/API keys: ${integrationReadiness.webhooks.length}/${integrationReadiness.apiKeys.length}`,
+              'Rollback: ventes, stock, paie, périodes verrouillées',
+            ]} empty="-" />
           </div>
         </section>
 

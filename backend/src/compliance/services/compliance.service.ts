@@ -24,4 +24,12 @@ export class ComplianceService {
   prepareDgiInvoiceEnvelope(invoiceId: string) {
     return this.store.prepareDgiInvoiceEnvelope(invoiceId);
   }
+
+  adapter(kind: 'DGI' | 'CNSS') {
+    return this.store.adapterInterface(kind);
+  }
+
+  adapterOperation(kind: 'DGI' | 'CNSS', data: any) {
+    return this.store.runAdapterOperation(kind, data);
+  }
 }

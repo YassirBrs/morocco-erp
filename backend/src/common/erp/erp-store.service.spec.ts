@@ -1600,4 +1600,50 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(report.byVatRate).toEqual([expect.objectContaining({ rate: '0.2', taxable: 2900, vat: 580, total: 3480 })]);
     expect(report.unpaidInvoices.map((row) => row.number)).toEqual(expect.arrayContaining([first.number, second.number]));
   });
+
+  it('prepares operational reports, adapters, bank import, email delivery, webhooks, API keys, and seed acceptance scenarios', () => {
+    const invoice = store.createInvoice({ customerId: 'cus-1', dueDate: '2026-04-01', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    store.recordPayment({ invoiceId: invoice.id, amount: 500, method: 'BANK' });
+    const receipt = store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 2, unitCost: 95 }] });
+    const supplierInvoice = store.createSupplierInvoice({ purchaseReceiptId: receipt.id, dueDate: '2026-04-01' });
+    const payrollRun = store.createPayrollRun({ year: 2026, month: 5 });
+    store.calculatePayrollRun(payrollRun.id);
+    store.approvePayrollRun(payrollRun.id);
+    store.postPayrollRun(payrollRun.id);
+
+    const valuation = store.inventoryValuationReport();
+    const aging = store.agingReports();
+    const pnl = store.profitAndLossReport({ year: 2026 });
+    const balance = store.balanceSheetReport({ year: 2026 });
+    const payrollCost = store.payrollCostReport({ year: 2026, month: 5 });
+    const cohort = store.cohortMetrics();
+    const dgi = store.adapterInterface('DGI');
+    const cnssSubmission = store.runAdapterOperation('CNSS', { operation: 'archive', reference: payrollRun.number, payload: { period: payrollRun.period } });
+    const bank = store.importBankStatement({ csv: `date,label,amount,reference\n2026-05-24,Client ${invoice.number},${invoice.totals.total - 500},${invoice.number}` });
+    const email = store.queueEmailDelivery({ type: 'INVOICE', to: 'client@example.ma', subject: `Facture ${invoice.number}`, attachmentName: `${invoice.number}.pdf` });
+    const webhook = store.emitWebhookEvent({ event: 'invoice.posted', payload: { invoiceId: invoice.id, total: invoice.totals.total } });
+    const apiKey = store.createPartnerApiKey({ name: 'Cabinet API', scopes: ['sales:read', 'accounting:read'], expiresAt: '2026-12-31' });
+    const scenarios = store.acceptanceScenarios();
+
+    expect(valuation.method).toBe('CUMP');
+    expect(valuation.totals.value).toBeGreaterThan(0);
+    expect(valuation.byWarehouse[0].warehouseName).toContain('Dépôt');
+    expect(aging.totals.receivables).toBeGreaterThan(0);
+    expect(aging.totals.payables).toBe(supplierInvoice.total);
+    expect(pnl.revenue).toBeGreaterThan(0);
+    expect(pnl.expenses).toBeGreaterThan(0);
+    expect(balance.totals).toHaveProperty('variance');
+    expect(payrollCost.totals.employerCost).toBeGreaterThan(0);
+    expect(payrollCost.byDepartment[0]).toHaveProperty('department');
+    expect(cohort.activationScore).toBeGreaterThan(50);
+    expect(dgi.operations).toEqual(['validate', 'render', 'submit', 'poll', 'archive']);
+    expect(cnssSubmission).toMatchObject({ kind: 'CNSS', status: 'ARCHIVED' });
+    expect(bank.rows[0]).toMatchObject({ status: 'SUGGESTED_MATCH', suggestedMatch: invoice.number });
+    expect(email).toMatchObject({ status: 'QUEUED', type: 'INVOICE' });
+    expect(webhook).toMatchObject({ status: 'PENDING', event: 'invoice.posted' });
+    expect(apiKey.token).toMatch(/^mep_/);
+    expect(store.listPartnerApiKeys()[0]).not.toHaveProperty('tokenHash');
+    expect(scenarios.status).toBe('READY');
+    expect(scenarios.smokeFlows).toEqual(expect.arrayContaining(['onboard tenant', 'create customer', 'create product', 'issue invoice', 'record payment', 'run payroll']));
+  });
 });

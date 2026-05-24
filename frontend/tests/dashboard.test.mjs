@@ -289,3 +289,15 @@ test('Next primary workspace exposes document PDFs, module screens, UX states, f
     assert.ok(staticPage.includes(staticEndpoint) || api.includes(staticEndpoint) || page.includes(staticEndpoint), `${staticEndpoint} export or report route is represented`);
   }
 });
+
+test('Next primary workspace exposes reporting, adapter, API key, webhook, bank import, and smoke acceptance batch', () => {
+  for (const text of ['Rapports et intégrations', 'Valorisation CUMP', 'Balance âgée clients', 'Résultat net', 'Coût paie', 'Bilan et cohorte', 'Adaptateurs Maroc', 'Banque CSV/OFX', 'Email: factures, relevés, bulletins, relances', 'Tests batch', 'Smoke Playwright', 'Webhooks/API keys', 'Rollback']) {
+    assert.ok(page.includes(text), `${text} reporting/integration label is present`);
+  }
+  for (const marker of ['getOperationalReports', 'getIntegrationReadiness']) {
+    assert.ok(page.includes(marker), `${marker} Next helper is present`);
+  }
+  for (const endpoint of ['/inventory/valuation-report', '/ledger/aging', '/ledger/profit-and-loss', '/ledger/balance-sheet', '/payroll/cost-report', '/tenant/cohort-metrics', '/tenant/acceptance-scenarios', '/compliance/dgi/adapter', '/compliance/cnss/adapter', '/tenant/emails', '/tenant/webhooks', '/tenant/api-keys']) {
+    assert.ok(api.includes(endpoint), `${endpoint} reporting/integration API route is wired`);
+  }
+});

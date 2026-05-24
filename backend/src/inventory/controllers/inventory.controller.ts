@@ -5,6 +5,7 @@ import { InventoryService } from '../services/inventory.service';
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
   @Get() list() { return this.inventoryService.listStock(); }
+  @Get('valuation-report') valuationReport() { return this.inventoryService.valuationReport(); }
   @Get('products') products() { return this.inventoryService.listProducts(); }
   @Get('products/import-template.csv') productImportTemplateCsv() { return this.inventoryService.productImportTemplateCsv(); }
   @Get('products/margin-alerts') productMarginAlerts() { return this.inventoryService.productMarginAlerts(); }

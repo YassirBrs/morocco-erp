@@ -69,6 +69,38 @@ export class TenantService {
     return this.store.fileStorageStatus();
   }
 
+  cohortMetrics() {
+    return this.store.cohortMetrics();
+  }
+
+  acceptanceScenarios() {
+    return this.store.acceptanceScenarios();
+  }
+
+  emails() {
+    return this.store.listEmailDeliveries();
+  }
+
+  queueEmail(data: any) {
+    return this.store.queueEmailDelivery(data);
+  }
+
+  webhooks() {
+    return this.store.listWebhookEvents();
+  }
+
+  emitWebhook(data: any) {
+    return this.store.emitWebhookEvent(data);
+  }
+
+  apiKeys() {
+    return this.store.listPartnerApiKeys();
+  }
+
+  createApiKey(data: any) {
+    return this.store.createPartnerApiKey(data);
+  }
+
   implementationPartnerWorkspace() {
     return this.store.implementationPartnerWorkspace();
   }

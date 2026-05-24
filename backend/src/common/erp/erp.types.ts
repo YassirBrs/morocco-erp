@@ -27,6 +27,7 @@ export type ImportTemplateKind = 'customers' | 'suppliers' | 'products' | 'emplo
 export type PermissionAction = 'READ' | 'WRITE' | 'ADMIN';
 export type ErpModuleKey = 'tenant' | 'auth' | 'crm' | 'sales' | 'inventory' | 'accounting' | 'payroll' | 'pos' | 'production' | 'compliance';
 export type DocumentExportType = 'QUOTE' | 'ORDER' | 'DELIVERY_NOTE' | 'INVOICE' | 'CREDIT_NOTE' | 'PURCHASE_ORDER' | 'PURCHASE_RECEIPT' | 'PAYSLIP';
+export type AdapterKind = 'DGI' | 'CNSS';
 
 export interface LocalizedFields {
   arabicName?: string;
@@ -678,6 +679,55 @@ export interface DocumentTemplateSetting {
   updatedAt: string;
 }
 
+export interface PartnerApiKey {
+  id: string;
+  tenantId: string;
+  name: string;
+  tokenHash: string;
+  tokenPreview: string;
+  scopes: string[];
+  active: boolean;
+  expiresAt?: string;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+export interface WebhookEvent {
+  id: string;
+  tenantId: string;
+  event: 'invoice.posted' | 'payment.received' | 'payroll.posted' | 'stock.low';
+  payload: Record<string, unknown>;
+  status: 'PENDING' | 'DELIVERED' | 'FAILED';
+  attempts: number;
+  signaturePreview: string;
+  createdAt: string;
+  deliveredAt?: string;
+}
+
+export interface EmailDelivery {
+  id: string;
+  tenantId: string;
+  type: 'INVOICE' | 'STATEMENT' | 'PAYSLIP' | 'REMINDER';
+  to: string;
+  subject: string;
+  attachmentName?: string;
+  status: 'QUEUED' | 'SENT' | 'FAILED';
+  createdAt: string;
+  sentAt?: string;
+}
+
+export interface AdapterSubmission {
+  id: string;
+  tenantId: string;
+  kind: AdapterKind;
+  operation: 'validate' | 'render' | 'submit' | 'poll' | 'archive';
+  reference: string;
+  status: 'VALID' | 'RENDERED' | 'QUEUED' | 'PENDING_CREDENTIALS' | 'ARCHIVED';
+  payload: Record<string, unknown>;
+  evidenceId?: string;
+  createdAt: string;
+}
+
 export interface PosTransaction {
   id: string;
   tenantId: string;
@@ -909,6 +959,10 @@ export interface TenantWorkspace {
   legalEvidences: LegalEvidence[];
   storedFiles: StoredFile[];
   documentTemplates: DocumentTemplateSetting[];
+  partnerApiKeys: PartnerApiKey[];
+  webhookEvents: WebhookEvent[];
+  emailDeliveries: EmailDelivery[];
+  adapterSubmissions: AdapterSubmission[];
   posSessions: PosSession[];
   cashDrawerMovements: CashDrawerMovement[];
   posOfflineQueue: PosOfflineQueueItem[];

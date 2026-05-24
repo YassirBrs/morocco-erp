@@ -20,6 +20,14 @@ export class TenantController {
   @Patch('document-numbering') updateDocumentNumbering(@Body() body: any) { return this.tenantService.updateDocumentNumbering(body); }
   @Get('document-templates') documentTemplates() { return this.tenantService.documentTemplates(); }
   @Get('file-storage') fileStorage() { return this.tenantService.fileStorage(); }
+  @Get('cohort-metrics') cohortMetrics() { return this.tenantService.cohortMetrics(); }
+  @Get('acceptance-scenarios') acceptanceScenarios() { return this.tenantService.acceptanceScenarios(); }
+  @Get('emails') emails() { return this.tenantService.emails(); }
+  @Post('emails') queueEmail(@Body() body: any) { return this.tenantService.queueEmail(body); }
+  @Get('webhooks') webhooks() { return this.tenantService.webhooks(); }
+  @Post('webhooks') emitWebhook(@Body() body: any) { return this.tenantService.emitWebhook(body); }
+  @Get('api-keys') apiKeys() { return this.tenantService.apiKeys(); }
+  @Post('api-keys') createApiKey(@Body() body: any) { return this.tenantService.createApiKey(body); }
   @Get('implementation-partner/workspace') implementationPartnerWorkspace() { return this.tenantService.implementationPartnerWorkspace(); }
   @Post('implementation-partner/clients') createPartnerClient(@Body() body: any) { return this.tenantService.createPartnerClient(body); }
   @Patch('implementation-partner/clients/:tenantId/onboarding') updatePartnerClientOnboarding(@Param('tenantId') tenantId: string, @Body() body: any) {

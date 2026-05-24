@@ -95,6 +95,24 @@ export type ModuleData = {
   posSessions: Array<{ id: string; number: string; status: string; expectedCash: number; variance: number }>;
 };
 
+export type OperationalReports = {
+  valuation: { totals: { value: number }; rows: unknown[] };
+  aging: { totals: { receivables: number; payables: number }; receivables: unknown[]; payables: unknown[] };
+  profitAndLoss: { revenue: number; expenses: number; netIncome: number };
+  balanceSheet: { totals: { assets: number; liabilitiesAndEquity: number; variance: number } };
+  payrollCost: { totals: { employerCost: number }; rows: unknown[] };
+  cohort: { activationScore: number; moduleAdoption: Array<{ module: string; records: number }> };
+  acceptance: { status: string; smokeFlows: string[]; scenarios: Array<{ id: string; ready: boolean }> };
+};
+
+export type IntegrationReadiness = {
+  dgi: { operations: string[]; credentialsConfigured: boolean };
+  cnss: { operations: string[]; credentialsConfigured: boolean };
+  emails: unknown[];
+  webhooks: unknown[];
+  apiKeys: unknown[];
+};
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -223,4 +241,28 @@ export async function getModuleData(): Promise<ModuleData> {
     getJson('/pos/sessions', []),
   ]);
   return { customers, products, quotes, suppliers, posSessions };
+}
+
+export async function getOperationalReports(): Promise<OperationalReports> {
+  const [valuation, aging, profitAndLoss, balanceSheet, payrollCost, cohort, acceptance] = await Promise.all([
+    getJson('/inventory/valuation-report', { totals: { value: 0 }, rows: [] }),
+    getJson('/ledger/aging', { totals: { receivables: 0, payables: 0 }, receivables: [], payables: [] }),
+    getJson('/ledger/profit-and-loss', { revenue: 0, expenses: 0, netIncome: 0 }),
+    getJson('/ledger/balance-sheet', { totals: { assets: 0, liabilitiesAndEquity: 0, variance: 0 } }),
+    getJson('/payroll/cost-report', { totals: { employerCost: 0 }, rows: [] }),
+    getJson('/tenant/cohort-metrics', { activationScore: 0, moduleAdoption: [] }),
+    getJson('/tenant/acceptance-scenarios', { status: 'EMPTY', smokeFlows: [], scenarios: [] }),
+  ]);
+  return { valuation, aging, profitAndLoss, balanceSheet, payrollCost, cohort, acceptance };
+}
+
+export async function getIntegrationReadiness(): Promise<IntegrationReadiness> {
+  const [dgi, cnss, emails, webhooks, apiKeys] = await Promise.all([
+    getJson('/compliance/dgi/adapter', { operations: [], credentialsConfigured: false }),
+    getJson('/compliance/cnss/adapter', { operations: [], credentialsConfigured: false }),
+    getJson('/tenant/emails', []),
+    getJson('/tenant/webhooks', []),
+    getJson('/tenant/api-keys', []),
+  ]);
+  return { dgi, cnss, emails, webhooks, apiKeys };
 }
