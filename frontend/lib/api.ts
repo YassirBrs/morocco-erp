@@ -324,6 +324,7 @@ export type EnterpriseAccelerationReadiness = Record<string, any>;
 export type EnterpriseIntelligenceReadiness = Record<string, any>;
 export type EnterpriseAutomationReadiness = Record<string, any>;
 export type EnterpriseAssuranceReadiness = Record<string, any>;
+export type EnterpriseResilienceReadiness = Record<string, any>;
 
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
@@ -1133,5 +1134,50 @@ export async function getEnterpriseAssuranceReadiness(): Promise<EnterpriseAssur
     releaseRollbackChecklist: { readiness: 'READY' },
     configurationDriftMonitor: { rows: [] },
     executiveAssuranceDigest: { riskCount: 0, controlCoverage: 0, overdueEvidence: 0, releaseReadiness: 'READY' },
+  });
+}
+
+export async function getEnterpriseResilienceReadiness(): Promise<EnterpriseResilienceReadiness> {
+  return getJson('/tenant/enterprise-resilience-readiness', {
+    businessContinuityCenter: { rows: [] },
+    incidentEscalationBoard: { rows: [] },
+    disasterRecoveryEvidence: { rows: [] },
+    legalHoldRegister: { rows: [] },
+    dataSubjectRequestQueue: { rows: [] },
+    vendorSanctionsScreening: { rows: [] },
+    procurementContractCompliance: { rows: [] },
+    purchasePriceExceptions: { rows: [] },
+    stockWriteOffQueue: { rows: [] },
+    inventoryInsuranceExposure: { rows: [] },
+    expiryColdChainRisk: { rows: [] },
+    eInvoiceRolloutReadiness: { blockers: [] },
+    disputeReserveForecast: { rows: [] },
+    badDebtProvisionReview: { rows: [] },
+    cashConcentrationPlanner: { rows: [] },
+    bankFeeAnomalyReview: { rows: [] },
+    leaveAccrualProvisioning: { rows: [] },
+    employeePrivacyAccessAudit: { rows: [] },
+    healthSafetyIncidentTracker: { rows: [] },
+    workforceCapacityRota: { rows: [] },
+    posRefundAuthorization: { rows: [] },
+    ecommercePayoutEvidence: { rows: [] },
+    branchOpeningCompliance: { rows: [] },
+    fleetFuelFraudControls: { rows: [] },
+    maintenanceDowntimeSla: { rows: [] },
+    productionBatchCosting: { rows: [] },
+    qualityCertificateVault: { rows: [] },
+    projectDeliverableAcceptance: { rows: [] },
+    servicePenaltyEscalations: { rows: [] },
+    customerPortalAccessReview: { rows: [] },
+    supplierPortalSecurityReview: { rows: [] },
+    apiConsentLedger: { rows: [] },
+    webhookDeadLetterQueue: { rows: [] },
+    dataWarehouseExportApproval: { rows: [] },
+    biKpiCatalog: { rows: [] },
+    aiSuggestionGovernance: { rows: [] },
+    accountantEvidenceSla: { rows: [] },
+    taxAuditReadinessBinder: { rows: [] },
+    boardPackFinancialControls: { rows: [] },
+    executiveResilienceScorecard: { continuityScore: 0, openIncidents: 0, evidenceGaps: 0, complianceBlockers: 0, nextAction: 'A definir' },
   });
 }

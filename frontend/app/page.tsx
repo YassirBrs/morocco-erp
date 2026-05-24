@@ -11,6 +11,7 @@ import {
   getEnterpriseExpansionReadiness,
   getEnterpriseIntelligenceReadiness,
   getEnterpriseOperationsReadiness,
+  getEnterpriseResilienceReadiness,
   getGovernanceReadiness,
   getGrowthControlReadiness,
   getInvoices,
@@ -35,6 +36,8 @@ import { enterpriseAutomationFeatureDefinitions } from '../features/enterprise-a
 import { enterpriseExpansionFeatureDefinitions } from '../features/enterprise-expansion/enterprise-expansion-feature-config';
 import { enterpriseIntelligenceFeatureDefinitions } from '../features/enterprise-intelligence/enterprise-intelligence-feature-config';
 import { enterpriseOperationsFeatureDefinitions } from '../features/enterprise-operations/enterprise-operations-feature-config';
+import { enterpriseResilienceFeatureDefinitions } from '../features/enterprise-resilience/enterprise-resilience-feature-config';
+import { ErpShellWorkspace } from '../features/ux-organization/erp-shell-workspace';
 
 const formatMad = (value: number) =>
   new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(value);
@@ -63,7 +66,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion, enterpriseAcceleration, enterpriseIntelligence, enterpriseAutomation, enterpriseAssurance] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion, enterpriseAcceleration, enterpriseIntelligence, enterpriseAutomation, enterpriseAssurance, enterpriseResilience] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -92,6 +95,7 @@ export default async function DashboardPage() {
     getEnterpriseIntelligenceReadiness(),
     getEnterpriseAutomationReadiness(),
     getEnterpriseAssuranceReadiness(),
+    getEnterpriseResilienceReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -135,13 +139,10 @@ export default async function DashboardPage() {
           {[
             ['Tableau de bord', '/'],
             ['Ventes', '/ventes'],
-            ['CRM', '/crm'],
-            ['Stock', '/stock'],
+            ['Achats/Stock', '/achats-stock'],
             ['Comptabilité', '/comptabilite'],
-            ['Paie', '/paie'],
-            ['POS', '/pos'],
-            ['Conformité', '/conformite'],
-            ['Admin', '/admin'],
+            ['Paie/RH', '/paie'],
+            ['Admin/Conformité', '/admin'],
           ].map(([item, href]) => (
             <a key={item} className={item === 'Tableau de bord' ? 'active' : ''} href={href}>{item}</a>
           ))}
@@ -167,6 +168,8 @@ export default async function DashboardPage() {
             <strong>{translate(statusLabels, summary.tenant.status)}</strong>
           </div>
         </header>
+
+        <ErpShellWorkspace />
 
         <section className="commandBar" aria-label="Recherche globale">
           <label htmlFor="globalCommand">Commande globale</label>
@@ -1139,6 +1142,49 @@ export default async function DashboardPage() {
           </div>
           <div className="featureLinks" aria-label="Pages dédiées assurance entreprise">
             {enterpriseAssuranceFeatureDefinitions.map((feature) => (
+              <a key={feature.key} href={feature.route}>{feature.title}</a>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Résilience entreprise Maroc batch">
+          <PanelHeader title="Résilience entreprise Maroc" action="Piloter continuité" />
+          <div className="reportGrid">
+            <Metric label="Score continuité" value={String(enterpriseResilience.executiveResilienceScorecard.continuityScore)} />
+            <Metric label="Incidents ouverts" value={String(enterpriseResilience.executiveResilienceScorecard.openIncidents)} />
+            <Metric label="Gaps preuves" value={String(enterpriseResilience.executiveResilienceScorecard.evidenceGaps)} />
+            <Metric label="Blockers conformité" value={String(enterpriseResilience.executiveResilienceScorecard.complianceBlockers)} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Continuité, incidents et preuves" rows={[
+              `Continuité ${enterpriseResilience.businessContinuityCenter.rows.length} processus`,
+              `Escalades ${enterpriseResilience.incidentEscalationBoard.rows.length} incident(s)`,
+              `DR preuves ${enterpriseResilience.disasterRecoveryEvidence.rows.length} ligne(s)`,
+              `Legal hold ${enterpriseResilience.legalHoldRegister.rows.length} cas`,
+              `Demandes données ${enterpriseResilience.dataSubjectRequestQueue.rows.length} client(s)`,
+              `Audit fiscal gaps ${enterpriseResilience.taxAuditReadinessBinder.rows.filter((row: any) => row.gap).length}`,
+            ]} empty="-" />
+            <MiniList title="Achats, stock et finance" rows={[
+              `Screening fournisseurs ${enterpriseResilience.vendorSanctionsScreening.rows.length}`,
+              `Contrats achats ${enterpriseResilience.procurementContractCompliance.rows.length}`,
+              `Prix achat exceptions ${enterpriseResilience.purchasePriceExceptions.rows.length}`,
+              `Write-off stock ${enterpriseResilience.stockWriteOffQueue.rows.length}`,
+              `Exposition assurance ${enterpriseResilience.inventoryInsuranceExposure.rows.length} dépôt(s)`,
+              `Créances douteuses ${enterpriseResilience.badDebtProvisionReview.rows.length}`,
+              `Cash concentration ${enterpriseResilience.cashConcentrationPlanner.rows.length} proposition(s)`,
+            ]} empty="-" />
+            <MiniList title="Opérations, portails et data" rows={[
+              `HSE ${enterpriseResilience.healthSafetyIncidentTracker.rows.length} incident(s)`,
+              `Rota workforce ${enterpriseResilience.workforceCapacityRota.rows.length} équipe(s)`,
+              `Flotte carburant ${enterpriseResilience.fleetFuelFraudControls.rows.length} ligne(s)`,
+              `Downtime maintenance ${enterpriseResilience.maintenanceDowntimeSla.rows.length} WO`,
+              `Portails clients ${enterpriseResilience.customerPortalAccessReview.rows.length} revue(s)`,
+              `API consentements ${enterpriseResilience.apiConsentLedger.rows.length}`,
+              `KPI BI ${enterpriseResilience.biKpiCatalog.rows.length}`,
+            ]} empty="-" />
+          </div>
+          <div className="featureLinks" aria-label="Pages dédiées résilience entreprise">
+            {enterpriseResilienceFeatureDefinitions.map((feature) => (
               <a key={feature.key} href={feature.route}>{feature.title}</a>
             ))}
           </div>

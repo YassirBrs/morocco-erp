@@ -2782,4 +2782,128 @@ describe('ErpStoreService working ERP workflows', () => {
       legalEvidences: store.listLegalEvidences().length,
     }).toEqual(before);
   });
+
+  it('covers the enterprise resilience batch for continuity, incidents, finance, operations, portals, data, and executive controls', () => {
+    const invoice = store.createInvoice({ customerId: 'cus-1', dueDate: '2026-04-01', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    store.createDisputeCase({ type: 'CUSTOMER', partyId: 'cus-1', referenceId: invoice.id, reason: 'Prix contesté', collectionStatus: 'PAUSED' });
+    store.createSupplierContract({ supplierId: 'sup-1', name: 'Contrat résilience fournisseur', renewalDate: '2026-06-30', paymentTermsDays: 45 });
+    const session = store.openPosSession({ cashierId: 'cashier-resilience', openingCash: 1000 });
+    const ticket = store.createPosTransaction({ sessionId: session.id, cashierId: 'cashier-resilience', lines: [{ productId: 'prd-2', quantity: 1 }], paymentMethod: 'CASH' });
+    store.refundPosTransaction(ticket.id, { reason: 'Retour resilience' });
+    const asset = store.createMaintenanceAsset({ name: 'Convoyeur resilience', category: 'Production', location: 'Tanger' });
+    store.createMaintenanceWorkOrder({ assetId: asset.id, technician: 'Technicien Tanger', description: 'Arrêt convoyeur', cost: 900 });
+    const vehicle = store.createFleetVehicle({ plate: 'WW-RES-2026', driver: 'Amina Routier', documentExpiry: '2026-09-30' });
+    store.addFleetLog({ vehicleId: vehicle.id, type: 'FUEL', amount: 1200, odometer: 54000, date: '2026-05-01' });
+    const bom = store.createBillOfMaterial({ finishedProductId: 'prd-fg', version: 'RES', components: [{ productId: 'prd-raw', quantity: 1 }] });
+    store.createProductionOrder({ finishedProductId: 'prd-fg', quantity: 2, billOfMaterialId: bom.id });
+    store.createProject({ customerId: 'cus-1', name: 'Projet resilience', budget: 30000, invoiceMilestones: [{ label: 'Go-live', amount: 12000, invoiced: false }] });
+    store.createServiceContract({ customerId: 'cus-1', name: 'Contrat SLA resilience', monthlyAmount: 2500, renewalDate: '2026-08-31' });
+    store.createSupportTicket({ module: 'sales', subject: 'Incident resilience', severity: 'HIGH', reporter: 'client@atlas.ma' });
+    store.createPartnerApiKey({ name: 'API resilience', scopes: ['sales:read', 'ledger:read'], expiresAt: '2026-12-31' });
+    store.emitWebhookEvent({ event: 'invoice.posted', payload: { invoiceId: invoice.id } });
+
+    const batch = store.moroccoEnterpriseResilienceReadiness();
+
+    expect(Object.keys(batch).sort()).toEqual([
+      'accountantEvidenceSla',
+      'aiSuggestionGovernance',
+      'apiConsentLedger',
+      'badDebtProvisionReview',
+      'bankFeeAnomalyReview',
+      'biKpiCatalog',
+      'boardPackFinancialControls',
+      'branchOpeningCompliance',
+      'businessContinuityCenter',
+      'cashConcentrationPlanner',
+      'customerPortalAccessReview',
+      'dataSubjectRequestQueue',
+      'dataWarehouseExportApproval',
+      'disasterRecoveryEvidence',
+      'disputeReserveForecast',
+      'eInvoiceRolloutReadiness',
+      'ecommercePayoutEvidence',
+      'employeePrivacyAccessAudit',
+      'executiveResilienceScorecard',
+      'expiryColdChainRisk',
+      'fleetFuelFraudControls',
+      'healthSafetyIncidentTracker',
+      'incidentEscalationBoard',
+      'inventoryInsuranceExposure',
+      'leaveAccrualProvisioning',
+      'legalHoldRegister',
+      'maintenanceDowntimeSla',
+      'posRefundAuthorization',
+      'procurementContractCompliance',
+      'productionBatchCosting',
+      'projectDeliverableAcceptance',
+      'purchasePriceExceptions',
+      'qualityCertificateVault',
+      'servicePenaltyEscalations',
+      'stockWriteOffQueue',
+      'supplierPortalSecurityReview',
+      'taxAuditReadinessBinder',
+      'vendorSanctionsScreening',
+      'webhookDeadLetterQueue',
+      'workforceCapacityRota',
+    ].sort());
+
+    expect(batch.businessContinuityCenter.rows[0]).toHaveProperty('rtoHours');
+    expect(batch.incidentEscalationBoard.rows[0]).toHaveProperty('escalationOwner');
+    expect(batch.disasterRecoveryEvidence.rows[0]).toHaveProperty('checksum');
+    expect(batch.legalHoldRegister.rows[0]).toHaveProperty('releaseStatus');
+    expect(batch.dataSubjectRequestQueue.rows[0]).toHaveProperty('datasetScope');
+    expect(batch.vendorSanctionsScreening.rows[0]).toHaveProperty('screeningResult');
+    expect(batch.procurementContractCompliance.rows[0]).toHaveProperty('blocker');
+    expect(batch.purchasePriceExceptions).toHaveProperty('rows');
+    expect(batch.stockWriteOffQueue.rows[0]).toHaveProperty('approvalPath');
+    expect(batch.inventoryInsuranceExposure.rows[0]).toHaveProperty('gap');
+    expect(batch.expiryColdChainRisk.rows[0]).toHaveProperty('temperatureStatus');
+    expect(batch.eInvoiceRolloutReadiness).toHaveProperty('adapterMode', 'SANDBOX');
+    expect(batch.disputeReserveForecast.rows[0]).toHaveProperty('reserve');
+    expect(batch.badDebtProvisionReview.rows[0]).toHaveProperty('journalPreview');
+    expect(batch.cashConcentrationPlanner.rows[0]).toHaveProperty('proposal');
+    expect(batch.bankFeeAnomalyReview).toHaveProperty('rows');
+    expect(batch.leaveAccrualProvisioning.rows[0]).toHaveProperty('provision');
+    expect(batch.employeePrivacyAccessAudit.rows[0]).toHaveProperty('redactionStatus');
+    expect(batch.healthSafetyIncidentTracker.rows[0]).toHaveProperty('correctiveAction');
+    expect(batch.workforceCapacityRota.rows[0]).toHaveProperty('mitigation');
+    expect(batch.posRefundAuthorization.rows[0]).toHaveProperty('roleRequired');
+    expect(batch.ecommercePayoutEvidence.rows[0].archive).toHaveLength(64);
+    expect(batch.branchOpeningCompliance.rows[0]).toHaveProperty('launchBlocker');
+    expect(batch.fleetFuelFraudControls.rows[0]).toHaveProperty('anomalyScore');
+    expect(batch.maintenanceDowntimeSla.rows[0]).toHaveProperty('slaBreach');
+    expect(batch.productionBatchCosting.rows[0]).toHaveProperty('reviewer');
+    expect(batch.qualityCertificateVault.rows[0]).toHaveProperty('approvalStatus');
+    expect(batch.projectDeliverableAcceptance.rows[0]).toHaveProperty('billingImpact');
+    expect(batch.servicePenaltyEscalations.rows[0]).toHaveProperty('recoveryPlan');
+    expect(batch.customerPortalAccessReview.rows[0]).toHaveProperty('revocationPlan');
+    expect(batch.supplierPortalSecurityReview.rows[0]).toHaveProperty('remediation');
+    expect(batch.apiConsentLedger.rows[0]).toHaveProperty('legalBasis');
+    expect(batch.webhookDeadLetterQueue).toHaveProperty('rows');
+    expect(batch.dataWarehouseExportApproval.rows[0]).toHaveProperty('approver');
+    expect(batch.biKpiCatalog.rows[0]).toHaveProperty('formula');
+    expect(batch.aiSuggestionGovernance.rows[0]).toHaveProperty('decision');
+    expect(batch.accountantEvidenceSla).toHaveProperty('rows');
+    expect(batch.taxAuditReadinessBinder.rows[0]).toHaveProperty('gap');
+    expect(batch.boardPackFinancialControls.rows[0]).toHaveProperty('signOffStatus');
+    expect(batch.executiveResilienceScorecard).toHaveProperty('nextAction');
+  });
+
+  it('keeps enterprise resilience readiness read-only for tenant operational records', () => {
+    const before = {
+      invoices: store.listInvoices().length,
+      journalEntries: store.listJournalEntries().length,
+      auditLogs: store.auditLogs().length,
+      legalEvidences: store.listLegalEvidences().length,
+    };
+
+    store.moroccoEnterpriseResilienceReadiness();
+
+    expect({
+      invoices: store.listInvoices().length,
+      journalEntries: store.listJournalEntries().length,
+      auditLogs: store.auditLogs().length,
+      legalEvidences: store.listLegalEvidences().length,
+    }).toEqual(before);
+  });
 });

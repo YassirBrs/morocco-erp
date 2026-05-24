@@ -782,46 +782,46 @@ This backlog contains concrete tasks to improve the app from the current working
 
 ## UX Organization And Odoo/Sage-Grade Usability
 
-- [ ] T676 P0 - Redesign the primary shell around five clear workspaces: Ventes, Achats/Stock, Comptabilite, Paie/RH, and Admin/Conformite.
-- [ ] T677 P0 - Add a persistent left app launcher with module icons, French labels, pinned modules, and role-aware visibility.
-- [ ] T678 P0 - Add workspace home pages that show only the most important actions, KPIs, alerts, and recent documents for each role.
-- [ ] T679 P0 - Replace long dashboard scrolling with workspace tabs, saved filters, and contextual shortcuts.
-- [ ] T680 P0 - Add a universal command palette for creating documents, searching records, switching modules, and opening recent items.
-- [ ] T681 P0 - Add global breadcrumbs that show workspace, module, record type, and current document number.
-- [ ] T682 P0 - Standardize all list pages with search, filters, sort, pagination, column visibility, export, and bulk actions.
-- [ ] T683 P0 - Standardize all record detail pages with header status, primary action button, secondary actions, activity timeline, and audit drawer.
-- [ ] T684 P0 - Standardize create/edit forms with grouped sections, inline validation, save/cancel behavior, dirty-state warning, and keyboard submission.
-- [ ] T685 P0 - Add a reusable status pipeline component for devis, commandes, BL, factures, paiements, achats, paie, and tickets.
-- [ ] T686 P0 - Add contextual next-step actions after every major document transition such as approve, deliver, invoice, pay, export, and send.
-- [ ] T687 P0 - Add record preview side panels so users can inspect customers, suppliers, invoices, and products without leaving lists.
-- [ ] T688 P0 - Add quick-create modals for customer, supplier, product, employee, warehouse, and journal account from related forms.
-- [ ] T689 P0 - Add empty states with useful primary actions for every module instead of generic blank tables.
-- [ ] T690 P0 - Add loading skeletons for every workspace, list, form, KPI panel, and document preview.
-- [ ] T691 P0 - Add error states that translate backend validation into clear French business messages and recovery actions.
-- [ ] T692 P0 - Add success toasts with document number, next step, and undo/open actions where safe.
-- [ ] T693 P0 - Add role-specific navigation presets for Direction, Commercial, Comptable, Magasinier, RH, Caissier, and Admin.
-- [ ] T694 P0 - Add a first-run guided tour for Moroccan SME users that explains the core flow without marketing copy.
-- [ ] T695 P0 - Add a setup progress center that links missing ICE, IF, RC, Patente, CNSS, VAT, fiscal period, numbering, and bank settings to exact screens.
-- [ ] T696 P0 - Add a clean tenant/account switcher for accountant and implementation-partner users with client health indicators.
-- [ ] T697 P0 - Add a notification center for approvals, overdue payments, stock alerts, payroll blockers, tax dates, and import errors.
-- [ ] T698 P0 - Add saved views per module with owner, shared/private state, default view, and role restrictions.
-- [ ] T699 P0 - Add consistent keyboard shortcuts for search, save, new document, command palette, and module switching.
-- [ ] T700 P0 - Add accessibility labels, focus states, tab order, and screen-reader names for all primary ERP controls.
-- [ ] T701 P1 - Build a dedicated Sales workspace with kanban pipeline, quote list, order list, delivery list, invoice list, and payment follow-up.
-- [ ] T702 P1 - Build a Sales document detail screen that shows quote/order/invoice lines, totals, VAT, customer credit, timeline, and legal mentions.
-- [ ] T703 P1 - Add one-click quote to order to delivery to invoice workflow with visible progress and disabled invalid actions.
-- [ ] T704 P1 - Add customer 360 page with identity, ICE, balances, documents, timeline, quotes, invoices, payments, disputes, and credit risk.
-- [ ] T705 P1 - Add sales follow-up board for unpaid invoices with aging buckets, reminder stage, promised payment, and next action.
-- [ ] T706 P1 - Add invoice preview panel with French/Moroccan legal mentions, VAT breakdown, numbering series, and PDF export status.
-- [ ] T707 P1 - Add credit note workflow screen with reason, line selection, approval requirement, VAT reversal, and accounting impact preview.
-- [ ] T708 P1 - Build a dedicated Purchases workspace with supplier list, purchase requests, purchase orders, receipts, supplier invoices, and payments.
-- [ ] T709 P1 - Add supplier 360 page with ICE, IF, RIB, KYS documents, purchases, disputes, payment calendar, and reliability score.
-- [ ] T710 P1 - Add purchase order detail screen with approval path, supplier terms, expected receipt, landed cost, and budget impact.
-- [ ] T711 P1 - Add receipt screen optimized for warehouse users with barcode lookup, quantity received, variance, CUMP impact, and photo evidence.
-- [ ] T712 P1 - Add supplier invoice matching screen that compares order, receipt, invoice, VAT, due date, and exceptions.
-- [ ] T713 P1 - Build a dedicated Inventory workspace with stock overview, warehouses, stock moves, reservations, transfers, adjustments, and counts.
-- [ ] T714 P1 - Add product 360 page with SKU, barcode, VAT, prices, CUMP, warehouse stock, reservations, sales history, and purchase history.
-- [ ] T715 P1 - Add warehouse map/list page with available, reserved, blocked, quarantine, valuation, and reorder alerts.
+- [x] T676 P0 - Redesign the primary shell around five clear workspaces: Ventes, Achats/Stock, Comptabilite, Paie/RH, and Admin/Conformite.
+- [x] T677 P0 - Add a persistent left app launcher with module icons, French labels, pinned modules, and role-aware visibility.
+- [x] T678 P0 - Add workspace home pages that show only the most important actions, KPIs, alerts, and recent documents for each role.
+- [x] T679 P0 - Replace long dashboard scrolling with workspace tabs, saved filters, and contextual shortcuts.
+- [x] T680 P0 - Add a universal command palette for creating documents, searching records, switching modules, and opening recent items.
+- [x] T681 P0 - Add global breadcrumbs that show workspace, module, record type, and current document number.
+- [x] T682 P0 - Standardize all list pages with search, filters, sort, pagination, column visibility, export, and bulk actions.
+- [x] T683 P0 - Standardize all record detail pages with header status, primary action button, secondary actions, activity timeline, and audit drawer.
+- [x] T684 P0 - Standardize create/edit forms with grouped sections, inline validation, save/cancel behavior, dirty-state warning, and keyboard submission.
+- [x] T685 P0 - Add a reusable status pipeline component for devis, commandes, BL, factures, paiements, achats, paie, and tickets.
+- [x] T686 P0 - Add contextual next-step actions after every major document transition such as approve, deliver, invoice, pay, export, and send.
+- [x] T687 P0 - Add record preview side panels so users can inspect customers, suppliers, invoices, and products without leaving lists.
+- [x] T688 P0 - Add quick-create modals for customer, supplier, product, employee, warehouse, and journal account from related forms.
+- [x] T689 P0 - Add empty states with useful primary actions for every module instead of generic blank tables.
+- [x] T690 P0 - Add loading skeletons for every workspace, list, form, KPI panel, and document preview.
+- [x] T691 P0 - Add error states that translate backend validation into clear French business messages and recovery actions.
+- [x] T692 P0 - Add success toasts with document number, next step, and undo/open actions where safe.
+- [x] T693 P0 - Add role-specific navigation presets for Direction, Commercial, Comptable, Magasinier, RH, Caissier, and Admin.
+- [x] T694 P0 - Add a first-run guided tour for Moroccan SME users that explains the core flow without marketing copy.
+- [x] T695 P0 - Add a setup progress center that links missing ICE, IF, RC, Patente, CNSS, VAT, fiscal period, numbering, and bank settings to exact screens.
+- [x] T696 P0 - Add a clean tenant/account switcher for accountant and implementation-partner users with client health indicators.
+- [x] T697 P0 - Add a notification center for approvals, overdue payments, stock alerts, payroll blockers, tax dates, and import errors.
+- [x] T698 P0 - Add saved views per module with owner, shared/private state, default view, and role restrictions.
+- [x] T699 P0 - Add consistent keyboard shortcuts for search, save, new document, command palette, and module switching.
+- [x] T700 P0 - Add accessibility labels, focus states, tab order, and screen-reader names for all primary ERP controls.
+- [x] T701 P1 - Build a dedicated Sales workspace with kanban pipeline, quote list, order list, delivery list, invoice list, and payment follow-up.
+- [x] T702 P1 - Build a Sales document detail screen that shows quote/order/invoice lines, totals, VAT, customer credit, timeline, and legal mentions.
+- [x] T703 P1 - Add one-click quote to order to delivery to invoice workflow with visible progress and disabled invalid actions.
+- [x] T704 P1 - Add customer 360 page with identity, ICE, balances, documents, timeline, quotes, invoices, payments, disputes, and credit risk.
+- [x] T705 P1 - Add sales follow-up board for unpaid invoices with aging buckets, reminder stage, promised payment, and next action.
+- [x] T706 P1 - Add invoice preview panel with French/Moroccan legal mentions, VAT breakdown, numbering series, and PDF export status.
+- [x] T707 P1 - Add credit note workflow screen with reason, line selection, approval requirement, VAT reversal, and accounting impact preview.
+- [x] T708 P1 - Build a dedicated Purchases workspace with supplier list, purchase requests, purchase orders, receipts, supplier invoices, and payments.
+- [x] T709 P1 - Add supplier 360 page with ICE, IF, RIB, KYS documents, purchases, disputes, payment calendar, and reliability score.
+- [x] T710 P1 - Add purchase order detail screen with approval path, supplier terms, expected receipt, landed cost, and budget impact.
+- [x] T711 P1 - Add receipt screen optimized for warehouse users with barcode lookup, quantity received, variance, CUMP impact, and photo evidence.
+- [x] T712 P1 - Add supplier invoice matching screen that compares order, receipt, invoice, VAT, due date, and exceptions.
+- [x] T713 P1 - Build a dedicated Inventory workspace with stock overview, warehouses, stock moves, reservations, transfers, adjustments, and counts.
+- [x] T714 P1 - Add product 360 page with SKU, barcode, VAT, prices, CUMP, warehouse stock, reservations, sales history, and purchase history.
+- [x] T715 P1 - Add warehouse map/list page with available, reserved, blocked, quarantine, valuation, and reorder alerts.
 - [ ] T716 P1 - Add stock reservation board showing source document, customer, product, reserved quantity, age, and release action.
 - [ ] T717 P1 - Add stock adjustment wizard with reason codes, approval threshold, valuation effect, and accounting preview.
 - [ ] T718 P1 - Add inventory count workflow with sheet creation, mobile-friendly count entry, variance approval, and posting summary.
@@ -882,6 +882,12 @@ This backlog contains concrete tasks to improve the app from the current working
 - [ ] T773 P2 - Add calendar views for deliveries, tax deadlines, payroll dates, employee leave, maintenance, and contract renewals.
 - [ ] T774 P2 - Add spreadsheet-like editable grids for quote lines, invoice lines, purchase lines, stock count lines, and journal lines.
 - [ ] T775 P2 - Add AI-assisted navigation suggestions that recommend the next best action while preserving auditability and human approval.
+- [x] T876 P1 - Add shared ERP workspace fixtures for Moroccan demo records, role presets, saved views, notifications, and validation examples.
+- [x] T877 P1 - Add a reusable dense table interaction contract that covers sortable headers, pagination copy, visible columns, export, and bulk actions.
+- [x] T878 P1 - Add a reusable workspace feedback pattern for empty, loading, error, success, forbidden, and validation summary states.
+- [x] T879 P1 - Add a mobile-friendly workspace navigation fallback with accessible labels, persistent focus states, and no horizontal scroll.
+- [ ] T880 P1 - Add a route compatibility map so legacy CRM, Stock, Accounting, Payroll, POS, Compliance, and Admin pages share the new shell language.
+- [x] T881 P1 - Add UX verification tests that prove the Odoo/Sage-grade shell, Sales workspace, Purchases workspace, and Inventory workspace render French ERP controls.
 
 ## Competitive UX Execution And Productization
 

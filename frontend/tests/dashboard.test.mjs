@@ -38,6 +38,14 @@ const enterpriseAutomationPageFiles = readdirSync(new URL('../pages/enterprise-a
 const enterpriseAssuranceConfig = readFileSync(new URL('../features/enterprise-assurance/enterprise-assurance-feature-config.ts', import.meta.url), 'utf8');
 const enterpriseAssuranceFeaturePage = readFileSync(new URL('../features/enterprise-assurance/enterprise-assurance-feature-page.tsx', import.meta.url), 'utf8');
 const enterpriseAssurancePageFiles = readdirSync(new URL('../pages/enterprise-assurance', import.meta.url));
+const enterpriseResilienceConfig = readFileSync(new URL('../features/enterprise-resilience/enterprise-resilience-feature-config.ts', import.meta.url), 'utf8');
+const enterpriseResilienceFeaturePage = readFileSync(new URL('../features/enterprise-resilience/enterprise-resilience-feature-page.tsx', import.meta.url), 'utf8');
+const enterpriseResiliencePageFiles = readdirSync(new URL('../pages/enterprise-resilience', import.meta.url));
+const uxShellWorkspace = readFileSync(new URL('../features/ux-organization/erp-shell-workspace.tsx', import.meta.url), 'utf8');
+const uxWorkspacePatterns = readFileSync(new URL('../features/ux-organization/erp-workspace-patterns.tsx', import.meta.url), 'utf8');
+const uxWorkspaceFixtures = readFileSync(new URL('../features/ux-organization/erp-workspace-fixtures.ts', import.meta.url), 'utf8');
+const salesWorkspacePage = readFileSync(new URL('../features/ux-organization/sales-workspace-page.tsx', import.meta.url), 'utf8');
+const purchasesInventoryWorkspacePage = readFileSync(new URL('../features/ux-organization/purchases-inventory-workspace-page.tsx', import.meta.url), 'utf8');
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -371,14 +379,48 @@ test('Next primary workspace exposes production ops, pricing, billing, accountan
 });
 
 test('Next app exposes separate module pages instead of keeping every module only on the dashboard', () => {
-  for (const href of ["'/ventes'", "'/crm'", "'/stock'", "'/comptabilite'", "'/paie'", "'/pos'", "'/conformite'", "'/admin'"]) {
+  for (const href of ["'/ventes'", "'/achats-stock'", "'/comptabilite'", "'/paie'", "'/admin'"]) {
     assert.ok(page.includes(href), `${href} module navigation link exists`);
   }
-  for (const [index, title] of ['Ventes', 'CRM', 'Stock', 'Comptabilité', 'Paie', 'POS', 'Conformité', 'Admin SaaS'].entries()) {
+  for (const [index, title] of [[1, 'CRM'], [3, 'Comptabilité'], [4, 'Paie'], [5, 'POS'], [6, 'Conformité'], [7, 'Admin SaaS']]) {
     assert.ok(modulePages[index].includes(title), `${title} module page has its own route`);
     assert.ok(modulePages[index].includes('className="modulePage"'), `${title} module page uses module layout`);
   }
+  assert.ok(modulePages[0].includes('SalesWorkspacePage'), 'Ventes route delegates to the dedicated Sales workspace view');
+  assert.ok(modulePages[2].includes('PurchasesInventoryWorkspacePage'), 'Stock route delegates to the dedicated Achats/Stock workspace view');
+  assert.ok(salesWorkspacePage.includes('className="modulePage uxRoutePage"'), 'Sales workspace view owns the route layout');
+  assert.ok(purchasesInventoryWorkspacePage.includes('className="modulePage uxRoutePage"'), 'Purchases/Inventory workspace view owns the route layout');
   assert.ok(css.includes('.modulePage'));
+});
+
+test('UX organization batch renders an Odoo Sage grade ERP shell with French controls', () => {
+  for (const text of ['ERP Maroc organisé par espaces de travail', 'Ventes', 'Achats/Stock', 'Comptabilité', 'Paie/RH', 'Admin/Conformité', 'Commande universelle', "Fil d'Ariane", 'Centre notifications', 'Presets de navigation par rôle', 'Centre de progression configuration Maroc']) {
+    assert.ok(uxShellWorkspace.includes(text) || uxWorkspaceFixtures.includes(text), `${text} UX shell label exists`);
+  }
+  for (const text of ['Recherche, filtres, tri, pagination, colonnes, export et actions groupées', 'États UX normalisés', 'Validation DTO', 'Panneaux de prévisualisation', 'Création rapide liée', 'Accessibilité ERP']) {
+    assert.ok(uxWorkspacePatterns.includes(text), `${text} shared UX pattern exists`);
+  }
+  for (const cssToken of ['.uxDesktopFrame', '.uxLauncher', '.uxCommandPalette', '.uxDenseTable', '.uxPipeline', '.uxStatus-warning', '.uxMobileFallback', 'focus-visible']) {
+    assert.ok(css.includes(cssToken), `${cssToken} UX style exists`);
+  }
+});
+
+test('Sales workspace covers CRM, document flow, customer 360, invoice preview, and credit notes', () => {
+  for (const text of ['Kanban pipeline CRM', 'Documents commerciaux', 'Devis vers encaissement en un clic', 'Client 360', 'Suivi des impayés', 'Aperçu facture conforme Maroc', 'Avoir avec impact comptable']) {
+    assert.ok(salesWorkspacePage.includes(text), `${text} Sales workspace section exists`);
+  }
+  for (const text of ['Approuver devis', 'Convertir en commande', 'Créer BL', 'Créer facture', 'Capturer paiement', 'ICE 001525874000033', 'TVA 20 %', 'Blocage crédit']) {
+    assert.ok(salesWorkspacePage.includes(text) || uxWorkspaceFixtures.includes(text), `${text} Sales workflow label exists`);
+  }
+});
+
+test('Purchases and inventory workspace covers supplier 360, receipt, matching, product 360, and warehouses', () => {
+  for (const text of ['Fournisseurs 360', 'Demandes et commandes achat', 'Flux achat et réception', 'Réception magasin optimisée', 'Rapprochement facture fournisseur', 'Inventaire et stock par dépôt', 'Article 360', 'Carte des dépôts']) {
+    assert.ok(purchasesInventoryWorkspacePage.includes(text), `${text} Purchases/Inventory workspace section exists`);
+  }
+  for (const text of ['Fournitures Nord', 'BC-2026-018', 'CUMP', 'Code-barres', 'Quarantaine', 'Créer dépôt']) {
+    assert.ok(purchasesInventoryWorkspacePage.includes(text) || uxWorkspaceFixtures.includes(text), `${text} Purchases/Inventory workflow label exists`);
+  }
 });
 
 test('Next primary workspace exposes advanced Morocco workflow readiness for logistics, treasury, HR, payroll, and procurement', () => {
@@ -965,4 +1007,71 @@ test('Enterprise assurance batch has one descriptive dedicated frontend page per
   assert.ok(enterpriseAssuranceFeaturePage.includes('EnterpriseAssuranceFeaturePage'), 'shared assurance feature page component exists');
   assert.ok(enterpriseAssuranceConfig.includes('enterpriseAssuranceFeatureDefinitions'), 'assurance feature definitions are centralized');
   assert.ok(page.includes('enterpriseAssuranceFeatureDefinitions'), 'dashboard links to dedicated assurance feature pages');
+});
+
+test('Next primary workspace exposes 40-task Morocco enterprise resilience controls batch', () => {
+  for (const text of ['Résilience entreprise Maroc', 'Score continuité', 'Incidents ouverts', 'Gaps preuves', 'Blockers conformité', 'Continuité, incidents et preuves', 'Achats, stock et finance', 'Opérations, portails et data']) {
+    assert.ok(page.includes(text), `${text} enterprise resilience label is present`);
+  }
+  for (const marker of ['getEnterpriseResilienceReadiness', 'enterpriseResilience.executiveResilienceScorecard', 'enterpriseResilience.businessContinuityCenter', 'enterpriseResilience.apiConsentLedger', 'enterpriseResilienceFeatureDefinitions']) {
+    assert.ok(page.includes(marker), `${marker} enterprise resilience helper is present`);
+  }
+  assert.ok(api.includes('/tenant/enterprise-resilience-readiness'), 'enterprise resilience endpoint is wired');
+  for (const token of ['businessContinuityCenter', 'incidentEscalationBoard', 'disasterRecoveryEvidence', 'legalHoldRegister', 'dataSubjectRequestQueue', 'vendorSanctionsScreening', 'procurementContractCompliance', 'purchasePriceExceptions', 'stockWriteOffQueue', 'inventoryInsuranceExposure', 'expiryColdChainRisk', 'eInvoiceRolloutReadiness', 'disputeReserveForecast', 'badDebtProvisionReview', 'cashConcentrationPlanner', 'bankFeeAnomalyReview', 'leaveAccrualProvisioning', 'employeePrivacyAccessAudit', 'healthSafetyIncidentTracker', 'workforceCapacityRota', 'posRefundAuthorization', 'ecommercePayoutEvidence', 'branchOpeningCompliance', 'fleetFuelFraudControls', 'maintenanceDowntimeSla', 'productionBatchCosting', 'qualityCertificateVault', 'projectDeliverableAcceptance', 'servicePenaltyEscalations', 'customerPortalAccessReview', 'supplierPortalSecurityReview', 'apiConsentLedger', 'webhookDeadLetterQueue', 'dataWarehouseExportApproval', 'biKpiCatalog', 'aiSuggestionGovernance', 'accountantEvidenceSla', 'taxAuditReadinessBinder', 'boardPackFinancialControls', 'executiveResilienceScorecard']) {
+    assert.ok(api.includes(token), `${token} enterprise resilience data key is represented`);
+  }
+});
+
+test('Enterprise resilience batch has one descriptive dedicated frontend page per feature', () => {
+  const expectedFiles = [
+    'business-continuity-command-center-page.tsx',
+    'incident-escalation-board-page.tsx',
+    'disaster-recovery-evidence-pack-page.tsx',
+    'legal-hold-case-register-page.tsx',
+    'customer-data-subject-request-queue-page.tsx',
+    'vendor-sanctions-screening-page.tsx',
+    'procurement-contract-compliance-board-page.tsx',
+    'purchase-price-approval-exceptions-page.tsx',
+    'stock-write-off-authorization-queue-page.tsx',
+    'inventory-insurance-exposure-report-page.tsx',
+    'expiry-cold-chain-risk-board-page.tsx',
+    'e-invoice-rollout-readiness-controls-page.tsx',
+    'customer-dispute-reserve-forecast-page.tsx',
+    'bad-debt-provision-review-page.tsx',
+    'cash-concentration-transfer-planner-page.tsx',
+    'bank-fee-anomaly-review-page.tsx',
+    'payroll-leave-accrual-provisioning-page.tsx',
+    'employee-document-privacy-access-audit-page.tsx',
+    'health-and-safety-incident-tracker-page.tsx',
+    'workforce-capacity-rota-planner-page.tsx',
+    'pos-refund-authorization-matrix-page.tsx',
+    'ecommerce-payout-reconciliation-evidence-page.tsx',
+    'branch-opening-compliance-checklist-page.tsx',
+    'fleet-fuel-fraud-controls-page.tsx',
+    'maintenance-downtime-sla-dashboard-page.tsx',
+    'production-batch-costing-audit-page.tsx',
+    'quality-certificate-evidence-vault-page.tsx',
+    'project-contract-deliverable-acceptance-page.tsx',
+    'service-contract-escalation-penalties-page.tsx',
+    'customer-portal-access-review-page.tsx',
+    'supplier-portal-security-review-page.tsx',
+    'api-consent-ledger-page.tsx',
+    'webhook-dead-letter-queue-page.tsx',
+    'data-warehouse-export-approval-page.tsx',
+    'bi-kpi-definition-catalog-page.tsx',
+    'ai-suggestion-governance-queue-page.tsx',
+    'accountant-evidence-request-sla-page.tsx',
+    'tax-audit-readiness-binder-page.tsx',
+    'board-pack-financial-controls-page.tsx',
+    'executive-resilience-scorecard-page.tsx',
+  ];
+  assert.equal(enterpriseResiliencePageFiles.filter((file) => file.endsWith('-page.tsx')).length, 40);
+  for (const file of expectedFiles) {
+    assert.ok(enterpriseResiliencePageFiles.includes(file), `${file} dedicated page exists`);
+    const source = readFileSync(new URL(`../pages/enterprise-resilience/${file}`, import.meta.url), 'utf8');
+    assert.ok(source.includes('makeEnterpriseResilienceServerSideProps'), `${file} has server-side data wiring`);
+  }
+  assert.ok(enterpriseResilienceFeaturePage.includes('EnterpriseResilienceFeaturePage'), 'shared resilience feature page component exists');
+  assert.ok(enterpriseResilienceConfig.includes('enterpriseResilienceFeatureDefinitions'), 'resilience feature definitions are centralized');
+  assert.ok(page.includes('enterpriseResilienceFeatureDefinitions'), 'dashboard links to dedicated resilience feature pages');
 });
