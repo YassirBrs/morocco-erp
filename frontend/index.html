@@ -334,6 +334,102 @@
           </div>
         </section>
 
+        <section class="panel accountingControlPanel" data-view-section="accounting compliance">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Comptabilité PCGE</p>
+              <h2>Journaux, périodes, TVA et preuves légales</h2>
+            </div>
+            <div class="headerActions">
+              <span id="accountingBadge" class="badge">0 écriture</span>
+              <button id="createManualJournal" type="button">Écriture manuelle</button>
+              <button id="postManualJournal" type="button">Comptabiliser brouillon</button>
+              <button id="prepareAccountingExport" type="button">Export comptable</button>
+              <button id="archiveAccountingEvidence" type="button">Archiver preuve</button>
+            </div>
+          </div>
+          <div class="accountingGrid">
+            <div>
+              <span>Sélecteur PCGE</span>
+              <strong id="pcgeSummary">0 compte</strong>
+              <small id="pcgeSearchSummary">Recherche clients, TVA, banque, caisse</small>
+            </div>
+            <div>
+              <span>Période fiscale</span>
+              <strong id="periodSummary">Ouverte</strong>
+              <small>Ouverte, soft-lock, verrouillée ou clôturée</small>
+            </div>
+            <div>
+              <span>TVA nette</span>
+              <strong id="vatNetSummary">0 MAD</strong>
+              <small id="vatRateSummary">Collectée, déductible et par taux</small>
+            </div>
+            <div>
+              <span>Lettrage</span>
+              <strong id="reconciliationSummary">0 MAD</strong>
+              <small>Banque, caisse, clients, fournisseurs</small>
+            </div>
+          </div>
+          <div class="tableWrap">
+            <table class="miniTable">
+              <thead><tr><th>Journal</th><th>Source</th><th>Statut</th><th>Lignes</th></tr></thead>
+              <tbody id="journalRows"></tbody>
+            </table>
+          </div>
+          <div class="tableWrap">
+            <table class="miniTable">
+              <thead><tr><th>Preuve</th><th>Référence</th><th>Checksum</th><th>Date</th></tr></thead>
+              <tbody id="legalEvidenceRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel payrollRunPanel" data-view-section="payroll accounting compliance">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Paie Maroc</p>
+              <h2>Runs, contrats, bulletins et Damancom</h2>
+            </div>
+            <div class="headerActions">
+              <span id="payrollRunBadge" class="badge">0 run</span>
+              <button id="createPayrollRun" type="button">Créer paie mensuelle</button>
+              <button id="calculatePayrollRun" type="button">Calculer</button>
+              <button id="approvePayrollRun" type="button">Approuver</button>
+              <button id="postPayrollRun" type="button">Comptabiliser paie</button>
+              <button id="exportDamancomRun" type="button">Export Damancom</button>
+              <button id="generatePayslipPdf" type="button">PDF bulletin</button>
+            </div>
+          </div>
+          <div class="payrollRunGrid">
+            <div>
+              <span>Contrats actifs</span>
+              <strong id="contractSummary">0 contrat</strong>
+              <small>Dates, salaires, pièces jointes</small>
+            </div>
+            <div>
+              <span>Brut période</span>
+              <strong id="payrollGrossSummary">0 MAD</strong>
+              <small>Calcul depuis règles Maroc versionnées</small>
+            </div>
+            <div>
+              <span>Net à payer</span>
+              <strong id="payrollNetSummary">0 MAD</strong>
+              <small>CNSS plafonnée, AMO, IR, charges</small>
+            </div>
+            <div>
+              <span>Damancom</span>
+              <strong id="damancomSummary">260 caractères</strong>
+              <small>Lignes fixes archivables</small>
+            </div>
+          </div>
+          <div class="tableWrap">
+            <table class="miniTable">
+              <thead><tr><th>Run</th><th>Statut</th><th>Salariés</th><th>Coût employeur</th></tr></thead>
+              <tbody id="payrollRunRows"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="panel collaborationPanel" data-view-section="dashboard sales crm stock payroll">
           <div class="panelHeader">
             <div>
@@ -791,7 +887,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', roleNavigation: null, subscriptionGate: null, retentionPolicy: null, deviceHistory: null, paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], customers: [], products: [], suppliers: [], employees: [], importTemplates: null, partnerWorkspace: null, purchaseOrders: [], purchaseReceipts: [], supplierInvoices: [], warehouses: [], warehouseStock: [], stockAlerts: null, stockReservations: null, stockTransfers: [], inventoryCounts: [], barcodeLookup: null, statement: null, profile: null, audit: [], customerTimeline: null, supplierTimeline: null, invoiceTimeline: null, payrollTimeline: null, collaborationBoard: null };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', roleNavigation: null, subscriptionGate: null, retentionPolicy: null, deviceHistory: null, paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], customers: [], products: [], suppliers: [], employees: [], contracts: [], payrollRuns: [], importTemplates: null, partnerWorkspace: null, purchaseOrders: [], purchaseReceipts: [], supplierInvoices: [], warehouses: [], warehouseStock: [], stockAlerts: null, stockReservations: null, stockTransfers: [], inventoryCounts: [], barcodeLookup: null, accounts: [], accountSearch: [], journalEntries: [], fiscalPeriods: [], vatReport: null, accountingExport: null, reconciliation: null, legalEvidence: [], damancomExport: null, statement: null, profile: null, audit: [], customerTimeline: null, supplierTimeline: null, invoiceTimeline: null, payrollTimeline: null, collaborationBoard: null };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -811,6 +907,11 @@
           RECEIVED: 'Réceptionnée',
           PARTIALLY_RECEIVED: 'Partiellement reçue',
           IN_TRANSIT: 'En transit',
+          OPEN: 'Ouverte',
+          SOFT_LOCKED: 'Pré-verrouillée',
+          LOCKED: 'Verrouillée',
+          CLOSED: 'Clôturée',
+          CALCULATED: 'Calculée',
           AUTO_APPROVED: 'Auto-approuvé',
           PREPARED: 'Préparé',
           PENDING_REVIEW: 'En attente revue',
@@ -985,7 +1086,7 @@
         state.payrollTimeline = payrollTimeline;
         state.collaborationBoard = collaborationBoard;
         state.invoiceTimeline = latest(invoices) ? await get(`/sales/invoices/${latest(invoices).id}/timeline`) : null;
-        const [roleNavigation, subscriptionGate, retentionPolicy, deviceHistory, purchaseOrders, purchaseReceipts, supplierInvoices, warehouses, warehouseStock, stockAlerts, stockReservations, stockTransfers, inventoryCounts, barcodeLookup] = await Promise.all([
+        const [roleNavigation, subscriptionGate, retentionPolicy, deviceHistory, purchaseOrders, purchaseReceipts, supplierInvoices, warehouses, warehouseStock, stockAlerts, stockReservations, stockTransfers, inventoryCounts, barcodeLookup, accounts, accountSearch, journalEntries, fiscalPeriods, vatReport, accountingExport, reconciliation, legalEvidence, contracts, payrollRuns] = await Promise.all([
           get('/tenant/role-navigation/READ_ONLY'),
           get('/tenant/subscription-gate'),
           get('/tenant/retention-policy'),
@@ -999,7 +1100,17 @@
           get('/inventory/reservations'),
           get('/inventory/stock-transfers'),
           get('/inventory/inventory-counts'),
-          get('/inventory/barcode/6111000000010')
+          get('/inventory/barcode/6111000000010'),
+          get('/ledger/accounts'),
+          get('/ledger/accounts?q=client'),
+          get('/ledger/journal'),
+          get('/ledger/periods'),
+          get('/ledger/vat-report'),
+          get('/ledger/export?format=CSV'),
+          get('/ledger/reconciliation'),
+          get('/ledger/evidence'),
+          get('/payroll/contracts'),
+          get('/payroll/runs')
         ]);
         state.roleNavigation = roleNavigation;
         state.subscriptionGate = subscriptionGate;
@@ -1015,6 +1126,16 @@
         state.stockTransfers = stockTransfers;
         state.inventoryCounts = inventoryCounts;
         state.barcodeLookup = barcodeLookup;
+        state.accounts = accounts;
+        state.accountSearch = accountSearch;
+        state.journalEntries = journalEntries;
+        state.fiscalPeriods = fiscalPeriods;
+        state.vatReport = vatReport;
+        state.accountingExport = accountingExport;
+        state.reconciliation = reconciliation;
+        state.legalEvidence = legalEvidence;
+        state.contracts = contracts;
+        state.payrollRuns = payrollRuns;
         const entity = summary.tenant.legalEntity;
         qs('#tradeName').textContent = entity.tradeName;
         qs('#identity').innerHTML = [
@@ -1054,6 +1175,8 @@
         renderPartnerWorkspace();
         renderEmployees();
         renderSecurityAndProcurement();
+        renderAccountingControls();
+        renderPayrollRuns();
         switchModuleView(state.activeView);
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
         qs('#setupBadge').className = setup.ready ? 'badge green' : 'badge';
@@ -1284,6 +1407,51 @@
             <td>${mad(line.value)}</td>
           </tr>
         `).join('') : emptyRow('Aucun stock par dépôt', 4);
+      }
+
+      function renderAccountingControls() {
+        const currentPeriod = latest(state.fiscalPeriods);
+        const reconciliation = state.reconciliation || { totals: { bankCash: 0, receivables: 0, payables: 0 }, rows: [] };
+        qs('#accountingBadge').textContent = `${state.journalEntries.length} écriture${state.journalEntries.length > 1 ? 's' : ''}`;
+        qs('#pcgeSummary').textContent = `${state.accounts.length} comptes`;
+        qs('#pcgeSearchSummary').textContent = state.accountSearch.length ? state.accountSearch.slice(0, 3).map((account) => `${account.account} ${account.labelFr}`).join(' · ') : 'Recherche PCGE prête';
+        qs('#periodSummary').textContent = currentPeriod ? `${currentPeriod.year}-${String(currentPeriod.month).padStart(2, '0')} · ${translate('statuses', currentPeriod.status)}` : 'Aucune période';
+        qs('#vatNetSummary').textContent = mad(state.vatReport?.netVatPayable || 0);
+        qs('#vatRateSummary').textContent = (state.vatReport?.byRate || []).map((row) => `${row.rate}: ${mad(row.net)}`).join(' · ') || 'Aucun mouvement TVA';
+        qs('#reconciliationSummary').textContent = mad(reconciliation.totals.bankCash);
+        qs('#journalRows').innerHTML = state.journalEntries.length ? state.journalEntries.slice(-8).map((entry) => `
+          <tr>
+            <td><strong>${entry.description}</strong><small>${entry.date}</small></td>
+            <td>${entry.source}</td>
+            <td><span class="statusPill ${entry.status === 'POSTED' ? 'success' : entry.status === 'DRAFT' ? 'warning' : 'neutral'}">${translate('statuses', entry.status)}</span></td>
+            <td>${entry.lines.length}<small>${entry.lines.map((line) => line.account).join(' / ')}</small></td>
+          </tr>
+        `).join('') : emptyRow('Aucune écriture comptable', 4);
+        qs('#legalEvidenceRows').innerHTML = state.legalEvidence.length ? state.legalEvidence.slice(-6).map((evidence) => `
+          <tr>
+            <td><strong>${evidence.type}</strong></td>
+            <td>${evidence.reference}</td>
+            <td>${evidence.checksum.slice(0, 12)}...</td>
+            <td>${evidence.archivedAt.slice(0, 10)}</td>
+          </tr>
+        `).join('') : emptyRow('Aucune preuve légale archivée', 4);
+      }
+
+      function renderPayrollRuns() {
+        const run = latest(state.payrollRuns);
+        qs('#payrollRunBadge').textContent = `${state.payrollRuns.length} run${state.payrollRuns.length > 1 ? 's' : ''}`;
+        qs('#contractSummary').textContent = `${state.contracts.filter((contract) => contract.active).length} contrat${state.contracts.length > 1 ? 's' : ''}`;
+        qs('#payrollGrossSummary').textContent = mad(run?.totals?.grossSalary || 0);
+        qs('#payrollNetSummary').textContent = mad(run?.totals?.netSalary || 0);
+        qs('#damancomSummary').textContent = state.damancomExport ? `${state.damancomExport.rowCount} ligne(s) · ${state.damancomExport.rowLength} caractères` : '260 caractères';
+        qs('#payrollRunRows').innerHTML = state.payrollRuns.length ? state.payrollRuns.slice(-6).map((item) => `
+          <tr>
+            <td><strong>${item.number}</strong><small>${item.period}</small></td>
+            <td><span class="statusPill ${item.status === 'POSTED' ? 'success' : ['APPROVED', 'CALCULATED'].includes(item.status) ? 'warning' : 'neutral'}">${translate('statuses', item.status)}</span></td>
+            <td>${item.payslips.length}</td>
+            <td>${mad(item.totals.employerCost || 0)}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun run de paie créé', 4);
       }
 
       function renderProfile() {
@@ -1710,6 +1878,95 @@
           const count = await post('/inventory/inventory-counts', { warehouseId: targetWarehouse.id, lines: [{ productId: 'prd-1', countedQuantity: 1 }] });
           await post(`/inventory/inventory-counts/${count.id}/approve`, {});
           showMessage('success', `Comptage ${count.number} approuvé avec écriture d’écart.`);
+        });
+      });
+
+      qs('#createManualJournal').addEventListener('click', async () => {
+        await runAction('#createManualJournal', 'Écriture...', async () => {
+          const entry = await post('/ledger/journal', {
+            description: 'Écriture manuelle banque',
+            source: 'MANUAL-DEMO',
+            lines: [
+              { account: '5141', label: 'Banque', debit: 1200, credit: 0 },
+              { account: '3421', label: 'Client', debit: 0, credit: 1200 }
+            ]
+          });
+          showMessage('success', `Écriture ${entry.source} créée en brouillon et équilibrée.`);
+        });
+      });
+
+      qs('#postManualJournal').addEventListener('click', async () => {
+        await runAction('#postManualJournal', 'Compta...', async () => {
+          const draft = [...state.journalEntries].reverse().find((entry) => entry.status === 'DRAFT');
+          if (!draft) throw new Error('Aucune écriture brouillon à comptabiliser.');
+          const entry = await post(`/ledger/journal/${draft.id}/post`, {});
+          showMessage('success', `Écriture ${entry.source} comptabilisée.`);
+        });
+      });
+
+      qs('#prepareAccountingExport').addEventListener('click', async () => {
+        await runAction('#prepareAccountingExport', 'Export...', async () => {
+          state.accountingExport = await get('/ledger/export?format=CSV');
+          showMessage('success', `Export comptable prêt: ${state.accountingExport.rowCount} ligne(s), checksum ${state.accountingExport.checksum.slice(0, 10)}.`);
+        });
+      });
+
+      qs('#archiveAccountingEvidence').addEventListener('click', async () => {
+        await runAction('#archiveAccountingEvidence', 'Archive...', async () => {
+          const evidence = await post('/ledger/evidence', { type: 'ACCOUNTING_EXPORT', reference: `MANUAL-${Date.now()}`, metadata: { module: 'accounting', status: 'demo' } });
+          showMessage('success', `Preuve ${evidence.reference} archivée avec checksum.`);
+        });
+      });
+
+      qs('#createPayrollRun').addEventListener('click', async () => {
+        await runAction('#createPayrollRun', 'Création...', async () => {
+          const now = new Date();
+          const run = await post('/payroll/runs', { year: now.getFullYear(), month: now.getMonth() + 1 });
+          showMessage('success', `Run de paie ${run.number} créé.`);
+        });
+      });
+
+      qs('#calculatePayrollRun').addEventListener('click', async () => {
+        await runAction('#calculatePayrollRun', 'Calcul...', async () => {
+          const run = latest(state.payrollRuns) || await post('/payroll/runs', { year: 2026, month: 5 });
+          const calculated = await post(`/payroll/runs/${run.id}/calculate`, {});
+          showMessage('success', `Paie ${calculated.number} calculée: net ${mad(calculated.totals.netSalary)}.`);
+        });
+      });
+
+      qs('#approvePayrollRun').addEventListener('click', async () => {
+        await runAction('#approvePayrollRun', 'Approbation...', async () => {
+          const run = latest(state.payrollRuns) || await post('/payroll/runs', { year: 2026, month: 5 });
+          const approved = await post(`/payroll/runs/${run.id}/approve`, {});
+          showMessage('success', `Paie ${approved.number} approuvée avec validations CIN/CNSS.`);
+        });
+      });
+
+      qs('#postPayrollRun').addEventListener('click', async () => {
+        await runAction('#postPayrollRun', 'Compta...', async () => {
+          const run = [...state.payrollRuns].reverse().find((item) => item.status === 'APPROVED');
+          if (!run) throw new Error('Aucune paie approuvée à comptabiliser.');
+          const posted = await post(`/payroll/runs/${run.id}/post`, {});
+          showMessage('success', `Paie ${posted.number} comptabilisée dans le journal.`);
+        });
+      });
+
+      qs('#exportDamancomRun').addEventListener('click', async () => {
+        await runAction('#exportDamancomRun', 'Damancom...', async () => {
+          const run = latest(state.payrollRuns) || await post('/payroll/runs', { year: 2026, month: 5 });
+          state.damancomExport = await get(`/payroll/runs/${run.id}/damancom`);
+          renderPayrollRuns();
+          showMessage('success', `Export Damancom prêt: ${state.damancomExport.rowCount} ligne(s) de ${state.damancomExport.rowLength} caractères.`);
+        });
+      });
+
+      qs('#generatePayslipPdf').addEventListener('click', async () => {
+        await runAction('#generatePayslipPdf', 'PDF...', async () => {
+          let run = latest(state.payrollRuns) || await post('/payroll/runs', { year: 2026, month: 5 });
+          if (!run.payslips?.length) run = await post(`/payroll/runs/${run.id}/calculate`, {});
+          const payslip = run.payslips[0];
+          const pdf = await get(`/payroll/runs/${run.id}/payslips/${payslip.id}/pdf`);
+          showMessage('success', `Bulletin PDF ${pdf.fileName} généré et archivé.`);
         });
       });
 

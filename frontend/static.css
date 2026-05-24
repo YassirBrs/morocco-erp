@@ -641,14 +641,18 @@ button:disabled {
 }
 
 .securityGrid,
-.procurementGrid {
+.procurementGrid,
+.accountingGrid,
+.payrollRunGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-top: 1px solid var(--line);
 }
 
 .securityGrid div,
-.procurementGrid div {
+.procurementGrid div,
+.accountingGrid div,
+.payrollRunGrid div {
   display: grid;
   gap: 5px;
   min-width: 0;
@@ -657,19 +661,27 @@ button:disabled {
 }
 
 .securityGrid div:last-child,
-.procurementGrid div:last-child {
+.procurementGrid div:last-child,
+.accountingGrid div:last-child,
+.payrollRunGrid div:last-child {
   border-right: 0;
 }
 
 .securityGrid span,
 .securityGrid small,
 .procurementGrid span,
-.procurementGrid small {
+.procurementGrid small,
+.accountingGrid span,
+.accountingGrid small,
+.payrollRunGrid span,
+.payrollRunGrid small {
   color: var(--muted);
 }
 
 .securityGrid strong,
-.procurementGrid strong {
+.procurementGrid strong,
+.accountingGrid strong,
+.payrollRunGrid strong {
   color: var(--primary);
   font-size: 18px;
 }
@@ -1062,6 +1074,8 @@ tbody tr:hover {
   .templateGrid,
   .securityGrid,
   .procurementGrid,
+  .accountingGrid,
+  .payrollRunGrid,
   .vatReviewGrid,
   .filterCards,
   .kpis {
@@ -1096,13 +1110,17 @@ tbody tr:hover {
   }
 
   .securityGrid div,
-  .procurementGrid div {
+  .procurementGrid div,
+  .accountingGrid div,
+  .payrollRunGrid div {
     border-right: 0;
     border-top: 1px solid var(--line);
   }
 
   .securityGrid div:first-child,
-  .procurementGrid div:first-child {
+  .procurementGrid div:first-child,
+  .accountingGrid div:first-child,
+  .payrollRunGrid div:first-child {
     border-top: 0;
   }
 

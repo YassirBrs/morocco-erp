@@ -9,8 +9,12 @@ export class ComplianceService {
     return this.store.morocco2026Rules;
   }
 
-  exportVatReport() {
-    return this.store.exportVatReport();
+  listRulePacks() {
+    return this.store.listComplianceRulePacks();
+  }
+
+  exportVatReport(options: { year?: number; month?: number } = {}) {
+    return this.store.exportVatReport(options);
   }
 
   vatDeclarationReviewChecklist() {

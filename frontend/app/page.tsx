@@ -1,4 +1,4 @@
-import { getDashboardSummary, getInvoices, getStock } from '../lib/api';
+import { getAccountingSnapshot, getDashboardSummary, getInvoices, getPayrollSnapshot, getStock } from '../lib/api';
 
 const formatMad = (value: number) =>
   new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(value);
@@ -21,10 +21,12 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
+    getAccountingSnapshot(),
+    getPayrollSnapshot(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -169,6 +171,32 @@ export default async function DashboardPage() {
                   <span>{detail}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="gridTwo">
+          <div className="panel">
+            <div className="panelHeader">
+              <h2>Comptabilité PCGE</h2>
+              <button>Export comptable</button>
+            </div>
+            <div className="compliance">
+              <div><span>Comptes</span><strong>{accounting.accounts.length}</strong></div>
+              <div><span>Écritures</span><strong>{accounting.journalEntries.length}</strong></div>
+              <div><span>TVA nette</span><strong>{formatMad(accounting.vatReport.netVatPayable)}</strong></div>
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panelHeader">
+              <h2>Paie Maroc</h2>
+              <button>Damancom</button>
+            </div>
+            <div className="compliance">
+              <div><span>Salariés</span><strong>{payroll.employees.filter((employee) => employee.active).length}</strong></div>
+              <div><span>Contrats</span><strong>{payroll.contracts.filter((contract) => contract.active).length}</strong></div>
+              <div><span>Runs paie</span><strong>{payroll.runs.length}</strong></div>
             </div>
           </div>
         </section>

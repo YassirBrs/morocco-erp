@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ComplianceService } from '../services/compliance.service';
 
 @Controller('compliance')
@@ -10,9 +10,17 @@ export class ComplianceController {
     return this.complianceService.getMoroccoRuleSet();
   }
 
+  @Get('rule-packs')
+  rulePacks() {
+    return this.complianceService.listRulePacks();
+  }
+
   @Get('vat-report')
-  vatReport() {
-    return this.complianceService.exportVatReport();
+  vatReport(@Query('year') year?: string, @Query('month') month?: string) {
+    return this.complianceService.exportVatReport({
+      year: year ? Number(year) : undefined,
+      month: month ? Number(month) : undefined,
+    });
   }
 
   @Get('vat-declaration-checklist')

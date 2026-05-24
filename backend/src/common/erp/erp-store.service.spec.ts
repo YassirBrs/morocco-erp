@@ -1296,4 +1296,93 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(store.listInventoryCounts()).toHaveLength(1);
     expect(store.listStock().find((line) => line.productId === 'prd-1')?.reservedStock).toBe(3);
   });
+
+  it('supports PCGE search, manual journal CRUD, period states, VAT, exports, reconciliation, and legal evidence', () => {
+    expect(store.searchChartAccounts('client').map((account) => account.account)).toContain('3421');
+
+    const draft = store.createJournalEntry({
+      description: 'Encaissement manuel',
+      source: 'MANUAL-TEST',
+      lines: [
+        { account: '5141', label: 'Banque', debit: 1200, credit: 0 },
+        { account: '3421', label: 'Clients', debit: 0, credit: 1200 },
+      ],
+    });
+    const updated = store.updateJournalEntry(draft.id, { description: 'Encaissement manuel validé' });
+    const posted = store.postManualJournal(updated.id);
+
+    const invoice = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    store.createCreditNote({ invoiceId: invoice.id, lines: [{ productId: 'prd-2', quantity: 0.25 }] });
+    const receipt = store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-1', quantity: 1, unitCost: 500 }] });
+    store.createSupplierInvoice({ purchaseReceiptId: receipt.id, vatRate: 0.2 });
+
+    const vat = store.exportVatReport();
+    const exportFile = store.exportAccounting('CSV');
+    const reconciliation = store.accountReconciliation();
+    const evidence = store.listLegalEvidences();
+    const softLocked = store.softLockFiscalPeriod(2026, 1);
+    const softLockedStatus = softLocked.status;
+    const closed = store.closeFiscalPeriod(2026, 1);
+
+    expect(posted.status).toBe('POSTED');
+    expect(() => store.createJournalEntry({
+      description: 'Déséquilibrée',
+      lines: [
+        { account: '5141', label: 'Banque', debit: 100, credit: 0 },
+        { account: '3421', label: 'Clients', debit: 0, credit: 50 },
+      ],
+    })).toThrow(BadRequestException);
+    expect(vat.vatCollected).toBe(240);
+    expect(vat.vatReversed).toBe(60);
+    expect(vat.vatDeductible).toBe(100);
+    expect(vat.netVatPayable).toBe(80);
+    expect(exportFile.content).toContain('date,source,description,status,account,label,debit,credit');
+    expect(reconciliation.rows.map((row) => row.id)).toEqual(['BANK', 'CASH', 'RECEIVABLES', 'PAYABLES']);
+    expect(evidence.map((item) => item.type)).toEqual(expect.arrayContaining(['VAT_REPORT', 'ACCOUNTING_EXPORT']));
+    expect(softLockedStatus).toBe('SOFT_LOCKED');
+    expect(closed.status).toBe('CLOSED');
+  });
+
+  it('manages employee CRUD, contracts, payroll runs, payslip PDFs, Damancom export, and locked-period payroll rejection', () => {
+    const employee = store.addEmployee({
+      employeeNumber: 'EMP-LOCK',
+      fullName: 'Salariée Paie Test',
+      cin: 'PA123456',
+      cnssNumber: '9876543210',
+      hireDate: '2026-01-01',
+      baseSalary: 8000,
+      dependents: 1,
+    });
+    const updated = store.updateEmployee(employee.id, { baseSalary: 9000, address: 'Casablanca' });
+    const contract = store.addEmploymentContract({
+      employeeId: employee.id,
+      startDate: '2026-02-01',
+      salary: 9000,
+      attachmentName: 'contrat-paie-test.pdf',
+    });
+    const run = store.createPayrollRun({ year: 2026, month: 2 });
+    const calculated = store.calculatePayrollRun(run.id);
+    const calculatedStatus = calculated.status;
+    const approved = store.approvePayrollRun(calculated.id);
+    const pdf = store.generatePayslipPdf(approved.id, approved.payslips[0].id);
+    const damancom = store.exportPayrollRunDamancom(approved.id);
+    const posted = store.postPayrollRun(approved.id);
+
+    const lockedRun = store.createPayrollRun({ year: 2026, month: 3 });
+    store.calculatePayrollRun(lockedRun.id);
+    store.approvePayrollRun(lockedRun.id);
+    store.lockFiscalPeriod(2026, 3);
+
+    expect(updated.baseSalary).toBe(9000);
+    expect(contract.active).toBe(true);
+    expect(calculatedStatus).toBe('CALCULATED');
+    expect(calculated.totals.grossSalary).toBeGreaterThan(0);
+    expect(pdf.contentBase64).toBeTruthy();
+    expect(damancom.content.split('\n').filter(Boolean).every((row) => row.length === 260)).toBe(true);
+    expect(posted.status).toBe('POSTED');
+    expect(store.listJournalEntries().some((entry) => entry.source === posted.number)).toBe(true);
+    expect(store.listLegalEvidences().map((item) => item.type)).toEqual(expect.arrayContaining(['PAYSLIP_PDF', 'DAMANCOM_EXPORT']));
+    expect(() => store.postPayrollRun(lockedRun.id)).toThrow(ForbiddenException);
+    expect(store.archiveEmployee(employee.id).active).toBe(false);
+  });
 });

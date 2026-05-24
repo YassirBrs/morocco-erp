@@ -59,27 +59,27 @@ This backlog contains concrete tasks to improve the app from the current working
 
 ## Accounting And Morocco Compliance
 
-- [ ] T038 P0 - Persist the PCGE chart of accounts and expose a searchable account selector.
-- [ ] T039 P0 - Add journal entry CRUD with balanced debit/credit validation.
-- [ ] T040 P0 - Add fiscal periods with open, soft-locked, locked, and closed states.
-- [ ] T041 P0 - Reject postings into locked periods across sales, purchases, stock, and payroll.
-- [ ] T042 P0 - Generate automatic entries for invoices, credit notes, payments, purchase receipts, supplier invoices, and stock adjustments.
-- [ ] T043 P0 - Add VAT report by period, rate, collected VAT, deductible VAT, and net payable/refundable amount.
-- [ ] T044 P0 - Version Moroccan tax and payroll rule packs in the database with effective dates.
-- [ ] T045 P0 - Add compliance rule validation before invoice and payroll posting.
-- [ ] T046 P1 - Add accounting export formats for accountant review and external tools.
-- [ ] T047 P1 - Add account reconciliation for bank, cash, receivables, and payables.
-- [ ] T048 P1 - Add period close checklist with unresolved documents, unposted drafts, and imbalance checks.
-- [ ] T049 P2 - Add legal evidence archive for generated declarations, exports, and submission statuses.
+- [x] T038 P0 - Persist the PCGE chart of accounts and expose a searchable account selector.
+- [x] T039 P0 - Add journal entry CRUD with balanced debit/credit validation.
+- [x] T040 P0 - Add fiscal periods with open, soft-locked, locked, and closed states.
+- [x] T041 P0 - Reject postings into locked periods across sales, purchases, stock, and payroll.
+- [x] T042 P0 - Generate automatic entries for invoices, credit notes, payments, purchase receipts, supplier invoices, and stock adjustments.
+- [x] T043 P0 - Add VAT report by period, rate, collected VAT, deductible VAT, and net payable/refundable amount.
+- [x] T044 P0 - Version Moroccan tax and payroll rule packs in the database with effective dates.
+- [x] T045 P0 - Add compliance rule validation before invoice and payroll posting.
+- [x] T046 P1 - Add accounting export formats for accountant review and external tools.
+- [x] T047 P1 - Add account reconciliation for bank, cash, receivables, and payables.
+- [x] T048 P1 - Add period close checklist with unresolved documents, unposted drafts, and imbalance checks.
+- [x] T049 P2 - Add legal evidence archive for generated declarations, exports, and submission statuses.
 
 ## Payroll And HR
 
-- [ ] T050 P0 - Add employee CRUD with CIN, CNSS number, contract type, hire date, salary, dependents, and address.
-- [ ] T051 P0 - Add employment contract records with start date, end date, salary history, and document attachments.
-- [ ] T052 P0 - Add monthly payroll run creation with draft, calculated, approved, posted, and cancelled states.
-- [ ] T053 P0 - Calculate gross salary, CNSS, AMO, IR, net salary, employer charges, and taxable base from versioned rules.
-- [ ] T054 P0 - Generate payslip PDF per employee and payroll summary per run.
-- [ ] T055 P0 - Generate Damancom export files and validate line length/format in tests.
+- [x] T050 P0 - Add employee CRUD with CIN, CNSS number, contract type, hire date, salary, dependents, and address.
+- [x] T051 P0 - Add employment contract records with start date, end date, salary history, and document attachments.
+- [x] T052 P0 - Add monthly payroll run creation with draft, calculated, approved, posted, and cancelled states.
+- [x] T053 P0 - Calculate gross salary, CNSS, AMO, IR, net salary, employer charges, and taxable base from versioned rules.
+- [x] T054 P0 - Generate payslip PDF per employee and payroll summary per run.
+- [x] T055 P0 - Generate Damancom export files and validate line length/format in tests.
 - [ ] T056 P1 - Add leave balance tracking, leave requests, approvals, and payroll impact.
 - [ ] T057 P1 - Add payroll accounting entries and reject posting to locked periods.
 - [ ] T058 P1 - Add employee portal access for payslips and leave requests.
@@ -380,3 +380,56 @@ This backlog contains concrete tasks to improve the app from the current working
 - [ ] T283 P1 - Add support ticket intake from tenant users with module context, screenshots, severity, and SLA.
 - [ ] T284 P1 - Add admin health checks for queues, scheduled jobs, exports, email delivery, and adapter availability.
 - [ ] T285 P1 - Add tenant resilience runbook status covering backups, restore rehearsal, legal archive, and incident contacts.
+
+## Morocco Competitive Edge Backlog
+
+- [ ] T286 P1 - Add Moroccan VAT prorata management for partially deductible purchases and mixed activity tenants.
+- [ ] T287 P1 - Add simplified IS estimate dashboard with installments, taxable result adjustments, and evidence notes.
+- [ ] T288 P1 - Add professional tax tracking by establishment, city, rental value, and due date.
+- [ ] T289 P1 - Add tenant-level DGI declaration calendar with VAT, IS, IR salaries, and supporting evidence.
+- [ ] T290 P1 - Add CNSS anomaly detector for missing affiliation, duplicate CNSS numbers, and invalid salary bases.
+- [ ] T291 P1 - Add AMO reconciliation between payroll slips, employer charges, and Damancom export totals.
+- [ ] T292 P1 - Add Moroccan public holiday calendar with payroll, leave, and delivery planning impact.
+- [ ] T293 P1 - Add Moroccan city and region reference data for customers, suppliers, deliveries, and analytics.
+- [ ] T294 P1 - Add Arabic invoice rendering QA with RTL fields, legal footer, and PDF snapshot tests.
+- [ ] T295 P1 - Add bilingual customer statement PDF with aging, payment promises, and legal identifiers.
+- [ ] T296 P1 - Add supplier statement reconciliation PDF with receipts, invoices, payments, and disputed lines.
+- [ ] T297 P1 - Add bank RIB ownership verification workflow with document evidence and approval history.
+- [ ] T298 P1 - Add cheque portfolio dashboard with deposit slips, due dates, bounced cheques, and alerts.
+- [ ] T299 P1 - Add cash box daily approval workflow with cashier, supervisor, variance, and accounting entry.
+- [ ] T300 P1 - Add POS receipt legal footer templates for Morocco with ICE, IF, RC, and VAT display.
+- [ ] T301 P1 - Add stock lot and expiry tracking for food, cosmetics, pharma-like goods, and traceability exports.
+- [ ] T302 P1 - Add serial number tracking for electronics, warranties, repairs, and after-sales cases.
+- [ ] T303 P1 - Add landed cost allocation for imports by customs duty, freight, transit, insurance, and CUMP impact.
+- [ ] T304 P1 - Add import declaration evidence archive with DUM reference, supplier, shipment, and customs documents.
+- [ ] T305 P1 - Add supplier risk score using expired documents, payment incidents, lead time variance, and disputes.
+- [ ] T306 P1 - Add customer credit score using aging, broken promises, disputes, returned cheques, and concentration risk.
+- [ ] T307 P1 - Add approval matrix simulator for Moroccan SME roles, amount thresholds, module, and branch.
+- [ ] T308 P1 - Add accountant workspace review mode with comments per journal, invoice, payroll run, and period.
+- [ ] T309 P1 - Add fiscal lock exception workflow with reason, approver, time limit, and reverse audit evidence.
+- [ ] T310 P1 - Add accounting trial balance report by PCGE class, period, debit, credit, and balance.
+- [ ] T311 P1 - Add general ledger report with account drilldown, source document links, and export checksum.
+- [ ] T312 P1 - Add auxiliary customer ledger with invoice, credit note, payment, and residual balance per customer.
+- [ ] T313 P1 - Add auxiliary supplier ledger with receipt, supplier invoice, payment, and residual balance per supplier.
+- [ ] T314 P1 - Add Moroccan invoice numbering audit report for gaps, duplicates, cancelled documents, and fiscal year.
+- [ ] T315 P1 - Add document cancellation workflow with reason, reversal entries, stock rollback, and legal archive.
+- [ ] T316 P1 - Add warehouse transfer approval for controlled products, high value moves, and branch restrictions.
+- [ ] T317 P1 - Add inventory valuation snapshots at period close with CUMP, quantity, value, and lock evidence.
+- [ ] T318 P1 - Add stock negative prevention report by module, user, product, and attempted transaction.
+- [ ] T319 P1 - Add payroll variance report comparing current month with previous month by employee and contribution.
+- [ ] T320 P1 - Add employee contract renewal workflow with alerts, signed documents, salary change, and audit.
+- [ ] T321 P1 - Add employee absence import sandbox with validation, payroll impact preview, and approval.
+- [ ] T322 P1 - Add payroll journal preview before posting with PCGE accounts and lock-period validation.
+- [ ] T323 P1 - Add payroll evidence pack per month with payslips, Damancom file, journal, and checksums.
+- [ ] T324 P1 - Add DGI adapter sandbox log with payload rendering, validation errors, submission state, and archive.
+- [ ] T325 P1 - Add CNSS adapter sandbox log with Damancom validation, line errors, submission state, and archive.
+- [ ] T326 P1 - Add bank statement import preview with duplicates, unknown counterparties, and suggested matches.
+- [ ] T327 P1 - Add automated payment matching for invoices using amount, reference, customer RIB, and date window.
+- [ ] T328 P1 - Add payment allocation audit with before/after residuals and reviewer approval for manual overrides.
+- [ ] T329 P1 - Add SaaS plan comparison enforcement with module limits, record limits, and export permissions.
+- [ ] T330 P1 - Add tenant billing usage meter for invoices, payslips, storage, exports, and active users.
+- [ ] T331 P1 - Add implementation go-live risk radar by missing legal IDs, stock quality, payroll readiness, and integrations.
+- [ ] T332 P1 - Add guided demo scenarios for trading, services, payroll-heavy, POS retail, and production tenants.
+- [ ] T333 P1 - Add competitive migration importer for common Moroccan Excel templates and legacy ERP exports.
+- [ ] T334 P1 - Add data quality auto-fix suggestions for duplicate tiers, missing ICE, invalid RIB, and inactive products.
+- [ ] T335 P1 - Add executive compliance cockpit with tax calendar, pending evidence, locked periods, and risk alerts.

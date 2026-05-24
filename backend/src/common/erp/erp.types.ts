@@ -10,6 +10,8 @@ export type PurchaseOrderStatus = 'DRAFT' | 'APPROVED' | 'PARTIALLY_RECEIVED' | 
 export type SupplierInvoiceStatus = 'POSTED' | 'PAID' | 'VOID';
 export type StockTransferStatus = 'IN_TRANSIT' | 'RECEIVED' | 'CANCELLED';
 export type InventoryCountStatus = 'DRAFT' | 'APPROVED' | 'POSTED';
+export type FiscalPeriodStatus = 'OPEN' | 'SOFT_LOCKED' | 'LOCKED' | 'CLOSED';
+export type PayrollRunStatus = 'DRAFT' | 'CALCULATED' | 'APPROVED' | 'POSTED' | 'CANCELLED';
 export type StockMoveType = 'RECEIPT' | 'DELIVERY' | 'DELIVERY_REVERSAL' | 'ADJUSTMENT' | 'PRODUCTION_CONSUME' | 'PRODUCTION_OUTPUT' | 'POS_SALE' | 'RESERVATION' | 'RESERVATION_RELEASE' | 'TRANSFER_OUT' | 'TRANSFER_IN' | 'COUNT_VARIANCE';
 export type BusinessSearchType = 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
 export type ApprovalStatus = 'AUTO_APPROVED' | 'REQUIRED' | 'APPROVED';
@@ -476,6 +478,17 @@ export interface SupplierInvoice {
   paidAmount: number;
 }
 
+export interface ChartAccount {
+  id: string;
+  tenantId: string;
+  account: string;
+  labelFr: string;
+  labelAr?: string;
+  class: string;
+  vatDeductible: boolean;
+  active: boolean;
+}
+
 export interface StockTransfer {
   id: string;
   tenantId: string;
@@ -515,6 +528,7 @@ export interface JournalEntry {
   description: string;
   lines: Array<{ account: string; label: string; debit: number; credit: number }>;
   posted: boolean;
+  status: 'DRAFT' | 'POSTED' | 'VOID';
 }
 
 export interface FiscalPeriod {
@@ -523,6 +537,74 @@ export interface FiscalPeriod {
   year: number;
   month: number;
   locked: boolean;
+  status: FiscalPeriodStatus;
+  softLockedAt?: string;
+  lockedAt?: string;
+  closedAt?: string;
+}
+
+export interface EmploymentContract {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  contractType: Employee['contractType'];
+  startDate: string;
+  endDate?: string;
+  salary: number;
+  attachmentName?: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface Payslip {
+  id: string;
+  tenantId: string;
+  payrollRunId: string;
+  employeeId: string;
+  employeeName: string;
+  period: string;
+  grossSalary: number;
+  cnssEmployee: number;
+  amoEmployee: number;
+  ir: number;
+  netSalary: number;
+  employerCharges: number;
+  pdf?: { fileName: string; mimeType: 'application/pdf'; contentBase64: string };
+}
+
+export interface PayrollRun {
+  id: string;
+  tenantId: string;
+  number: string;
+  year: number;
+  month: number;
+  period: string;
+  status: PayrollRunStatus;
+  createdAt: string;
+  approvedAt?: string;
+  postedAt?: string;
+  cancelledAt?: string;
+  payslips: Payslip[];
+  totals: {
+    grossSalary: number;
+    cnssEmployee: number;
+    amoEmployee: number;
+    ir: number;
+    netSalary: number;
+    employerCharges: number;
+    employerCost: number;
+  };
+}
+
+export interface LegalEvidence {
+  id: string;
+  tenantId: string;
+  type: 'VAT_REPORT' | 'DGI_ENVELOPE' | 'DAMANCOM_EXPORT' | 'ACCOUNTING_EXPORT' | 'PAYSLIP_PDF';
+  reference: string;
+  status: 'ARCHIVED';
+  checksum: string;
+  archivedAt: string;
+  metadata: Record<string, unknown>;
 }
 
 export interface PosTransaction {
@@ -629,6 +711,7 @@ export interface TenantWorkspace {
   products: Product[];
   warehouses: Warehouse[];
   warehouseStocks: WarehouseStock[];
+  chartOfAccounts: ChartAccount[];
   quotes: Quote[];
   salesOrders: SalesOrder[];
   deliveryNotes: DeliveryNote[];
@@ -643,6 +726,9 @@ export interface TenantWorkspace {
   inventoryCounts: InventoryCountSheet[];
   journalEntries: JournalEntry[];
   fiscalPeriods: FiscalPeriod[];
+  employmentContracts: EmploymentContract[];
+  payrollRuns: PayrollRun[];
+  legalEvidences: LegalEvidence[];
   posTransactions: PosTransaction[];
   productionOrders: ProductionOrder[];
   auditLogs: AuditLog[];

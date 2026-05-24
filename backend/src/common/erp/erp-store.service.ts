@@ -7,6 +7,7 @@ import {
   BusinessSearchInput,
   BusinessSearchResult,
   BusinessSearchType,
+  ChartAccount,
   CollaborationEntityType,
   CompanyProfileChange,
   ComplianceRuleSet,
@@ -17,6 +18,7 @@ import {
   DocumentLineInput,
   DocumentTotals,
   Employee,
+  EmploymentContract,
   ErpUser,
   ErpModuleKey,
   FiscalPeriod,
@@ -28,8 +30,11 @@ import {
   Invoice,
   JournalEntry,
   Lead,
+  LegalEvidence,
   LegalEntity,
   Payment,
+  PayrollRun,
+  Payslip,
   PosTransaction,
   PreferredLanguage,
   Product,
@@ -267,6 +272,7 @@ export class ErpStoreService {
           updatedAt: today(),
         },
       ],
+      chartOfAccounts: this.defaultChartOfAccounts(tenant.id),
       leads: [],
       products: [
         {
@@ -373,7 +379,22 @@ export class ErpStoreService {
       stockTransfers: [],
       inventoryCounts: [],
       journalEntries: [],
-      fiscalPeriods: [],
+      fiscalPeriods: [this.openFiscalPeriod(tenant.id, today())],
+      employmentContracts: [
+        {
+          id: 'ctr-1',
+          tenantId: tenant.id,
+          employeeId: 'emp-1',
+          contractType: 'CDI',
+          startDate: '2024-01-15',
+          salary: 6000,
+          attachmentName: 'contrat-ahmed-taleb.pdf',
+          active: true,
+          createdAt: today(),
+        },
+      ],
+      payrollRuns: [],
+      legalEvidences: [],
       posTransactions: [],
       productionOrders: [],
       auditLogs: [],
@@ -431,6 +452,7 @@ export class ErpStoreService {
       customers: [],
       suppliers: [],
       employees: [],
+      chartOfAccounts: this.defaultChartOfAccounts(tenantId),
       leads: [],
       products: [],
       warehouses: [{ id: this.id('wh'), tenantId, name: 'Dépôt principal', city: tenant.legalEntity.city, active: true }],
@@ -448,7 +470,10 @@ export class ErpStoreService {
       stockTransfers: [],
       inventoryCounts: [],
       journalEntries: [],
-      fiscalPeriods: [],
+      fiscalPeriods: [this.openFiscalPeriod(tenantId, today())],
+      employmentContracts: [],
+      payrollRuns: [],
+      legalEvidences: [],
       posTransactions: [],
       productionOrders: [],
       auditLogs: [],
@@ -1424,6 +1449,8 @@ export class ErpStoreService {
     const invoices = workspace.invoices.filter((invoice) => invoice.date.startsWith(period));
     const creditNotes = workspace.creditNotes.filter((creditNote) => creditNote.date.startsWith(period));
     const journalEntries = workspace.journalEntries.filter((entry) => entry.date.startsWith(period));
+    const draftJournalEntries = journalEntries.filter((entry) => entry.status === 'DRAFT');
+    const draftPayrollRuns = workspace.payrollRuns.filter((run) => run.period === period && ['DRAFT', 'CALCULATED'].includes(run.status));
     const unbalancedJournals = journalEntries.filter((entry) => {
       const debit = entry.lines.reduce((sum, line) => sum + line.debit, 0);
       const credit = entry.lines.reduce((sum, line) => sum + line.credit, 0);
@@ -1442,6 +1469,8 @@ export class ErpStoreService {
       ...periodVatExceptions.map((exception) => ({ type: 'VAT_EXCEPTION', severity: exception.severity, message: `${exception.invoiceNumber}: ${exception.message}` })),
       ...approvalReview.rows.filter((row) => row.requiresApproval).map((row) => ({ type: 'APPROVAL_PENDING', severity: 'MEDIUM', message: `${row.reference}: approbation requise` })),
       ...unbalancedJournals.map((entry) => ({ type: 'JOURNAL_IMBALANCE', severity: 'HIGH', message: `${entry.source}: écriture non équilibrée` })),
+      ...draftJournalEntries.map((entry) => ({ type: 'UNPOSTED_JOURNAL', severity: 'HIGH', message: `${entry.source}: écriture brouillon non comptabilisée` })),
+      ...draftPayrollRuns.map((run) => ({ type: 'UNPOSTED_PAYROLL', severity: 'HIGH', message: `${run.number}: paie non approuvée/comptabilisée` })),
     ];
     const checklist = [
       { id: 'legal-identity', label: 'Identifiants légaux complets', complete: missingLegal.length === 0 },
@@ -1450,6 +1479,7 @@ export class ErpStoreService {
       { id: 'vat-review', label: 'Checklist TVA sans exception bloquante', complete: periodVatExceptions.length === 0 },
       { id: 'approvals', label: 'Approbations exceptionnelles traitées', complete: approvalReview.pending === 0 },
       { id: 'balanced-journals', label: 'Écritures comptables équilibrées', complete: unbalancedJournals.length === 0 },
+      { id: 'unposted-drafts', label: 'Brouillons comptables et paie traités', complete: draftJournalEntries.length === 0 && draftPayrollRuns.length === 0 },
     ];
     return {
       period,
@@ -1460,6 +1490,7 @@ export class ErpStoreService {
         invoices: invoices.length,
         creditNotes: creditNotes.length,
         journalEntries: journalEntries.length,
+        unpostedDrafts: draftJournalEntries.length + draftPayrollRuns.length,
         customerDuplicates: customerDuplicates.length,
         productDuplicates: productDuplicates.length,
         pendingApprovals: approvalReview.pending,
@@ -2033,6 +2064,10 @@ export class ErpStoreService {
     return this.workspace(tenantId).employees;
   }
 
+  getEmployee(employeeId: string, tenantId?: string): Employee {
+    return this.employee(this.workspace(tenantId), employeeId);
+  }
+
   addEmployee(input: Partial<Employee> & { fullName: string; cin: string; hireDate: string; baseSalary: number }, tenantId?: string): Employee {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
@@ -2062,6 +2097,45 @@ export class ErpStoreService {
     };
     workspace.employees.push(employee);
     this.audit(workspace, 'employee.created', 'Employee', employee.id, employee);
+    return employee;
+  }
+
+  updateEmployee(employeeId: string, input: Partial<Employee>, tenantId?: string): Employee {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const employee = this.employee(workspace, employeeId);
+    if (input.employeeNumber !== undefined) {
+      const employeeNumber = this.nonEmpty(input.employeeNumber, 'Le matricule employé est obligatoire');
+      if (workspace.employees.some((candidate) => candidate.id !== employee.id && candidate.employeeNumber.toUpperCase() === employeeNumber.toUpperCase())) {
+        throw new BadRequestException('Le matricule employé existe déjà');
+      }
+      employee.employeeNumber = employeeNumber;
+    }
+    if (input.fullName !== undefined) employee.fullName = this.nonEmpty(input.fullName, 'Le nom du salarié est obligatoire');
+    if (input.arabicName !== undefined) employee.arabicName = this.clean(input.arabicName);
+    if (input.cin !== undefined) employee.cin = this.nonEmpty(input.cin, 'La CIN du salarié est obligatoire');
+    if (input.cnssNumber !== undefined) employee.cnssNumber = this.clean(input.cnssNumber);
+    if (input.contractType !== undefined) employee.contractType = input.contractType;
+    if (input.hireDate !== undefined) employee.hireDate = this.isoDate(input.hireDate, 'La date d’embauche est obligatoire');
+    if (input.baseSalary !== undefined) employee.baseSalary = this.nonNegative(input.baseSalary, 'Le salaire de base doit être nul ou positif');
+    if (input.dependents !== undefined) employee.dependents = this.nonNegative(input.dependents, 'Le nombre de personnes à charge doit être nul ou positif');
+    if (input.address !== undefined) employee.address = this.clean(input.address);
+    if (input.arabicAddress !== undefined) employee.arabicAddress = this.clean(input.arabicAddress);
+    if (input.preferredLanguage !== undefined) employee.preferredLanguage = this.preferredLanguage(input.preferredLanguage);
+    if (input.documentExpiries !== undefined) employee.documentExpiries = this.validateEmployeeDocumentExpiries(input.documentExpiries);
+    if (input.active !== undefined) employee.active = Boolean(input.active);
+    employee.updatedAt = today();
+    this.audit(workspace, 'employee.updated', 'Employee', employee.id, employee);
+    return employee;
+  }
+
+  archiveEmployee(employeeId: string, tenantId?: string): Employee {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const employee = this.employee(workspace, employeeId);
+    employee.active = false;
+    employee.updatedAt = today();
+    this.audit(workspace, 'employee.archived', 'Employee', employee.id, employee);
     return employee;
   }
 
@@ -2568,6 +2642,7 @@ export class ErpStoreService {
   adjustStock(productId: string, quantity: number, reason = 'Ajustement manuel', tenantId?: string): StockMove {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
+    this.assertPeriodOpen(workspace, today());
     const product = this.product(workspace, productId);
     if (!product.trackStock) {
       throw new BadRequestException('Cet article n’est pas suivi en stock');
@@ -2645,6 +2720,7 @@ export class ErpStoreService {
   createPurchaseReceipt(input: { supplierId?: string; purchaseOrderId?: string; warehouseId?: string; lines?: Array<{ productId: string; quantity: number; unitCost: number }> }, tenantId?: string): PurchaseReceipt {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
+    this.assertPeriodOpen(workspace, today());
     const order = input.purchaseOrderId ? this.purchaseOrder(workspace, input.purchaseOrderId) : undefined;
     if (order && !['APPROVED', 'PARTIALLY_RECEIVED'].includes(order.status)) {
       throw new BadRequestException('La commande achat doit être approuvée avant réception');
@@ -2719,6 +2795,7 @@ export class ErpStoreService {
   createSupplierInvoice(input: { supplierId?: string; purchaseOrderId?: string; purchaseReceiptId?: string; supplierInvoiceNumber?: string; vatRate?: VatRate; dueDate?: string }, tenantId?: string): SupplierInvoice {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
+    this.assertPeriodOpen(workspace, today());
     const receipt = input.purchaseReceiptId ? this.purchaseReceipt(workspace, input.purchaseReceiptId) : undefined;
     const order = input.purchaseOrderId ? this.purchaseOrder(workspace, input.purchaseOrderId) : receipt?.purchaseOrderId ? this.purchaseOrder(workspace, receipt.purchaseOrderId) : undefined;
     const supplierId = input.supplierId ?? receipt?.supplierId ?? order?.supplierId;
@@ -2838,6 +2915,7 @@ export class ErpStoreService {
   approveInventoryCount(sheetId: string, tenantId?: string): InventoryCountSheet {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
+    this.assertPeriodOpen(workspace, today());
     const sheet = this.inventoryCount(workspace, sheetId);
     if (sheet.status !== 'DRAFT') throw new BadRequestException('La feuille inventaire est déjà traitée');
     for (const line of sheet.lines) {
@@ -3265,6 +3343,7 @@ export class ErpStoreService {
   recordPayment(input: { invoiceId: string; amount: number; method?: Payment['method'] }, tenantId?: string): Payment {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
+    this.assertPeriodOpen(workspace, today());
     const invoice = this.invoice(workspace, input.invoiceId);
     if (input.amount <= 0) {
       throw new BadRequestException('Le montant du paiement doit être positif');
@@ -3302,6 +3381,139 @@ export class ErpStoreService {
     return this.workspace(tenantId).journalEntries;
   }
 
+  listChartOfAccounts(tenantId?: string): ChartAccount[] {
+    return this.workspace(tenantId).chartOfAccounts;
+  }
+
+  searchChartAccounts(query = '', tenantId?: string): ChartAccount[] {
+    const workspace = this.workspace(tenantId);
+    const needle = this.searchText(query);
+    return workspace.chartOfAccounts
+      .filter((account) => account.active)
+      .filter((account) => !needle || this.searchScore(needle, [account.account, account.labelFr, account.labelAr, account.class]) > 0)
+      .sort((left, right) => left.account.localeCompare(right.account))
+      .slice(0, 25);
+  }
+
+  addChartAccount(input: Partial<ChartAccount> & { account: string; labelFr: string }, tenantId?: string): ChartAccount {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const accountNumber = this.nonEmpty(input.account, 'Le numéro de compte est obligatoire');
+    if (workspace.chartOfAccounts.some((candidate) => candidate.account === accountNumber)) {
+      throw new BadRequestException('Le compte PCGE existe déjà');
+    }
+    const account: ChartAccount = {
+      id: this.id('acc'),
+      tenantId: workspace.tenant.id,
+      account: accountNumber,
+      labelFr: this.nonEmpty(input.labelFr, 'Le libellé du compte est obligatoire'),
+      labelAr: this.clean(input.labelAr),
+      class: this.clean(input.class) ?? accountNumber.slice(0, 1),
+      vatDeductible: Boolean(input.vatDeductible),
+      active: input.active ?? true,
+    };
+    workspace.chartOfAccounts.push(account);
+    this.audit(workspace, 'chart-account.created', 'ChartAccount', account.id, account);
+    return account;
+  }
+
+  getJournalEntry(entryId: string, tenantId?: string): JournalEntry {
+    return this.journalEntry(this.workspace(tenantId), entryId);
+  }
+
+  createJournalEntry(input: { date?: string; source?: string; description?: string; lines: JournalEntry['lines']; post?: boolean }, tenantId?: string): JournalEntry {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const date = input.date ? this.isoDate(input.date, 'Date écriture invalide') : today();
+    this.validateJournalLines(workspace, input.lines);
+    const entry: JournalEntry = {
+      id: this.id('je'),
+      tenantId: workspace.tenant.id,
+      date,
+      source: this.clean(input.source) ?? 'MANUAL',
+      description: this.nonEmpty(input.description ?? 'Écriture manuelle', 'Le libellé d’écriture est obligatoire'),
+      lines: input.lines.map((line) => ({ ...line, debit: r2(line.debit), credit: r2(line.credit) })),
+      posted: false,
+      status: 'DRAFT',
+    };
+    if (input.post) {
+      this.assertPeriodOpen(workspace, date);
+      entry.posted = true;
+      entry.status = 'POSTED';
+    }
+    workspace.journalEntries.push(entry);
+    this.audit(workspace, input.post ? 'journal.posted' : 'journal.created', 'JournalEntry', entry.id, entry);
+    return entry;
+  }
+
+  updateJournalEntry(entryId: string, input: Partial<Pick<JournalEntry, 'date' | 'source' | 'description' | 'lines'>>, tenantId?: string): JournalEntry {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const entry = this.journalEntry(workspace, entryId);
+    if (entry.status !== 'DRAFT') throw new BadRequestException('Seules les écritures brouillon peuvent être modifiées');
+    if (input.date !== undefined) entry.date = this.isoDate(input.date, 'Date écriture invalide');
+    if (input.source !== undefined) entry.source = this.nonEmpty(input.source, 'La source est obligatoire');
+    if (input.description !== undefined) entry.description = this.nonEmpty(input.description, 'Le libellé d’écriture est obligatoire');
+    if (input.lines !== undefined) {
+      this.validateJournalLines(workspace, input.lines);
+      entry.lines = input.lines.map((line) => ({ ...line, debit: r2(line.debit), credit: r2(line.credit) }));
+    }
+    this.audit(workspace, 'journal.updated', 'JournalEntry', entry.id, entry);
+    return entry;
+  }
+
+  postManualJournal(entryId: string, tenantId?: string): JournalEntry {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const entry = this.journalEntry(workspace, entryId);
+    if (entry.status !== 'DRAFT') throw new BadRequestException('Seules les écritures brouillon peuvent être comptabilisées');
+    this.assertPeriodOpen(workspace, entry.date);
+    this.validateJournalLines(workspace, entry.lines);
+    entry.status = 'POSTED';
+    entry.posted = true;
+    this.audit(workspace, 'journal.posted', 'JournalEntry', entry.id, entry);
+    return entry;
+  }
+
+  voidJournalEntry(entryId: string, tenantId?: string): JournalEntry {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const entry = this.journalEntry(workspace, entryId);
+    if (entry.status === 'VOID') return entry;
+    this.assertPeriodOpen(workspace, entry.date);
+    entry.status = 'VOID';
+    entry.posted = false;
+    this.audit(workspace, 'journal.voided', 'JournalEntry', entry.id, entry);
+    return entry;
+  }
+
+  upsertFiscalPeriod(input: { year: number; month: number; status?: FiscalPeriod['status'] }, tenantId?: string): FiscalPeriod {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const year = Number(input.year);
+    const month = this.month(input.month);
+    let period = workspace.fiscalPeriods.find((candidate) => candidate.year === year && candidate.month === month);
+    if (!period) {
+      period = { id: this.id('fp'), tenantId: workspace.tenant.id, year, month, locked: false, status: 'OPEN' };
+      workspace.fiscalPeriods.push(period);
+    }
+    if (input.status) {
+      period.status = input.status;
+      period.locked = ['LOCKED', 'CLOSED'].includes(input.status);
+      if (input.status === 'SOFT_LOCKED') period.softLockedAt = new Date().toISOString();
+      if (input.status === 'LOCKED') period.lockedAt = new Date().toISOString();
+      if (input.status === 'CLOSED') period.closedAt = new Date().toISOString();
+    }
+    this.audit(workspace, 'fiscal-period.upserted', 'FiscalPeriod', period.id, period);
+    return period;
+  }
+
+  softLockFiscalPeriod(year: number, month: number, tenantId?: string): FiscalPeriod {
+    const period = this.upsertFiscalPeriod({ year, month, status: 'SOFT_LOCKED' }, tenantId);
+    this.audit(this.workspace(tenantId), 'fiscal-period.soft-locked', 'FiscalPeriod', period.id, period);
+    return period;
+  }
+
   lockFiscalPeriod(year: number, month: number, tenantId?: string): FiscalPeriod {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
@@ -3311,11 +3523,21 @@ export class ErpStoreService {
     }
     let period = workspace.fiscalPeriods.find((candidate) => candidate.year === year && candidate.month === month);
     if (!period) {
-      period = { id: this.id('fp'), tenantId: workspace.tenant.id, year, month, locked: false };
+      period = { id: this.id('fp'), tenantId: workspace.tenant.id, year, month, locked: false, status: 'OPEN' };
       workspace.fiscalPeriods.push(period);
     }
     period.locked = true;
+    period.status = 'LOCKED';
+    period.lockedAt = new Date().toISOString();
     this.audit(workspace, 'fiscal-period.locked', 'FiscalPeriod', period.id, period);
+    return period;
+  }
+
+  closeFiscalPeriod(year: number, month: number, tenantId?: string): FiscalPeriod {
+    const period = this.lockFiscalPeriod(year, month, tenantId);
+    period.status = 'CLOSED';
+    period.closedAt = new Date().toISOString();
+    this.audit(this.workspace(tenantId), 'fiscal-period.closed', 'FiscalPeriod', period.id, period);
     return period;
   }
 
@@ -3326,6 +3548,7 @@ export class ErpStoreService {
   createPosTransaction(input: { cashierId?: string; lines: DocumentLineInput[]; paymentMethod?: PosTransaction['paymentMethod'] }, tenantId?: string): PosTransaction {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
+    this.assertPeriodOpen(workspace, today());
     const lines = this.documentLines(workspace, input.lines);
     const transaction: PosTransaction = {
       id: this.id('pos'),
@@ -3394,20 +3617,134 @@ export class ErpStoreService {
     return this.workspace(tenantId).productionOrders;
   }
 
-  exportVatReport(tenantId?: string) {
-    const workspace = this.workspace(tenantId);
-    const vatCollected = workspace.invoices.reduce((sum, invoice) => sum + invoice.totals.vatTotal, 0);
-    const vatReversed = workspace.creditNotes.reduce((sum, creditNote) => sum + creditNote.totals.vatTotal, 0);
-    return {
+  exportVatReport(input?: string | { year?: number; month?: number }, tenantId?: string) {
+    const workspace = this.workspace(typeof input === 'string' ? input : tenantId);
+    const year = typeof input === 'object' && input.year ? Number(input.year) : Number(today().slice(0, 4));
+    const month = typeof input === 'object' && input.month ? this.month(input.month) : Number(today().slice(5, 7));
+    const period = `${year}-${String(month).padStart(2, '0')}`;
+    const invoices = workspace.invoices.filter((invoice) => invoice.date.startsWith(period));
+    const creditNotes = workspace.creditNotes.filter((creditNote) => creditNote.date.startsWith(period));
+    const supplierInvoices = workspace.supplierInvoices.filter((invoice) => invoice.date.startsWith(period));
+    const byRate: Record<string, { rate: string; collected: number; reversed: number; deductible: number; net: number }> = {};
+    const bucket = (rate: number) => {
+      const key = `${Math.round(rate * 100)}%`;
+      byRate[key] ??= { rate: key, collected: 0, reversed: 0, deductible: 0, net: 0 };
+      return byRate[key];
+    };
+    for (const invoice of invoices) {
+      for (const line of invoice.lines) bucket(line.vatRate).collected = r2(bucket(line.vatRate).collected + line.vatAmount);
+    }
+    for (const creditNote of creditNotes) {
+      for (const line of creditNote.lines) bucket(line.vatRate).reversed = r2(bucket(line.vatRate).reversed + line.vatAmount);
+    }
+    for (const invoice of supplierInvoices) {
+      const rate = invoice.subtotal > 0 ? r2(invoice.vatTotal / invoice.subtotal) : 0;
+      bucket(rate).deductible = r2(bucket(rate).deductible + invoice.vatTotal);
+    }
+    for (const row of Object.values(byRate)) {
+      row.net = r2(row.collected - row.reversed - row.deductible);
+    }
+    const vatCollected = r2(Object.values(byRate).reduce((sum, row) => sum + row.collected, 0));
+    const vatReversed = r2(Object.values(byRate).reduce((sum, row) => sum + row.reversed, 0));
+    const vatDeductible = r2(Object.values(byRate).reduce((sum, row) => sum + row.deductible, 0));
+    const netVatPayable = r2(vatCollected - vatReversed - vatDeductible);
+    const report = {
       tenantId: workspace.tenant.id,
-      period: today().slice(0, 7),
-      vatCollected: r2(vatCollected),
-      vatReversed: r2(vatReversed),
+      period,
+      vatCollected,
+      vatReversed,
+      vatDeductible,
       netVatCollected: r2(vatCollected - vatReversed),
-      invoiceCount: workspace.invoices.length,
-      creditNoteCount: workspace.creditNotes.length,
+      netVatPayable,
+      netVatRefundable: netVatPayable < 0 ? Math.abs(netVatPayable) : 0,
+      byRate: Object.values(byRate).sort((left, right) => left.rate.localeCompare(right.rate)),
+      invoiceCount: invoices.length,
+      creditNoteCount: creditNotes.length,
+      supplierInvoiceCount: supplierInvoices.length,
       status: 'PREPARED',
     };
+    this.archiveEvidence(workspace, 'VAT_REPORT', period, report);
+    return report;
+  }
+
+  listComplianceRulePacks(tenantId?: string) {
+    this.workspace(tenantId);
+    return [{
+      ...this.morocco2026Rules,
+      version: this.morocco2026Rules.id,
+      effectiveTo: null,
+      active: this.morocco2026Rules.effectiveFrom <= today(),
+      storage: 'STATE_RULE_PACK',
+    }];
+  }
+
+  exportAccounting(format: 'CSV' | 'JSON' = 'CSV', input: { year?: number; month?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.year && input.month ? `${input.year}-${String(this.month(input.month)).padStart(2, '0')}` : today().slice(0, 7);
+    const entries = workspace.journalEntries.filter((entry) => entry.date.startsWith(period) && entry.status !== 'VOID');
+    const rows = entries.flatMap((entry) => entry.lines.map((line) => ({
+      date: entry.date,
+      source: entry.source,
+      description: entry.description,
+      status: entry.status,
+      account: line.account,
+      label: line.label,
+      debit: line.debit,
+      credit: line.credit,
+    })));
+    const normalizedFormat = format === 'JSON' ? 'JSON' : 'CSV';
+    const content = normalizedFormat === 'JSON'
+      ? JSON.stringify({ tenantId: workspace.tenant.id, period, rows }, null, 2)
+      : this.toCsv(['date', 'source', 'description', 'status', 'account', 'label', 'debit', 'credit'], rows);
+    const evidence = this.archiveEvidence(workspace, 'ACCOUNTING_EXPORT', `${period}-${normalizedFormat}`, { period, format: normalizedFormat, rowCount: rows.length, content });
+    return {
+      status: 'PREPARED',
+      period,
+      format: normalizedFormat,
+      fileName: `export-comptable-${period}.${normalizedFormat === 'JSON' ? 'json' : 'csv'}`,
+      mimeType: normalizedFormat === 'JSON' ? 'application/json' : 'text/csv',
+      rowCount: rows.length,
+      checksum: evidence.checksum,
+      content,
+    };
+  }
+
+  accountReconciliation(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const groups = [
+      { id: 'BANK', label: 'Banque', accounts: ['5141'], normal: 'DEBIT' as const },
+      { id: 'CASH', label: 'Caisse', accounts: ['5161'], normal: 'DEBIT' as const },
+      { id: 'RECEIVABLES', label: 'Clients', accounts: ['3421'], normal: 'DEBIT' as const },
+      { id: 'PAYABLES', label: 'Fournisseurs', accounts: ['4411'], normal: 'CREDIT' as const },
+    ];
+    const rows = groups.map((group) => {
+      const lines = workspace.journalEntries
+        .filter((entry) => entry.status === 'POSTED')
+        .flatMap((entry) => entry.lines.filter((line) => group.accounts.includes(line.account)));
+      const debit = r2(lines.reduce((sum, line) => sum + line.debit, 0));
+      const credit = r2(lines.reduce((sum, line) => sum + line.credit, 0));
+      const balance = group.normal === 'DEBIT' ? r2(debit - credit) : r2(credit - debit);
+      return { ...group, debit, credit, balance, lineCount: lines.length, status: lines.length ? 'READY' : 'EMPTY' };
+    });
+    return {
+      generatedAt: new Date().toISOString(),
+      rows,
+      totals: {
+        bankCash: r2(rows.filter((row) => ['BANK', 'CASH'].includes(row.id)).reduce((sum, row) => sum + row.balance, 0)),
+        receivables: rows.find((row) => row.id === 'RECEIVABLES')?.balance ?? 0,
+        payables: rows.find((row) => row.id === 'PAYABLES')?.balance ?? 0,
+      },
+    };
+  }
+
+  listLegalEvidences(tenantId?: string): LegalEvidence[] {
+    return this.workspace(tenantId).legalEvidences;
+  }
+
+  archiveLegalEvidence(input: { type: LegalEvidence['type']; reference: string; metadata?: Record<string, unknown> }, tenantId?: string): LegalEvidence {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    return this.archiveEvidence(workspace, input.type, this.nonEmpty(input.reference, 'La référence de preuve est obligatoire'), input.metadata ?? {});
   }
 
   prepareDgiInvoiceEnvelope(invoiceId: string, tenantId?: string) {
@@ -3416,7 +3753,7 @@ export class ErpStoreService {
     if (!invoice) {
       throw new NotFoundException('Facture introuvable');
     }
-    return {
+    const envelope = {
       adapter: 'DGI_E_INVOICE',
       status: 'ADAPTER_NOT_CONFIGURED',
       invoiceNumber: invoice.number,
@@ -3427,10 +3764,220 @@ export class ErpStoreService {
         lines: invoice.lines,
       },
     };
+    this.archiveEvidence(workspace, 'DGI_ENVELOPE', invoice.number, envelope);
+    return envelope;
+  }
+
+  listEmploymentContracts(tenantId?: string): EmploymentContract[] {
+    return this.workspace(tenantId).employmentContracts;
+  }
+
+  addEmploymentContract(input: Partial<EmploymentContract> & { employeeId: string; startDate: string; salary: number }, tenantId?: string): EmploymentContract {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const employee = this.employee(workspace, input.employeeId);
+    const contract: EmploymentContract = {
+      id: this.id('ctr'),
+      tenantId: workspace.tenant.id,
+      employeeId: employee.id,
+      contractType: input.contractType ?? employee.contractType,
+      startDate: this.isoDate(input.startDate, 'La date de début du contrat est obligatoire'),
+      endDate: input.endDate ? this.isoDate(input.endDate, 'La date de fin du contrat est invalide') : undefined,
+      salary: this.nonNegative(input.salary, 'Le salaire contractuel doit être positif'),
+      attachmentName: this.clean(input.attachmentName),
+      active: input.active ?? true,
+      createdAt: today(),
+    };
+    workspace.employmentContracts.filter((candidate) => candidate.employeeId === employee.id).forEach((candidate) => { candidate.active = false; });
+    workspace.employmentContracts.push(contract);
+    employee.contractType = contract.contractType;
+    employee.baseSalary = contract.salary;
+    employee.updatedAt = today();
+    this.audit(workspace, 'employment-contract.created', 'EmploymentContract', contract.id, contract);
+    return contract;
+  }
+
+  listPayrollRuns(tenantId?: string): PayrollRun[] {
+    return this.workspace(tenantId).payrollRuns;
+  }
+
+  createPayrollRun(input: { year: number; month: number }, tenantId?: string): PayrollRun {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const year = Number(input.year);
+    const month = this.month(input.month);
+    const period = `${year}-${String(month).padStart(2, '0')}`;
+    const existing = workspace.payrollRuns.find((candidate) => candidate.period === period && candidate.status !== 'CANCELLED');
+    if (existing) return existing;
+    const run: PayrollRun = {
+      id: this.id('payrun'),
+      tenantId: workspace.tenant.id,
+      number: `PAY-${period}`,
+      year,
+      month,
+      period,
+      status: 'DRAFT',
+      createdAt: today(),
+      payslips: [],
+      totals: this.emptyPayrollTotals(),
+    };
+    workspace.payrollRuns.push(run);
+    this.audit(workspace, 'payroll-run.created', 'PayrollRun', run.id, run);
+    return run;
+  }
+
+  calculatePayrollRun(runId: string, tenantId?: string): PayrollRun {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const run = this.payrollRun(workspace, runId);
+    if (!['DRAFT', 'CALCULATED'].includes(run.status)) throw new BadRequestException('La paie doit être brouillon pour recalcul');
+    const employees = workspace.employees.filter((employee) => employee.active);
+    run.payslips = employees.map((employee) => this.calculateEmployeePayslip(workspace, run, employee));
+    run.totals = this.payrollTotals(run.payslips);
+    run.status = 'CALCULATED';
+    this.audit(workspace, 'payroll-run.calculated', 'PayrollRun', run.id, run);
+    return run;
+  }
+
+  approvePayrollRun(runId: string, tenantId?: string): PayrollRun {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const run = this.payrollRun(workspace, runId);
+    if (run.status === 'DRAFT') this.calculatePayrollRun(run.id, workspace.tenant.id);
+    this.validatePayrollRunCompliance(workspace, run);
+    if (run.status !== 'CALCULATED') throw new BadRequestException('La paie doit être calculée avant approbation');
+    run.status = 'APPROVED';
+    run.approvedAt = new Date().toISOString();
+    this.audit(workspace, 'payroll-run.approved', 'PayrollRun', run.id, run);
+    return run;
+  }
+
+  postPayrollRun(runId: string, tenantId?: string): PayrollRun {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const run = this.payrollRun(workspace, runId);
+    if (run.status !== 'APPROVED') throw new BadRequestException('La paie doit être approuvée avant comptabilisation');
+    this.validatePayrollRunCompliance(workspace, run);
+    this.assertPeriodOpen(workspace, `${run.period}-01`);
+    this.postJournal(workspace, `Paie ${run.number}`, run.number, [
+      { account: '6171', label: 'Rémunérations du personnel', debit: r2(run.totals.grossSalary + run.totals.employerCharges), credit: 0 },
+      { account: '4441', label: 'Personnel rémunérations dues', debit: 0, credit: run.totals.netSalary },
+      { account: '4443', label: 'CNSS et AMO à payer', debit: 0, credit: r2(run.totals.cnssEmployee + run.totals.amoEmployee + run.totals.employerCharges) },
+      { account: '4456', label: 'IR salaires à payer', debit: 0, credit: run.totals.ir },
+    ]);
+    run.status = 'POSTED';
+    run.postedAt = new Date().toISOString();
+    this.audit(workspace, 'payroll-run.posted', 'PayrollRun', run.id, run);
+    return run;
+  }
+
+  cancelPayrollRun(runId: string, tenantId?: string): PayrollRun {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const run = this.payrollRun(workspace, runId);
+    if (run.status === 'POSTED') throw new BadRequestException('Une paie comptabilisée ne peut pas être annulée');
+    run.status = 'CANCELLED';
+    run.cancelledAt = new Date().toISOString();
+    this.audit(workspace, 'payroll-run.cancelled', 'PayrollRun', run.id, run);
+    return run;
+  }
+
+  payrollRunSummary(runId: string, tenantId?: string) {
+    const run = this.payrollRun(this.workspace(tenantId), runId);
+    return {
+      runId: run.id,
+      number: run.number,
+      period: run.period,
+      status: run.status,
+      employeeCount: run.payslips.length,
+      totals: run.totals,
+    };
+  }
+
+  exportPayrollRunDamancom(runId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const run = this.payrollRun(workspace, runId);
+    if (run.status === 'DRAFT') this.calculatePayrollRun(run.id, workspace.tenant.id);
+    const rows = run.payslips.map((payslip) => this.damancomRow(workspace, run, payslip));
+    const content = rows.join('\n') + '\n';
+    const evidence = this.archiveEvidence(workspace, 'DAMANCOM_EXPORT', run.number, { runId: run.id, period: run.period, rowCount: rows.length, content });
+    return {
+      status: 'PREPARED',
+      runId: run.id,
+      period: run.period,
+      fileName: `${run.number}-damancom.txt`,
+      rowCount: rows.length,
+      rowLength: 260,
+      checksum: evidence.checksum,
+      content,
+    };
+  }
+
+  generatePayslipPdf(runId: string, payslipId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const run = this.payrollRun(workspace, runId);
+    const payslip = run.payslips.find((candidate) => candidate.id === payslipId);
+    if (!payslip) throw new NotFoundException('Bulletin de paie introuvable');
+    const lines = [
+      `Bulletin de paie ${run.period}`,
+      `Employeur ${workspace.tenant.legalEntity.tradeName}`,
+      `Salarié ${payslip.employeeName}`,
+      `Brut ${payslip.grossSalary.toFixed(2)} MAD`,
+      `CNSS ${payslip.cnssEmployee.toFixed(2)} MAD`,
+      `AMO ${payslip.amoEmployee.toFixed(2)} MAD`,
+      `IR ${payslip.ir.toFixed(2)} MAD`,
+      `Net à payer ${payslip.netSalary.toFixed(2)} MAD`,
+    ];
+    const pdf = {
+      fileName: `${run.number}-${payslip.employeeId}.pdf`,
+      mimeType: 'application/pdf' as const,
+      contentBase64: Buffer.from(this.simplePdf(lines), 'binary').toString('base64'),
+    };
+    payslip.pdf = pdf;
+    this.archiveEvidence(workspace, 'PAYSLIP_PDF', pdf.fileName, { runId: run.id, payslipId: payslip.id });
+    this.audit(workspace, 'payslip.pdf.generated', 'Payslip', payslip.id, { runId: run.id, fileName: pdf.fileName });
+    return { status: 'PREPARED', runId: run.id, payslipId: payslip.id, ...pdf };
   }
 
   auditLogs(tenantId?: string): AuditLog[] {
     return this.workspace(tenantId).auditLogs;
+  }
+
+  private defaultChartOfAccounts(tenantId: string): ChartAccount[] {
+    const accounts: Array<Omit<ChartAccount, 'id' | 'tenantId' | 'class' | 'active'>> = [
+      { account: '3111', labelFr: 'Marchandises', labelAr: 'البضائع', vatDeductible: false },
+      { account: '3421', labelFr: 'Clients', labelAr: 'الزبناء', vatDeductible: false },
+      { account: '3455', labelFr: 'État TVA récupérable', labelAr: 'ضريبة القيمة المضافة القابلة للاسترجاع', vatDeductible: true },
+      { account: '4411', labelFr: 'Fournisseurs', labelAr: 'الموردون', vatDeductible: false },
+      { account: '4441', labelFr: 'Personnel rémunérations dues', labelAr: 'أجور مستحقة', vatDeductible: false },
+      { account: '4443', labelFr: 'CNSS et AMO à payer', labelAr: 'واجبات الصندوق الوطني والضمان الصحي', vatDeductible: false },
+      { account: '4455', labelFr: 'État TVA facturée', labelAr: 'ضريبة القيمة المضافة المفوترة', vatDeductible: false },
+      { account: '4456', labelFr: 'IR salaires à payer', labelAr: 'ضريبة الدخل على الأجور', vatDeductible: false },
+      { account: '5141', labelFr: 'Banques', labelAr: 'البنوك', vatDeductible: false },
+      { account: '5161', labelFr: 'Caisses', labelAr: 'الصندوق', vatDeductible: false },
+      { account: '6111', labelFr: 'Achats revendus de marchandises', labelAr: 'مشتريات البضائع', vatDeductible: true },
+      { account: '6171', labelFr: 'Rémunérations du personnel', labelAr: 'أجور المستخدمين', vatDeductible: false },
+      { account: '6198', labelFr: 'Charges d’exploitation diverses', labelAr: 'مصاريف استغلال مختلفة', vatDeductible: false },
+      { account: '7111', labelFr: 'Ventes de marchandises', labelAr: 'مبيعات البضائع', vatDeductible: false },
+    ];
+    return accounts.map((account) => ({
+      ...account,
+      id: `acc-${account.account}`,
+      tenantId,
+      class: account.account.slice(0, 1),
+      active: true,
+    }));
+  }
+
+  private openFiscalPeriod(tenantId: string, date: string): FiscalPeriod {
+    return {
+      id: `fp-${date.slice(0, 7)}`,
+      tenantId,
+      year: Number(date.slice(0, 4)),
+      month: Number(date.slice(5, 7)),
+      locked: false,
+      status: 'OPEN',
+    };
   }
 
   private workspace(tenantId?: string): TenantWorkspace {
@@ -3457,6 +4004,12 @@ export class ErpStoreService {
     const user = workspace.users.find((candidate) => candidate.id === userId || candidate.email === userId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
     return user;
+  }
+
+  private employee(workspace: TenantWorkspace, employeeId: string): Employee {
+    const employee = workspace.employees.find((candidate) => candidate.id === employeeId || candidate.employeeNumber === employeeId);
+    if (!employee) throw new NotFoundException('Salarié introuvable');
+    return employee;
   }
 
   private warehouse(workspace: TenantWorkspace, warehouseId: string): Warehouse {
@@ -3528,6 +4081,18 @@ export class ErpStoreService {
       throw new NotFoundException('Facture introuvable');
     }
     return invoice;
+  }
+
+  private journalEntry(workspace: TenantWorkspace, entryId: string): JournalEntry {
+    const entry = workspace.journalEntries.find((candidate) => candidate.id === entryId);
+    if (!entry) throw new NotFoundException('Écriture comptable introuvable');
+    return entry;
+  }
+
+  private payrollRun(workspace: TenantWorkspace, runId: string): PayrollRun {
+    const run = workspace.payrollRuns.find((candidate) => candidate.id === runId || candidate.number === runId);
+    if (!run) throw new NotFoundException('Run de paie introuvable');
+    return run;
   }
 
   private assertCollaborationEntity(workspace: TenantWorkspace, entityType: CollaborationEntityType, entityId: string): void {
@@ -3831,6 +4396,98 @@ export class ErpStoreService {
     };
   }
 
+  private emptyPayrollTotals(): PayrollRun['totals'] {
+    return {
+      grossSalary: 0,
+      cnssEmployee: 0,
+      amoEmployee: 0,
+      ir: 0,
+      netSalary: 0,
+      employerCharges: 0,
+      employerCost: 0,
+    };
+  }
+
+  private calculateEmployeePayslip(workspace: TenantWorkspace, run: PayrollRun, employee: Employee): Payslip {
+    const rules = this.morocco2026Rules;
+    const grossSalary = r2(employee.baseSalary);
+    const cnssBase = Math.min(grossSalary, rules.cnss.cap);
+    const cnssEmployee = r2(cnssBase * rules.cnss.employeeRate);
+    const amoEmployee = r2(grossSalary * rules.cnss.amoEmployeeRate);
+    const cnssEmployer = r2(cnssBase * rules.cnss.employerRate);
+    const amoEmployer = r2(grossSalary * rules.cnss.amoEmployerRate);
+    const familyAllocation = r2(grossSalary * rules.cnss.familyAllocationRate);
+    const vocationalTraining = r2(grossSalary * rules.cnss.vocationalTrainingRate);
+    const annualGross = grossSalary * 12;
+    const professionalRate = annualGross <= 78000 ? 0.35 : 0.2;
+    const professionalExpense = r2(Math.min(grossSalary * professionalRate, 2500));
+    const taxableBase = r2(Math.max(0, grossSalary - cnssEmployee - amoEmployee - professionalExpense));
+    const bracket = rules.irBrackets.find((candidate) => taxableBase <= candidate.upperBound) ?? rules.irBrackets[rules.irBrackets.length - 1];
+    const familyDeduction = Math.min(employee.dependents, 6) * 50;
+    const ir = r2(Math.max(0, taxableBase * bracket.rate - bracket.deduction - familyDeduction));
+    const employerCharges = r2(cnssEmployer + amoEmployer + familyAllocation + vocationalTraining);
+    const payslip: Payslip = {
+      id: this.id('payslip'),
+      tenantId: workspace.tenant.id,
+      payrollRunId: run.id,
+      employeeId: employee.id,
+      employeeName: employee.fullName,
+      period: run.period,
+      grossSalary,
+      cnssEmployee,
+      amoEmployee,
+      ir,
+      netSalary: r2(grossSalary - cnssEmployee - amoEmployee - ir),
+      employerCharges,
+    };
+    return payslip;
+  }
+
+  private payrollTotals(payslips: Payslip[]): PayrollRun['totals'] {
+    return {
+      grossSalary: r2(payslips.reduce((sum, payslip) => sum + payslip.grossSalary, 0)),
+      cnssEmployee: r2(payslips.reduce((sum, payslip) => sum + payslip.cnssEmployee, 0)),
+      amoEmployee: r2(payslips.reduce((sum, payslip) => sum + payslip.amoEmployee, 0)),
+      ir: r2(payslips.reduce((sum, payslip) => sum + payslip.ir, 0)),
+      netSalary: r2(payslips.reduce((sum, payslip) => sum + payslip.netSalary, 0)),
+      employerCharges: r2(payslips.reduce((sum, payslip) => sum + payslip.employerCharges, 0)),
+      employerCost: r2(payslips.reduce((sum, payslip) => sum + payslip.grossSalary + payslip.employerCharges, 0)),
+    };
+  }
+
+  private validatePayrollRunCompliance(workspace: TenantWorkspace, run: PayrollRun): void {
+    if (!workspace.tenant.legalEntity.cnssNumber) throw new BadRequestException('Numéro CNSS employeur obligatoire avant paie');
+    if (!run.payslips.length) throw new BadRequestException('La paie ne contient aucun bulletin calculé');
+    for (const payslip of run.payslips) {
+      const employee = this.employee(workspace, payslip.employeeId);
+      if (!employee.cin || !employee.cnssNumber) throw new BadRequestException(`Identifiants CIN/CNSS manquants pour ${employee.fullName}`);
+    }
+    if (this.morocco2026Rules.effectiveFrom > `${run.period}-01`) {
+      throw new BadRequestException('Aucun pack de règles paie Maroc effectif pour cette période');
+    }
+  }
+
+  private damancomRow(workspace: TenantWorkspace, run: PayrollRun, payslip: Payslip): string {
+    const employee = this.employee(workspace, payslip.employeeId);
+    const cols = [
+      String(run.year),
+      String(run.month).padStart(2, '0'),
+      'RG01',
+      (employee.cnssNumber ?? '').slice(0, 10).padStart(10, '0'),
+      employee.employeeNumber.slice(0, 20).padEnd(20, ' '),
+      workspace.tenant.legalEntity.tradeName.slice(0, 32).padEnd(32, ' '),
+      workspace.tenant.legalEntity.cnssNumber.slice(0, 7).padStart(7, '0'),
+      employee.fullName.slice(0, 40).padEnd(40, ' '),
+      employee.cin.slice(0, 12).padEnd(12, ' '),
+      String(Math.trunc(payslip.grossSalary)).padStart(15, ' '),
+      String(Math.trunc(payslip.cnssEmployee)).padStart(15, ' '),
+      String(Math.trunc(payslip.amoEmployee)).padStart(15, ' '),
+      String(Math.trunc(payslip.ir)).padStart(15, ' '),
+      String(Math.trunc(payslip.netSalary)).padStart(15, ' '),
+    ];
+    return cols.join('').slice(0, 260).padEnd(260, ' ');
+  }
+
   private assertCustomerCreditAvailable(workspace: TenantWorkspace, customer: Customer, invoiceTotal: number): void {
     const control = this.customerCreditControl(workspace, customer.id, invoiceTotal);
     if (control.onHold) {
@@ -3864,6 +4521,7 @@ export class ErpStoreService {
   }
 
   private postJournal(workspace: TenantWorkspace, description: string, source: string, lines: JournalEntry['lines']): JournalEntry {
+    this.validateJournalLines(workspace, lines);
     const debit = r2(lines.reduce((sum, line) => sum + line.debit, 0));
     const credit = r2(lines.reduce((sum, line) => sum + line.credit, 0));
     if (debit !== credit) {
@@ -3877,9 +4535,25 @@ export class ErpStoreService {
       description,
       lines,
       posted: true,
+      status: 'POSTED',
     };
     workspace.journalEntries.push(entry);
     return entry;
+  }
+
+  private validateJournalLines(workspace: TenantWorkspace, lines: JournalEntry['lines']): void {
+    if (!lines?.length || lines.length < 2) throw new BadRequestException('Une écriture doit contenir au moins deux lignes');
+    for (const line of lines) {
+      const account = workspace.chartOfAccounts.find((candidate) => candidate.account === line.account && candidate.active);
+      if (!account) throw new BadRequestException(`Compte PCGE introuvable ou inactif: ${line.account}`);
+      if (!this.clean(line.label)) throw new BadRequestException('Chaque ligne comptable exige un libellé');
+      if (line.debit < 0 || line.credit < 0) throw new BadRequestException('Débit et crédit doivent être positifs');
+      if (line.debit > 0 && line.credit > 0) throw new BadRequestException('Une ligne ne peut pas être débit et crédit à la fois');
+      if (line.debit === 0 && line.credit === 0) throw new BadRequestException('Une ligne doit porter un débit ou un crédit');
+    }
+    const debit = r2(lines.reduce((sum, line) => sum + line.debit, 0));
+    const credit = r2(lines.reduce((sum, line) => sum + line.credit, 0));
+    if (debit !== credit) throw new BadRequestException('L’écriture comptable doit être équilibrée');
   }
 
   private assertInvoiceLegalIdentity(entity: LegalEntity): void {
@@ -3893,7 +4567,7 @@ export class ErpStoreService {
     const year = Number(date.slice(0, 4));
     const month = Number(date.slice(5, 7));
     const period = workspace.fiscalPeriods.find((candidate) => candidate.year === year && candidate.month === month);
-    if (period?.locked) {
+    if (period?.locked || period?.status === 'LOCKED' || period?.status === 'CLOSED') {
       throw new ForbiddenException('La période fiscale est verrouillée');
     }
   }
@@ -3928,6 +4602,25 @@ export class ErpStoreService {
       at: new Date().toISOString(),
       payload,
     });
+  }
+
+  private archiveEvidence(workspace: TenantWorkspace, type: LegalEvidence['type'], reference: string, metadata: Record<string, unknown>): LegalEvidence {
+    const checksum = createHash('sha256').update(JSON.stringify({ type, reference, metadata })).digest('hex');
+    const existing = workspace.legalEvidences.find((candidate) => candidate.type === type && candidate.reference === reference && candidate.checksum === checksum);
+    if (existing) return existing;
+    const evidence: LegalEvidence = {
+      id: this.id('evd'),
+      tenantId: workspace.tenant.id,
+      type,
+      reference,
+      status: 'ARCHIVED',
+      checksum,
+      archivedAt: new Date().toISOString(),
+      metadata,
+    };
+    workspace.legalEvidences.push(evidence);
+    this.audit(workspace, 'legal-evidence.archived', 'LegalEvidence', evidence.id, evidence);
+    return evidence;
   }
 
   private passwordHash(password: string): string {

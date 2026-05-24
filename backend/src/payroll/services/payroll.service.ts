@@ -116,11 +116,25 @@ export class PayrollService {
   constructor(private readonly store: ErpStoreService) {}
 
   listPayslips(_employeeId?: string): unknown {
-    return [];
+    return this.store.listPayrollRuns().flatMap((run) => run.payslips);
   }
 
   listEmployees() { return this.store.listEmployees(); }
+  getEmployee(id: string) { return this.store.getEmployee(id); }
   addEmployee(data: any) { return this.store.addEmployee(data); }
+  updateEmployee(id: string, data: any) { return this.store.updateEmployee(id, data); }
+  archiveEmployee(id: string) { return this.store.archiveEmployee(id); }
+  listContracts() { return this.store.listEmploymentContracts(); }
+  addContract(data: any) { return this.store.addEmploymentContract(data); }
+  listRuns() { return this.store.listPayrollRuns(); }
+  createRun(data: any) { return this.store.createPayrollRun(data); }
+  calculateRun(id: string) { return this.store.calculatePayrollRun(id); }
+  approveRun(id: string) { return this.store.approvePayrollRun(id); }
+  postRun(id: string) { return this.store.postPayrollRun(id); }
+  cancelRun(id: string) { return this.store.cancelPayrollRun(id); }
+  runSummary(id: string) { return this.store.payrollRunSummary(id); }
+  runPayslipPdf(runId: string, payslipId: string) { return this.store.generatePayslipPdf(runId, payslipId); }
+  runDamancom(id: string) { return this.store.exportPayrollRunDamancom(id); }
   employeeImportTemplateCsv() { return this.store.importTemplateCsv('employees'); }
   payrollRunTimeline(id: string) { return this.store.entityTimeline('PAYROLL_RUN', id); }
   addPayrollRunNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'PAYROLL_RUN', entityId: id, ...data }); }

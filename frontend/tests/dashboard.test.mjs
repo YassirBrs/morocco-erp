@@ -71,6 +71,21 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/inventory/suppliers/payment-calendar'));
   assert.ok(staticPage.includes('/compliance/vat-declaration-checklist'));
   assert.ok(staticPage.includes('/ledger/periods/close-checklist'));
+  assert.ok(staticPage.includes('/ledger/accounts'));
+  assert.ok(staticPage.includes('/ledger/accounts?q=client'));
+  assert.ok(staticPage.includes('/ledger/journal'));
+  assert.ok(staticPage.includes('/ledger/journal/${draft.id}/post'));
+  assert.ok(staticPage.includes('/ledger/vat-report'));
+  assert.ok(staticPage.includes('/ledger/export?format=CSV'));
+  assert.ok(staticPage.includes('/ledger/reconciliation'));
+  assert.ok(staticPage.includes('/ledger/evidence'));
+  assert.ok(staticPage.includes('/payroll/contracts'));
+  assert.ok(staticPage.includes('/payroll/runs'));
+  assert.ok(staticPage.includes('/payroll/runs/${run.id}/calculate'));
+  assert.ok(staticPage.includes('/payroll/runs/${run.id}/approve'));
+  assert.ok(staticPage.includes('/payroll/runs/${run.id}/post'));
+  assert.ok(staticPage.includes('/payroll/runs/${run.id}/damancom'));
+  assert.ok(staticPage.includes('/payroll/runs/${run.id}/payslips/${payslip.id}/pdf'));
   assert.ok(staticPage.includes('/crm/customers/duplicates'));
   assert.ok(staticPage.includes('/inventory/products/duplicates'));
   assert.ok(staticPage.includes('/ledger/audit'));
@@ -224,5 +239,20 @@ test('static dashboard exposes security, subscription, retention, purchase, and 
   }
   for (const cssToken of ['.securityGrid', '.procurementGrid']) {
     assert.ok(staticCss.includes(cssToken), `${cssToken} style exists`);
+  }
+});
+
+test('static dashboard exposes accounting compliance and payroll run workflows', () => {
+  for (const text of ['Comptabilité PCGE', 'Journaux, périodes, TVA et preuves légales', 'Sélecteur PCGE', 'Période fiscale', 'TVA nette', 'Lettrage', 'Écriture manuelle', 'Comptabiliser brouillon', 'Export comptable', 'Archiver preuve', 'Paie Maroc', 'Runs, contrats, bulletins et Damancom', 'Créer paie mensuelle', 'Comptabiliser paie', 'Export Damancom', 'PDF bulletin', 'Contrats actifs', 'Brut période', 'Net à payer']) {
+    assert.ok(staticPage.includes(text), `${text} accounting/payroll workflow label is present`);
+  }
+  for (const marker of ['renderAccountingControls', 'renderPayrollRuns', 'createManualJournal', 'postManualJournal', 'prepareAccountingExport', 'archiveAccountingEvidence', 'createPayrollRun', 'calculatePayrollRun', 'approvePayrollRun', 'postPayrollRun', 'exportDamancomRun', 'generatePayslipPdf']) {
+    assert.ok(staticPage.includes(marker), `${marker} accounting/payroll helper is present`);
+  }
+  for (const cssToken of ['.accountingGrid', '.payrollRunGrid']) {
+    assert.ok(staticCss.includes(cssToken), `${cssToken} style exists`);
+  }
+  for (const token of ['/ledger/accounts?q=client', '/ledger/export?format=CSV', '/ledger/reconciliation', '/payroll/contracts', '/payroll/runs']) {
+    assert.ok(api.includes(token) || staticPage.includes(token), `${token} API route is wired`);
   }
 });

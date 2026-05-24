@@ -48,6 +48,19 @@ export type StockLine = {
   stockValue: number;
 };
 
+export type AccountingSnapshot = {
+  accounts: Array<{ account: string; labelFr: string }>;
+  journalEntries: Array<{ id: string; source: string; description: string; status: string; lines: Array<{ account: string }> }>;
+  vatReport: { netVatPayable: number; byRate: Array<{ rate: string; net: number }> };
+  reconciliation: { totals: { bankCash: number; receivables: number; payables: number } };
+};
+
+export type PayrollSnapshot = {
+  employees: Array<{ id: string; fullName: string; baseSalary: number; active: boolean }>;
+  contracts: Array<{ id: string; employeeId: string; salary: number; active: boolean }>;
+  runs: Array<{ id: string; number: string; status: string; payslips: unknown[]; totals: { grossSalary: number; netSalary: number; employerCost: number } }>;
+};
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -120,6 +133,25 @@ export async function getInvoices(): Promise<Invoice[]> {
 
 export async function getStock(): Promise<StockLine[]> {
   return getJson('/inventory', fallbackStock);
+}
+
+export async function getAccountingSnapshot(): Promise<AccountingSnapshot> {
+  const [accounts, journalEntries, vatReport, reconciliation] = await Promise.all([
+    getJson('/ledger/accounts', []),
+    getJson('/ledger/journal', []),
+    getJson('/ledger/vat-report', { netVatPayable: 0, byRate: [] }),
+    getJson('/ledger/reconciliation', { totals: { bankCash: 0, receivables: 0, payables: 0 } }),
+  ]);
+  return { accounts, journalEntries, vatReport, reconciliation };
+}
+
+export async function getPayrollSnapshot(): Promise<PayrollSnapshot> {
+  const [employees, contracts, runs] = await Promise.all([
+    getJson('/payroll/employees', []),
+    getJson('/payroll/contracts', []),
+    getJson('/payroll/runs', []),
+  ]);
+  return { employees, contracts, runs };
 }
 
 export async function searchBusiness(query: string): Promise<BusinessSearchResult[]> {
