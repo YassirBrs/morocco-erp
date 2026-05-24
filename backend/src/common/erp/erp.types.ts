@@ -7,6 +7,25 @@ export type QuoteStatus = 'DRAFT' | 'APPROVED' | 'CONVERTED' | 'VOID';
 export type SalesOrderStatus = 'CONFIRMED' | 'DELIVERED' | 'INVOICED' | 'CANCELLED';
 export type DeliveryNoteStatus = 'POSTED' | 'CANCELLED';
 export type StockMoveType = 'RECEIPT' | 'DELIVERY' | 'DELIVERY_REVERSAL' | 'ADJUSTMENT' | 'PRODUCTION_CONSUME' | 'PRODUCTION_OUTPUT' | 'POS_SALE' | 'RESERVATION' | 'RESERVATION_RELEASE';
+export type BusinessSearchType = 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
+
+export interface BusinessSearchInput {
+  q: string;
+  types?: BusinessSearchType[];
+  limit?: number;
+}
+
+export interface BusinessSearchResult {
+  type: BusinessSearchType;
+  id: string;
+  title: string;
+  subtitle: string;
+  status?: string;
+  amount?: number;
+  reference?: string;
+  view: 'crm' | 'sales' | 'stock' | 'accounting';
+  score: number;
+}
 
 export interface LegalEntity {
   tradeName: string;

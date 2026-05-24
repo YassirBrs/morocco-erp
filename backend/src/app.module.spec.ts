@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { SalesService } from './sales/services/sales.service';
 import { InventoryService } from './inventory/services/inventory.service';
 import { ComplianceService } from './compliance/services/compliance.service';
+import { SearchService } from './search/services/search.service';
 import { ClsService } from 'nestjs-cls';
 
 describe('AppModule ERP module wiring', () => {
@@ -25,6 +26,7 @@ describe('AppModule ERP module wiring', () => {
     const sales = moduleRef.get(SalesService);
     const inventory = moduleRef.get(InventoryService);
     const compliance = moduleRef.get(ComplianceService);
+    const search = moduleRef.get(SearchService);
     const cls = moduleRef.get(ClsService);
 
     cls.run(() => {
@@ -41,6 +43,7 @@ describe('AppModule ERP module wiring', () => {
       expect(invoice.compliance.validated).toBe(true);
       expect(stock.stockOnHand).toBe(49);
       expect(vat.vatCollected).toBe(170);
+      expect(search.businessSearch({ q: invoice.number })[0].type).toBe('invoices');
     });
   });
 });

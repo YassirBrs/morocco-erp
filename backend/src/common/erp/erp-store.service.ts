@@ -2,6 +2,9 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { ClsService } from 'nestjs-cls';
 import {
   AuditLog,
+  BusinessSearchInput,
+  BusinessSearchResult,
+  BusinessSearchType,
   CompanyProfileChange,
   ComplianceRuleSet,
   CreditNote,
@@ -371,6 +374,99 @@ export class ErpStoreService {
       compliance: this.morocco2026Rules,
       setup: this.setupChecklist(workspace.tenant.id),
     };
+  }
+
+  businessSearch(input: BusinessSearchInput, tenantId?: string): BusinessSearchResult[] {
+    const workspace = this.workspace(tenantId);
+    const query = this.searchText(input.q);
+    if (!query) return [];
+    const allowedTypes = new Set<BusinessSearchType>(input.types?.length
+      ? input.types
+      : ['customers', 'leads', 'suppliers', 'products', 'invoices', 'orders']);
+    const limit = Math.min(Math.max(Math.trunc(input.limit ?? 10), 1), 25);
+    const results: BusinessSearchResult[] = [];
+    const add = (result: Omit<BusinessSearchResult, 'score'>, fields: Array<string | number | undefined>) => {
+      if (!allowedTypes.has(result.type)) return;
+      const score = this.searchScore(query, fields);
+      if (score > 0) results.push({ ...result, score });
+    };
+
+    for (const customer of workspace.customers) {
+      add({
+        type: 'customers',
+        id: customer.id,
+        title: customer.name,
+        subtitle: [customer.ice && `ICE ${customer.ice}`, customer.city, customer.email].filter(Boolean).join(' · '),
+        status: customer.active ? 'Actif' : 'Archivé',
+        reference: customer.ice,
+        view: 'crm',
+      }, [customer.name, customer.ice, customer.ifNumber, customer.rc, customer.email, customer.phone, customer.city]);
+    }
+    for (const lead of workspace.leads) {
+      add({
+        type: 'leads',
+        id: lead.id,
+        title: lead.customerName,
+        subtitle: [lead.owner, lead.source, lead.nextActionDate].filter(Boolean).join(' · '),
+        status: lead.stage,
+        amount: lead.expectedValue,
+        reference: lead.id,
+        view: 'crm',
+      }, [lead.customerName, lead.stage, lead.owner, lead.source, lead.nextActionDate]);
+    }
+    for (const supplier of workspace.suppliers) {
+      add({
+        type: 'suppliers',
+        id: supplier.id,
+        title: supplier.name,
+        subtitle: [supplier.ice && `ICE ${supplier.ice}`, supplier.ifNumber && `IF ${supplier.ifNumber}`, supplier.bankDetails[0]?.bankName].filter(Boolean).join(' · '),
+        status: supplier.active ? 'Actif' : 'Archivé',
+        reference: supplier.ice ?? supplier.ifNumber,
+        view: 'stock',
+      }, [supplier.name, supplier.ice, supplier.ifNumber, supplier.rc, supplier.email, supplier.phone, supplier.city, ...supplier.bankDetails.flatMap((bank) => [bank.bankName, bank.rib])]);
+    }
+    for (const product of workspace.products) {
+      add({
+        type: 'products',
+        id: product.id,
+        title: product.name,
+        subtitle: `${product.sku} · ${product.type}`,
+        status: product.active ? 'Actif' : 'Archivé',
+        amount: product.salePrice,
+        reference: product.sku,
+        view: 'stock',
+      }, [product.name, product.sku, product.type, product.unit]);
+    }
+    for (const invoice of workspace.invoices) {
+      const customer = this.customer(workspace, invoice.customerId);
+      add({
+        type: 'invoices',
+        id: invoice.id,
+        title: invoice.number,
+        subtitle: customer.name,
+        status: invoice.status,
+        amount: invoice.totals.total,
+        reference: invoice.number,
+        view: 'sales',
+      }, [invoice.number, invoice.status, customer.name, customer.ice, ...invoice.lines.flatMap((line) => [line.sku, line.description])]);
+    }
+    for (const order of workspace.salesOrders) {
+      const customer = this.customer(workspace, order.customerId);
+      add({
+        type: 'orders',
+        id: order.id,
+        title: order.number,
+        subtitle: customer.name,
+        status: order.status,
+        amount: order.totals.total,
+        reference: order.number,
+        view: 'sales',
+      }, [order.number, order.status, customer.name, customer.ice, ...order.lines.flatMap((line) => [line.sku, line.description])]);
+    }
+
+    return results
+      .sort((left, right) => right.score - left.score || left.title.localeCompare(right.title))
+      .slice(0, limit);
   }
 
   setupChecklist(tenantId?: string) {
@@ -1925,6 +2021,26 @@ export class ErpStoreService {
       throw new BadRequestException('Le RIB marocain doit contenir exactement 24 chiffres');
     }
     return rib;
+  }
+
+  private searchText(value: unknown): string {
+    return String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private searchScore(query: string, fields: Array<string | number | undefined>): number {
+    let best = 0;
+    for (const field of fields) {
+      const text = this.searchText(field);
+      if (!text) continue;
+      if (text === query) best = Math.max(best, 100);
+      else if (text.startsWith(query)) best = Math.max(best, 75);
+      else if (text.includes(query)) best = Math.max(best, 45);
+    }
+    return best;
   }
 
   private validateAddresses(addresses: Customer['addresses']): void {

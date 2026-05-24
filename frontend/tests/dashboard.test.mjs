@@ -17,6 +17,7 @@ test('dashboard renders Morocco ERP workspace sections', () => {
 test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(api.includes("'x-tenant-id': TENANT_ID"));
   assert.ok(api.includes('/tenant/current'));
+  assert.ok(api.includes('/search?q='));
   assert.ok(api.includes('/sales/invoices'));
   assert.ok(api.includes('/inventory'));
   assert.ok(staticPage.includes("'x-tenant-id': 'tenant-demo'"));
@@ -34,6 +35,7 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/tenant/company-profile/approve'));
   assert.ok(staticPage.includes('/tenant/demo-reset'));
   assert.ok(staticPage.includes('/ledger/audit'));
+  assert.ok(staticPage.includes('/search?q='));
   assert.ok(staticPage.includes("method: 'PATCH'"));
   assert.ok(staticPage.includes('/crm/customers'));
   assert.ok(staticPage.includes('/inventory/products'));
@@ -50,6 +52,17 @@ test('static dashboard uses sidebar module navigation instead of showing one com
   assert.ok(staticPage.includes("section.classList.toggle('viewHidden'"));
   assert.ok(staticCss.includes('.viewHidden'));
   assert.ok(staticCss.includes('.navItem.active'));
+});
+
+test('static dashboard exposes unified business search', () => {
+  for (const text of ['Recherche', 'Client', 'Prospect', 'Fournisseur', 'Article', 'Facture', 'Commande']) {
+    assert.ok(staticPage.includes(text), `${text} search label is present`);
+  }
+  assert.ok(staticPage.includes('renderBusinessSearch'));
+  assert.ok(staticPage.includes('switchModuleView(item.dataset.viewTarget)'));
+  assert.ok(staticCss.includes('.businessSearch'));
+  assert.ok(staticCss.includes('.searchResults'));
+  assert.ok(staticCss.includes('.searchResult'));
 });
 
 test('layout uses dense ERP panels instead of a marketing hero', () => {

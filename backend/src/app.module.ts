@@ -15,6 +15,7 @@ import { PayrollModule } from './payroll/payroll.module';
 import { ProductionModule } from './production/production.module';
 import { PosModule } from './pos/pos.module';
 import { ComplianceModule } from './compliance/compliance.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ComplianceModule } from './compliance/compliance.module';
     ProductionModule,
     PosModule,
     ComplianceModule,
+    SearchModule,
   ],
   providers: [
     {

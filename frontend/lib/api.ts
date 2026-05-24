@@ -48,6 +48,18 @@ export type StockLine = {
   stockValue: number;
 };
 
+export type BusinessSearchResult = {
+  type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
+  id: string;
+  title: string;
+  subtitle: string;
+  status?: string;
+  amount?: number;
+  reference?: string;
+  view: 'crm' | 'sales' | 'stock' | 'accounting';
+  score: number;
+};
+
 const fallbackSummary: DashboardSummary = {
   tenant: {
     legalEntity: {
@@ -108,4 +120,8 @@ export async function getInvoices(): Promise<Invoice[]> {
 
 export async function getStock(): Promise<StockLine[]> {
   return getJson('/inventory', fallbackStock);
+}
+
+export async function searchBusiness(query: string): Promise<BusinessSearchResult[]> {
+  return getJson(`/search?q=${encodeURIComponent(query)}&limit=8`, []);
 }

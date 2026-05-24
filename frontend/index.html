@@ -40,6 +40,11 @@
             <h1 id="tradeName">Chargement...</h1>
             <div id="identity" class="identity"></div>
           </div>
+          <div class="businessSearch" role="search">
+            <label for="businessSearchInput">Recherche</label>
+            <input id="businessSearchInput" type="search" autocomplete="off" placeholder="Client, Prospect, Fournisseur, Article, Facture, Commande" />
+            <div id="businessSearchResults" class="searchResults" hidden></div>
+          </div>
           <div class="topActions">
             <div class="status">
               <span id="plan"></span>
@@ -320,7 +325,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -363,6 +368,14 @@
           BANK: 'Banque',
           CASH: 'Espèces',
           CARD: 'Carte'
+        },
+        searchTypes: {
+          customers: 'Client',
+          leads: 'Prospect',
+          suppliers: 'Fournisseur',
+          products: 'Article',
+          invoices: 'Facture',
+          orders: 'Commande'
         }
       };
       const translate = (group, value) => labels[group][value] || value;
@@ -575,6 +588,47 @@
         qs('#auditSummary').textContent = `${profileAuditCount} événement${profileAuditCount > 1 ? 's' : ''}`;
       }
 
+      function renderBusinessSearch() {
+        const box = qs('#businessSearchResults');
+        if (!state.searchQuery) {
+          box.hidden = true;
+          box.innerHTML = '';
+          return;
+        }
+        box.hidden = false;
+        box.innerHTML = state.searchResults.length ? state.searchResults.map((result) => `
+          <button class="searchResult" type="button" data-view-target="${result.view}">
+            <span>${translate('searchTypes', result.type)}</span>
+            <strong>${result.title}</strong>
+            <small>${[result.reference, result.subtitle, result.amount ? mad(result.amount) : ''].filter(Boolean).join(' · ')}</small>
+          </button>
+        `).join('') : '<div class="searchEmpty">Aucun résultat</div>';
+        box.querySelectorAll('[data-view-target]').forEach((item) => {
+          item.addEventListener('click', () => {
+            switchModuleView(item.dataset.viewTarget);
+            box.hidden = true;
+            showMessage('success', `Recherche ouverte dans le module ${item.dataset.viewTarget}.`);
+          });
+        });
+      }
+
+      async function runBusinessSearch(query) {
+        state.searchQuery = query.trim();
+        if (state.searchQuery.length < 2) {
+          state.searchResults = [];
+          renderBusinessSearch();
+          return;
+        }
+        try {
+          state.searchResults = await get(`/search?q=${encodeURIComponent(state.searchQuery)}&limit=8`);
+          renderBusinessSearch();
+        } catch (error) {
+          state.searchResults = [];
+          renderBusinessSearch();
+          showMessage('error', error.message);
+        }
+      }
+
       function switchModuleView(view) {
         state.activeView = view;
         document.querySelectorAll('[data-view]').forEach((item) => {
@@ -625,6 +679,12 @@
 
       document.querySelectorAll('[data-view]').forEach((item) => {
         item.addEventListener('click', () => switchModuleView(item.dataset.view));
+      });
+
+      let searchTimer = null;
+      qs('#businessSearchInput').addEventListener('input', (event) => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => runBusinessSearch(event.target.value), 180);
       });
 
       qs('#createQuote').addEventListener('click', async () => {

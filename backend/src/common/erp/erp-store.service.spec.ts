@@ -479,6 +479,33 @@ describe('ErpStoreService working ERP workflows', () => {
     })).toThrow(BadRequestException);
   });
 
+  it('searches tenant business records across CRM, suppliers, products, invoices, and orders', () => {
+    const lead = store.addLead({ customerName: 'Clinique Atlas Search', source: 'Web', expectedValue: 30000 });
+    const order = store.createSalesOrder({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    const invoice = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+
+    expect(store.businessSearch({ q: 'Rabat Retail' }).map((result) => result.type)).toContain('customers');
+    expect(store.businessSearch({ q: 'Clinique Atlas' })[0]).toMatchObject({ type: 'leads', id: lead.id, view: 'crm' });
+    expect(store.businessSearch({ q: '445566' })[0]).toMatchObject({ type: 'suppliers', title: 'Casa Import SA' });
+    expect(store.businessSearch({ q: 'SKU-CHAIR', types: ['products'] })[0]).toMatchObject({ type: 'products', reference: 'SKU-CHAIR' });
+    expect(store.businessSearch({ q: invoice.number })[0]).toMatchObject({ type: 'invoices', reference: invoice.number, amount: 1440 });
+    expect(store.businessSearch({ q: order.number, types: ['orders'], limit: 1 })).toEqual([
+      expect.objectContaining({ type: 'orders', reference: order.number }),
+    ]);
+    expect(store.businessSearch({ q: 'Rabat Retail', types: ['products'] })).toEqual([]);
+  });
+
+  it('keeps business search tenant scoped', () => {
+    const tenant = store.createTenant({ tradeName: 'Tenant Search SARL', ice: '009999888777666' });
+    const customer = store.addCustomer({ name: 'Client Secret Tenant', ice: '009999888777111' }, tenant.id);
+
+    expect(store.businessSearch({ q: 'Client Secret' })).toEqual([]);
+    expect(store.businessSearch({ q: 'Client Secret' }, tenant.id)[0]).toMatchObject({
+      type: 'customers',
+      id: customer.id,
+    });
+  });
+
   it('supports full product CRUD, SKU uniqueness, VAT rule validation, and stock behavior', () => {
     const product = store.addProduct({
       sku: 'sku-desk',
