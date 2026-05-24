@@ -58,6 +58,7 @@ export class TenantService {
   uxUiStateStore(role?: string) { return this.store.uxUiStateStore(role); }
   uxSmokeFlows() { return this.store.uxSmokeFlows(); }
   uxContractHub() { return this.store.uxContractHub(); }
+  uxQualityMigrationReadiness() { return this.store.uxQualityMigrationReadiness(); }
 
   subscriptionGate() {
     return this.store.subscriptionGate();

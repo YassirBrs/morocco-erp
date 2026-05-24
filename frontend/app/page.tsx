@@ -144,6 +144,7 @@ export default async function DashboardPage() {
             ['Paie/RH', '/paie'],
             ['Workflows', '/workflows'],
             ['Contrats UX', '/contrats-ux'],
+            ['Qualité/Migration', '/qualite-migration'],
             ['Admin/Conformité', '/admin'],
           ].map(([item, href]) => (
             <a key={item} className={item === 'Tableau de bord' ? 'active' : ''} href={href}>{item}</a>

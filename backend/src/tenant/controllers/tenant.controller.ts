@@ -39,6 +39,7 @@ export class TenantController {
   @Get('ux/permission-matrix') uxPermissionMatrix(@Query('role') role?: string) { return this.tenantService.uxPermissionMatrix(role); }
   @Get('ux/ui-state') uxUiStateStore(@Query('role') role?: string) { return this.tenantService.uxUiStateStore(role); }
   @Get('ux/smoke-flows') uxSmokeFlows() { return this.tenantService.uxSmokeFlows(); }
+  @Get('ux/quality-migration-readiness') uxQualityMigrationReadiness() { return this.tenantService.uxQualityMigrationReadiness(); }
   @Get('subscription-gate') subscriptionGate() { return this.tenantService.subscriptionGate(); }
   @Patch('subscription-gate') updateSubscriptionGate(@Body() body: any) { return this.tenantService.updateSubscriptionGate(body); }
   @Get('retention-policy') retentionPolicy() { return this.tenantService.retentionPolicy(); }

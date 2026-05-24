@@ -250,6 +250,26 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(hub.validationErrors.errors[0].suggestion).toContain('ICE');
   });
 
+  it('returns quality, migration, portal, mobile, and release-gate readiness for Odoo/Sage replacement work', () => {
+    const readiness = store.uxQualityMigrationReadiness();
+
+    expect(readiness.posSmoke.steps).toEqual(expect.arrayContaining(['open session', 'sell ticket', 'refund', 'offline sync', 'Z close']));
+    expect(readiness.adminSmoke.steps).toEqual(expect.arrayContaining(['users', 'roles', 'numbering', 'adapters', 'rule packs', 'audit explorer']));
+    expect(readiness.playwrightQuality.visualRegression.desktop).toEqual(expect.arrayContaining(['/ventes', '/pos', '/admin']));
+    expect(readiness.playwrightQuality.accessibilityChecks).toEqual(expect.arrayContaining(['navigation', 'forms', 'tables', 'command palette']));
+    expect(readiness.playwrightQuality.roleSwitch).toEqual(expect.arrayContaining(['OWNER', 'ACCOUNTANT', 'CASHIER', 'READ_ONLY']));
+    expect(readiness.frontendUnitCoverage.validators).toEqual(expect.arrayContaining(['ICE', 'RIB', 'TVA']));
+    expect(readiness.implementationChecklist.odooSageReplacementScore).toBeGreaterThanOrEqual(80);
+    expect(readiness.migration.sage100).toEqual(expect.arrayContaining(['customers', 'journals', 'balances']));
+    expect(readiness.migration.odoo).toEqual(expect.arrayContaining(['partners', 'stock moves', 'employees']));
+    expect(readiness.setupWizards.payroll).toEqual(expect.arrayContaining(['employer CNSS', 'salary rules', 'leave balances']));
+    expect(readiness.portals.accountant).toEqual(expect.arrayContaining(['evidence requests', 'period close', 'tax deadlines']));
+    expect(readiness.mobileModes.cashierTablet).toEqual(expect.arrayContaining(['large touch targets', 'offline banner']));
+    expect(readiness.advancedSearch.syntax).toEqual(expect.arrayContaining(['ICE:0015*', 'amount:1000..5000']));
+    expect(readiness.duplicateWorkbench).toEqual(expect.arrayContaining(['customers', 'suppliers', 'employees']));
+    expect(readiness.releaseReadinessGate.blocksReleaseUntil).toEqual(expect.arrayContaining(['core journeys', 'accessibility', 'E2E tests']));
+  });
+
   it('revises, approves, exports, and converts a quote to order, delivery note, and invoice', () => {
     const quote = store.createQuote({
       customerId: 'cus-1',

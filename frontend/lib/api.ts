@@ -1295,3 +1295,42 @@ export async function getUxWorkspaceContractHub(): Promise<UxWorkspaceContractHu
     smokeFlows: { flows: [] },
   });
 }
+
+export type UxQualityMigrationReadiness = Record<string, any>;
+
+export const uxQualityMigrationRoutes = [
+  '/tenant/ux/quality-migration-readiness',
+  'visualRegression.desktop./ventes',
+  'visualRegression.tablet./contrats-ux',
+  'accessibility.navigation.forms.modals.tables.commandPalette.notificationCenter',
+  'keyboardOnly.quoteCreation.invoicePayment.payrollRunCalculation',
+  'roleSwitch.OWNER.SALES.WAREHOUSE.ACCOUNTANT.PAYROLL.CASHIER.READ_ONLY',
+  'localization.primaryLanguage.fr.arabicReadyFields',
+  'unsavedChanges.customer.invoice.journal.payroll',
+  'importExport.CSVTemplates.importPreview.PDFDownload.evidenceArchive',
+  'sage100.customers.suppliers.accounts.products.journals.balances',
+  'odoo.partners.products.invoices.stockMoves.journals.employees',
+  'advancedSearch.invoice.ICE.SKU.amountRange.date.status.module',
+];
+
+export async function getUxQualityMigrationReadiness(): Promise<UxQualityMigrationReadiness> {
+  return getJson('/tenant/ux/quality-migration-readiness', {
+    posSmoke: { steps: [] },
+    adminSmoke: { steps: [] },
+    playwrightQuality: { visualRegression: { desktop: [], tablet: [] }, accessibilityChecks: [], keyboardOnly: [], roleSwitch: [], localization: {}, unsavedChanges: [], importExport: [] },
+    frontendUnitCoverage: {},
+    implementationChecklist: { criteria: [], odooSageReplacementScore: 0 },
+    migration: { sage100: [], odoo: [], reconciliation: [] },
+    moduleAppGrid: { favorites: [], categories: [], recentlyUsed: [], adminControlledVisibility: false },
+    helpSearch: { sources: [], examples: [] },
+    setupWizards: { accounting: [], inventory: [], payroll: [], pos: [] },
+    portals: { customer: [], supplier: [], accountant: [], partner: [] },
+    mobileModes: { executive: [], warehouse: [], cashierTablet: [], accountantDense: [], managerApproval: [] },
+    advancedSearch: { syntax: [] },
+    duplicateWorkbench: [],
+    dataQuality: {},
+    usabilityReview: { checklist: [] },
+    feedbackCapture: { fields: [] },
+    releaseReadinessGate: { status: 'BLOCKED', blocksReleaseUntil: [] },
+  });
+}

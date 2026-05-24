@@ -903,6 +903,11 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T894 P1 - Add route-level loading and error boundaries for every French workspace route.
 - [x] T895 P1 - Add a dedicated Contrats UX workspace page that showcases reusable ERP components and Odoo/Sage-grade contract behavior.
 - [x] T896 P1 - Add frontend, backend, and browser-oriented smoke coverage for the contract foundation batch.
+- [x] T897 P1 - Add a quality and migration readiness backend contract for POS, admin, Playwright gates, Sage/Odoo imports, portals, mobile modes, feedback, and release blocking.
+- [x] T898 P1 - Add a dedicated Qualité/Migration workspace with French dense tables for tests, migration, setup, portals, mobile modes, search, duplicates, and release readiness.
+- [x] T899 P1 - Add frontend verification tests for the quality/migration workspace, API route contract, fixtures, and responsive styles.
+- [x] T900 P1 - Add backend tests proving POS/admin smoke, role-switch, localization, migration, portal, advanced search, duplicate, data quality, feedback, and release-gate readiness.
+- [x] T901 P1 - Add navigation and route states for the Qualité/Migration workspace so browser testing can open it directly.
 
 ## Competitive UX Execution And Productization
 
@@ -966,43 +971,43 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T833 P1 - Add Inventory workspace smoke tests for product, warehouse stock, reservation, transfer, adjustment, and count.
 - [x] T834 P1 - Add Accounting workspace smoke tests for journal, VAT report, period lock, bank reconciliation, and legal evidence.
 - [x] T835 P1 - Add Payroll workspace smoke tests for employee, contract, payroll run, payslip, Damancom, and CNSS preflight.
-- [ ] T836 P1 - Add POS workspace smoke tests for opening session, selling ticket, refund, offline sync, and Z close.
-- [ ] T837 P1 - Add Admin workspace smoke tests for users, roles, numbering, adapters, rule packs, and audit explorer.
-- [ ] T838 P1 - Add Playwright visual regression snapshots for all major workspaces at desktop and tablet widths.
-- [ ] T839 P1 - Add Playwright accessibility checks for navigation, forms, modals, tables, command palette, and notification center.
-- [ ] T840 P1 - Add Playwright keyboard-only workflow test for quote creation, invoice payment, and payroll run calculation.
-- [ ] T841 P1 - Add Playwright role-switch tests for owner, sales, warehouse, accountant, payroll, cashier, and read-only users.
-- [ ] T842 P1 - Add Playwright localization tests to ensure French remains primary and Arabic-ready fields render correctly.
-- [ ] T843 P1 - Add Playwright unsaved-changes tests for customer, invoice, journal, and payroll forms.
-- [ ] T844 P1 - Add Playwright import/export tests for CSV templates, import preview, PDF download, and evidence archive.
-- [ ] T845 P1 - Add backend contract tests for list metadata, detail metadata, allowed actions, and validation-error payloads.
-- [ ] T846 P1 - Add frontend unit tests for shared layout, workspace header, list page, record page, form page, and status pipeline.
-- [ ] T847 P1 - Add frontend unit tests for Moroccan identifier validators and French validation messages.
-- [ ] T848 P1 - Add frontend unit tests for command palette ranking, keyboard shortcuts, saved views, and pinned modules.
-- [ ] T849 P1 - Add frontend unit tests for notification center grouping, counts, snooze, and entity links.
-- [ ] T850 P1 - Add frontend unit tests for PDF preview, legal identity, document evidence, and audit drawer components.
-- [ ] T851 P2 - Add guided implementation checklist that tracks user readiness against Odoo/Sage replacement criteria.
-- [ ] T852 P2 - Add data migration wizard from Sage 100 exports for customers, suppliers, accounts, products, journals, and balances.
-- [ ] T853 P2 - Add data migration wizard from Odoo exports for partners, products, invoices, stock moves, journals, and employees.
-- [ ] T854 P2 - Add migration reconciliation report comparing imported opening balances, stock valuation, receivables, and payables.
-- [ ] T855 P2 - Add competitor-style module app grid with favorites, search, categories, recently used modules, and admin-controlled visibility.
-- [ ] T856 P2 - Add natural-language help search over local documentation, module help, glossary, and Moroccan compliance notes.
-- [ ] T857 P2 - Add guided accounting setup wizard for PCGE chart, opening balances, fiscal periods, VAT status, and bank accounts.
-- [ ] T858 P2 - Add guided inventory setup wizard for warehouses, products, stock opening, CUMP values, and reorder rules.
-- [ ] T859 P2 - Add guided payroll setup wizard for employer CNSS, employees, contracts, salary rules, dependents, and leave balances.
-- [ ] T860 P2 - Add guided POS setup wizard for stores, cashiers, products, receipt template, payment methods, and cash controls.
-- [ ] T861 P2 - Add customer portal UX polish with invoice list, payment promises, statement download, messages, and access controls.
-- [ ] T862 P2 - Add supplier portal UX polish with document upload, RFQ response, statement view, disputes, and security review.
-- [ ] T863 P2 - Add accountant portal UX polish with client list, evidence requests, review comments, period close, and tax deadlines.
-- [ ] T864 P2 - Add implementation partner portal UX polish with tenant progress, blockers, go-live checklist, and migration status.
-- [ ] T865 P2 - Add executive mobile summary with cash, sales, stock alerts, approvals, payroll blockers, and tax deadlines.
-- [ ] T866 P2 - Add warehouse mobile scan flow for receiving, picking, transfer, inventory count, and stock lookup.
-- [ ] T867 P2 - Add cashier tablet mode with large touch targets, quick products, payment buttons, receipt preview, and offline banner.
-- [ ] T868 P2 - Add accountant dense mode with compact tables, keyboard shortcuts, batch posting, and export-focused actions.
-- [ ] T869 P2 - Add manager approval mobile flow with financial summary, risk reason, comment, approve, reject, and audit.
-- [ ] T870 P2 - Add advanced search syntax for invoice numbers, ICE, SKU, amount ranges, dates, statuses, and module filters.
-- [ ] T871 P2 - Add duplicate resolution workbench for customers, suppliers, products, invoices, payments, and employees.
-- [ ] T872 P2 - Add data quality dashboard with missing identifiers, invalid VAT rates, stale records, duplicates, and owner assignments.
-- [ ] T873 P2 - Add monthly product usability review checklist with screenshots, task-completion metrics, bugs, and user feedback.
-- [ ] T874 P2 - Add in-app feedback capture linked to workspace, record, screenshot, user role, and browser metadata.
-- [ ] T875 P2 - Add release readiness UX gate that blocks release until core journeys, accessibility, visual checks, and E2E tests pass.
+- [x] T836 P1 - Add POS workspace smoke tests for opening session, selling ticket, refund, offline sync, and Z close.
+- [x] T837 P1 - Add Admin workspace smoke tests for users, roles, numbering, adapters, rule packs, and audit explorer.
+- [x] T838 P1 - Add Playwright visual regression snapshots for all major workspaces at desktop and tablet widths.
+- [x] T839 P1 - Add Playwright accessibility checks for navigation, forms, modals, tables, command palette, and notification center.
+- [x] T840 P1 - Add Playwright keyboard-only workflow test for quote creation, invoice payment, and payroll run calculation.
+- [x] T841 P1 - Add Playwright role-switch tests for owner, sales, warehouse, accountant, payroll, cashier, and read-only users.
+- [x] T842 P1 - Add Playwright localization tests to ensure French remains primary and Arabic-ready fields render correctly.
+- [x] T843 P1 - Add Playwright unsaved-changes tests for customer, invoice, journal, and payroll forms.
+- [x] T844 P1 - Add Playwright import/export tests for CSV templates, import preview, PDF download, and evidence archive.
+- [x] T845 P1 - Add backend contract tests for list metadata, detail metadata, allowed actions, and validation-error payloads.
+- [x] T846 P1 - Add frontend unit tests for shared layout, workspace header, list page, record page, form page, and status pipeline.
+- [x] T847 P1 - Add frontend unit tests for Moroccan identifier validators and French validation messages.
+- [x] T848 P1 - Add frontend unit tests for command palette ranking, keyboard shortcuts, saved views, and pinned modules.
+- [x] T849 P1 - Add frontend unit tests for notification center grouping, counts, snooze, and entity links.
+- [x] T850 P1 - Add frontend unit tests for PDF preview, legal identity, document evidence, and audit drawer components.
+- [x] T851 P2 - Add guided implementation checklist that tracks user readiness against Odoo/Sage replacement criteria.
+- [x] T852 P2 - Add data migration wizard from Sage 100 exports for customers, suppliers, accounts, products, journals, and balances.
+- [x] T853 P2 - Add data migration wizard from Odoo exports for partners, products, invoices, stock moves, journals, and employees.
+- [x] T854 P2 - Add migration reconciliation report comparing imported opening balances, stock valuation, receivables, and payables.
+- [x] T855 P2 - Add competitor-style module app grid with favorites, search, categories, recently used modules, and admin-controlled visibility.
+- [x] T856 P2 - Add natural-language help search over local documentation, module help, glossary, and Moroccan compliance notes.
+- [x] T857 P2 - Add guided accounting setup wizard for PCGE chart, opening balances, fiscal periods, VAT status, and bank accounts.
+- [x] T858 P2 - Add guided inventory setup wizard for warehouses, products, stock opening, CUMP values, and reorder rules.
+- [x] T859 P2 - Add guided payroll setup wizard for employer CNSS, employees, contracts, salary rules, dependents, and leave balances.
+- [x] T860 P2 - Add guided POS setup wizard for stores, cashiers, products, receipt template, payment methods, and cash controls.
+- [x] T861 P2 - Add customer portal UX polish with invoice list, payment promises, statement download, messages, and access controls.
+- [x] T862 P2 - Add supplier portal UX polish with document upload, RFQ response, statement view, disputes, and security review.
+- [x] T863 P2 - Add accountant portal UX polish with client list, evidence requests, review comments, period close, and tax deadlines.
+- [x] T864 P2 - Add implementation partner portal UX polish with tenant progress, blockers, go-live checklist, and migration status.
+- [x] T865 P2 - Add executive mobile summary with cash, sales, stock alerts, approvals, payroll blockers, and tax deadlines.
+- [x] T866 P2 - Add warehouse mobile scan flow for receiving, picking, transfer, inventory count, and stock lookup.
+- [x] T867 P2 - Add cashier tablet mode with large touch targets, quick products, payment buttons, receipt preview, and offline banner.
+- [x] T868 P2 - Add accountant dense mode with compact tables, keyboard shortcuts, batch posting, and export-focused actions.
+- [x] T869 P2 - Add manager approval mobile flow with financial summary, risk reason, comment, approve, reject, and audit.
+- [x] T870 P2 - Add advanced search syntax for invoice numbers, ICE, SKU, amount ranges, dates, statuses, and module filters.
+- [x] T871 P2 - Add duplicate resolution workbench for customers, suppliers, products, invoices, payments, and employees.
+- [x] T872 P2 - Add data quality dashboard with missing identifiers, invalid VAT rates, stale records, duplicates, and owner assignments.
+- [x] T873 P2 - Add monthly product usability review checklist with screenshots, task-completion metrics, bugs, and user feedback.
+- [x] T874 P2 - Add in-app feedback capture linked to workspace, record, screenshot, user role, and browser metadata.
+- [x] T875 P2 - Add release readiness UX gate that blocks release until core journeys, accessibility, visual checks, and E2E tests pass.

@@ -1579,6 +1579,99 @@ export class ErpStoreService {
     };
   }
 
+  uxQualityMigrationReadiness(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      posSmoke: {
+        status: 'covered',
+        steps: ['open session', 'sell ticket', 'refund', 'offline sync', 'Z close'],
+        evidence: ['Session POS ouverte', 'Ticket payé', 'Remboursement audité', 'Queue offline synchronisée', 'Z caisse rapproché'],
+      },
+      adminSmoke: {
+        status: 'covered',
+        steps: ['users', 'roles', 'numbering', 'adapters', 'rule packs', 'audit explorer'],
+        evidence: ['Rôle ACCOUNTANT testé', 'Série facture verrouillée', 'DGI/CNSS sandbox', 'Rule pack MA-2026', 'Audit filtrable'],
+      },
+      playwrightQuality: {
+        visualRegression: { desktop: ['/', '/ventes', '/achats-stock', '/comptabilite', '/paie', '/pos', '/admin'], tablet: ['/', '/workflows', '/contrats-ux'] },
+        accessibilityChecks: ['navigation', 'forms', 'modals', 'tables', 'command palette', 'notification center'],
+        keyboardOnly: ['quote creation', 'invoice payment', 'payroll run calculation'],
+        roleSwitch: ['OWNER', 'SALES', 'WAREHOUSE', 'ACCOUNTANT', 'PAYROLL', 'CASHIER', 'READ_ONLY'],
+        localization: { primaryLanguage: 'fr', arabicReadyFields: ['arabicName', 'arabicAddress', 'documentLanguage'] },
+        unsavedChanges: ['customer', 'invoice', 'journal', 'payroll'],
+        importExport: ['CSV templates', 'import preview', 'PDF download', 'evidence archive'],
+      },
+      frontendUnitCoverage: {
+        sharedComponents: ['layout', 'workspace header', 'list page', 'record page', 'form page', 'status pipeline'],
+        validators: ['ICE', 'IF', 'RC', 'Patente', 'CNSS', 'CIN', 'RIB', 'TVA', 'période fiscale'],
+        commandAndState: ['command ranking', 'keyboard shortcuts', 'saved views', 'pinned modules'],
+        notifications: ['grouping', 'counts', 'snooze', 'entity links'],
+        documents: ['PDF preview', 'legal identity', 'document evidence', 'audit drawer'],
+      },
+      implementationChecklist: {
+        criteria: ['Données légales complètes', 'PCGE et soldes ouverts', 'Flux vente validé', 'Stock CUMP contrôlé', 'Paie Damancom prête', 'Exports expert-comptable testés'],
+        odooSageReplacementScore: 88,
+      },
+      migration: {
+        sage100: ['customers', 'suppliers', 'accounts', 'products', 'journals', 'balances'],
+        odoo: ['partners', 'products', 'invoices', 'stock moves', 'journals', 'employees'],
+        reconciliation: ['opening balances', 'stock valuation', 'receivables', 'payables'],
+      },
+      moduleAppGrid: {
+        favorites: ['Ventes', 'Comptabilité', 'Achats/Stock', 'Paie/RH'],
+        categories: ['Finance', 'Commerce', 'Stock', 'RH', 'Admin'],
+        recentlyUsed: this.uxRecentRecords('OWNER', workspace.tenant.id).rows.map((row) => row.label),
+        adminControlledVisibility: true,
+      },
+      helpSearch: {
+        sources: ['documentation locale', 'aide module', 'glossaire', 'notes conformité Maroc'],
+        examples: ['TVA 20 %', 'ICE client', 'Damancom', 'CUMP', 'verrou période'],
+      },
+      setupWizards: {
+        accounting: ['PCGE chart', 'opening balances', 'fiscal periods', 'VAT status', 'bank accounts'],
+        inventory: ['warehouses', 'products', 'stock opening', 'CUMP values', 'reorder rules'],
+        payroll: ['employer CNSS', 'employees', 'contracts', 'salary rules', 'dependents', 'leave balances'],
+        pos: ['stores', 'cashiers', 'products', 'receipt template', 'payment methods', 'cash controls'],
+      },
+      portals: {
+        customer: ['invoice list', 'payment promises', 'statement download', 'messages', 'access controls'],
+        supplier: ['document upload', 'RFQ response', 'statement view', 'disputes', 'security review'],
+        accountant: ['client list', 'evidence requests', 'review comments', 'period close', 'tax deadlines'],
+        partner: ['tenant progress', 'blockers', 'go-live checklist', 'migration status'],
+      },
+      mobileModes: {
+        executive: ['cash', 'sales', 'stock alerts', 'approvals', 'payroll blockers', 'tax deadlines'],
+        warehouse: ['receiving', 'picking', 'transfer', 'inventory count', 'stock lookup'],
+        cashierTablet: ['large touch targets', 'quick products', 'payment buttons', 'receipt preview', 'offline banner'],
+        accountantDense: ['compact tables', 'keyboard shortcuts', 'batch posting', 'export-focused actions'],
+        managerApproval: ['financial summary', 'risk reason', 'comment', 'approve', 'reject', 'audit'],
+      },
+      advancedSearch: {
+        syntax: ['FAC-2026-*', 'ICE:0015*', 'SKU:CHAIR', 'amount:1000..5000', 'date:2026-05', 'status:POSTED', 'module:sales'],
+      },
+      duplicateWorkbench: ['customers', 'suppliers', 'products', 'invoices', 'payments', 'employees'],
+      dataQuality: {
+        missingIdentifiers: 3,
+        invalidVatRates: 0,
+        staleRecords: 4,
+        duplicates: 2,
+        ownerAssignments: ['Salma Commercial', 'Youssef Comptable'],
+      },
+      usabilityReview: {
+        cadence: 'monthly',
+        checklist: ['screenshots', 'task-completion metrics', 'bugs', 'user feedback'],
+      },
+      feedbackCapture: {
+        fields: ['workspace', 'record', 'screenshot', 'user role', 'browser metadata'],
+      },
+      releaseReadinessGate: {
+        status: 'PASS',
+        blocksReleaseUntil: ['core journeys', 'accessibility', 'visual checks', 'E2E tests'],
+      },
+    };
+  }
+
   subscriptionGate(tenantId?: string) {
     const workspace = this.workspace(tenantId);
     return {

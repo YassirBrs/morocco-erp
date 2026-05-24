@@ -14,6 +14,7 @@ const modulePages = [
   '../app/admin/page.tsx',
   '../app/workflows/page.tsx',
   '../app/contrats-ux/page.tsx',
+  '../app/qualite-migration/page.tsx',
 ].map((path) => readFileSync(new URL(path, import.meta.url), 'utf8'));
 const staticPage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
@@ -59,6 +60,8 @@ const erpContractWorkspacePage = readFileSync(new URL('../features/ux-organizati
 const erpContractFixtures = readFileSync(new URL('../features/ux-organization/erp-contract-fixtures.ts', import.meta.url), 'utf8');
 const workspaceUiStateStore = readFileSync(new URL('../features/ux-organization/workspace-ui-state-store.ts', import.meta.url), 'utf8');
 const workspaceRouteState = readFileSync(new URL('../features/ux-organization/workspace-route-state.tsx', import.meta.url), 'utf8');
+const qualityMigrationWorkspacePage = readFileSync(new URL('../features/ux-organization/quality-migration-workspace-page.tsx', import.meta.url), 'utf8');
+const qualityMigrationFixtures = readFileSync(new URL('../features/ux-organization/quality-migration-fixtures.ts', import.meta.url), 'utf8');
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -525,6 +528,23 @@ test('Frontend wires UX contract API endpoints and route-level loading/error sta
     const loadingOrError = readFileSync(new URL(`../app/${route}/loading.tsx`, import.meta.url), 'utf8') + readFileSync(new URL(`../app/${route}/error.tsx`, import.meta.url), 'utf8');
     assert.ok(loadingOrError.includes('WorkspaceRouteLoading'), `${route} loading boundary exists`);
     assert.ok(loadingOrError.includes('WorkspaceRouteError'), `${route} error boundary exists`);
+  }
+});
+
+test('Quality and migration workspace covers POS/admin smoke, Playwright gates, migration, portals, mobile modes, search, feedback, and release readiness', () => {
+  assert.ok(modulePages[10].includes('QualityMigrationWorkspacePage'), 'Qualité migration route delegates to the workspace page');
+  assert.ok(page.includes("'/qualite-migration'"), 'Main navigation links to Qualité/Migration');
+  for (const text of ['Gates Playwright, migration Sage/Odoo, portails et modes mobiles', 'POS et Admin smoke tests', 'Playwright quality matrix', 'Frontend unit test contracts', 'Guided implementation checklist Odoo/Sage', 'Data migration wizard Sage 100 et Odoo', 'Competitor-style module app grid', 'Natural-language help search', 'Guided setup wizards', 'Portal UX polish', 'Mobile and dense workspace modes', 'Search, duplicate, data quality, feedback, and release gate', 'Quality migration API contract']) {
+    assert.ok(qualityMigrationWorkspacePage.includes(text), `${text} quality/migration section exists`);
+  }
+  for (const text of ['open session -> sell ticket -> refund -> offline sync -> Z close', 'users -> roles -> numbering -> adapters -> rule packs -> audit explorer', 'Visual regression snapshots', 'Accessibility checks', 'Keyboard-only workflow', 'Role-switch tests', 'Localization tests', 'Unsaved changes', 'Import/export tests', 'Sage 100', 'Odoo', 'Customer portal', 'Supplier portal', 'Accountant portal', 'Implementation partner portal', 'Executive mobile summary', 'Warehouse mobile scan', 'Cashier tablet mode', 'Accountant dense mode', 'Manager approval mobile', 'Advanced search syntax', 'Duplicate resolution workbench', 'Data quality dashboard', 'Monthly product usability review', 'In-app feedback capture', 'Release readiness UX gate']) {
+    assert.ok(qualityMigrationFixtures.includes(text), `${text} quality/migration fixture exists`);
+  }
+  for (const endpoint of ['/tenant/ux/quality-migration-readiness', 'visualRegression.desktop./ventes', 'roleSwitch.OWNER.SALES.WAREHOUSE.ACCOUNTANT.PAYROLL.CASHIER.READ_ONLY', 'sage100.customers.suppliers.accounts.products.journals.balances', 'odoo.partners.products.invoices.stockMoves.journals.employees', 'advancedSearch.invoice.ICE.SKU.amountRange.date.status.module']) {
+    assert.ok(api.includes(endpoint), `${endpoint} quality/migration API contract exists`);
+  }
+  for (const cssToken of ['.uxQualityMigration', '.uxQualityScore', '.uxAppGrid']) {
+    assert.ok(css.includes(cssToken), `${cssToken} quality/migration style exists`);
   }
 });
 
