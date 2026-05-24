@@ -29,6 +29,7 @@ import {
 
 const r2 = (value: number): number => Math.round(value * 100) / 100;
 const today = (): string => new Date().toISOString().slice(0, 10);
+const allowedVatRates: VatRate[] = [0, 0.07, 0.1, 0.14, 0.2];
 
 @Injectable()
 export class ErpStoreService {
@@ -87,6 +88,11 @@ export class ErpStoreService {
         country: 'MA',
         vatEnabled: true,
       },
+      settings: {
+        invoiceSeries: 'FAC',
+        fiscalYearStartMonth: 1,
+        vatStatus: 'ENABLED',
+      },
       plan: 'ENTERPRISE',
       status: 'ACTIVE',
       createdAt: today(),
@@ -121,10 +127,18 @@ export class ErpStoreService {
           name: 'Rabat Retail SARL',
           ice: '001111222333444',
           ifNumber: '778899',
+          rc: 'RABAT-112233',
           email: 'finance@rabretail.ma',
           phone: '+212522000000',
           address: 'Avenue Mohammed V, Rabat',
+          city: 'Rabat',
+          paymentTermsDays: 30,
+          creditLimit: 100000,
+          contacts: [{ name: 'Youssef Amrani', role: 'Finance', email: 'finance@rabretail.ma', phone: '+212522000000' }],
+          addresses: [{ label: 'Siege', line1: 'Avenue Mohammed V', city: 'Rabat' }],
+          active: true,
           createdAt: today(),
+          updatedAt: today(),
         },
       ],
       suppliers: [
@@ -147,12 +161,17 @@ export class ErpStoreService {
           sku: 'SKU-CHAIR',
           name: 'Chaise bureau',
           type: 'GOODS',
+          unit: 'unite',
+          trackStock: true,
+          reorderPoint: 10,
           salePrice: 850,
           purchaseCost: 520,
           vatRate: 0.2,
           stockOnHand: 50,
           weightedAverageCost: 520,
           active: true,
+          createdAt: today(),
+          updatedAt: today(),
         },
         {
           id: 'prd-2',
@@ -160,12 +179,17 @@ export class ErpStoreService {
           sku: 'SVC-INSTALL',
           name: 'Installation sur site',
           type: 'SERVICE',
+          unit: 'forfait',
+          trackStock: false,
+          reorderPoint: 0,
           salePrice: 1200,
           purchaseCost: 0,
           vatRate: 0.2,
           stockOnHand: 0,
           weightedAverageCost: 0,
           active: true,
+          createdAt: today(),
+          updatedAt: today(),
         },
         {
           id: 'prd-raw',
@@ -173,12 +197,17 @@ export class ErpStoreService {
           sku: 'RAW-BOIS',
           name: 'Bois traite',
           type: 'RAW_MATERIAL',
+          unit: 'm',
+          trackStock: true,
+          reorderPoint: 40,
           salePrice: 0,
           purchaseCost: 90,
           vatRate: 0.2,
           stockOnHand: 200,
           weightedAverageCost: 90,
           active: true,
+          createdAt: today(),
+          updatedAt: today(),
         },
         {
           id: 'prd-fg',
@@ -186,12 +215,17 @@ export class ErpStoreService {
           sku: 'FG-TABLE',
           name: 'Table assemblee',
           type: 'FINISHED_GOOD',
+          unit: 'unite',
+          trackStock: true,
+          reorderPoint: 4,
           salePrice: 1400,
           purchaseCost: 300,
           vatRate: 0.2,
           stockOnHand: 8,
           weightedAverageCost: 300,
           active: true,
+          createdAt: today(),
+          updatedAt: today(),
         },
       ],
       warehouses: [{ id: 'wh-1', tenantId: tenant.id, name: 'Depot Casablanca', city: 'Casablanca' }],
@@ -231,6 +265,11 @@ export class ErpStoreService {
         city: input.city ?? 'Casablanca',
         country: 'MA',
         vatEnabled: input.vatEnabled ?? true,
+      },
+      settings: {
+        invoiceSeries: 'FAC',
+        fiscalYearStartMonth: 1,
+        vatStatus: input.vatEnabled === false ? 'EXEMPT' : 'ENABLED',
       },
       plan: input.plan ?? 'INTILAQ',
       status: 'ACTIVE',
@@ -288,6 +327,99 @@ export class ErpStoreService {
         stockValue: r2(workspace.products.reduce((sum, product) => sum + product.stockOnHand * product.weightedAverageCost, 0)),
       },
       compliance: this.morocco2026Rules,
+      setup: this.setupChecklist(workspace.tenant.id),
+    };
+  }
+
+  setupChecklist(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const entity = workspace.tenant.legalEntity;
+    const settings = workspace.tenant.settings;
+    const checks = [
+      {
+        id: 'legal-identity',
+        label: 'Identite legale complete',
+        complete: Boolean(entity.tradeName && entity.ice && entity.ifNumber && entity.rc && entity.patente && entity.address && entity.city),
+      },
+      {
+        id: 'tax-settings',
+        label: 'TVA et serie de facturation configurees',
+        complete: Boolean(settings.invoiceSeries && settings.fiscalYearStartMonth >= 1 && settings.fiscalYearStartMonth <= 12 && settings.vatStatus),
+      },
+      {
+        id: 'payroll-identity',
+        label: 'Numero CNSS employeur renseigne',
+        complete: Boolean(entity.cnssNumber),
+      },
+      {
+        id: 'customers',
+        label: 'Au moins un client cree',
+        complete: workspace.customers.some((customer) => customer.active),
+      },
+      {
+        id: 'catalog',
+        label: 'Catalogue articles/services pret',
+        complete: workspace.products.some((product) => product.active),
+      },
+      {
+        id: 'warehouse',
+        label: 'Depot principal configure',
+        complete: workspace.warehouses.length > 0,
+      },
+    ];
+    const completed = checks.filter((check) => check.complete).length;
+    return {
+      completed,
+      total: checks.length,
+      ready: completed === checks.length,
+      checks,
+    };
+  }
+
+  completeTenantOnboarding(input: Partial<LegalEntity> & {
+    invoiceSeries?: string;
+    fiscalYearStartMonth?: number;
+    vatStatus?: 'ENABLED' | 'EXEMPT';
+  }, tenantId?: string): {
+    tenant: Tenant;
+    completed: number;
+    total: number;
+    ready: boolean;
+    checks: Array<{ id: string; label: string; complete: boolean }>;
+  } {
+    const workspace = this.workspace(tenantId);
+    const entity = workspace.tenant.legalEntity;
+
+    workspace.tenant.legalEntity = {
+      ...entity,
+      tradeName: this.nonEmpty(input.tradeName ?? entity.tradeName, 'Trade name is required'),
+      ice: this.nonEmpty(input.ice ?? entity.ice, 'ICE is required'),
+      ifNumber: this.nonEmpty(input.ifNumber ?? entity.ifNumber, 'IF is required'),
+      rc: this.nonEmpty(input.rc ?? entity.rc, 'RC is required'),
+      patente: this.nonEmpty(input.patente ?? entity.patente, 'Patente is required'),
+      cnssNumber: this.nonEmpty(input.cnssNumber ?? entity.cnssNumber, 'CNSS number is required'),
+      address: this.nonEmpty(input.address ?? entity.address, 'Legal address is required'),
+      city: this.nonEmpty(input.city ?? entity.city, 'Fiscal city is required'),
+      country: 'MA',
+      vatEnabled: input.vatEnabled ?? entity.vatEnabled,
+    };
+
+    workspace.tenant.settings = {
+      ...workspace.tenant.settings,
+      invoiceSeries: this.nonEmpty(input.invoiceSeries ?? workspace.tenant.settings.invoiceSeries, 'Invoice series is required').toUpperCase(),
+      fiscalYearStartMonth: this.month(input.fiscalYearStartMonth ?? workspace.tenant.settings.fiscalYearStartMonth),
+      vatStatus: input.vatStatus ?? (workspace.tenant.legalEntity.vatEnabled ? 'ENABLED' : 'EXEMPT'),
+    };
+    workspace.tenant.legalEntity.vatEnabled = workspace.tenant.settings.vatStatus === 'ENABLED';
+
+    this.audit(workspace, 'tenant.onboarded', 'Tenant', workspace.tenant.id, {
+      legalEntity: workspace.tenant.legalEntity,
+      settings: workspace.tenant.settings,
+    });
+
+    return {
+      tenant: workspace.tenant,
+      ...this.setupChecklist(workspace.tenant.id),
     };
   }
 
@@ -296,14 +428,24 @@ export class ErpStoreService {
     const customer: Customer = {
       id: this.id('cus'),
       tenantId: workspace.tenant.id,
-      name: input.name,
-      ice: input.ice,
-      ifNumber: input.ifNumber,
-      email: input.email,
-      phone: input.phone,
-      address: input.address,
+      name: this.nonEmpty(input.name, 'Customer name is required'),
+      ice: this.clean(input.ice),
+      ifNumber: this.clean(input.ifNumber),
+      rc: this.clean(input.rc),
+      email: this.clean(input.email),
+      phone: this.clean(input.phone),
+      address: this.clean(input.address),
+      city: this.clean(input.city),
+      paymentTermsDays: this.nonNegative(input.paymentTermsDays ?? 30, 'Payment terms must be zero or positive'),
+      creditLimit: this.nonNegative(input.creditLimit ?? 0, 'Credit limit must be zero or positive'),
+      contacts: input.contacts ?? [],
+      addresses: input.addresses ?? [],
+      active: input.active ?? true,
       createdAt: today(),
+      updatedAt: today(),
     };
+    this.validateContacts(customer.contacts);
+    this.validateAddresses(customer.addresses);
     workspace.customers.push(customer);
     this.audit(workspace, 'customer.created', 'Customer', customer.id, customer);
     return customer;
@@ -311,6 +453,52 @@ export class ErpStoreService {
 
   listCustomers(tenantId?: string): Customer[] {
     return this.workspace(tenantId).customers;
+  }
+
+  getCustomer(customerId: string, tenantId?: string): Customer {
+    return this.customer(this.workspace(tenantId), customerId);
+  }
+
+  updateCustomer(customerId: string, input: Partial<Customer>, tenantId?: string): Customer {
+    const workspace = this.workspace(tenantId);
+    const customer = this.customer(workspace, customerId);
+    if (input.name !== undefined) {
+      customer.name = this.nonEmpty(input.name, 'Customer name is required');
+    }
+    if (input.ice !== undefined) customer.ice = this.clean(input.ice);
+    if (input.ifNumber !== undefined) customer.ifNumber = this.clean(input.ifNumber);
+    if (input.rc !== undefined) customer.rc = this.clean(input.rc);
+    if (input.email !== undefined) customer.email = this.clean(input.email);
+    if (input.phone !== undefined) customer.phone = this.clean(input.phone);
+    if (input.address !== undefined) customer.address = this.clean(input.address);
+    if (input.city !== undefined) customer.city = this.clean(input.city);
+    if (input.paymentTermsDays !== undefined) {
+      customer.paymentTermsDays = this.nonNegative(input.paymentTermsDays, 'Payment terms must be zero or positive');
+    }
+    if (input.creditLimit !== undefined) {
+      customer.creditLimit = this.nonNegative(input.creditLimit, 'Credit limit must be zero or positive');
+    }
+    if (input.contacts !== undefined) {
+      this.validateContacts(input.contacts);
+      customer.contacts = input.contacts;
+    }
+    if (input.addresses !== undefined) {
+      this.validateAddresses(input.addresses);
+      customer.addresses = input.addresses;
+    }
+    if (input.active !== undefined) customer.active = input.active;
+    customer.updatedAt = today();
+    this.audit(workspace, 'customer.updated', 'Customer', customer.id, customer);
+    return customer;
+  }
+
+  archiveCustomer(customerId: string, tenantId?: string): Customer {
+    const workspace = this.workspace(tenantId);
+    const customer = this.customer(workspace, customerId);
+    customer.active = false;
+    customer.updatedAt = today();
+    this.audit(workspace, 'customer.archived', 'Customer', customer.id, customer);
+    return customer;
   }
 
   addSupplier(input: Partial<Supplier> & { name: string }, tenantId?: string): Supplier {
@@ -356,19 +544,31 @@ export class ErpStoreService {
 
   addProduct(input: Partial<Product> & { sku: string; name: string; salePrice: number }, tenantId?: string): Product {
     const workspace = this.workspace(tenantId);
-    const cost = input.purchaseCost ?? 0;
+    const sku = this.nonEmpty(input.sku, 'SKU is required').toUpperCase();
+    if (workspace.products.some((candidate) => candidate.sku.toUpperCase() === sku)) {
+      throw new BadRequestException('Product SKU already exists');
+    }
+    const cost = this.nonNegative(input.purchaseCost ?? 0, 'Purchase cost must be zero or positive');
+    const type = input.type ?? 'GOODS';
+    const trackStock = type === 'SERVICE' ? false : input.trackStock ?? true;
+    const stockOnHand = trackStock ? this.nonNegative(input.stockOnHand ?? 0, 'Stock on hand must be zero or positive') : 0;
     const product: Product = {
       id: this.id('prd'),
       tenantId: workspace.tenant.id,
-      sku: input.sku,
-      name: input.name,
-      type: input.type ?? 'GOODS',
-      salePrice: input.salePrice,
+      sku,
+      name: this.nonEmpty(input.name, 'Product name is required'),
+      type,
+      unit: this.nonEmpty(input.unit ?? (type === 'SERVICE' ? 'forfait' : 'unite'), 'Product unit is required'),
+      trackStock,
+      reorderPoint: this.nonNegative(input.reorderPoint ?? 0, 'Reorder point must be zero or positive'),
+      salePrice: this.nonNegative(input.salePrice, 'Sale price must be zero or positive'),
       purchaseCost: cost,
-      vatRate: input.vatRate ?? 0.2,
-      stockOnHand: input.stockOnHand ?? 0,
-      weightedAverageCost: input.weightedAverageCost ?? cost,
+      vatRate: this.vatRate(input.vatRate ?? 0.2),
+      stockOnHand,
+      weightedAverageCost: trackStock ? this.nonNegative(input.weightedAverageCost ?? cost, 'CUMP must be zero or positive') : 0,
       active: input.active ?? true,
+      createdAt: today(),
+      updatedAt: today(),
     };
     workspace.products.push(product);
     this.audit(workspace, 'product.created', 'Product', product.id, product);
@@ -377,6 +577,53 @@ export class ErpStoreService {
 
   listProducts(tenantId?: string): Product[] {
     return this.workspace(tenantId).products;
+  }
+
+  getProduct(productId: string, tenantId?: string): Product {
+    return this.product(this.workspace(tenantId), productId);
+  }
+
+  updateProduct(productId: string, input: Partial<Product>, tenantId?: string): Product {
+    const workspace = this.workspace(tenantId);
+    const product = this.product(workspace, productId);
+    if (input.sku !== undefined) {
+      const sku = this.nonEmpty(input.sku, 'SKU is required').toUpperCase();
+      if (workspace.products.some((candidate) => candidate.id !== product.id && candidate.sku.toUpperCase() === sku)) {
+        throw new BadRequestException('Product SKU already exists');
+      }
+      product.sku = sku;
+    }
+    if (input.name !== undefined) product.name = this.nonEmpty(input.name, 'Product name is required');
+    if (input.type !== undefined) product.type = input.type;
+    if (input.unit !== undefined) product.unit = this.nonEmpty(input.unit, 'Product unit is required');
+    if (input.trackStock !== undefined) product.trackStock = input.trackStock;
+    if (input.reorderPoint !== undefined) product.reorderPoint = this.nonNegative(input.reorderPoint, 'Reorder point must be zero or positive');
+    if (input.salePrice !== undefined) product.salePrice = this.nonNegative(input.salePrice, 'Sale price must be zero or positive');
+    if (input.purchaseCost !== undefined) product.purchaseCost = this.nonNegative(input.purchaseCost, 'Purchase cost must be zero or positive');
+    if (input.vatRate !== undefined) product.vatRate = this.vatRate(input.vatRate);
+    if (input.stockOnHand !== undefined) {
+      product.stockOnHand = product.trackStock ? this.nonNegative(input.stockOnHand, 'Stock on hand must be zero or positive') : 0;
+    }
+    if (input.weightedAverageCost !== undefined) {
+      product.weightedAverageCost = product.trackStock ? this.nonNegative(input.weightedAverageCost, 'CUMP must be zero or positive') : 0;
+    }
+    if (!product.trackStock || product.type === 'SERVICE') {
+      product.stockOnHand = 0;
+      product.weightedAverageCost = 0;
+    }
+    if (input.active !== undefined) product.active = input.active;
+    product.updatedAt = today();
+    this.audit(workspace, 'product.updated', 'Product', product.id, product);
+    return product;
+  }
+
+  archiveProduct(productId: string, tenantId?: string): Product {
+    const workspace = this.workspace(tenantId);
+    const product = this.product(workspace, productId);
+    product.active = false;
+    product.updatedAt = today();
+    this.audit(workspace, 'product.archived', 'Product', product.id, product);
+    return product;
   }
 
   listWarehouses(tenantId?: string): Warehouse[] {
@@ -388,6 +635,9 @@ export class ErpStoreService {
       productId: product.id,
       sku: product.sku,
       name: product.name,
+      unit: product.unit,
+      active: product.active,
+      reorderPoint: product.reorderPoint,
       stockOnHand: product.stockOnHand,
       weightedAverageCost: product.weightedAverageCost,
       stockValue: r2(product.stockOnHand * product.weightedAverageCost),
@@ -397,6 +647,9 @@ export class ErpStoreService {
   adjustStock(productId: string, quantity: number, reason = 'Manual adjustment', tenantId?: string): StockMove {
     const workspace = this.workspace(tenantId);
     const product = this.product(workspace, productId);
+    if (!product.trackStock) {
+      throw new BadRequestException('Product does not track stock');
+    }
     product.stockOnHand = r2(product.stockOnHand + quantity);
     if (product.stockOnHand < 0) {
       throw new BadRequestException('Stock cannot become negative');
@@ -416,6 +669,9 @@ export class ErpStoreService {
         throw new BadRequestException('Invalid purchase receipt line');
       }
       const product = this.product(workspace, line.productId);
+      if (!product.trackStock) {
+        throw new BadRequestException('Purchase receipt requires a stock-tracked product');
+      }
       const oldValue = product.stockOnHand * product.weightedAverageCost;
       const newValue = line.quantity * line.unitCost;
       product.stockOnHand = r2(product.stockOnHand + line.quantity);
@@ -717,6 +973,9 @@ export class ErpStoreService {
     }
     return inputLines.map((line) => {
       const product = this.product(workspace, line.productId);
+      if (!product.active) {
+        throw new BadRequestException(`Product ${product.sku} is archived`);
+      }
       const quantity = Number(line.quantity);
       if (quantity <= 0) {
         throw new BadRequestException('Line quantity must be positive');
@@ -755,7 +1014,7 @@ export class ErpStoreService {
   private consumeStockForSales(workspace: TenantWorkspace, reference: string, lines: DocumentLine[], type: StockMove['type'] = 'DELIVERY'): void {
     for (const line of lines) {
       const product = this.product(workspace, line.productId);
-      if (product.type === 'SERVICE') {
+      if (!product.trackStock || product.type === 'SERVICE') {
         continue;
       }
       if (product.stockOnHand < line.quantity) {
@@ -841,6 +1100,58 @@ export class ErpStoreService {
       at: new Date().toISOString(),
       payload,
     });
+  }
+
+  private clean(value: string | undefined): string | undefined {
+    const cleaned = value?.trim();
+    return cleaned ? cleaned : undefined;
+  }
+
+  private nonEmpty(value: string | undefined, message: string): string {
+    const cleaned = value?.trim();
+    if (!cleaned) {
+      throw new BadRequestException(message);
+    }
+    return cleaned;
+  }
+
+  private nonNegative(value: number | undefined, message: string): number {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric < 0) {
+      throw new BadRequestException(message);
+    }
+    return r2(numeric);
+  }
+
+  private month(value: number): number {
+    const numeric = Number(value);
+    if (!Number.isInteger(numeric) || numeric < 1 || numeric > 12) {
+      throw new BadRequestException('Fiscal year start month must be between 1 and 12');
+    }
+    return numeric;
+  }
+
+  private vatRate(value: number): VatRate {
+    const numeric = Number(value);
+    const rate = allowedVatRates.find((candidate) => candidate === numeric);
+    if (rate === undefined) {
+      throw new BadRequestException('VAT rate is not supported by the Morocco rule pack');
+    }
+    return rate;
+  }
+
+  private validateContacts(contacts: Customer['contacts']): void {
+    for (const contact of contacts) {
+      this.nonEmpty(contact.name, 'Contact name is required');
+    }
+  }
+
+  private validateAddresses(addresses: Customer['addresses']): void {
+    for (const address of addresses) {
+      this.nonEmpty(address.label, 'Address label is required');
+      this.nonEmpty(address.line1, 'Address line is required');
+      this.nonEmpty(address.city, 'Address city is required');
+    }
   }
 
   private id(prefix: string): string {

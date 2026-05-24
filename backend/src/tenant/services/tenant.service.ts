@@ -13,6 +13,14 @@ export class TenantService {
     return this.store.summary();
   }
 
+  setupChecklist() {
+    return this.store.setupChecklist();
+  }
+
+  completeOnboarding(data: any) {
+    return this.store.completeTenantOnboarding(data);
+  }
+
   create(data: any) {
     return this.store.createTenant(data);
   }

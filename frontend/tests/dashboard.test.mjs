@@ -5,6 +5,7 @@ import test from 'node:test';
 const page = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
 const staticPage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
+const staticCss = readFileSync(new URL('../static.css', import.meta.url), 'utf8');
 const api = readFileSync(new URL('../lib/api.ts', import.meta.url), 'utf8');
 
 test('dashboard renders Morocco ERP workspace sections', () => {
@@ -20,10 +21,22 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(api.includes('/inventory'));
   assert.ok(staticPage.includes("'x-tenant-id': 'tenant-demo'"));
   assert.ok(staticPage.includes('/sales/invoices'));
+  assert.ok(staticPage.includes('/tenant/setup-checklist'));
+  assert.ok(staticPage.includes('/crm/customers'));
+  assert.ok(staticPage.includes('/inventory/products'));
 });
 
 test('layout uses dense ERP panels instead of a marketing hero', () => {
   assert.ok(css.includes('.shell'));
   assert.ok(css.includes('.gridTwo'));
   assert.ok(css.includes('grid-template-columns: 260px'));
+});
+
+test('static dashboard exposes onboarding and master-data workflows', () => {
+  for (const text of ['Checklist de mise en service', 'Ajouter client', 'Ajouter article', 'Nom client', 'Prix vente']) {
+    assert.ok(staticPage.includes(text), `${text} workflow is present`);
+  }
+  assert.ok(staticCss.includes('.compactForm'));
+  assert.ok(staticCss.includes('.message.success'));
+  assert.ok(staticCss.includes('.message.error'));
 });

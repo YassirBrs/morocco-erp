@@ -7,7 +7,10 @@ export class InventoryService {
 
   listStock() { return this.store.listStock(); }
   listProducts() { return this.store.listProducts(); }
+  getProduct(id: string) { return this.store.getProduct(id); }
   createProduct(data: any) { return this.store.addProduct(data); }
+  updateProduct(id: string, data: any) { return this.store.updateProduct(id, data); }
+  archiveProduct(id: string) { return this.store.archiveProduct(id); }
   listSuppliers() { return this.store.listSuppliers(); }
   createSupplier(data: any) { return this.store.addSupplier(data); }
   listWarehouses() { return this.store.listWarehouses(); }

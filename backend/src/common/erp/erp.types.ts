@@ -18,10 +18,17 @@ export interface LegalEntity {
   vatEnabled: boolean;
 }
 
+export interface TenantSettings {
+  invoiceSeries: string;
+  fiscalYearStartMonth: number;
+  vatStatus: 'ENABLED' | 'EXEMPT';
+}
+
 export interface Tenant {
   id: string;
   slug: string;
   legalEntity: LegalEntity;
+  settings: TenantSettings;
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
   createdAt: string;
@@ -43,10 +50,18 @@ export interface Customer {
   name: string;
   ice?: string;
   ifNumber?: string;
+  rc?: string;
   email?: string;
   phone?: string;
   address?: string;
+  city?: string;
+  paymentTermsDays: number;
+  creditLimit: number;
+  contacts: Array<{ name: string; role?: string; email?: string; phone?: string }>;
+  addresses: Array<{ label: string; line1: string; city: string }>;
+  active: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Supplier {
@@ -76,12 +91,17 @@ export interface Product {
   sku: string;
   name: string;
   type: 'GOODS' | 'SERVICE' | 'FINISHED_GOOD' | 'RAW_MATERIAL';
+  unit: string;
+  trackStock: boolean;
+  reorderPoint: number;
   salePrice: number;
   purchaseCost: number;
   vatRate: VatRate;
   stockOnHand: number;
   weightedAverageCost: number;
   active: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Warehouse {

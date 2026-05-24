@@ -10,8 +10,8 @@ This backlog contains concrete tasks to improve the app from the current working
 
 ## Product And Onboarding
 
-- [ ] T001 P0 - Build a guided company onboarding wizard for ICE, IF, RC, Patente, CNSS number, VAT status, fiscal year, address, and invoice series.
-- [ ] T002 P0 - Add a tenant setup checklist that shows missing legal, accounting, payroll, and invoice configuration.
+- [x] T001 P0 - Build a guided company onboarding wizard for ICE, IF, RC, Patente, CNSS number, VAT status, fiscal year, address, and invoice series.
+- [x] T002 P0 - Add a tenant setup checklist that shows missing legal, accounting, payroll, and invoice configuration.
 - [ ] T003 P0 - Add a first-run demo data reset action for local and staging environments only.
 - [ ] T004 P1 - Add company profile editing with full audit history and approval state.
 - [ ] T005 P1 - Add French-first copy review across all screens and keep labels consistent with Moroccan business usage.
@@ -33,8 +33,8 @@ This backlog contains concrete tasks to improve the app from the current working
 
 ## Sales And CRM
 
-- [ ] T018 P0 - Add full customer CRUD with ICE, IF, payment terms, credit limit, contacts, and addresses.
-- [ ] T019 P0 - Add product/service catalog screens with VAT rate, SKU, unit, selling price, and stock behavior.
+- [x] T018 P0 - Add full customer CRUD with ICE, IF, payment terms, credit limit, contacts, and addresses.
+- [x] T019 P0 - Add product/service catalog screens with VAT rate, SKU, unit, selling price, and stock behavior.
 - [ ] T020 P0 - Add quote creation, revision, approval, PDF export, and conversion to order.
 - [ ] T021 P0 - Add order creation and conversion to delivery note and invoice.
 - [ ] T022 P0 - Add delivery note creation with stock reservation and stock release on cancellation.
@@ -175,4 +175,3 @@ This backlog contains concrete tasks to improve the app from the current working
 - [ ] T121 P1 - Add super-admin workspace for tenant support, subscription management, and compliance rule management.
 - [ ] T122 P1 - Add customer support diagnostics view with audit logs, recent errors, and module usage.
 - [ ] T123 P2 - Add in-app upgrade prompts tied to real feature gates instead of generic marketing.
-

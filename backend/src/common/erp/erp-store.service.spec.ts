@@ -113,4 +113,84 @@ describe('ErpStoreService working ERP workflows', () => {
       lines: [{ productId: product.id, quantity: 1 }],
     }, tenant.id)).toThrow(BadRequestException);
   });
+
+  it('tracks tenant onboarding readiness from Moroccan setup data', () => {
+    const tenant = store.createTenant({ tradeName: 'NewCo SARL', city: 'Tanger' });
+    let setup = store.setupChecklist(tenant.id);
+
+    expect(setup.ready).toBe(false);
+    expect(setup.checks.find((check) => check.id === 'legal-identity')?.complete).toBe(false);
+
+    const customer = store.addCustomer({ name: 'Client Tanger' }, tenant.id);
+    store.addProduct({ sku: 'SVC-TNG', name: 'Service Tanger', type: 'SERVICE', salePrice: 500 }, tenant.id);
+    const onboarding = store.completeTenantOnboarding({
+      ice: '001234567000099',
+      ifNumber: '1234567',
+      rc: 'TNG-10001',
+      patente: '99887766',
+      cnssNumber: '7654321',
+      address: 'Zone Franche Tanger',
+      city: 'Tanger',
+      invoiceSeries: 'TNG',
+      fiscalYearStartMonth: 1,
+    }, tenant.id);
+
+    expect(customer.paymentTermsDays).toBe(30);
+    expect(onboarding.ready).toBe(true);
+    expect(onboarding.tenant.settings.invoiceSeries).toBe('TNG');
+    expect(store.auditLogs(tenant.id).some((log) => log.action === 'tenant.onboarded')).toBe(true);
+  });
+
+  it('supports full customer CRUD fields with validation and archive workflow', () => {
+    const customer = store.addCustomer({
+      name: 'Marrakech Retail',
+      ice: '001000222333444',
+      ifNumber: '554433',
+      rc: 'RAK-88331',
+      city: 'Marrakech',
+      paymentTermsDays: 45,
+      creditLimit: 25000,
+      contacts: [{ name: 'Sara Finance', role: 'DAF', email: 'sara@example.ma' }],
+      addresses: [{ label: 'Siege', line1: 'Gueliz', city: 'Marrakech' }],
+    });
+
+    expect(store.getCustomer(customer.id).contacts[0].name).toBe('Sara Finance');
+
+    const updated = store.updateCustomer(customer.id, { creditLimit: 30000, paymentTermsDays: 60 });
+    expect(updated.creditLimit).toBe(30000);
+    expect(updated.paymentTermsDays).toBe(60);
+
+    const archived = store.archiveCustomer(customer.id);
+    expect(archived.active).toBe(false);
+    expect(store.auditLogs().filter((log) => log.entity === 'Customer')).toHaveLength(3);
+    expect(() => store.addCustomer({ name: '', creditLimit: -1 })).toThrow(BadRequestException);
+  });
+
+  it('supports full product CRUD, SKU uniqueness, VAT rule validation, and stock behavior', () => {
+    const product = store.addProduct({
+      sku: 'sku-desk',
+      name: 'Bureau compact',
+      type: 'GOODS',
+      unit: 'unite',
+      salePrice: 1500,
+      purchaseCost: 900,
+      vatRate: 0.2,
+      stockOnHand: 5,
+      reorderPoint: 2,
+    });
+
+    expect(product.sku).toBe('SKU-DESK');
+    expect(store.getProduct(product.id).trackStock).toBe(true);
+    expect(() => store.addProduct({ sku: 'SKU-DESK', name: 'Duplicate', salePrice: 10 })).toThrow(BadRequestException);
+    expect(() => store.updateProduct(product.id, { vatRate: 0.19 as any })).toThrow(BadRequestException);
+
+    const service = store.addProduct({ sku: 'svc-clean', name: 'Nettoyage', type: 'SERVICE', salePrice: 300, stockOnHand: 99 });
+    expect(service.trackStock).toBe(false);
+    expect(service.stockOnHand).toBe(0);
+    expect(() => store.adjustStock(service.id, 1)).toThrow(BadRequestException);
+
+    const updated = store.updateProduct(product.id, { salePrice: 1600, active: false });
+    expect(updated.salePrice).toBe(1600);
+    expect(updated.active).toBe(false);
+  });
 });

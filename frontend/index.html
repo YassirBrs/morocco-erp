@@ -48,11 +48,24 @@
           </div>
         </header>
 
+        <div id="message" class="message" hidden></div>
+
         <section class="kpis" aria-label="Indicateurs">
           <div><span>Chiffre facture</span><strong id="revenue">0 MAD</strong><small>Factures postees</small></div>
           <div><span>A encaisser</span><strong id="receivables">0 MAD</strong><small>Solde client ouvert</small></div>
           <div><span>Valeur stock</span><strong id="stockValue">0 MAD</strong><small>CUMP multi-articles</small></div>
           <div><span>Factures</span><strong id="invoices">0</strong><small>Numerotation continue</small></div>
+        </section>
+
+        <section class="panel setupPanel">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Onboarding entreprise</p>
+              <h2>Checklist de mise en service</h2>
+            </div>
+            <span id="setupBadge" class="badge">0/0</span>
+          </div>
+          <div id="setupList" class="setupList"></div>
         </section>
 
         <section class="operations">
@@ -92,6 +105,60 @@
               <div><dt>Ville fiscale</dt><dd id="city">-</dd></div>
             </dl>
             <ul id="mentions" class="checks"></ul>
+          </div>
+        </section>
+
+        <section class="masterGrid">
+          <div class="panel">
+            <div class="panelHeader">
+              <div>
+                <p class="eyebrow">Donnees de base</p>
+                <h2>Clients</h2>
+              </div>
+              <span id="customerCount" class="badge">0</span>
+            </div>
+            <form id="customerForm" class="compactForm">
+              <label class="field"><span>Nom client</span><input name="name" required placeholder="Client SARL" /></label>
+              <label class="field"><span>ICE</span><input name="ice" placeholder="001..." /></label>
+              <label class="field"><span>Email</span><input name="email" type="email" placeholder="finance@client.ma" /></label>
+              <label class="field"><span>Delai paiement</span><input name="paymentTermsDays" type="number" min="0" value="30" /></label>
+              <label class="field"><span>Plafond credit</span><input name="creditLimit" type="number" min="0" value="0" /></label>
+              <button type="submit">Ajouter client</button>
+            </form>
+            <div class="tableWrap">
+              <table class="miniTable">
+                <thead><tr><th>Client</th><th>ICE</th><th>Delai</th><th>Credit</th></tr></thead>
+                <tbody id="customerRows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panelHeader">
+              <div>
+                <p class="eyebrow">Catalogue</p>
+                <h2>Articles et services</h2>
+              </div>
+              <span id="productCount" class="badge">0</span>
+            </div>
+            <form id="productForm" class="compactForm productForm">
+              <label class="field"><span>SKU</span><input name="sku" required placeholder="SKU-DEMO" /></label>
+              <label class="field"><span>Article</span><input name="name" required placeholder="Produit ou service" /></label>
+              <label class="field"><span>Type</span><select name="type"><option value="GOODS">Marchandise</option><option value="SERVICE">Service</option><option value="RAW_MATERIAL">Matiere</option><option value="FINISHED_GOOD">Produit fini</option></select></label>
+              <label class="field"><span>Unite</span><input name="unit" value="unite" /></label>
+              <label class="field"><span>Prix vente</span><input name="salePrice" type="number" min="0" required value="0" /></label>
+              <label class="field"><span>Cout achat</span><input name="purchaseCost" type="number" min="0" value="0" /></label>
+              <label class="field"><span>TVA</span><select name="vatRate"><option value="0.2">20%</option><option value="0.14">14%</option><option value="0.1">10%</option><option value="0.07">7%</option><option value="0">0%</option></select></label>
+              <label class="field"><span>Stock initial</span><input name="stockOnHand" type="number" min="0" value="0" /></label>
+              <label class="checkField"><input name="trackStock" type="checkbox" checked /> Suivi stock</label>
+              <button type="submit">Ajouter article</button>
+            </form>
+            <div class="tableWrap">
+              <table class="miniTable">
+                <thead><tr><th>SKU</th><th>Nom</th><th>Type</th><th>Prix</th><th>TVA</th></tr></thead>
+                <tbody id="productRows"></tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -135,6 +202,7 @@
       const headers = { 'content-type': 'application/json', 'x-tenant-id': 'tenant-demo' };
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
+      const qs = (selector) => document.querySelector(selector);
 
       async function get(path) {
         const response = await fetch(API + path, { headers });
@@ -148,26 +216,80 @@
         return response.json();
       }
 
+      function showMessage(type, text) {
+        const box = qs('#message');
+        box.hidden = false;
+        box.className = `message ${type}`;
+        box.textContent = text;
+      }
+
+      function clearMessage() {
+        const box = qs('#message');
+        box.hidden = true;
+        box.textContent = '';
+      }
+
+      function formNumber(form, name) {
+        return Number(form.get(name) || 0);
+      }
+
+      function emptyRow(text, span) {
+        return `<tr><td colspan="${span}" class="emptyState">${text}</td></tr>`;
+      }
+
       async function load() {
-        const [summary, stock] = await Promise.all([get('/tenant/current'), get('/inventory')]);
+        const [summary, stock, customers, products, setup] = await Promise.all([
+          get('/tenant/current'),
+          get('/inventory'),
+          get('/crm/customers'),
+          get('/inventory/products'),
+          get('/tenant/setup-checklist')
+        ]);
         const entity = summary.tenant.legalEntity;
-        document.querySelector('#tradeName').textContent = entity.tradeName;
-        document.querySelector('#identity').innerHTML = [
+        qs('#tradeName').textContent = entity.tradeName;
+        qs('#identity').innerHTML = [
           ['ICE', entity.ice],
           ['IF', entity.ifNumber],
           ['RC', entity.rc],
           ['Patente', entity.patente]
         ].map(([label, value]) => `<span><b>${label}</b>${value}</span>`).join('');
-        document.querySelector('#city').textContent = entity.city;
-        document.querySelector('#plan').textContent = summary.tenant.plan;
-        document.querySelector('#status').textContent = summary.tenant.status;
-        document.querySelector('#revenue').textContent = mad(summary.metrics.revenue);
-        document.querySelector('#receivables').textContent = mad(summary.metrics.receivables);
-        document.querySelector('#stockValue').textContent = mad(summary.metrics.stockValue);
-        document.querySelector('#invoices').textContent = summary.metrics.invoices;
-        document.querySelector('#rules').textContent = `${summary.compliance.id} · TVA ${summary.compliance.vatRates.map(pct).join(' / ')}`;
-        document.querySelector('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
-        document.querySelector('#stockRows').innerHTML = stock.map((line) => `
+        qs('#city').textContent = entity.city;
+        qs('#plan').textContent = summary.tenant.plan;
+        qs('#status').textContent = summary.tenant.status;
+        qs('#revenue').textContent = mad(summary.metrics.revenue);
+        qs('#receivables').textContent = mad(summary.metrics.receivables);
+        qs('#stockValue').textContent = mad(summary.metrics.stockValue);
+        qs('#invoices').textContent = summary.metrics.invoices;
+        qs('#rules').textContent = `${summary.compliance.id} · TVA ${summary.compliance.vatRates.map(pct).join(' / ')}`;
+        qs('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
+        qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
+        qs('#setupBadge').className = setup.ready ? 'badge green' : 'badge';
+        qs('#setupList').innerHTML = setup.checks.map((check) => `
+          <div class="${check.complete ? 'complete' : ''}">
+            <span>${check.complete ? 'OK' : 'A faire'}</span>
+            <strong>${check.label}</strong>
+          </div>
+        `).join('');
+        qs('#customerCount').textContent = customers.filter((customer) => customer.active).length;
+        qs('#customerRows').innerHTML = customers.length ? customers.map((customer) => `
+          <tr class="${customer.active ? '' : 'mutedRow'}">
+            <td><strong>${customer.name}</strong></td>
+            <td>${customer.ice || '-'}</td>
+            <td>${customer.paymentTermsDays} j</td>
+            <td>${mad(customer.creditLimit || 0)}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun client cree', 4);
+        qs('#productCount').textContent = products.filter((product) => product.active).length;
+        qs('#productRows').innerHTML = products.length ? products.map((product) => `
+          <tr class="${product.active ? '' : 'mutedRow'}">
+            <td><strong>${product.sku}</strong></td>
+            <td>${product.name}</td>
+            <td>${product.type}</td>
+            <td>${mad(product.salePrice)}</td>
+            <td>${pct(product.vatRate)}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun article cree', 5);
+        qs('#stockRows').innerHTML = stock.map((line) => `
           <tr>
             <td><strong>${line.sku}</strong></td>
             <td>${line.name}</td>
@@ -178,23 +300,91 @@
         `).join('');
       }
 
-      document.querySelector('#createInvoice').addEventListener('click', async () => {
-        const button = document.querySelector('#createInvoice');
+      qs('#createInvoice').addEventListener('click', async () => {
+        const button = qs('#createInvoice');
         button.disabled = true;
         button.textContent = 'Creation...';
+        clearMessage();
         try {
           const invoice = await post('/sales/invoices', { customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
-          document.querySelector('#invoiceResult').textContent = `${invoice.number} · ${mad(invoice.totals.total)} · ${invoice.status}`;
+          qs('#invoiceResult').textContent = `${invoice.number} · ${mad(invoice.totals.total)} · ${invoice.status}`;
+          showMessage('success', `Facture ${invoice.number} creee et comptabilisee.`);
           await load();
+        } catch (error) {
+          showMessage('error', error.message);
         } finally {
           button.disabled = false;
           button.textContent = 'Creer une facture test';
         }
       });
 
+      qs('#customerForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formEl = event.currentTarget;
+        const form = new FormData(formEl);
+        const button = formEl.querySelector('button');
+        button.disabled = true;
+        clearMessage();
+        try {
+          const customer = await post('/crm/customers', {
+            name: form.get('name'),
+            ice: form.get('ice'),
+            email: form.get('email'),
+            paymentTermsDays: formNumber(form, 'paymentTermsDays'),
+            creditLimit: formNumber(form, 'creditLimit')
+          });
+          formEl.reset();
+          formEl.paymentTermsDays.value = 30;
+          formEl.creditLimit.value = 0;
+          showMessage('success', `Client ${customer.name} ajoute.`);
+          await load();
+        } catch (error) {
+          showMessage('error', error.message);
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      qs('#productForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formEl = event.currentTarget;
+        const form = new FormData(formEl);
+        const button = formEl.querySelector('button');
+        button.disabled = true;
+        clearMessage();
+        try {
+          const product = await post('/inventory/products', {
+            sku: form.get('sku'),
+            name: form.get('name'),
+            type: form.get('type'),
+            unit: form.get('unit'),
+            salePrice: formNumber(form, 'salePrice'),
+            purchaseCost: formNumber(form, 'purchaseCost'),
+            vatRate: formNumber(form, 'vatRate'),
+            stockOnHand: formNumber(form, 'stockOnHand'),
+            trackStock: form.get('trackStock') === 'on'
+          });
+          formEl.reset();
+          formEl.type.value = 'GOODS';
+          formEl.unit.value = 'unite';
+          formEl.salePrice.value = 0;
+          formEl.purchaseCost.value = 0;
+          formEl.vatRate.value = 0.2;
+          formEl.stockOnHand.value = 0;
+          formEl.trackStock.checked = true;
+          showMessage('success', `Article ${product.sku} ajoute au catalogue.`);
+          await load();
+        } catch (error) {
+          showMessage('error', error.message);
+        } finally {
+          button.disabled = false;
+        }
+      });
+
       load().catch((error) => {
-        document.querySelector('#tradeName').textContent = 'API indisponible';
-        document.querySelector('#identity').textContent = error.message;
+        qs('#tradeName').textContent = 'API indisponible';
+        qs('#identity').textContent = error.message;
+        showMessage('error', error.message);
       });
     </script>
   </body>
