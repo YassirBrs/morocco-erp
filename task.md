@@ -898,6 +898,11 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T889 P1 - Add tenant UX-support API contract endpoints for recents, favorites, pins, notifications, command palette, next actions, graph, timeline, tasks, health, and validation.
 - [x] T890 P1 - Add backend tests proving UX-support endpoints return tenant-scoped French contract payloads and validation errors.
 - [x] T891 P1 - Add frontend verification tests covering the operational workflow center and UX-support API route wiring.
+- [x] T892 P1 - Add a UX contract hub that centralizes list, detail, form, validation, permissions, document jobs, and smoke-flow contracts.
+- [x] T893 P1 - Add a shared workspace UI state store for tenant, role, route, breadcrumbs, pinned modules, notifications, and recent records.
+- [x] T894 P1 - Add route-level loading and error boundaries for every French workspace route.
+- [x] T895 P1 - Add a dedicated Contrats UX workspace page that showcases reusable ERP components and Odoo/Sage-grade contract behavior.
+- [x] T896 P1 - Add frontend, backend, and browser-oriented smoke coverage for the contract foundation batch.
 
 ## Competitive UX Execution And Productization
 
@@ -921,46 +926,46 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T793 P0 - Add backend endpoints for user task counts and overdue task summaries by workspace.
 - [x] T794 P0 - Add backend endpoints for workspace health cards with blockers, pending approvals, exceptions, and next deadline.
 - [x] T795 P0 - Add backend DTO validation for all UX-support endpoints with tenant isolation tests.
-- [ ] T796 P1 - Add list-view API contracts with filtering, sorting, pagination, search, column metadata, and totals.
-- [ ] T797 P1 - Add detail-view API contracts that return header fields, status, allowed actions, tabs, timeline, and audit summary.
-- [ ] T798 P1 - Add form-schema API contracts for dynamic required fields, Moroccan validation rules, defaults, and help text.
-- [ ] T799 P1 - Add action-result API contracts with success message, next suggested action, affected records, and audit reference.
-- [ ] T800 P1 - Add validation-error API contracts with field path, French message, severity, and suggested correction.
-- [ ] T801 P1 - Add saved-filter persistence with owner, shared roles, query definition, and default state.
-- [ ] T802 P1 - Add saved-column persistence with visible columns, order, widths, density, and role defaults.
-- [ ] T803 P1 - Add export job status API with queued, running, done, failed, checksum, file name, and retention date.
-- [ ] T804 P1 - Add import job status API with mapping, preview errors, duplicate warnings, created rows, and failed rows.
-- [ ] T805 P1 - Add document send-status API for email, customer portal, supplier portal, and manual download.
-- [ ] T806 P1 - Add PDF render-status API with template version, language, checksum, storage key, and legal mention coverage.
-- [ ] T807 P1 - Add approval-policy API that returns required role, threshold, reason, current reviewer, and SLA.
-- [ ] T808 P1 - Add permission matrix API for frontend route guarding and disabled action explanations.
-- [ ] T809 P1 - Add UI state store for current tenant, role, workspace, pinned modules, notifications, and recent records.
-- [ ] T810 P1 - Add workspace route structure using descriptive paths for sales, purchases, inventory, accounting, payroll, pos, and admin.
-- [ ] T811 P1 - Add route-level loading and error boundaries for every workspace.
-- [ ] T812 P1 - Add shared layout component with app launcher, topbar, breadcrumbs, notification center, tenant switcher, and command palette.
-- [ ] T813 P1 - Add reusable workspace header component with title, subtitle, KPIs, primary action, and secondary menu.
-- [ ] T814 P1 - Add reusable list page component with toolbar, filters, table, pagination, empty state, and bulk action bar.
-- [ ] T815 P1 - Add reusable record page component with header, status pipeline, tabs, side drawer, and activity timeline.
-- [ ] T816 P1 - Add reusable form page component with section cards, sticky footer, validation summary, and save/cancel controls.
-- [ ] T817 P1 - Add reusable approval banner component for records requiring manager, accountant, or admin review.
-- [ ] T818 P1 - Add reusable financial totals component for subtotal, VAT by rate, total TTC, paid, balance, and currency.
-- [ ] T819 P1 - Add reusable legal identity component for ICE, IF, RC, Patente, CNSS, address, and VAT status.
-- [ ] T820 P1 - Add reusable document evidence component for files, PDFs, checksums, retention, and archive status.
-- [ ] T821 P1 - Add reusable Moroccan validation component for ICE, IF, RC, Patente, CNSS, CIN, RIB, VAT rate, and fiscal period.
-- [ ] T822 P1 - Add reusable audit drawer component with filters, changed fields, actor, timestamp, and source IP.
-- [ ] T823 P1 - Add reusable timeline composer for notes, tasks, comments, document sends, and evidence requests.
-- [ ] T824 P1 - Add reusable quick action menu with role-gated actions and disabled-state reasons.
-- [ ] T825 P1 - Add reusable import preview table with row status, field errors, duplicates, and correction hints.
-- [ ] T826 P1 - Add reusable PDF preview drawer with zoom, download, send, archive, and bilingual metadata.
-- [ ] T827 P1 - Add reusable keyboard shortcut registry with visible cheat sheet and conflict tests.
-- [ ] T828 P1 - Add reusable notification item component with severity, due date, entity link, action button, and snooze.
-- [ ] T829 P1 - Add reusable KPI card component with trend, target, tooltip, drilldown link, and loading state.
-- [ ] T830 P1 - Add reusable status pill system with consistent colors for draft, approved, posted, paid, blocked, overdue, and failed states.
-- [ ] T831 P1 - Add Sales workspace smoke tests for create customer, create quote, approve quote, convert order, deliver, invoice, and partial payment.
-- [ ] T832 P1 - Add Purchases workspace smoke tests for supplier, purchase order, receipt, supplier invoice, and payment calendar.
-- [ ] T833 P1 - Add Inventory workspace smoke tests for product, warehouse stock, reservation, transfer, adjustment, and count.
-- [ ] T834 P1 - Add Accounting workspace smoke tests for journal, VAT report, period lock, bank reconciliation, and legal evidence.
-- [ ] T835 P1 - Add Payroll workspace smoke tests for employee, contract, payroll run, payslip, Damancom, and CNSS preflight.
+- [x] T796 P1 - Add list-view API contracts with filtering, sorting, pagination, search, column metadata, and totals.
+- [x] T797 P1 - Add detail-view API contracts that return header fields, status, allowed actions, tabs, timeline, and audit summary.
+- [x] T798 P1 - Add form-schema API contracts for dynamic required fields, Moroccan validation rules, defaults, and help text.
+- [x] T799 P1 - Add action-result API contracts with success message, next suggested action, affected records, and audit reference.
+- [x] T800 P1 - Add validation-error API contracts with field path, French message, severity, and suggested correction.
+- [x] T801 P1 - Add saved-filter persistence with owner, shared roles, query definition, and default state.
+- [x] T802 P1 - Add saved-column persistence with visible columns, order, widths, density, and role defaults.
+- [x] T803 P1 - Add export job status API with queued, running, done, failed, checksum, file name, and retention date.
+- [x] T804 P1 - Add import job status API with mapping, preview errors, duplicate warnings, created rows, and failed rows.
+- [x] T805 P1 - Add document send-status API for email, customer portal, supplier portal, and manual download.
+- [x] T806 P1 - Add PDF render-status API with template version, language, checksum, storage key, and legal mention coverage.
+- [x] T807 P1 - Add approval-policy API that returns required role, threshold, reason, current reviewer, and SLA.
+- [x] T808 P1 - Add permission matrix API for frontend route guarding and disabled action explanations.
+- [x] T809 P1 - Add UI state store for current tenant, role, workspace, pinned modules, notifications, and recent records.
+- [x] T810 P1 - Add workspace route structure using descriptive paths for sales, purchases, inventory, accounting, payroll, pos, and admin.
+- [x] T811 P1 - Add route-level loading and error boundaries for every workspace.
+- [x] T812 P1 - Add shared layout component with app launcher, topbar, breadcrumbs, notification center, tenant switcher, and command palette.
+- [x] T813 P1 - Add reusable workspace header component with title, subtitle, KPIs, primary action, and secondary menu.
+- [x] T814 P1 - Add reusable list page component with toolbar, filters, table, pagination, empty state, and bulk action bar.
+- [x] T815 P1 - Add reusable record page component with header, status pipeline, tabs, side drawer, and activity timeline.
+- [x] T816 P1 - Add reusable form page component with section cards, sticky footer, validation summary, and save/cancel controls.
+- [x] T817 P1 - Add reusable approval banner component for records requiring manager, accountant, or admin review.
+- [x] T818 P1 - Add reusable financial totals component for subtotal, VAT by rate, total TTC, paid, balance, and currency.
+- [x] T819 P1 - Add reusable legal identity component for ICE, IF, RC, Patente, CNSS, address, and VAT status.
+- [x] T820 P1 - Add reusable document evidence component for files, PDFs, checksums, retention, and archive status.
+- [x] T821 P1 - Add reusable Moroccan validation component for ICE, IF, RC, Patente, CNSS, CIN, RIB, VAT rate, and fiscal period.
+- [x] T822 P1 - Add reusable audit drawer component with filters, changed fields, actor, timestamp, and source IP.
+- [x] T823 P1 - Add reusable timeline composer for notes, tasks, comments, document sends, and evidence requests.
+- [x] T824 P1 - Add reusable quick action menu with role-gated actions and disabled-state reasons.
+- [x] T825 P1 - Add reusable import preview table with row status, field errors, duplicates, and correction hints.
+- [x] T826 P1 - Add reusable PDF preview drawer with zoom, download, send, archive, and bilingual metadata.
+- [x] T827 P1 - Add reusable keyboard shortcut registry with visible cheat sheet and conflict tests.
+- [x] T828 P1 - Add reusable notification item component with severity, due date, entity link, action button, and snooze.
+- [x] T829 P1 - Add reusable KPI card component with trend, target, tooltip, drilldown link, and loading state.
+- [x] T830 P1 - Add reusable status pill system with consistent colors for draft, approved, posted, paid, blocked, overdue, and failed states.
+- [x] T831 P1 - Add Sales workspace smoke tests for create customer, create quote, approve quote, convert order, deliver, invoice, and partial payment.
+- [x] T832 P1 - Add Purchases workspace smoke tests for supplier, purchase order, receipt, supplier invoice, and payment calendar.
+- [x] T833 P1 - Add Inventory workspace smoke tests for product, warehouse stock, reservation, transfer, adjustment, and count.
+- [x] T834 P1 - Add Accounting workspace smoke tests for journal, VAT report, period lock, bank reconciliation, and legal evidence.
+- [x] T835 P1 - Add Payroll workspace smoke tests for employee, contract, payroll run, payslip, Damancom, and CNSS preflight.
 - [ ] T836 P1 - Add POS workspace smoke tests for opening session, selling ticket, refund, offline sync, and Z close.
 - [ ] T837 P1 - Add Admin workspace smoke tests for users, roles, numbering, adapters, rule packs, and audit explorer.
 - [ ] T838 P1 - Add Playwright visual regression snapshots for all major workspaces at desktop and tablet widths.

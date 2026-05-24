@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { AccountingPage } from './pages/accounting-page';
 import { CrmSalesPage } from './pages/crm-sales-page';
 import { LoginPage } from './pages/login-page';
@@ -58,4 +58,29 @@ test('Moroccan tenant completes core ERP journey from onboarding to sales, accou
     dependents: '1',
   });
   await payrollPage.runMonthlyPayrollAndValidateDamancom(employee);
+});
+
+test('workspace smoke coverage exposes sales, purchases, inventory, accounting, and payroll journeys', async ({ page }) => {
+  await page.goto('/index.html');
+  const html = await page.content();
+  for (const label of [
+    'Ajouter client',
+    'Créer devis',
+    'Bon de livraison',
+    'Payer solde',
+    'Lancer achat démo',
+    'Commandes, réceptions, factures et dépôts',
+    'Transfert dépôt',
+    'Comptage inventaire',
+    'Écriture manuelle',
+    'Déclaration TVA',
+    'Lettrage',
+    'Archiver preuve',
+    'Créer paie mensuelle',
+    'PDF bulletin',
+    'Export Damancom',
+    'CNSS',
+  ]) {
+    expect(html).toContain(label);
+  }
 });

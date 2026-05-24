@@ -40,6 +40,24 @@ export class TenantService {
   uxTaskSummary() { return this.store.uxTaskSummary(); }
   uxWorkspaceHealthCards() { return this.store.uxWorkspaceHealthCards(); }
   uxContractValidation(data: any) { return this.store.uxContractValidation(data); }
+  uxListViewContract(module?: string) { return this.store.uxListViewContract(module); }
+  uxDetailViewContract(module?: string, entityId?: string) { return this.store.uxDetailViewContract(module, entityId); }
+  uxFormSchemaContract(module?: string) { return this.store.uxFormSchemaContract(module); }
+  uxActionResultContract(data: any) { return this.store.uxActionResultContract(data); }
+  uxValidationErrorContract(module?: string) { return this.store.uxValidationErrorContract(module); }
+  uxSavedFiltersList() { return this.store.uxSavedFiltersList(); }
+  uxSaveFilter(data: any) { return this.store.uxSaveFilter(data); }
+  uxSavedColumnsList() { return this.store.uxSavedColumnsList(); }
+  uxSaveColumns(data: any) { return this.store.uxSaveColumns(data); }
+  uxExportJobStatus() { return this.store.uxExportJobStatus(); }
+  uxImportJobStatus() { return this.store.uxImportJobStatus(); }
+  uxDocumentSendStatus() { return this.store.uxDocumentSendStatus(); }
+  uxPdfRenderStatus() { return this.store.uxPdfRenderStatus(); }
+  uxApprovalPolicy(module?: string, amount?: string) { return this.store.uxApprovalPolicy(module, amount ? Number(amount) : undefined); }
+  uxPermissionMatrix(role?: string) { return this.store.uxPermissionMatrix(role); }
+  uxUiStateStore(role?: string) { return this.store.uxUiStateStore(role); }
+  uxSmokeFlows() { return this.store.uxSmokeFlows(); }
+  uxContractHub() { return this.store.uxContractHub(); }
 
   subscriptionGate() {
     return this.store.subscriptionGate();

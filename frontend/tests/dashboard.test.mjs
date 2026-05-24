@@ -13,6 +13,7 @@ const modulePages = [
   '../app/conformite/page.tsx',
   '../app/admin/page.tsx',
   '../app/workflows/page.tsx',
+  '../app/contrats-ux/page.tsx',
 ].map((path) => readFileSync(new URL(path, import.meta.url), 'utf8'));
 const staticPage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
@@ -54,6 +55,10 @@ const posWorkspacePage = readFileSync(new URL('../features/ux-organization/pos-w
 const adminComplianceWorkspacePage = readFileSync(new URL('../features/ux-organization/admin-compliance-workspace-page.tsx', import.meta.url), 'utf8');
 const workflowProductizationFixtures = readFileSync(new URL('../features/ux-organization/workflow-productization-fixtures.ts', import.meta.url), 'utf8');
 const operationalWorkflowCenterPage = readFileSync(new URL('../features/ux-organization/operational-workflow-center-page.tsx', import.meta.url), 'utf8');
+const erpContractWorkspacePage = readFileSync(new URL('../features/ux-organization/erp-contract-workspace-page.tsx', import.meta.url), 'utf8');
+const erpContractFixtures = readFileSync(new URL('../features/ux-organization/erp-contract-fixtures.ts', import.meta.url), 'utf8');
+const workspaceUiStateStore = readFileSync(new URL('../features/ux-organization/workspace-ui-state-store.ts', import.meta.url), 'utf8');
+const workspaceRouteState = readFileSync(new URL('../features/ux-organization/workspace-route-state.tsx', import.meta.url), 'utf8');
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -484,6 +489,42 @@ test('Frontend wires UX-support backend contracts for role-aware workspace APIs'
   }
   for (const typeToken of ['recentRecords', 'favorites', 'pinnedModules', 'notificationCounts', 'commandPalette', 'nextActions', 'relationshipGraph', 'activityTimeline', 'taskSummary', 'workspaceHealth', 'validationContract']) {
     assert.ok(api.includes(typeToken), `${typeToken} UX support contract is represented`);
+  }
+});
+
+test('UX contract workspace covers API contracts, saved views, jobs, permissions, and smoke flows', () => {
+  assert.ok(modulePages[9].includes('ErpContractWorkspacePage'), 'Contrats UX route delegates to the contract workspace');
+  assert.ok(page.includes("'/contrats-ux'"), 'Main navigation links to Contrats UX');
+  for (const text of ['Contrats API et composants workspace', 'UI state store tenant/role/workspace', 'Workspace route structure descriptive', 'Contrat list-view', 'Contrat detail-view', 'Form page dynamique', 'Validation-error contract', 'Export job status API', 'Import preview table', 'Document send-status API', 'PDF render-status API', 'Permission matrix API', 'Smoke tests workspace', 'Action-result, saved filters et saved columns']) {
+    assert.ok(erpContractWorkspacePage.includes(text), `${text} contract workspace label exists`);
+  }
+  for (const text of ['ReusableWorkspaceHeader', 'ReusableListPage', 'ReusableRecordPage', 'ReusableFormPage', 'ApprovalBanner', 'FinancialTotalsPanel', 'LegalIdentityPanel', 'DocumentEvidencePanel', 'MoroccanValidationPanel', 'AuditDrawer', 'TimelineComposer', 'QuickActionMenu', 'PdfPreviewDrawer', 'ShortcutCheatSheet', 'NotificationItem', 'EnhancedKpiCard', 'UxStatusPill']) {
+    assert.ok(uxWorkspacePatterns.includes(text) || erpContractWorkspacePage.includes(text), `${text} reusable component exists`);
+  }
+  for (const text of ['ICE_15_DIGITS', 'VAT_ALLOWED_RATE', 'Période fiscale verrouillée', 'exp-vat-2026-05', 'Portail fournisseur', 'Sales', 'Purchases', 'Inventory', 'Accounting', 'Payroll']) {
+    assert.ok(erpContractFixtures.includes(text), `${text} fixture exists`);
+  }
+  for (const text of ['currentTenant', 'pinnedModules', 'notifications', 'recentRecords', 'workspaceRouteStructure', "'/sales'", "'/purchases'", "'/inventory'", "'/accounting'", "'/payroll'", "'/cashier'", "'/settings'", 'keyboardShortcutRegistry']) {
+    assert.ok(workspaceUiStateStore.includes(text), `${text} UI state or route structure exists`);
+  }
+});
+
+test('Frontend wires UX contract API endpoints and route-level loading/error states', () => {
+  for (const endpoint of ['/tenant/ux/contracts/hub', '/tenant/ux/contracts/list-view?module=sales', '/tenant/ux/contracts/detail-view?module=sales&entityId=FAC-2026-014', '/tenant/ux/contracts/form-schema?module=sales', '/tenant/ux/contracts/action-result', '/tenant/ux/contracts/validation-errors?module=sales', '/tenant/ux/saved-filters', '/tenant/ux/saved-columns', '/tenant/ux/export-jobs', '/tenant/ux/import-jobs', '/tenant/ux/document-send-status', '/tenant/ux/pdf-render-status', '/tenant/ux/approval-policy?module=sales&amount=64000', '/tenant/ux/permission-matrix?role=ACCOUNTANT', '/tenant/ux/ui-state?role=OWNER', '/tenant/ux/smoke-flows']) {
+    assert.ok(api.includes(endpoint), `${endpoint} UX contract API route is wired`);
+  }
+  for (const typeToken of ['UxWorkspaceContractHub', 'getUxWorkspaceContractHub', 'listView', 'detailView', 'formSchema', 'actionResult', 'validationErrors', 'savedFilters', 'savedColumns', 'exportJobs', 'importJobs', 'documentSendStatus', 'pdfRenderStatus', 'approvalPolicy', 'permissionMatrix', 'uiState', 'smokeFlows']) {
+    assert.ok(api.includes(typeToken), `${typeToken} contract type is represented`);
+  }
+  for (const cssToken of ['.uxContractWorkspace', '.uxStateStoreGrid', '.uxRouteMatrix', '.uxPermissionGrid', '.uxContractCards', '.uxRouteList', '.uxApprovalBanner', '.uxShortcutSheet', '.uxNotificationItem', '.uxRouteState']) {
+    assert.ok(css.includes(cssToken), `${cssToken} contract workspace style exists`);
+  }
+  assert.ok(workspaceRouteState.includes('WorkspaceRouteLoading'));
+  assert.ok(workspaceRouteState.includes('WorkspaceRouteError'));
+  for (const route of ['ventes', 'achats-stock', 'stock', 'comptabilite', 'paie', 'pos', 'admin', 'workflows', 'contrats-ux', 'crm', 'conformite']) {
+    const loadingOrError = readFileSync(new URL(`../app/${route}/loading.tsx`, import.meta.url), 'utf8') + readFileSync(new URL(`../app/${route}/error.tsx`, import.meta.url), 'utf8');
+    assert.ok(loadingOrError.includes('WorkspaceRouteLoading'), `${route} loading boundary exists`);
+    assert.ok(loadingOrError.includes('WorkspaceRouteError'), `${route} error boundary exists`);
   }
 });
 

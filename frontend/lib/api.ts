@@ -1226,3 +1226,72 @@ export async function getUxSupportContracts(): Promise<UxSupportContracts> {
   ]);
   return { recentRecords, favorites, pinnedModules, notificationCounts, commandPalette, nextActions, relationshipGraph, activityTimeline, taskSummary, workspaceHealth, validationContract };
 }
+
+export type UxWorkspaceContractHub = {
+  listView: {
+    filters: Array<{ key: string; labelFr: string; type: string }>;
+    sorting: { default: unknown[]; allowed: string[] };
+    pagination: { page: number; pageSize: number; totalRows: number };
+    columns: Array<{ key: string; labelFr: string; visible: boolean; sortable: boolean; width?: number }>;
+    totals: Record<string, number | string>;
+  };
+  detailView: {
+    header: { title: string; subtitle: string; status: string; badges: string[] };
+    allowedActions: Array<{ key: string; labelFr: string; enabled: boolean; reasonFr?: string }>;
+    tabs: string[];
+    timeline: unknown[];
+    auditSummary: { lastActor: string; lastAction: string; entries: number; sourceIp: string };
+  };
+  formSchema: { schemaVersion: string; sections: Array<{ id: string; labelFr: string; fields: Array<{ path: string; labelFr: string; required: boolean; helpTextFr: string; moroccanRule: string }> }> };
+  actionResult: { success: boolean; messageFr: string; nextSuggestedAction: string; affectedRecords: unknown[]; auditReference: string };
+  validationErrors: { errors: Array<{ fieldPath: string; messageFr: string; severity: string; suggestion: string }> };
+  savedFilters: { rows: unknown[] };
+  savedColumns: { rows: unknown[] };
+  exportJobs: { rows: unknown[] };
+  importJobs: { rows: unknown[] };
+  documentSendStatus: { rows: unknown[] };
+  pdfRenderStatus: { rows: unknown[] };
+  approvalPolicy: { requiredRole: string; threshold: number; reasonFr: string; currentReviewer: string; slaHours: number };
+  permissionMatrix: { role: string; routes: Array<{ route: string; module: string; canRead: boolean; canWrite: boolean; disabledReasonFr?: string }> };
+  uiState: { currentTenant: { tradeName: string }; workspace: { labelFr: string; breadcrumbs: string[] }; pinnedModules: string[]; notifications: unknown; recentRecords: unknown[] };
+  smokeFlows: { flows: Array<{ workspace: string; steps: string[]; status: string }> };
+};
+
+export const uxWorkspaceContractRoutes = [
+  '/tenant/ux/contracts/hub',
+  '/tenant/ux/contracts/list-view?module=sales',
+  '/tenant/ux/contracts/detail-view?module=sales&entityId=FAC-2026-014',
+  '/tenant/ux/contracts/form-schema?module=sales',
+  '/tenant/ux/contracts/action-result',
+  '/tenant/ux/contracts/validation-errors?module=sales',
+  '/tenant/ux/saved-filters',
+  '/tenant/ux/saved-columns',
+  '/tenant/ux/export-jobs',
+  '/tenant/ux/import-jobs',
+  '/tenant/ux/document-send-status',
+  '/tenant/ux/pdf-render-status',
+  '/tenant/ux/approval-policy?module=sales&amount=64000',
+  '/tenant/ux/permission-matrix?role=ACCOUNTANT',
+  '/tenant/ux/ui-state?role=OWNER',
+  '/tenant/ux/smoke-flows',
+];
+
+export async function getUxWorkspaceContractHub(): Promise<UxWorkspaceContractHub> {
+  return getJson('/tenant/ux/contracts/hub', {
+    listView: { filters: [], sorting: { default: [], allowed: [] }, pagination: { page: 1, pageSize: 25, totalRows: 0 }, columns: [], totals: { currency: 'MAD' } },
+    detailView: { header: { title: 'FAC-2026-014', subtitle: '', status: 'DRAFT', badges: [] }, allowedActions: [], tabs: [], timeline: [], auditSummary: { lastActor: '', lastAction: '', entries: 0, sourceIp: '' } },
+    formSchema: { schemaVersion: 'fallback', sections: [] },
+    actionResult: { success: false, messageFr: '', nextSuggestedAction: '', affectedRecords: [], auditReference: '' },
+    validationErrors: { errors: [] },
+    savedFilters: { rows: [] },
+    savedColumns: { rows: [] },
+    exportJobs: { rows: [] },
+    importJobs: { rows: [] },
+    documentSendStatus: { rows: [] },
+    pdfRenderStatus: { rows: [] },
+    approvalPolicy: { requiredRole: 'OWNER', threshold: 0, reasonFr: '', currentReviewer: '', slaHours: 0 },
+    permissionMatrix: { role: 'OWNER', routes: [] },
+    uiState: { currentTenant: { tradeName: 'Atlas Distribution SARL' }, workspace: { labelFr: 'Contrats UX', breadcrumbs: [] }, pinnedModules: [], notifications: {}, recentRecords: [] },
+    smokeFlows: { flows: [] },
+  });
+}

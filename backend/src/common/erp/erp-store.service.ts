@@ -176,6 +176,8 @@ const allModules: ErpModuleKey[] = ['tenant', 'auth', 'crm', 'sales', 'inventory
 @Injectable()
 export class ErpStoreService {
   private workspaces = new Map<string, TenantWorkspace>();
+  private uxSavedFilters = new Map<string, any[]>();
+  private uxSavedColumns = new Map<string, any[]>();
 
   readonly morocco2026Rules: ComplianceRuleSet = {
     id: 'MA-2026',
@@ -215,6 +217,8 @@ export class ErpStoreService {
 
   reset(): void {
     this.workspaces.clear();
+    this.uxSavedFilters.clear();
+    this.uxSavedColumns.clear();
     const tenant: Tenant = {
       id: 'tenant-demo',
       slug: 'demo-casa',
@@ -1285,6 +1289,294 @@ export class ErpStoreService {
       errors.push({ fieldPath: input.fieldPath, messageFr: 'Taux TVA marocain non autorisé', severity: 'error', suggestion: 'Utiliser 0 %, 7 %, 10 %, 14 % ou 20 %' });
     }
     return { tenantId: workspace.tenant.id, valid: errors.length === 0, errors };
+  }
+
+  uxListViewContract(module: string = 'sales', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      module,
+      resource: `${module}.list`,
+      search: { query: 'atlas', fields: ['number', 'name', 'ice', 'sku', 'status'] },
+      filters: [
+        { key: 'status', labelFr: 'Statut', type: 'multi-select', values: ['DRAFT', 'APPROVED', 'POSTED', 'PAID', 'BLOCKED'] },
+        { key: 'period', labelFr: 'Période', type: 'month', defaultValue: '2026-05' },
+        { key: 'ownerRole', labelFr: 'Rôle responsable', type: 'role', values: ['OWNER', 'ACCOUNTANT', 'SALES', 'WAREHOUSE', 'PAYROLL'] },
+      ],
+      sorting: { default: [{ field: 'updatedAt', direction: 'desc' }], allowed: ['number', 'name', 'status', 'amountTtc', 'updatedAt'] },
+      pagination: { page: 1, pageSize: 25, pageSizeOptions: [25, 50, 100], totalRows: 128 },
+      columns: [
+        { key: 'number', labelFr: 'Numéro', visible: true, sortable: true, width: 132 },
+        { key: 'thirdParty', labelFr: 'Tiers', visible: true, sortable: true, width: 220 },
+        { key: 'status', labelFr: 'Statut', visible: true, sortable: true, width: 120 },
+        { key: 'amountTtc', labelFr: 'Total TTC', visible: true, sortable: true, align: 'right', width: 140 },
+        { key: 'updatedAt', labelFr: 'Mis à jour', visible: true, sortable: true, width: 132 },
+      ],
+      totals: { amountTtc: 342800, balanceDue: 86400, currency: 'MAD', selectedRows: 0 },
+    };
+  }
+
+  uxDetailViewContract(module: string = 'sales', entityId: string = 'FAC-2026-014', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      module,
+      entityId,
+      header: {
+        title: entityId,
+        subtitle: 'Client Atlas Bureautique SARL · Casablanca',
+        status: 'POSTED',
+        badges: ['TVA 20 %', 'ICE vérifié', 'Période ouverte'],
+      },
+      allowedActions: [
+        { key: 'sendPdf', labelFr: 'Envoyer PDF', enabled: true },
+        { key: 'recordPayment', labelFr: 'Capturer paiement', enabled: true },
+        { key: 'cancel', labelFr: 'Annuler', enabled: false, reasonFr: 'Période comptable déjà contrôlée' },
+      ],
+      tabs: ['Résumé', 'Lignes', 'Paiements', 'Écritures', 'Documents', 'Audit'],
+      timeline: this.uxActivityTimeline(entityId, workspace.tenant.id).rows,
+      auditSummary: { lastActor: 'Youssef Comptable', lastAction: 'posting.confirmed', entries: 6, sourceIp: '196.12.44.18' },
+    };
+  }
+
+  uxFormSchemaContract(module: string = 'sales', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      module,
+      schemaVersion: 'MA-ERP-FORM-2026.05',
+      sections: [
+        {
+          id: 'identity',
+          labelFr: 'Identité légale',
+          fields: [
+            { path: 'customer.ice', labelFr: 'ICE', required: true, defaultValue: '', helpTextFr: 'Obligatoire sur facture marocaine', moroccanRule: 'ICE_15_DIGITS' },
+            { path: 'customer.ifNumber', labelFr: 'IF', required: true, defaultValue: '', helpTextFr: 'Identifiant fiscal du tiers', moroccanRule: 'IF_NUMERIC' },
+            { path: 'customer.rc', labelFr: 'RC', required: false, defaultValue: '', helpTextFr: 'Registre de commerce si société', moroccanRule: 'RC_CITY_SEQUENCE' },
+          ],
+        },
+        {
+          id: 'invoice',
+          labelFr: 'Facturation',
+          fields: [
+            { path: 'lines[].vatRate', labelFr: 'TVA', required: true, defaultValue: '20%', helpTextFr: 'Taux autorisés: 0 %, 7 %, 10 %, 14 %, 20 %', moroccanRule: 'VAT_ALLOWED_RATE' },
+            { path: 'period', labelFr: 'Période fiscale', required: true, defaultValue: '2026-05', helpTextFr: 'Le posting est refusé si la période est verrouillée', moroccanRule: 'FISCAL_PERIOD_OPEN' },
+          ],
+        },
+      ],
+    };
+  }
+
+  uxActionResultContract(input: { action?: string; entityId?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const action = input.action ?? 'invoice.post';
+    const entityId = input.entityId ?? 'FAC-2026-014';
+    const auditReference = `AUD-${today().replace(/-/g, '')}-${action.replace(/[^a-z0-9]/gi, '').toUpperCase()}`;
+    return {
+      tenantId: workspace.tenant.id,
+      action,
+      entityId,
+      success: true,
+      messageFr: `${entityId} traité avec succès`,
+      nextSuggestedAction: 'Envoyer PDF au client et archiver la preuve',
+      affectedRecords: [
+        { type: 'Invoice', id: entityId },
+        { type: 'JournalEntry', id: 'JRN-VENTES-05' },
+        { type: 'LegalEvidence', id: 'pdf-fac-014' },
+      ],
+      auditReference,
+    };
+  }
+
+  uxValidationErrorContract(module: string = 'sales', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      module,
+      errors: [
+        { fieldPath: 'customer.ice', messageFr: 'ICE obligatoire pour les documents marocains', severity: 'error', suggestion: 'Saisir un ICE à 15 chiffres ou bloquer la facture' },
+        { fieldPath: 'lines[0].vatRate', messageFr: 'Taux TVA marocain non autorisé', severity: 'error', suggestion: 'Utiliser 0 %, 7 %, 10 %, 14 % ou 20 %' },
+        { fieldPath: 'period', messageFr: 'Période fiscale verrouillée', severity: 'blocking', suggestion: 'Créer une exception de verrou fiscal approuvée par le comptable' },
+      ],
+    };
+  }
+
+  uxSavedFiltersList(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const seeded = [
+      { id: 'sf-overdue-sales', ownerId: 'usr-owner', name: 'Factures échues', sharedRoles: ['OWNER', 'ACCOUNTANT', 'SALES'], query: { status: ['POSTED'], overdue: true }, isDefault: true },
+      { id: 'sf-stock-alerts', ownerId: 'usr-owner', name: 'Stock sous seuil', sharedRoles: ['OWNER', 'WAREHOUSE'], query: { lowStock: true }, isDefault: false },
+    ];
+    return { tenantId: workspace.tenant.id, rows: [...seeded, ...(this.uxSavedFilters.get(workspace.tenant.id) ?? [])] };
+  }
+
+  uxSaveFilter(input: any = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = this.uxSavedFilters.get(workspace.tenant.id) ?? [];
+    const record = {
+      id: input.id ?? `sf-${rows.length + 1}`,
+      ownerId: input.ownerId ?? 'usr-owner',
+      name: this.clean(input.name ?? 'Vue sauvegardée'),
+      sharedRoles: input.sharedRoles ?? ['OWNER'],
+      query: input.query ?? {},
+      isDefault: Boolean(input.isDefault),
+    };
+    rows.push(record);
+    this.uxSavedFilters.set(workspace.tenant.id, rows);
+    return { tenantId: workspace.tenant.id, record, rows };
+  }
+
+  uxSavedColumnsList(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const seeded = [
+      { id: 'sc-sales-owner', role: 'OWNER', density: 'compact', visibleColumns: ['number', 'thirdParty', 'status', 'amountTtc', 'balanceDue'], order: ['number', 'thirdParty', 'status', 'amountTtc', 'balanceDue'], widths: { thirdParty: 240 }, isDefault: true },
+      { id: 'sc-accountant', role: 'ACCOUNTANT', density: 'dense', visibleColumns: ['number', 'status', 'journal', 'vat', 'evidence'], order: ['number', 'status', 'journal', 'vat', 'evidence'], widths: { journal: 180 }, isDefault: true },
+    ];
+    return { tenantId: workspace.tenant.id, rows: [...seeded, ...(this.uxSavedColumns.get(workspace.tenant.id) ?? [])] };
+  }
+
+  uxSaveColumns(input: any = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = this.uxSavedColumns.get(workspace.tenant.id) ?? [];
+    const record = {
+      id: input.id ?? `sc-${rows.length + 1}`,
+      role: input.role ?? 'OWNER',
+      density: input.density ?? 'compact',
+      visibleColumns: input.visibleColumns ?? ['number', 'status'],
+      order: input.order ?? input.visibleColumns ?? ['number', 'status'],
+      widths: input.widths ?? {},
+      isDefault: Boolean(input.isDefault),
+    };
+    rows.push(record);
+    this.uxSavedColumns.set(workspace.tenant.id, rows);
+    return { tenantId: workspace.tenant.id, record, rows };
+  }
+
+  uxExportJobStatus(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      rows: [
+        { id: 'exp-vat-2026-05', status: 'DONE', fileName: 'tva-mai-2026.zip', checksum: 'sha256:vat0526', retentionDate: '2036-05-31', queuedAt: `${today()}T08:00:00.000Z` },
+        { id: 'exp-balance-clients', status: 'RUNNING', fileName: 'balance-clients.xlsx', checksum: null, retentionDate: '2031-05-31', queuedAt: `${today()}T09:30:00.000Z` },
+        { id: 'exp-damancom', status: 'FAILED', fileName: 'damancom-mai.txt', checksum: null, retentionDate: '2036-05-31', errorFr: 'CNSS manquant sur un salarié' },
+      ],
+    };
+  }
+
+  uxImportJobStatus(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      rows: [
+        { id: 'imp-customers-1', status: 'PREVIEW', mapping: { ICE: 'ice', Nom: 'name' }, previewErrors: 1, duplicateWarnings: 2, createdRows: 0, failedRows: 1 },
+        { id: 'imp-products-1', status: 'DONE', mapping: { SKU: 'sku', Prix: 'salePrice' }, previewErrors: 0, duplicateWarnings: 0, createdRows: 34, failedRows: 0 },
+      ],
+    };
+  }
+
+  uxDocumentSendStatus(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      rows: [
+        { documentId: 'FAC-2026-014', channel: 'email', status: 'SENT', recipient: 'facturation@atlas.ma', auditReference: 'MAIL-014' },
+        { documentId: 'FAC-2026-014', channel: 'customer-portal', status: 'VISIBLE', recipient: 'Portail client', auditReference: 'PORTAL-014' },
+        { documentId: 'BC-2026-018', channel: 'supplier-portal', status: 'PENDING', recipient: 'Fournitures Nord', auditReference: 'PORTAL-SUP-018' },
+        { documentId: 'BL-2026-031', channel: 'manual-download', status: 'DOWNLOADED', recipient: 'Magasin Casablanca', auditReference: 'DL-031' },
+      ],
+    };
+  }
+
+  uxPdfRenderStatus(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      rows: [
+        { documentId: 'FAC-2026-014', templateVersion: 'invoice-ma-v4', language: 'fr', checksum: 'sha256:fac014', storageKey: 'tenant-demo/invoices/FAC-2026-014.pdf', legalMentionCoverage: ['ICE', 'IF', 'RC', 'Patente', 'TVA', 'Numéro séquentiel'] },
+        { documentId: 'BUL-2026-05-S018', templateVersion: 'payslip-ma-v2', language: 'fr-ar-ready', checksum: 'sha256:bul018', storageKey: 'tenant-demo/payroll/BUL-2026-05-S018.pdf', legalMentionCoverage: ['CNSS', 'AMO', 'IR', 'Net à payer'] },
+      ],
+    };
+  }
+
+  uxApprovalPolicy(module: string = 'sales', amount: number = 64000, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const threshold = module === 'inventory' ? workspace.tenant.settings.approvalLimits.purchase : workspace.tenant.settings.approvalLimits.quote;
+    return {
+      tenantId: workspace.tenant.id,
+      module,
+      amount,
+      requiredRole: amount > threshold ? 'OWNER' : 'SALES',
+      threshold,
+      reasonFr: amount > threshold ? 'Montant supérieur au seuil configuré' : 'Seuil non dépassé',
+      currentReviewer: amount > threshold ? 'Nadia Benali' : 'Salma Commercial',
+      slaHours: amount > threshold ? 8 : 24,
+    };
+  }
+
+  uxPermissionMatrix(role: string = 'ACCOUNTANT', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const navigation = this.roleNavigation(role);
+    return {
+      tenantId: workspace.tenant.id,
+      role,
+      routes: navigation.modules.map((item) => ({
+        route: `/${item.module}`,
+        module: item.module,
+        canRead: item.visible,
+        canWrite: item.canWrite,
+        disabledReasonFr: item.visible ? (item.canWrite ? undefined : 'Écriture désactivée pour ce rôle ou abonnement') : 'Module masqué pour ce rôle',
+      })),
+    };
+  }
+
+  uxUiStateStore(role: string = 'OWNER', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      role,
+      currentTenant: { id: workspace.tenant.id, tradeName: workspace.tenant.legalEntity.tradeName, plan: workspace.tenant.plan },
+      workspace: { path: '/contrats-ux', labelFr: 'Contrats UX', breadcrumbs: ['Accueil', 'Socle UX', 'Contrats'] },
+      pinnedModules: this.uxPinnedModules(role, workspace.tenant.id).modules,
+      notifications: this.uxNotificationCounts(workspace.tenant.id),
+      recentRecords: this.uxRecentRecords(role, workspace.tenant.id).rows,
+    };
+  }
+
+  uxSmokeFlows(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      flows: [
+        { workspace: 'Sales', steps: ['create customer', 'create quote', 'approve quote', 'convert order', 'deliver', 'invoice', 'partial payment'], status: 'covered' },
+        { workspace: 'Purchases', steps: ['supplier', 'purchase order', 'receipt', 'supplier invoice', 'payment calendar'], status: 'covered' },
+        { workspace: 'Inventory', steps: ['product', 'warehouse stock', 'reservation', 'transfer', 'adjustment', 'count'], status: 'covered' },
+        { workspace: 'Accounting', steps: ['journal', 'VAT report', 'period lock', 'bank reconciliation', 'legal evidence'], status: 'covered' },
+        { workspace: 'Payroll', steps: ['employee', 'contract', 'payroll run', 'payslip', 'Damancom', 'CNSS preflight'], status: 'covered' },
+      ],
+    };
+  }
+
+  uxContractHub(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      listView: this.uxListViewContract('sales', workspace.tenant.id),
+      detailView: this.uxDetailViewContract('sales', 'FAC-2026-014', workspace.tenant.id),
+      formSchema: this.uxFormSchemaContract('sales', workspace.tenant.id),
+      actionResult: this.uxActionResultContract({ action: 'invoice.post', entityId: 'FAC-2026-014' }, workspace.tenant.id),
+      validationErrors: this.uxValidationErrorContract('sales', workspace.tenant.id),
+      savedFilters: this.uxSavedFiltersList(workspace.tenant.id),
+      savedColumns: this.uxSavedColumnsList(workspace.tenant.id),
+      exportJobs: this.uxExportJobStatus(workspace.tenant.id),
+      importJobs: this.uxImportJobStatus(workspace.tenant.id),
+      documentSendStatus: this.uxDocumentSendStatus(workspace.tenant.id),
+      pdfRenderStatus: this.uxPdfRenderStatus(workspace.tenant.id),
+      approvalPolicy: this.uxApprovalPolicy('sales', 64000, workspace.tenant.id),
+      permissionMatrix: this.uxPermissionMatrix('ACCOUNTANT', workspace.tenant.id),
+      uiState: this.uxUiStateStore('OWNER', workspace.tenant.id),
+      smokeFlows: this.uxSmokeFlows(workspace.tenant.id),
+    };
   }
 
   subscriptionGate(tenantId?: string) {

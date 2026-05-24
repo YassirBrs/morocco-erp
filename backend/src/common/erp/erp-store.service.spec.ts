@@ -211,6 +211,45 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(() => store.uxContractValidation({ module: 'sales' })).toThrow(BadRequestException);
   });
 
+  it('returns complete UX contract APIs for list, detail, forms, saved views, jobs, permissions, and smoke flows', () => {
+    const list = store.uxListViewContract('sales');
+    const detail = store.uxDetailViewContract('sales', 'FAC-2026-014');
+    const form = store.uxFormSchemaContract('sales');
+    const action = store.uxActionResultContract({ action: 'invoice.post', entityId: 'FAC-2026-014' });
+    const validation = store.uxValidationErrorContract('sales');
+    const savedFilter = store.uxSaveFilter({ name: 'Mes factures bloquées', sharedRoles: ['OWNER', 'ACCOUNTANT'], query: { status: ['BLOCKED'] }, isDefault: true });
+    const savedColumns = store.uxSaveColumns({ role: 'ACCOUNTANT', visibleColumns: ['number', 'status', 'vat'], density: 'dense' });
+    const exportJobs = store.uxExportJobStatus();
+    const importJobs = store.uxImportJobStatus();
+    const sends = store.uxDocumentSendStatus();
+    const pdf = store.uxPdfRenderStatus();
+    const approval = store.uxApprovalPolicy('sales', 64000);
+    const permissions = store.uxPermissionMatrix('ACCOUNTANT');
+    const uiState = store.uxUiStateStore('OWNER');
+    const smoke = store.uxSmokeFlows();
+    const hub = store.uxContractHub();
+
+    expect(list.filters.map((filter) => filter.labelFr)).toEqual(expect.arrayContaining(['Statut', 'Période']));
+    expect(list.columns.map((column) => column.key)).toEqual(expect.arrayContaining(['number', 'amountTtc']));
+    expect(list.totals.currency).toBe('MAD');
+    expect(detail.allowedActions.map((item) => item.labelFr)).toEqual(expect.arrayContaining(['Envoyer PDF', 'Capturer paiement']));
+    expect(detail.auditSummary.sourceIp).toBeTruthy();
+    expect(form.sections.flatMap((section) => section.fields.map((field) => field.moroccanRule))).toEqual(expect.arrayContaining(['ICE_15_DIGITS', 'VAT_ALLOWED_RATE']));
+    expect(action).toMatchObject({ success: true, auditReference: expect.stringContaining('AUD-') });
+    expect(validation.errors.map((error) => error.messageFr)).toEqual(expect.arrayContaining(['Période fiscale verrouillée']));
+    expect(savedFilter.rows.map((row) => row.name)).toEqual(expect.arrayContaining(['Mes factures bloquées']));
+    expect(savedColumns.rows.map((row) => row.role)).toEqual(expect.arrayContaining(['ACCOUNTANT']));
+    expect(exportJobs.rows.map((row) => row.status)).toEqual(expect.arrayContaining(['DONE', 'RUNNING', 'FAILED']));
+    expect(importJobs.rows[0]).toHaveProperty('duplicateWarnings');
+    expect(sends.rows.map((row) => row.channel)).toEqual(expect.arrayContaining(['email', 'customer-portal', 'supplier-portal', 'manual-download']));
+    expect(pdf.rows[0].legalMentionCoverage).toEqual(expect.arrayContaining(['ICE', 'IF', 'TVA']));
+    expect(approval.requiredRole).toBe('OWNER');
+    expect(permissions.routes.some((route) => route.disabledReasonFr)).toBe(true);
+    expect(uiState.workspace.breadcrumbs).toEqual(expect.arrayContaining(['Socle UX']));
+    expect(smoke.flows.map((flow) => flow.workspace)).toEqual(expect.arrayContaining(['Sales', 'Purchases', 'Inventory', 'Accounting', 'Payroll']));
+    expect(hub.validationErrors.errors[0].suggestion).toContain('ICE');
+  });
+
   it('revises, approves, exports, and converts a quote to order, delivery note, and invoice', () => {
     const quote = store.createQuote({
       customerId: 'cus-1',

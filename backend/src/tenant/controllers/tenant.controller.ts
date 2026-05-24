@@ -21,6 +21,24 @@ export class TenantController {
   @Get('ux/task-summary') uxTaskSummary() { return this.tenantService.uxTaskSummary(); }
   @Get('ux/workspace-health') uxWorkspaceHealth() { return this.tenantService.uxWorkspaceHealthCards(); }
   @Post('ux/contracts/validate') uxContractValidation(@Body() body: any) { return this.tenantService.uxContractValidation(body); }
+  @Get('ux/contracts/hub') uxContractHub() { return this.tenantService.uxContractHub(); }
+  @Get('ux/contracts/list-view') uxListViewContract(@Query('module') module?: string) { return this.tenantService.uxListViewContract(module); }
+  @Get('ux/contracts/detail-view') uxDetailViewContract(@Query('module') module?: string, @Query('entityId') entityId?: string) { return this.tenantService.uxDetailViewContract(module, entityId); }
+  @Get('ux/contracts/form-schema') uxFormSchemaContract(@Query('module') module?: string) { return this.tenantService.uxFormSchemaContract(module); }
+  @Post('ux/contracts/action-result') uxActionResultContract(@Body() body: any) { return this.tenantService.uxActionResultContract(body); }
+  @Get('ux/contracts/validation-errors') uxValidationErrorContract(@Query('module') module?: string) { return this.tenantService.uxValidationErrorContract(module); }
+  @Get('ux/saved-filters') uxSavedFiltersList() { return this.tenantService.uxSavedFiltersList(); }
+  @Post('ux/saved-filters') uxSaveFilter(@Body() body: any) { return this.tenantService.uxSaveFilter(body); }
+  @Get('ux/saved-columns') uxSavedColumnsList() { return this.tenantService.uxSavedColumnsList(); }
+  @Post('ux/saved-columns') uxSaveColumns(@Body() body: any) { return this.tenantService.uxSaveColumns(body); }
+  @Get('ux/export-jobs') uxExportJobStatus() { return this.tenantService.uxExportJobStatus(); }
+  @Get('ux/import-jobs') uxImportJobStatus() { return this.tenantService.uxImportJobStatus(); }
+  @Get('ux/document-send-status') uxDocumentSendStatus() { return this.tenantService.uxDocumentSendStatus(); }
+  @Get('ux/pdf-render-status') uxPdfRenderStatus() { return this.tenantService.uxPdfRenderStatus(); }
+  @Get('ux/approval-policy') uxApprovalPolicy(@Query('module') module?: string, @Query('amount') amount?: string) { return this.tenantService.uxApprovalPolicy(module, amount); }
+  @Get('ux/permission-matrix') uxPermissionMatrix(@Query('role') role?: string) { return this.tenantService.uxPermissionMatrix(role); }
+  @Get('ux/ui-state') uxUiStateStore(@Query('role') role?: string) { return this.tenantService.uxUiStateStore(role); }
+  @Get('ux/smoke-flows') uxSmokeFlows() { return this.tenantService.uxSmokeFlows(); }
   @Get('subscription-gate') subscriptionGate() { return this.tenantService.subscriptionGate(); }
   @Patch('subscription-gate') updateSubscriptionGate(@Body() body: any) { return this.tenantService.updateSubscriptionGate(body); }
   @Get('retention-policy') retentionPolicy() { return this.tenantService.retentionPolicy(); }

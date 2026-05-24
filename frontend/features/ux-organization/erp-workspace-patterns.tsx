@@ -331,3 +331,230 @@ export function AccessibilityChecklist() {
     </section>
   );
 }
+
+export function UxStatusPill({ status, children }: { status: WorkspaceStatus | string; children: React.ReactNode }) {
+  return <span className={statusClass(status)}>{children}</span>;
+}
+
+export function ReusableWorkspaceHeader({
+  title,
+  subtitle,
+  kpis,
+  primaryAction,
+  secondaryAction,
+}: {
+  title: string;
+  subtitle: string;
+  kpis: Array<{ label: string; value: string; trend: string; status: WorkspaceStatus }>;
+  primaryAction: string;
+  secondaryAction?: string;
+}) {
+  return (
+    <>
+      <WorkspaceHeader eyebrow="Socle composant ERP" title={title} subtitle={subtitle} primaryAction={primaryAction} secondaryAction={secondaryAction} />
+      <KpiStrip items={kpis} />
+    </>
+  );
+}
+
+export function ReusableListPage({
+  title,
+  columns,
+  rows,
+}: {
+  title: string;
+  columns: TableColumn[];
+  rows: TableRow[];
+}) {
+  return <DenseDataTable title={title} columns={columns} rows={rows} emptyAction="Créer vue" />;
+}
+
+export function ReusableRecordPage({ title, status, children }: { title: string; status: string; children: React.ReactNode }) {
+  return (
+    <RecordDetailStandard title={title} status={status} meta="Header, statut, actions autorisées, onglets, timeline et audit résumé.">
+      <WorkspaceTabs tabs={['Résumé', 'Lignes', 'Paiements', 'Écritures', 'Documents', 'Audit']} active={0} />
+      {children}
+    </RecordDetailStandard>
+  );
+}
+
+export function ReusableFormPage({ fields }: { fields: Array<[string, string, string, string]> }) {
+  return (
+    <section className="uxPanel">
+      <div className="uxPanelHeader">
+        <div>
+          <h2>Form page dynamique</h2>
+          <p>Sections, champs requis dynamiques, règles marocaines, aide inline, résumé d’erreurs et footer sticky.</p>
+        </div>
+        <button type="button">Enregistrer</button>
+      </div>
+      <div className="uxFormGrid">
+        {fields.map(([path, label, rule, helper]) => (
+          <label key={path}>
+            <span>{label} *</span>
+            <input defaultValue={path.includes('vat') ? '20 %' : ''} aria-describedby={`${path}-helper`} />
+            <small id={`${path}-helper`}>{rule} · {helper}</small>
+          </label>
+        ))}
+      </div>
+      <div className="uxValidationSummary" role="alert">Résumé validation: ICE, IF, TVA et période fiscale contrôlés avant sauvegarde.</div>
+      <footer className="uxStickyFooter">
+        <span>Sauvegarde disponible avec Ctrl+S</span>
+        <button className="uxSecondaryButton" type="button">Annuler</button>
+        <button type="button">Enregistrer</button>
+      </footer>
+    </section>
+  );
+}
+
+export function ApprovalBanner() {
+  return (
+    <div className="uxApprovalBanner" role="status">
+      <strong>Approbation manager requise</strong>
+      <span>Remise supérieure à 10 %, reviewer Nadia Benali, SLA 8 h.</span>
+      <button type="button">Ouvrir décision</button>
+    </div>
+  );
+}
+
+export function FinancialTotalsPanel() {
+  const rows = [
+    ['Sous-total', '72 000 MAD'],
+    ['TVA 20 %', '14 400 MAD'],
+    ['Total TTC', '86 400 MAD'],
+    ['Payé', '68 160 MAD'],
+    ['Solde', '18 240 MAD'],
+  ];
+  return (
+    <section className="uxTotalsPanel" aria-label="Totaux financiers">
+      {rows.map(([label, value]) => (
+        <div key={label}>
+          <span>{label}</span>
+          <strong>{value}</strong>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+export function LegalIdentityPanel() {
+  const rows = ['ICE 001525678000083', 'IF 1525678', 'RC CASA-425001', 'Patente 34218811', 'CNSS 1234567', 'Casablanca · TVA active'];
+  return (
+    <section className="uxIdentityGrid" aria-label="Identité légale Maroc">
+      {rows.map((row) => <span key={row}>{row}</span>)}
+    </section>
+  );
+}
+
+export function DocumentEvidencePanel() {
+  const rows = ['PDF facture · sha256:fac014 · 10 ans', 'Damancom TXT · sha256:cnss0526 · 10 ans', 'Photo réception · sha256:rec12 · 5 ans'];
+  return (
+    <section className="uxEvidencePanel" aria-label="Preuves documentaires">
+      {rows.map((row) => <span key={row}>{row}</span>)}
+    </section>
+  );
+}
+
+export function MoroccanValidationPanel() {
+  const rules = ['ICE', 'IF', 'RC', 'Patente', 'CNSS', 'CIN', 'RIB', 'Taux TVA', 'Période fiscale'];
+  return (
+    <section className="uxValidationChips" aria-label="Validateurs Maroc">
+      {rules.map((rule) => <UxStatusPill key={rule} status="info">{rule}</UxStatusPill>)}
+    </section>
+  );
+}
+
+export function AuditDrawer() {
+  return (
+    <aside className="uxAuditDrawer" aria-label="Tiroir audit">
+      <h2>Audit filtré</h2>
+      <span>Acteur: Youssef Comptable</span>
+      <span>Champs modifiés: statut, journal, preuve</span>
+      <span>Horodatage: 24/05/2026 10:18</span>
+      <span>IP source: 196.12.44.18</span>
+    </aside>
+  );
+}
+
+export function TimelineComposer() {
+  return (
+    <section className="uxTimelineComposer">
+      <h2>Composer note, tâche, commentaire, envoi document ou demande de preuve</h2>
+      <textarea defaultValue="Relancer le client et joindre le relevé signé." />
+      <div className="uxActionGrid">
+        <button type="button">Note</button>
+        <button className="uxSecondaryButton" type="button">Tâche</button>
+        <button className="uxSecondaryButton" type="button">Demande preuve</button>
+      </div>
+    </section>
+  );
+}
+
+export function QuickActionMenu() {
+  const actions = [
+    ['Envoyer PDF', 'Actif'],
+    ['Annuler facture', 'Désactivé: période contrôlée'],
+    ['Créer avoir', 'Actif'],
+    ['Archiver preuve', 'Actif'],
+  ];
+  return (
+    <section className="uxQuickActions" aria-label="Menu actions rapides">
+      {actions.map(([label, state]) => (
+        <button key={label} className={state.startsWith('Désactivé') ? 'uxSecondaryButton' : ''} type="button" aria-disabled={state.startsWith('Désactivé')}>
+          {label}<span>{state}</span>
+        </button>
+      ))}
+    </section>
+  );
+}
+
+export function PdfPreviewDrawer() {
+  return (
+    <aside className="uxPdfDrawer" aria-label="Aperçu PDF">
+      <h2>Aperçu PDF bilingue</h2>
+      <div className="uxDocumentPreview">FAC-2026-014 · FR principal · champs arabes prêts · checksum sha256:fac014</div>
+      <div className="uxActionGrid">
+        <button type="button">Zoom +</button>
+        <button className="uxSecondaryButton" type="button">Télécharger</button>
+        <button className="uxSecondaryButton" type="button">Envoyer</button>
+        <button className="uxSecondaryButton" type="button">Archiver</button>
+      </div>
+    </aside>
+  );
+}
+
+export function ShortcutCheatSheet({ shortcuts }: { shortcuts: Array<{ keys: string; labelFr: string; conflict: boolean }> }) {
+  return (
+    <section className="uxShortcutSheet" aria-label="Raccourcis clavier">
+      {shortcuts.map((shortcut) => (
+        <div key={shortcut.keys}>
+          <kbd>{shortcut.keys}</kbd>
+          <span>{shortcut.labelFr}</span>
+          <UxStatusPill status={shortcut.conflict ? 'danger' : 'ok'}>{shortcut.conflict ? 'Conflit' : 'OK'}</UxStatusPill>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+export function NotificationItem() {
+  return (
+    <article className="uxNotificationItem">
+      <UxStatusPill status="warning">Échéance</UxStatusPill>
+      <strong>TVA mai à préparer</strong>
+      <span>Avant le 20/06/2026 · Comptabilité</span>
+      <button type="button">Ouvrir</button>
+      <button className="uxSecondaryButton" type="button">Snooze</button>
+    </article>
+  );
+}
+
+export function EnhancedKpiCard() {
+  return (
+    <article className="uxKpiCard uxEnhancedKpi" title="Drilldown vers les factures échues">
+      <span>DSO cible</span>
+      <strong>34 j</strong>
+      <em className={statusClass('warning')}>+4 j vs cible · ouvrir détail</em>
+    </article>
+  );
+}
