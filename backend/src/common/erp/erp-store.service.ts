@@ -1,7 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
+import { createHash, randomBytes } from 'crypto';
 import {
   AuditLog,
+  AuthSession,
   BusinessSearchInput,
   BusinessSearchResult,
   BusinessSearchType,
@@ -16,7 +18,9 @@ import {
   DocumentTotals,
   Employee,
   ErpUser,
+  ErpModuleKey,
   FiscalPeriod,
+  InventoryCountSheet,
   ImportTemplateKind,
   InternalNote,
   InternalTask,
@@ -30,16 +34,21 @@ import {
   PreferredLanguage,
   Product,
   ProductionOrder,
+  PurchaseOrder,
   PurchaseReceipt,
   SalesOrder,
   Quote,
+  SecurityNotification,
   StockMove,
+  StockTransfer,
   Supplier,
+  SupplierInvoice,
   Tenant,
   TenantSettings,
   TenantWorkspace,
   VatRate,
   Warehouse,
+  WarehouseStock,
 } from './erp.types';
 
 const r2 = (value: number): number => Math.round(value * 100) / 100;
@@ -61,6 +70,7 @@ const defaultApprovalLimits: TenantSettings['approvalLimits'] = {
   purchase: 25000,
   stockAdjustment: 10000,
 };
+const allModules: ErpModuleKey[] = ['tenant', 'auth', 'crm', 'sales', 'inventory', 'accounting', 'payroll', 'pos', 'production', 'compliance'];
 
 @Injectable()
 export class ErpStoreService {
@@ -124,6 +134,8 @@ export class ErpStoreService {
         fiscalYearStartMonth: 1,
         vatStatus: 'ENABLED',
         approvalLimits: { ...defaultApprovalLimits },
+        featureGates: { writeLocked: false, allowedModules: [...allModules] },
+        retention: { retentionDays: 3650 },
       },
       plan: 'ENTERPRISE',
       status: 'ACTIVE',
@@ -141,6 +153,9 @@ export class ErpStoreService {
           name: 'Nadia Benali',
           role: 'OWNER',
           password: 'demo1234',
+          passwordHash: this.passwordHash('demo1234'),
+          passwordUpdatedAt: today(),
+          twoFactorEnabled: false,
           active: true,
         },
         {
@@ -150,6 +165,10 @@ export class ErpStoreService {
           name: 'Cabinet Fiduciaire Casa',
           role: 'ACCOUNTANT',
           password: 'demo1234',
+          passwordHash: this.passwordHash('demo1234'),
+          passwordUpdatedAt: today(),
+          twoFactorEnabled: true,
+          twoFactorSecret: '246810',
           active: true,
         },
         {
@@ -159,9 +178,16 @@ export class ErpStoreService {
           name: 'Partenaire Intégration Maroc',
           role: 'IMPLEMENTATION_PARTNER',
           password: 'demo1234',
+          passwordHash: this.passwordHash('demo1234'),
+          passwordUpdatedAt: today(),
+          twoFactorEnabled: false,
           active: true,
         },
       ],
+      sessions: [],
+      passwordResetTokens: [],
+      deviceLoginEvents: [],
+      securityNotifications: [],
       customers: [
         {
           id: 'cus-1',
@@ -328,15 +354,24 @@ export class ErpStoreService {
           updatedAt: today(),
         },
       ],
-      warehouses: [{ id: 'wh-1', tenantId: tenant.id, name: 'Dépôt Casablanca', city: 'Casablanca' }],
+      warehouses: [{ id: 'wh-1', tenantId: tenant.id, name: 'Dépôt Casablanca', city: 'Casablanca', address: 'Ain Sebaa', active: true }],
+      warehouseStocks: [
+        { tenantId: tenant.id, warehouseId: 'wh-1', productId: 'prd-1', quantity: 50, reserved: 0 },
+        { tenantId: tenant.id, warehouseId: 'wh-1', productId: 'prd-raw', quantity: 200, reserved: 0 },
+        { tenantId: tenant.id, warehouseId: 'wh-1', productId: 'prd-fg', quantity: 8, reserved: 0 },
+      ],
       quotes: [],
       salesOrders: [],
       deliveryNotes: [],
       invoices: [],
       creditNotes: [],
       payments: [],
+      purchaseOrders: [],
       stockMoves: [],
       purchaseReceipts: [],
+      supplierInvoices: [],
+      stockTransfers: [],
+      inventoryCounts: [],
       journalEntries: [],
       fiscalPeriods: [],
       posTransactions: [],
@@ -377,6 +412,8 @@ export class ErpStoreService {
         fiscalYearStartMonth: 1,
         vatStatus: input.vatEnabled === false ? 'EXEMPT' : 'ENABLED',
         approvalLimits: { ...defaultApprovalLimits },
+        featureGates: { writeLocked: false, allowedModules: [...allModules] },
+        retention: { retentionDays: 3650 },
       },
       plan: input.plan ?? 'INTILAQ',
       status: 'ACTIVE',
@@ -387,20 +424,29 @@ export class ErpStoreService {
     this.workspaces.set(tenantId, {
       tenant,
       users: [],
+      sessions: [],
+      passwordResetTokens: [],
+      deviceLoginEvents: [],
+      securityNotifications: [],
       customers: [],
       suppliers: [],
       employees: [],
       leads: [],
       products: [],
-      warehouses: [{ id: this.id('wh'), tenantId, name: 'Dépôt principal', city: tenant.legalEntity.city }],
+      warehouses: [{ id: this.id('wh'), tenantId, name: 'Dépôt principal', city: tenant.legalEntity.city, active: true }],
+      warehouseStocks: [],
       quotes: [],
       salesOrders: [],
       deliveryNotes: [],
       invoices: [],
       creditNotes: [],
       payments: [],
+      purchaseOrders: [],
       stockMoves: [],
       purchaseReceipts: [],
+      supplierInvoices: [],
+      stockTransfers: [],
+      inventoryCounts: [],
       journalEntries: [],
       fiscalPeriods: [],
       posTransactions: [],
@@ -431,13 +477,151 @@ export class ErpStoreService {
 
   authenticate(email: string, password: string): Omit<ErpUser, 'password'> & { tenant: Tenant } {
     for (const workspace of this.workspaces.values()) {
-      const user = workspace.users.find((candidate) => candidate.email === email && candidate.password === password);
+      const user = workspace.users.find((candidate) => candidate.email === email && this.verifyPassword(candidate, password));
       if (user && user.active) {
+        this.audit(workspace, 'auth.login.validated', 'User', user.id, { email: user.email });
         const { password: _password, ...safeUser } = user;
         return { ...safeUser, tenant: workspace.tenant };
       }
     }
     throw new ForbiddenException('Identifiants invalides');
+  }
+
+  login(input: { email: string; password: string; twoFactorCode?: string; ip?: string; userAgent?: string }) {
+    for (const workspace of this.workspaces.values()) {
+      const user = workspace.users.find((candidate) => candidate.email.toLowerCase() === input.email.toLowerCase());
+      if (!user || !user.active || !this.verifyPassword(user, input.password)) continue;
+      if (user.twoFactorEnabled && input.twoFactorCode !== user.twoFactorSecret) {
+        this.audit(workspace, 'auth.2fa-required', 'User', user.id, { email: user.email });
+        return { status: 'TWO_FACTOR_REQUIRED', userId: user.id, tenantId: workspace.tenant.id };
+      }
+      const session = this.createSession(workspace, user, input);
+      const { password: _password, passwordHash: _passwordHash, twoFactorSecret: _secret, ...safeUser } = user;
+      return {
+        status: 'AUTHENTICATED',
+        access_token: session.accessToken,
+        refresh_token: session.refreshToken,
+        token_type: 'Bearer',
+        sessionId: session.id,
+        expiresAt: session.expiresAt,
+        refreshExpiresAt: session.refreshExpiresAt,
+        user: { ...safeUser, tenant: workspace.tenant },
+        tenantId: workspace.tenant.id,
+      };
+    }
+    throw new ForbiddenException('Identifiants invalides');
+  }
+
+  refreshSession(refreshToken: string) {
+    const token = this.nonEmpty(refreshToken, 'Le refresh token est obligatoire');
+    for (const workspace of this.workspaces.values()) {
+      const session = workspace.sessions.find((candidate) => candidate.refreshToken === token && !candidate.revokedAt);
+      if (!session) continue;
+      if (session.refreshExpiresAt < new Date().toISOString()) {
+        session.revokedAt = new Date().toISOString();
+        throw new ForbiddenException('Session expirée');
+      }
+      session.accessToken = this.token('access');
+      session.expiresAt = this.minutesFromNow(15);
+      this.audit(workspace, 'auth.session-refreshed', 'Session', session.id, { userId: session.userId });
+      return {
+        access_token: session.accessToken,
+        refresh_token: session.refreshToken,
+        token_type: 'Bearer',
+        sessionId: session.id,
+        expiresAt: session.expiresAt,
+      };
+    }
+    throw new ForbiddenException('Refresh token invalide');
+  }
+
+  requestPasswordReset(email: string) {
+    for (const workspace of this.workspaces.values()) {
+      const user = workspace.users.find((candidate) => candidate.email.toLowerCase() === email.toLowerCase());
+      if (!user) continue;
+      const reset = {
+        id: this.id('pwd-reset'),
+        tenantId: workspace.tenant.id,
+        userId: user.id,
+        token: this.token('reset'),
+        requestedAt: new Date().toISOString(),
+        expiresAt: this.minutesFromNow(30),
+      };
+      workspace.passwordResetTokens.push(reset);
+      this.securityNotification(workspace, user, 'PASSWORD_RESET', `Réinitialisation du mot de passe demandée pour ${user.email}`);
+      this.audit(workspace, 'auth.password-reset-requested', 'User', user.id, { email: user.email });
+      return { status: 'RESET_REQUESTED', tenantId: workspace.tenant.id, userId: user.id, resetToken: reset.token, expiresAt: reset.expiresAt };
+    }
+    return { status: 'RESET_REQUESTED' };
+  }
+
+  resetPassword(input: { token: string; password: string }) {
+    const token = this.nonEmpty(input.token, 'Le token de réinitialisation est obligatoire');
+    const password = this.nonEmpty(input.password, 'Le nouveau mot de passe est obligatoire');
+    if (password.length < 8) throw new BadRequestException('Le mot de passe doit contenir au moins 8 caractères');
+    for (const workspace of this.workspaces.values()) {
+      const reset = workspace.passwordResetTokens.find((candidate) => candidate.token === token);
+      if (!reset) continue;
+      if (reset.usedAt) throw new BadRequestException('Le token de réinitialisation est déjà utilisé');
+      if (reset.expiresAt < new Date().toISOString()) throw new BadRequestException('Le token de réinitialisation est expiré');
+      const user = workspace.users.find((candidate) => candidate.id === reset.userId);
+      if (!user) throw new NotFoundException('Utilisateur introuvable');
+      user.password = password;
+      user.passwordHash = this.passwordHash(password);
+      user.passwordUpdatedAt = today();
+      reset.usedAt = new Date().toISOString();
+      workspace.sessions.filter((session) => session.userId === user.id).forEach((session) => {
+        session.revokedAt = reset.usedAt;
+      });
+      this.audit(workspace, 'auth.password-reset-completed', 'User', user.id, { email: user.email });
+      return { status: 'PASSWORD_UPDATED', userId: user.id, revokedSessions: workspace.sessions.filter((session) => session.userId === user.id).length };
+    }
+    throw new BadRequestException('Token de réinitialisation invalide');
+  }
+
+  enableTwoFactor(userId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const user = this.user(workspace, userId);
+    user.twoFactorEnabled = true;
+    user.twoFactorSecret = user.twoFactorSecret ?? String(Math.floor(100000 + Math.random() * 900000));
+    this.securityNotification(workspace, user, 'TWO_FACTOR_ENABLED', `Double authentification activée pour ${user.email}`);
+    this.audit(workspace, 'auth.2fa-enabled', 'User', user.id, { email: user.email });
+    return { status: 'TWO_FACTOR_ENABLED', userId: user.id, secret: user.twoFactorSecret };
+  }
+
+  verifyTwoFactor(userId: string, code: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const user = this.user(workspace, userId);
+    if (!user.twoFactorEnabled || user.twoFactorSecret !== code) {
+      throw new ForbiddenException('Code double authentification invalide');
+    }
+    this.audit(workspace, 'auth.2fa-verified', 'User', user.id, { email: user.email });
+    return { status: 'TWO_FACTOR_VERIFIED', userId: user.id };
+  }
+
+  deviceHistory(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      events: [...workspace.deviceLoginEvents].sort((left, right) => right.at.localeCompare(left.at)),
+      notifications: [...workspace.securityNotifications].sort((left, right) => right.at.localeCompare(left.at)),
+      suspicious: workspace.deviceLoginEvents.filter((event) => event.suspicious).length,
+    };
+  }
+
+  assertHttpWriteAllowed(tenantId: string, method: string, path: string, role?: string): void {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())) return;
+    if (path.startsWith('/auth')) return;
+    const workspace = this.workspace(tenantId);
+    const normalizedRole = (role ?? this.cls.get<string>('userRole') ?? 'OWNER') as any;
+    if (normalizedRole === 'READ_ONLY') {
+      throw new ForbiddenException('Le rôle lecture seule ne peut pas modifier les données');
+    }
+    if (workspace.tenant.status !== 'ACTIVE' || workspace.tenant.settings.featureGates.writeLocked) {
+      const isExportWorkflow = path.includes('/export') || path.includes('/tenant/data-export');
+      if (!isExportWorkflow) {
+        throw new ForbiddenException(workspace.tenant.settings.featureGates.reason ?? 'L’abonnement est en lecture seule');
+      }
+    }
   }
 
   summary(tenantId?: string) {
@@ -597,6 +781,86 @@ export class ErpStoreService {
       ready: completed === checks.length,
       checks,
     };
+  }
+
+  roleNavigation(role: string = this.cls.get<string>('userRole') ?? 'OWNER') {
+    const visibleByRole: Record<string, ErpModuleKey[]> = {
+      OWNER: allModules,
+      ADMIN: allModules,
+      ACCOUNTANT: ['tenant', 'crm', 'sales', 'inventory', 'accounting', 'payroll', 'compliance'],
+      SALES: ['crm', 'sales'],
+      WAREHOUSE: ['inventory', 'production'],
+      PAYROLL: ['payroll'],
+      CASHIER: ['pos', 'sales'],
+      READ_ONLY: allModules,
+      IMPLEMENTATION_PARTNER: ['tenant', 'crm', 'inventory', 'payroll', 'compliance'],
+    };
+    const modules = visibleByRole[role] ?? allModules;
+    return {
+      role,
+      modules: allModules.map((module) => ({
+        module,
+        visible: modules.includes(module),
+        canWrite: role !== 'READ_ONLY' && modules.includes(module) && !this.workspace().tenant.settings.featureGates.writeLocked,
+      })),
+    };
+  }
+
+  subscriptionGate(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      tenantId: workspace.tenant.id,
+      status: workspace.tenant.status,
+      plan: workspace.tenant.plan,
+      writeLocked: workspace.tenant.status !== 'ACTIVE' || workspace.tenant.settings.featureGates.writeLocked,
+      reason: workspace.tenant.settings.featureGates.reason,
+      allowedModules: workspace.tenant.settings.featureGates.allowedModules,
+    };
+  }
+
+  updateSubscriptionGate(input: { status?: Tenant['status']; writeLocked?: boolean; reason?: string; allowedModules?: ErpModuleKey[] }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    if (input.status !== undefined) workspace.tenant.status = input.status;
+    if (input.writeLocked !== undefined) workspace.tenant.settings.featureGates.writeLocked = input.writeLocked;
+    if (input.reason !== undefined) workspace.tenant.settings.featureGates.reason = this.clean(input.reason);
+    if (input.allowedModules !== undefined) {
+      workspace.tenant.settings.featureGates.allowedModules = input.allowedModules.filter((module) => allModules.includes(module));
+    }
+    this.audit(workspace, 'tenant.subscription-gate-updated', 'Tenant', workspace.tenant.id, this.subscriptionGate(workspace.tenant.id));
+    return this.subscriptionGate(workspace.tenant.id);
+  }
+
+  dataRetentionPolicy(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const retention = workspace.tenant.settings.retention;
+    return {
+      tenantId: workspace.tenant.id,
+      retentionDays: retention.retentionDays,
+      exportRequestedAt: retention.exportRequestedAt,
+      deleteRequestedAt: retention.deleteRequestedAt,
+      deleteScheduledAt: retention.deleteScheduledAt,
+      exportReady: Boolean(retention.exportRequestedAt),
+      deleteScheduled: Boolean(retention.deleteScheduledAt),
+    };
+  }
+
+  requestTenantExport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    workspace.tenant.settings.retention.exportRequestedAt = new Date().toISOString();
+    const manifest = this.tenantExportManifest(workspace);
+    this.audit(workspace, 'tenant.data-export-requested', 'Tenant', workspace.tenant.id, manifest);
+    return manifest;
+  }
+
+  requestTenantDelete(input: { retentionDays?: number; confirmation?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const retentionDays = this.nonNegative(input.retentionDays ?? workspace.tenant.settings.retention.retentionDays, 'La durée de rétention doit être positive');
+    if (retentionDays < 30) throw new BadRequestException('La rétention minimale est de 30 jours');
+    workspace.tenant.settings.retention.retentionDays = retentionDays;
+    workspace.tenant.settings.retention.deleteRequestedAt = new Date().toISOString();
+    workspace.tenant.settings.retention.deleteScheduledAt = addDays(today(), 30);
+    this.audit(workspace, 'tenant.delete-requested', 'Tenant', workspace.tenant.id, this.dataRetentionPolicy(workspace.tenant.id));
+    return this.dataRetentionPolicy(workspace.tenant.id);
   }
 
   importTemplates(tenantId?: string) {
@@ -865,6 +1129,7 @@ export class ErpStoreService {
 
   approveCreditNote(creditNoteId: string, tenantId?: string): CreditNote {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const creditNote = workspace.creditNotes.find((candidate) => candidate.id === creditNoteId || candidate.number === creditNoteId);
     if (!creditNote) throw new NotFoundException('Avoir introuvable');
     creditNote.approvalStatus = 'APPROVED';
@@ -874,6 +1139,7 @@ export class ErpStoreService {
 
   approvePurchaseReceipt(receiptId: string, tenantId?: string): PurchaseReceipt {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const receipt = workspace.purchaseReceipts.find((candidate) => candidate.id === receiptId || candidate.number === receiptId);
     if (!receipt) throw new NotFoundException('Réception achat introuvable');
     receipt.approvalStatus = 'APPROVED';
@@ -883,6 +1149,7 @@ export class ErpStoreService {
 
   approveStockMove(moveId: string, tenantId?: string): StockMove {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const move = workspace.stockMoves.find((candidate) => candidate.id === moveId || candidate.reference === moveId);
     if (!move) throw new NotFoundException('Mouvement de stock introuvable');
     move.approvalStatus = 'APPROVED';
@@ -1481,6 +1748,7 @@ export class ErpStoreService {
 
   addCustomer(input: Partial<Customer> & { name: string }, tenantId?: string): Customer {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const customer: Customer = {
       id: this.id('cus'),
       tenantId: workspace.tenant.id,
@@ -1522,6 +1790,7 @@ export class ErpStoreService {
 
   updateCustomer(customerId: string, input: Partial<Customer>, tenantId?: string): Customer {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const customer = this.customer(workspace, customerId);
     if (input.name !== undefined) {
       customer.name = this.nonEmpty(input.name, 'Le nom du client est obligatoire');
@@ -1560,6 +1829,7 @@ export class ErpStoreService {
 
   archiveCustomer(customerId: string, tenantId?: string): Customer {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const customer = this.customer(workspace, customerId);
     customer.active = false;
     customer.updatedAt = today();
@@ -1633,6 +1903,7 @@ export class ErpStoreService {
 
   addSupplier(input: Partial<Supplier> & { name: string }, tenantId?: string): Supplier {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const supplier: Supplier = {
       id: this.id('sup'),
       tenantId: workspace.tenant.id,
@@ -1675,6 +1946,7 @@ export class ErpStoreService {
 
   updateSupplier(supplierId: string, input: Partial<Supplier>, tenantId?: string): Supplier {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const supplier = this.supplier(workspace, supplierId);
     if (input.name !== undefined) supplier.name = this.nonEmpty(input.name, 'Le nom du fournisseur est obligatoire');
     if (input.arabicName !== undefined) supplier.arabicName = this.clean(input.arabicName);
@@ -1710,6 +1982,7 @@ export class ErpStoreService {
 
   archiveSupplier(supplierId: string, tenantId?: string): Supplier {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const supplier = this.supplier(workspace, supplierId);
     supplier.active = false;
     supplier.updatedAt = today();
@@ -1762,6 +2035,7 @@ export class ErpStoreService {
 
   addEmployee(input: Partial<Employee> & { fullName: string; cin: string; hireDate: string; baseSalary: number }, tenantId?: string): Employee {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const employeeNumber = this.clean(input.employeeNumber) ?? `EMP-${String(workspace.employees.length + 1).padStart(3, '0')}`;
     if (workspace.employees.some((candidate) => candidate.employeeNumber.toUpperCase() === employeeNumber.toUpperCase())) {
       throw new BadRequestException('Le matricule employé existe déjà');
@@ -1834,6 +2108,7 @@ export class ErpStoreService {
     fileName?: string;
   }, tenantId?: string) {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const supplier = this.supplier(workspace, supplierId);
     const document = this.validateSupplierDocumentExpiries([{
       type: input.type,
@@ -1852,6 +2127,7 @@ export class ErpStoreService {
 
   addLead(input: Partial<Lead> & { customerName: string; value?: number }, tenantId?: string): Lead {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const lead: Lead = {
       id: this.id('lead'),
       tenantId: workspace.tenant.id,
@@ -1875,6 +2151,7 @@ export class ErpStoreService {
 
   updateLead(leadId: string, input: Partial<Lead> & { value?: number }, tenantId?: string): Lead {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const lead = this.lead(workspace, leadId);
     if (input.customerName !== undefined) lead.customerName = this.nonEmpty(input.customerName, 'Le nom du prospect est obligatoire');
     if (input.stage !== undefined) lead.stage = this.leadStage(input.stage);
@@ -1991,6 +2268,7 @@ export class ErpStoreService {
 
   addProduct(input: Partial<Product> & { sku: string; name: string; salePrice: number }, tenantId?: string): Product {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const sku = this.nonEmpty(input.sku, 'Le SKU est obligatoire').toUpperCase();
     if (workspace.products.some((candidate) => candidate.sku.toUpperCase() === sku)) {
       throw new BadRequestException('Le SKU article existe déjà');
@@ -2022,6 +2300,17 @@ export class ErpStoreService {
     };
     product.duplicateWarnings = this.productDuplicateWarnings(workspace, product);
     workspace.products.push(product);
+    if (product.trackStock) {
+      for (const warehouse of workspace.warehouses) {
+        workspace.warehouseStocks.push({
+          tenantId: workspace.tenant.id,
+          warehouseId: warehouse.id,
+          productId: product.id,
+          quantity: warehouse.id === workspace.warehouses[0].id ? product.stockOnHand : 0,
+          reserved: 0,
+        });
+      }
+    }
     this.audit(workspace, 'product.created', 'Product', product.id, product);
     return product;
   }
@@ -2084,6 +2373,7 @@ export class ErpStoreService {
 
   updateProduct(productId: string, input: Partial<Product>, tenantId?: string): Product {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const product = this.product(workspace, productId);
     if (input.sku !== undefined) {
       const sku = this.nonEmpty(input.sku, 'Le SKU est obligatoire').toUpperCase();
@@ -2125,6 +2415,7 @@ export class ErpStoreService {
 
   archiveProduct(productId: string, tenantId?: string): Product {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const product = this.product(workspace, productId);
     product.active = false;
     product.updatedAt = today();
@@ -2134,6 +2425,37 @@ export class ErpStoreService {
 
   listWarehouses(tenantId?: string): Warehouse[] {
     return this.workspace(tenantId).warehouses;
+  }
+
+  createWarehouse(input: Partial<Warehouse> & { name: string; city: string }, tenantId?: string): Warehouse {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const warehouse: Warehouse = {
+      id: this.id('wh'),
+      tenantId: workspace.tenant.id,
+      name: this.nonEmpty(input.name, 'Le nom du dépôt est obligatoire'),
+      city: this.nonEmpty(input.city, 'La ville du dépôt est obligatoire'),
+      address: this.clean(input.address),
+      active: input.active ?? true,
+    };
+    workspace.warehouses.push(warehouse);
+    for (const product of workspace.products.filter((candidate) => candidate.trackStock)) {
+      workspace.warehouseStocks.push({ tenantId: workspace.tenant.id, warehouseId: warehouse.id, productId: product.id, quantity: 0, reserved: 0 });
+    }
+    this.audit(workspace, 'warehouse.created', 'Warehouse', warehouse.id, warehouse);
+    return warehouse;
+  }
+
+  updateWarehouse(warehouseId: string, input: Partial<Warehouse>, tenantId?: string): Warehouse {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const warehouse = this.warehouse(workspace, warehouseId);
+    if (input.name !== undefined) warehouse.name = this.nonEmpty(input.name, 'Le nom du dépôt est obligatoire');
+    if (input.city !== undefined) warehouse.city = this.nonEmpty(input.city, 'La ville du dépôt est obligatoire');
+    if (input.address !== undefined) warehouse.address = this.clean(input.address);
+    if (input.active !== undefined) warehouse.active = input.active;
+    this.audit(workspace, 'warehouse.updated', 'Warehouse', warehouse.id, warehouse);
+    return warehouse;
   }
 
   listStock(tenantId?: string) {
@@ -2152,28 +2474,194 @@ export class ErpStoreService {
     }));
   }
 
+  listWarehouseStock(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.warehouseStocks.map((stock) => {
+      const product = this.product(workspace, stock.productId);
+      const warehouse = this.warehouse(workspace, stock.warehouseId);
+      return {
+        warehouseId: warehouse.id,
+        warehouseName: warehouse.name,
+        productId: product.id,
+        sku: product.sku,
+        name: product.name,
+        quantity: stock.quantity,
+        reserved: stock.reserved,
+        available: r2(stock.quantity - stock.reserved),
+        value: r2(stock.quantity * product.weightedAverageCost),
+      };
+    });
+  }
+
+  barcodeLookup(barcodeOrSku: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const key = this.nonEmpty(barcodeOrSku, 'Le code-barres ou SKU est obligatoire');
+    const product = workspace.products.find((candidate) => candidate.barcode === key || candidate.sku.toUpperCase() === key.toUpperCase());
+    if (!product) throw new NotFoundException('Article introuvable pour ce code-barres');
+    return {
+      product,
+      stock: this.listWarehouseStock(workspace.tenant.id).filter((line) => line.productId === product.id),
+    };
+  }
+
+  stockAlerts(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.products
+      .filter((product) => product.active && product.trackStock)
+      .map((product) => {
+        const availableStock = this.availableStock(product);
+        const suggestedQuantity = Math.max(0, product.reorderPoint * 2 - availableStock);
+        return {
+          productId: product.id,
+          sku: product.sku,
+          name: product.name,
+          reorderPoint: product.reorderPoint,
+          stockOnHand: product.stockOnHand,
+          reservedStock: product.reservedStock,
+          availableStock,
+          suggestedQuantity,
+          status: availableStock <= product.reorderPoint ? 'REPLENISH' : 'OK',
+        };
+      })
+      .filter((row) => row.status === 'REPLENISH')
+      .sort((left, right) => left.availableStock - right.availableStock || left.sku.localeCompare(right.sku));
+    return { rows, count: rows.length };
+  }
+
+  stockReservationVisibility(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const orderReservations = workspace.salesOrders
+      .filter((order) => ['CONFIRMED', 'DELIVERED'].includes(order.status))
+      .flatMap((order) => order.lines
+        .filter((line) => this.product(workspace, line.productId).trackStock)
+        .map((line) => ({
+          source: 'ORDER',
+          sourceNumber: order.number,
+          productId: line.productId,
+          sku: line.sku,
+          quantity: order.status === 'CONFIRMED' ? line.quantity : 0,
+          customerId: order.customerId,
+          status: order.status,
+        })));
+    const posReservations = workspace.posTransactions.flatMap((ticket) => ticket.lines
+      .filter((line) => this.product(workspace, line.productId).trackStock)
+      .map((line) => ({
+        source: 'POS',
+        sourceNumber: ticket.number,
+        productId: line.productId,
+        sku: line.sku,
+        quantity: 0,
+        customerId: undefined,
+        status: 'DEDUCTED',
+      })));
+    return {
+      rows: [...orderReservations, ...posReservations],
+      totals: this.listStock(workspace.tenant.id).map((line) => ({
+        productId: line.productId,
+        sku: line.sku,
+        reservedStock: line.reservedStock,
+        availableStock: line.availableStock,
+      })),
+    };
+  }
+
   adjustStock(productId: string, quantity: number, reason = 'Ajustement manuel', tenantId?: string): StockMove {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const product = this.product(workspace, productId);
     if (!product.trackStock) {
       throw new BadRequestException('Cet article n’est pas suivi en stock');
     }
+    const beforeQty = product.stockOnHand;
     product.stockOnHand = r2(product.stockOnHand + quantity);
     if (product.stockOnHand < 0) {
       throw new BadRequestException('Le stock ne peut pas devenir négatif');
     }
     const move = this.stockMove(workspace, product, quantity, product.weightedAverageCost, 'ADJUSTMENT', reason);
+    move.reasonCode = reason;
+    move.beforeQty = beforeQty;
+    move.afterQty = product.stockOnHand;
     move.approvalStatus = this.approvalStatus(workspace, 'stockAdjustment', Math.abs(move.value));
+    this.postJournal(workspace, `Ajustement stock ${product.sku}`, move.reference, [
+      { account: '3111', label: 'Stock marchandises', debit: quantity > 0 ? Math.abs(move.value) : 0, credit: quantity < 0 ? Math.abs(move.value) : 0 },
+      { account: '6198', label: 'Écart inventaire', debit: quantity < 0 ? Math.abs(move.value) : 0, credit: quantity > 0 ? Math.abs(move.value) : 0 },
+    ]);
     this.audit(workspace, 'stock.adjusted', 'StockMove', move.id, move);
     return move;
   }
 
-  createPurchaseReceipt(input: { supplierId: string; lines: Array<{ productId: string; quantity: number; unitCost: number }> }, tenantId?: string): PurchaseReceipt {
+  createPurchaseOrder(input: { supplierId: string; expectedDate?: string; lines: Array<{ productId: string; quantity: number; unitCost: number }> }, tenantId?: string): PurchaseOrder {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     this.supplier(workspace, input.supplierId);
+    const lines = input.lines.map((line) => {
+      const product = this.product(workspace, line.productId);
+      if (line.quantity <= 0 || line.unitCost < 0) throw new BadRequestException('Ligne commande achat invalide');
+      return { productId: product.id, quantity: line.quantity, unitCost: line.unitCost, receivedQuantity: 0, value: r2(line.quantity * line.unitCost) };
+    });
+    const total = r2(lines.reduce((sum, line) => sum + line.value, 0));
+    const order: PurchaseOrder = {
+      id: this.id('po'),
+      tenantId: workspace.tenant.id,
+      supplierId: input.supplierId,
+      number: this.nextNumber(workspace, 'BA'),
+      date: today(),
+      expectedDate: input.expectedDate ? this.isoDate(input.expectedDate, 'Date prévue achat invalide') : undefined,
+      status: 'DRAFT',
+      approvalStatus: this.approvalStatus(workspace, 'purchase', total),
+      lines,
+      total,
+    };
+    workspace.purchaseOrders.push(order);
+    this.audit(workspace, 'purchase-order.created', 'PurchaseOrder', order.id, order);
+    return order;
+  }
+
+  approvePurchaseOrder(orderId: string, tenantId?: string): PurchaseOrder {
+    const workspace = this.workspace(tenantId);
+    const order = this.purchaseOrder(workspace, orderId);
+    if (order.status === 'CANCELLED') throw new BadRequestException('La commande achat est annulée');
+    order.status = 'APPROVED';
+    order.approvalStatus = 'APPROVED';
+    this.audit(workspace, 'purchase-order.approved', 'PurchaseOrder', order.id, order);
+    return order;
+  }
+
+  cancelPurchaseOrder(orderId: string, tenantId?: string): PurchaseOrder {
+    const workspace = this.workspace(tenantId);
+    const order = this.purchaseOrder(workspace, orderId);
+    if (order.status === 'RECEIVED' || order.status === 'PARTIALLY_RECEIVED') {
+      throw new BadRequestException('La commande achat réceptionnée ne peut pas être annulée');
+    }
+    order.status = 'CANCELLED';
+    this.audit(workspace, 'purchase-order.cancelled', 'PurchaseOrder', order.id, order);
+    return order;
+  }
+
+  listPurchaseOrders(tenantId?: string): PurchaseOrder[] {
+    return this.workspace(tenantId).purchaseOrders;
+  }
+
+  createPurchaseReceipt(input: { supplierId?: string; purchaseOrderId?: string; warehouseId?: string; lines?: Array<{ productId: string; quantity: number; unitCost: number }> }, tenantId?: string): PurchaseReceipt {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const order = input.purchaseOrderId ? this.purchaseOrder(workspace, input.purchaseOrderId) : undefined;
+    if (order && !['APPROVED', 'PARTIALLY_RECEIVED'].includes(order.status)) {
+      throw new BadRequestException('La commande achat doit être approuvée avant réception');
+    }
+    const supplierId = input.supplierId ?? order?.supplierId;
+    if (!supplierId) throw new BadRequestException('Le fournisseur est obligatoire');
+    this.supplier(workspace, supplierId);
+    const warehouseId = input.warehouseId ?? workspace.warehouses[0]?.id;
+    this.warehouse(workspace, warehouseId);
     const number = this.nextNumber(workspace, 'BR');
     let total = 0;
-    const lines = input.lines.map((line) => {
+    const receiptInputLines = input.lines ?? order?.lines.map((line) => ({
+      productId: line.productId,
+      quantity: r2(line.quantity - line.receivedQuantity),
+      unitCost: line.unitCost,
+    })) ?? [];
+    const lines = receiptInputLines.map((line) => {
       if (line.quantity <= 0 || line.unitCost < 0) {
         throw new BadRequestException('Ligne de réception achat invalide');
       }
@@ -2186,16 +2674,31 @@ export class ErpStoreService {
       product.stockOnHand = r2(product.stockOnHand + line.quantity);
       product.weightedAverageCost = product.stockOnHand > 0 ? r2((oldValue + newValue) / product.stockOnHand) : line.unitCost;
       product.purchaseCost = line.unitCost;
-      this.stockMove(workspace, product, line.quantity, line.unitCost, 'RECEIPT', number);
+      this.stockMove(workspace, product, line.quantity, line.unitCost, 'RECEIPT', number, warehouseId);
+      if (order) {
+        const orderLine = order.lines.find((candidate) => candidate.productId === product.id);
+        if (!orderLine) throw new BadRequestException('La réception référence un article absent de la commande achat');
+        if (r2(orderLine.receivedQuantity + line.quantity) > orderLine.quantity) {
+          throw new BadRequestException('La réception dépasse la quantité commandée');
+        }
+        orderLine.receivedQuantity = r2(orderLine.receivedQuantity + line.quantity);
+      }
       total += newValue;
       return { ...line, value: r2(newValue) };
     });
+    if (order) {
+      const fullyReceived = order.lines.every((line) => line.receivedQuantity >= line.quantity);
+      const partiallyReceived = order.lines.some((line) => line.receivedQuantity > 0);
+      order.status = fullyReceived ? 'RECEIVED' : partiallyReceived ? 'PARTIALLY_RECEIVED' : order.status;
+    }
     const receipt: PurchaseReceipt = {
       id: this.id('br'),
       tenantId: workspace.tenant.id,
-      supplierId: input.supplierId,
+      supplierId,
+      purchaseOrderId: order?.id,
       number,
       date: today(),
+      warehouseId,
       lines,
       total: r2(total),
       approvalStatus: this.approvalStatus(workspace, 'purchase', r2(total)),
@@ -2209,8 +2712,163 @@ export class ErpStoreService {
     return receipt;
   }
 
+  listPurchaseReceipts(tenantId?: string): PurchaseReceipt[] {
+    return this.workspace(tenantId).purchaseReceipts;
+  }
+
+  createSupplierInvoice(input: { supplierId?: string; purchaseOrderId?: string; purchaseReceiptId?: string; supplierInvoiceNumber?: string; vatRate?: VatRate; dueDate?: string }, tenantId?: string): SupplierInvoice {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const receipt = input.purchaseReceiptId ? this.purchaseReceipt(workspace, input.purchaseReceiptId) : undefined;
+    const order = input.purchaseOrderId ? this.purchaseOrder(workspace, input.purchaseOrderId) : receipt?.purchaseOrderId ? this.purchaseOrder(workspace, receipt.purchaseOrderId) : undefined;
+    const supplierId = input.supplierId ?? receipt?.supplierId ?? order?.supplierId;
+    if (!supplierId) throw new BadRequestException('Le fournisseur est obligatoire pour la facture fournisseur');
+    const supplier = this.supplier(workspace, supplierId);
+    const subtotal = receipt?.total ?? order?.total ?? 0;
+    if (subtotal <= 0) throw new BadRequestException('Une réception ou commande achat est requise pour facturer');
+    const vatRate = this.vatRate(input.vatRate ?? 0.2);
+    const vatTotal = r2(subtotal * vatRate);
+    const invoice: SupplierInvoice = {
+      id: this.id('sinv'),
+      tenantId: workspace.tenant.id,
+      supplierId,
+      purchaseOrderId: order?.id,
+      purchaseReceiptId: receipt?.id,
+      number: this.nextNumber(workspace, 'FF'),
+      supplierInvoiceNumber: this.clean(input.supplierInvoiceNumber),
+      date: today(),
+      dueDate: input.dueDate ? this.isoDate(input.dueDate, 'Date échéance fournisseur invalide') : addDays(today(), supplier.paymentTermsDays),
+      status: 'POSTED',
+      subtotal,
+      vatTotal,
+      total: r2(subtotal + vatTotal),
+      paidAmount: 0,
+    };
+    workspace.supplierInvoices.push(invoice);
+    this.postJournal(workspace, `Facture fournisseur ${invoice.number}`, invoice.number, [
+      { account: '6111', label: 'Achats marchandises', debit: invoice.subtotal, credit: 0 },
+      { account: '3455', label: 'TVA récupérable', debit: invoice.vatTotal, credit: 0 },
+      { account: '4411', label: 'Fournisseurs', debit: 0, credit: invoice.total },
+    ]);
+    this.audit(workspace, 'supplier-invoice.posted', 'SupplierInvoice', invoice.id, invoice);
+    return invoice;
+  }
+
+  listSupplierInvoices(tenantId?: string): SupplierInvoice[] {
+    return this.workspace(tenantId).supplierInvoices;
+  }
+
+  transferStock(input: { productId: string; fromWarehouseId: string; toWarehouseId: string; quantity: number }, tenantId?: string): StockTransfer {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const product = this.product(workspace, input.productId);
+    this.warehouse(workspace, input.fromWarehouseId);
+    this.warehouse(workspace, input.toWarehouseId);
+    if (!product.trackStock || input.quantity <= 0) throw new BadRequestException('Transfert de stock invalide');
+    const fromStock = this.warehouseStock(workspace, input.fromWarehouseId, product.id);
+    if (fromStock.quantity - fromStock.reserved < input.quantity) throw new BadRequestException('Stock dépôt source insuffisant');
+    const transfer: StockTransfer = {
+      id: this.id('trf'),
+      tenantId: workspace.tenant.id,
+      number: this.nextNumber(workspace, 'TRF'),
+      productId: product.id,
+      fromWarehouseId: input.fromWarehouseId,
+      toWarehouseId: input.toWarehouseId,
+      quantity: input.quantity,
+      status: 'IN_TRANSIT',
+      shippedAt: today(),
+    };
+    workspace.stockTransfers.push(transfer);
+    const out = this.stockMove(workspace, product, -input.quantity, product.weightedAverageCost, 'TRANSFER_OUT', transfer.number, input.fromWarehouseId);
+    out.toWarehouseId = input.toWarehouseId;
+    this.audit(workspace, 'stock-transfer.shipped', 'StockTransfer', transfer.id, transfer);
+    return transfer;
+  }
+
+  receiveStockTransfer(transferId: string, tenantId?: string): StockTransfer {
+    const workspace = this.workspace(tenantId);
+    const transfer = this.stockTransfer(workspace, transferId);
+    if (transfer.status !== 'IN_TRANSIT') throw new BadRequestException('Le transfert n’est pas en transit');
+    const product = this.product(workspace, transfer.productId);
+    const move = this.stockMove(workspace, product, transfer.quantity, product.weightedAverageCost, 'TRANSFER_IN', transfer.number, transfer.toWarehouseId);
+    move.toWarehouseId = transfer.toWarehouseId;
+    transfer.status = 'RECEIVED';
+    transfer.receivedAt = today();
+    this.audit(workspace, 'stock-transfer.received', 'StockTransfer', transfer.id, transfer);
+    return transfer;
+  }
+
+  listStockTransfers(tenantId?: string): StockTransfer[] {
+    return this.workspace(tenantId).stockTransfers;
+  }
+
+  createInventoryCount(input: { warehouseId?: string; lines: Array<{ productId: string; countedQuantity: number }> }, tenantId?: string): InventoryCountSheet {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const warehouseId = input.warehouseId ?? workspace.warehouses[0]?.id;
+    this.warehouse(workspace, warehouseId);
+    const lines = input.lines.map((line) => {
+      const product = this.product(workspace, line.productId);
+      const stock = this.warehouseStock(workspace, warehouseId, product.id);
+      const countedQuantity = this.nonNegative(line.countedQuantity, 'La quantité comptée doit être positive');
+      const variance = r2(countedQuantity - stock.quantity);
+      return {
+        productId: product.id,
+        expectedQuantity: stock.quantity,
+        countedQuantity,
+        variance,
+        valueImpact: r2(variance * product.weightedAverageCost),
+      };
+    });
+    const sheet: InventoryCountSheet = {
+      id: this.id('cnt'),
+      tenantId: workspace.tenant.id,
+      number: this.nextNumber(workspace, 'INV'),
+      warehouseId,
+      status: 'DRAFT',
+      createdAt: today(),
+      lines,
+      totalVarianceValue: r2(lines.reduce((sum, line) => sum + line.valueImpact, 0)),
+    };
+    workspace.inventoryCounts.push(sheet);
+    this.audit(workspace, 'inventory-count.created', 'InventoryCount', sheet.id, sheet);
+    return sheet;
+  }
+
+  approveInventoryCount(sheetId: string, tenantId?: string): InventoryCountSheet {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const sheet = this.inventoryCount(workspace, sheetId);
+    if (sheet.status !== 'DRAFT') throw new BadRequestException('La feuille inventaire est déjà traitée');
+    for (const line of sheet.lines) {
+      if (line.variance === 0) continue;
+      const product = this.product(workspace, line.productId);
+      product.stockOnHand = r2(product.stockOnHand + line.variance);
+      const move = this.stockMove(workspace, product, line.variance, product.weightedAverageCost, 'COUNT_VARIANCE', sheet.number, sheet.warehouseId);
+      move.beforeQty = line.expectedQuantity;
+      move.afterQty = line.countedQuantity;
+      move.reasonCode = 'INVENTORY_COUNT';
+    }
+    sheet.status = 'POSTED';
+    sheet.approvedAt = today();
+    if (sheet.totalVarianceValue !== 0) {
+      const value = Math.abs(sheet.totalVarianceValue);
+      this.postJournal(workspace, `Écart inventaire ${sheet.number}`, sheet.number, [
+        { account: '3111', label: 'Stock marchandises', debit: sheet.totalVarianceValue > 0 ? value : 0, credit: sheet.totalVarianceValue < 0 ? value : 0 },
+        { account: '6198', label: 'Écart inventaire', debit: sheet.totalVarianceValue < 0 ? value : 0, credit: sheet.totalVarianceValue > 0 ? value : 0 },
+      ]);
+    }
+    this.audit(workspace, 'inventory-count.posted', 'InventoryCount', sheet.id, sheet);
+    return sheet;
+  }
+
+  listInventoryCounts(tenantId?: string): InventoryCountSheet[] {
+    return this.workspace(tenantId).inventoryCounts;
+  }
+
   createQuote(input: { customerId: string; lines: DocumentLineInput[]; validUntil?: string }, tenantId?: string): Quote {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     this.customer(workspace, input.customerId);
     const lines = this.documentLines(workspace, input.lines);
     const quote: Quote = {
@@ -2242,6 +2900,7 @@ export class ErpStoreService {
 
   reviseQuote(quoteId: string, input: { lines?: DocumentLineInput[]; validUntil?: string }, tenantId?: string): Quote {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const quote = this.quote(workspace, quoteId);
     if (quote.status === 'CONVERTED' || quote.status === 'VOID') {
       throw new BadRequestException('Les devis convertis ou annulés ne peuvent pas être révisés');
@@ -2264,6 +2923,7 @@ export class ErpStoreService {
 
   approveQuote(quoteId: string, tenantId?: string): Quote {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const quote = this.quote(workspace, quoteId);
     if (quote.status === 'CONVERTED' || quote.status === 'VOID') {
       throw new BadRequestException('Le devis ne peut pas être approuvé');
@@ -2355,6 +3015,7 @@ export class ErpStoreService {
 
   createDeliveryNoteFromOrder(orderId: string, tenantId?: string): DeliveryNote {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const order = this.salesOrder(workspace, orderId);
     if (order.status === 'CANCELLED') {
       throw new BadRequestException('Les commandes annulées ne peuvent pas être livrées');
@@ -2371,6 +3032,8 @@ export class ErpStoreService {
         throw new BadRequestException(`Stock réservé insuffisant pour ${product.sku}`);
       }
       product.reservedStock = r2(product.reservedStock - line.quantity);
+      const warehouseStock = this.warehouseStock(workspace, workspace.warehouses[0].id, product.id);
+      warehouseStock.reserved = r2(Math.max(0, warehouseStock.reserved - line.quantity));
       product.stockOnHand = r2(product.stockOnHand - line.quantity);
       this.stockMove(workspace, product, -line.quantity, product.weightedAverageCost, 'DELIVERY', order.number);
     }
@@ -2397,6 +3060,7 @@ export class ErpStoreService {
 
   cancelDeliveryNote(deliveryNoteId: string, tenantId?: string): DeliveryNote {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const deliveryNote = this.deliveryNote(workspace, deliveryNoteId);
     if (deliveryNote.status === 'CANCELLED') {
       return deliveryNote;
@@ -2421,6 +3085,7 @@ export class ErpStoreService {
 
   convertOrderToInvoice(orderId: string, tenantId?: string): Invoice {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const order = this.salesOrder(workspace, orderId);
     if (order.status !== 'DELIVERED') {
       throw new BadRequestException('La commande doit être livrée avant facturation');
@@ -2599,6 +3264,7 @@ export class ErpStoreService {
 
   recordPayment(input: { invoiceId: string; amount: number; method?: Payment['method'] }, tenantId?: string): Payment {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const invoice = this.invoice(workspace, input.invoiceId);
     if (input.amount <= 0) {
       throw new BadRequestException('Le montant du paiement doit être positif');
@@ -2638,6 +3304,7 @@ export class ErpStoreService {
 
   lockFiscalPeriod(year: number, month: number, tenantId?: string): FiscalPeriod {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const closeCheck = this.fiscalDocumentCompletenessCheck(year, month, workspace.tenant.id);
     if (closeCheck.status !== 'READY_TO_CLOSE') {
       throw new BadRequestException('La période fiscale contient des exceptions de clôture à traiter');
@@ -2658,6 +3325,7 @@ export class ErpStoreService {
 
   createPosTransaction(input: { cashierId?: string; lines: DocumentLineInput[]; paymentMethod?: PosTransaction['paymentMethod'] }, tenantId?: string): PosTransaction {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const lines = this.documentLines(workspace, input.lines);
     const transaction: PosTransaction = {
       id: this.id('pos'),
@@ -2686,6 +3354,7 @@ export class ErpStoreService {
 
   createProductionOrder(input: { finishedProductId: string; quantity: number; components?: Array<{ productId: string; quantity: number }> }, tenantId?: string): ProductionOrder {
     const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
     const finished = this.product(workspace, input.finishedProductId);
     if (input.quantity <= 0) {
       throw new BadRequestException('La quantité de production doit être positive');
@@ -2782,6 +3451,51 @@ export class ErpStoreService {
       throw new NotFoundException('Client introuvable');
     }
     return customer;
+  }
+
+  private user(workspace: TenantWorkspace, userId: string): ErpUser {
+    const user = workspace.users.find((candidate) => candidate.id === userId || candidate.email === userId);
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
+    return user;
+  }
+
+  private warehouse(workspace: TenantWorkspace, warehouseId: string): Warehouse {
+    const warehouse = workspace.warehouses.find((candidate) => candidate.id === warehouseId);
+    if (!warehouse) throw new NotFoundException('Dépôt introuvable');
+    return warehouse;
+  }
+
+  private warehouseStock(workspace: TenantWorkspace, warehouseId: string, productId: string): WarehouseStock {
+    let stock = workspace.warehouseStocks.find((candidate) => candidate.warehouseId === warehouseId && candidate.productId === productId);
+    if (!stock) {
+      stock = { tenantId: workspace.tenant.id, warehouseId, productId, quantity: 0, reserved: 0 };
+      workspace.warehouseStocks.push(stock);
+    }
+    return stock;
+  }
+
+  private purchaseOrder(workspace: TenantWorkspace, orderId: string): PurchaseOrder {
+    const order = workspace.purchaseOrders.find((candidate) => candidate.id === orderId || candidate.number === orderId);
+    if (!order) throw new NotFoundException('Commande achat introuvable');
+    return order;
+  }
+
+  private purchaseReceipt(workspace: TenantWorkspace, receiptId: string): PurchaseReceipt {
+    const receipt = workspace.purchaseReceipts.find((candidate) => candidate.id === receiptId || candidate.number === receiptId);
+    if (!receipt) throw new NotFoundException('Réception achat introuvable');
+    return receipt;
+  }
+
+  private stockTransfer(workspace: TenantWorkspace, transferId: string): StockTransfer {
+    const transfer = workspace.stockTransfers.find((candidate) => candidate.id === transferId || candidate.number === transferId);
+    if (!transfer) throw new NotFoundException('Transfert stock introuvable');
+    return transfer;
+  }
+
+  private inventoryCount(workspace: TenantWorkspace, sheetId: string): InventoryCountSheet {
+    const sheet = workspace.inventoryCounts.find((candidate) => candidate.id === sheetId || candidate.number === sheetId);
+    if (!sheet) throw new NotFoundException('Feuille inventaire introuvable');
+    return sheet;
   }
 
   private quote(workspace: TenantWorkspace, quoteId: string): Quote {
@@ -3050,17 +3764,30 @@ export class ErpStoreService {
     return r2(product.stockOnHand - product.reservedStock);
   }
 
-  private stockMove(workspace: TenantWorkspace, product: Product, quantity: number, unitCost: number, type: StockMove['type'], reference: string): StockMove {
+  private stockMove(workspace: TenantWorkspace, product: Product, quantity: number, unitCost: number, type: StockMove['type'], reference: string, warehouseId = workspace.warehouses[0].id): StockMove {
+    const stock = product.trackStock ? this.warehouseStock(workspace, warehouseId, product.id) : undefined;
+    const beforeQty = stock?.quantity ?? product.stockOnHand;
+    if (stock && !['RESERVATION', 'RESERVATION_RELEASE'].includes(type)) {
+      stock.quantity = r2(stock.quantity + quantity);
+    }
+    if (stock && type === 'RESERVATION') {
+      stock.reserved = r2(stock.reserved + quantity);
+    }
+    if (stock && type === 'RESERVATION_RELEASE') {
+      stock.reserved = r2(Math.max(0, stock.reserved - Math.abs(quantity)));
+    }
     const move: StockMove = {
       id: this.id('sm'),
       tenantId: workspace.tenant.id,
       productId: product.id,
-      warehouseId: workspace.warehouses[0].id,
+      warehouseId,
       type,
       quantity,
       unitCost,
       value: r2(quantity * unitCost),
       reference,
+      beforeQty,
+      afterQty: stock?.quantity ?? product.stockOnHand,
       approvalStatus: 'AUTO_APPROVED',
       createdAt: today(),
     };
@@ -3172,8 +3899,15 @@ export class ErpStoreService {
   }
 
   private assertCanWrite(workspace: TenantWorkspace): void {
+    const role = this.cls.get<string>('userRole') ?? 'OWNER';
+    if (role === 'READ_ONLY') {
+      throw new ForbiddenException('Le rôle lecture seule ne peut pas modifier les données');
+    }
     if (workspace.tenant.status !== 'ACTIVE') {
       throw new ForbiddenException('L’abonnement est en lecture seule');
+    }
+    if (workspace.tenant.settings.featureGates.writeLocked) {
+      throw new ForbiddenException(workspace.tenant.settings.featureGates.reason ?? 'L’abonnement est en lecture seule');
     }
   }
 
@@ -3194,6 +3928,93 @@ export class ErpStoreService {
       at: new Date().toISOString(),
       payload,
     });
+  }
+
+  private passwordHash(password: string): string {
+    return createHash('sha256').update(`morocco-erp:${password}`).digest('hex');
+  }
+
+  private verifyPassword(user: ErpUser, password: string): boolean {
+    return user.passwordHash ? user.passwordHash === this.passwordHash(password) : user.password === password;
+  }
+
+  private token(prefix: string): string {
+    return `${prefix}_${randomBytes(24).toString('hex')}`;
+  }
+
+  private minutesFromNow(minutes: number): string {
+    return new Date(Date.now() + minutes * 60000).toISOString();
+  }
+
+  private createSession(workspace: TenantWorkspace, user: ErpUser, input: { ip?: string; userAgent?: string }): AuthSession {
+    const fingerprint = createHash('sha1').update(`${input.ip ?? 'unknown'}|${input.userAgent ?? 'unknown'}`).digest('hex');
+    const previous = workspace.deviceLoginEvents.find((event) => event.userId === user.id && event.fingerprint === fingerprint);
+    const suspicious = !previous && workspace.deviceLoginEvents.some((event) => event.userId === user.id);
+    const session: AuthSession = {
+      id: this.id('sess'),
+      tenantId: workspace.tenant.id,
+      userId: user.id,
+      accessToken: this.token('access'),
+      refreshToken: this.token('refresh'),
+      createdAt: new Date().toISOString(),
+      expiresAt: this.minutesFromNow(15),
+      refreshExpiresAt: this.minutesFromNow(60 * 24 * 7),
+      device: { ip: input.ip, userAgent: input.userAgent, fingerprint },
+    };
+    workspace.sessions.push(session);
+    const event = {
+      id: this.id('login'),
+      tenantId: workspace.tenant.id,
+      userId: user.id,
+      email: user.email,
+      ip: input.ip,
+      userAgent: input.userAgent,
+      fingerprint,
+      at: session.createdAt,
+      suspicious,
+      reason: suspicious ? 'Nouvel appareil ou adresse IP pour cet utilisateur' : undefined,
+    };
+    workspace.deviceLoginEvents.push(event);
+    if (suspicious) {
+      this.securityNotification(workspace, user, 'SUSPICIOUS_LOGIN', `Connexion inhabituelle détectée pour ${user.email}`);
+    }
+    this.audit(workspace, 'auth.login', 'Session', session.id, { userId: user.id, suspicious });
+    return session;
+  }
+
+  private securityNotification(workspace: TenantWorkspace, user: ErpUser, type: SecurityNotification['type'], message: string): void {
+    workspace.securityNotifications.push({
+      id: this.id('sec'),
+      tenantId: workspace.tenant.id,
+      userId: user.id,
+      type,
+      message,
+      at: new Date().toISOString(),
+      read: false,
+    });
+  }
+
+  private tenantExportManifest(workspace: TenantWorkspace) {
+    const files = [
+      { name: 'tenant.json', records: 1 },
+      { name: 'customers.json', records: workspace.customers.length },
+      { name: 'suppliers.json', records: workspace.suppliers.length },
+      { name: 'products.json', records: workspace.products.length },
+      { name: 'invoices.json', records: workspace.invoices.length },
+      { name: 'journal-entries.json', records: workspace.journalEntries.length },
+      { name: 'audit-logs.json', records: workspace.auditLogs.length },
+    ].map((file) => ({
+      ...file,
+      checksum: createHash('sha256').update(`${workspace.tenant.id}:${file.name}:${file.records}`).digest('hex'),
+    }));
+    return {
+      tenantId: workspace.tenant.id,
+      generatedAt: new Date().toISOString(),
+      retention: workspace.tenant.settings.retention,
+      files,
+      checksum: createHash('sha256').update(files.map((file) => file.checksum).join('|')).digest('hex'),
+      status: 'READY_FOR_DOWNLOAD',
+    };
   }
 
   private simplePdf(lines: string[]): string {

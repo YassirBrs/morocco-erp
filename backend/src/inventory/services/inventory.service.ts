@@ -31,8 +31,27 @@ export class InventoryService {
   supplierPaymentCalendar() { return this.store.supplierPaymentCalendar(); }
   addSupplierDocumentPlaceholder(id: string, data: any) { return this.store.addSupplierDocumentPlaceholder(id, data); }
   listWarehouses() { return this.store.listWarehouses(); }
+  createWarehouse(data: any) { return this.store.createWarehouse(data); }
+  updateWarehouse(id: string, data: any) { return this.store.updateWarehouse(id, data); }
+  warehouseStock() { return this.store.listWarehouseStock(); }
+  barcodeLookup(code: string) { return this.store.barcodeLookup(code); }
+  stockAlerts() { return this.store.stockAlerts(); }
+  reservationVisibility() { return this.store.stockReservationVisibility(); }
   adjustStock(productId: string, qty: number, reason?: string) { return this.store.adjustStock(productId, qty, reason); }
   approveStockMove(id: string) { return this.store.approveStockMove(id); }
+  listPurchaseOrders() { return this.store.listPurchaseOrders(); }
+  createPurchaseOrder(data: any) { return this.store.createPurchaseOrder(data); }
+  approvePurchaseOrder(id: string) { return this.store.approvePurchaseOrder(id); }
+  cancelPurchaseOrder(id: string) { return this.store.cancelPurchaseOrder(id); }
   receivePurchase(data: any) { return this.store.createPurchaseReceipt(data); }
+  listPurchaseReceipts() { return this.store.listPurchaseReceipts(); }
   approvePurchaseReceipt(id: string) { return this.store.approvePurchaseReceipt(id); }
+  listSupplierInvoices() { return this.store.listSupplierInvoices(); }
+  createSupplierInvoice(data: any) { return this.store.createSupplierInvoice(data); }
+  listStockTransfers() { return this.store.listStockTransfers(); }
+  transferStock(data: any) { return this.store.transferStock(data); }
+  receiveTransfer(id: string) { return this.store.receiveStockTransfer(id); }
+  listInventoryCounts() { return this.store.listInventoryCounts(); }
+  createInventoryCount(data: any) { return this.store.createInventoryCount(data); }
+  approveInventoryCount(id: string) { return this.store.approveInventoryCount(id); }
 }

@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { of, Observable } from 'rxjs';
 import { TenantInterceptor } from './tenant.interceptor';
 import { ClsService } from 'nestjs-cls';
+import { ErpStoreService } from '../erp/erp-store.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  FIXTURES
@@ -28,8 +29,8 @@ const buildMockCls = (): MockCls => {
   };
 };
 
-const makeCtx = (headers: Record<string, any>) =>
-  ({ switchToHttp: () => ({ getRequest: () => ({ headers }) }) }) as any;
+const makeCtx = (headers: Record<string, any>, method = 'GET', path = '/tenant/current') =>
+  ({ switchToHttp: () => ({ getRequest: () => ({ headers, method, path, url: path }) }) }) as any;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SPEC
@@ -37,13 +38,16 @@ const makeCtx = (headers: Record<string, any>) =>
 describe('TenantInterceptor', () => {
   let interceptor: TenantInterceptor;
   let mockCls: MockCls;
+  let mockStore: { assertHttpWriteAllowed: jest.Mock };
 
   beforeEach(async () => {
     mockCls = buildMockCls();
+    mockStore = { assertHttpWriteAllowed: jest.fn() };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TenantInterceptor,
         { provide: ClsService, useValue: mockCls },
+        { provide: ErpStoreService, useValue: mockStore },
       ],
     }).compile();
     interceptor = module.get<TenantInterceptor>(TenantInterceptor);
@@ -58,6 +62,20 @@ describe('TenantInterceptor', () => {
         .subscribe({
           next()  { expect(mockCls.set).toHaveBeenCalledWith('tenantId', 'tenant-42'); done(); },
           error:  done.fail,
+        });
+    });
+
+    it('binds role/email context and asks the store to enforce write permissions', (done) => {
+      interceptor
+        .intercept(makeCtx({ 'x-tenant-id': 'tenant-42', 'x-user-role': 'READ_ONLY', 'x-user-email': 'reader@example.ma' }, 'POST', '/crm/customers'), new MockCallHandler())
+        .subscribe({
+          next() {
+            expect(mockCls.set).toHaveBeenCalledWith('userRole', 'READ_ONLY');
+            expect(mockCls.set).toHaveBeenCalledWith('userEmail', 'reader@example.ma');
+            expect(mockStore.assertHttpWriteAllowed).toHaveBeenCalledWith('tenant-42', 'POST', '/crm/customers', 'READ_ONLY');
+            done();
+          },
+          error: done.fail,
         });
     });
 

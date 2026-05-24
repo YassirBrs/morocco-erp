@@ -21,15 +21,15 @@ This backlog contains concrete tasks to improve the app from the current working
 
 ## Auth, Tenanting, And Security
 
-- [ ] T009 P0 - Replace demo auth with password login, refresh tokens, password reset, and secure session storage.
-- [ ] T010 P0 - Add role-based navigation and route guards for owner, admin, accountant, sales, stock, HR, cashier, and read-only roles.
-- [ ] T011 P0 - Add server-side permission checks on every write endpoint.
-- [ ] T012 P0 - Add tenant isolation tests for every module controller and repository.
-- [ ] T013 P0 - Add audit log entries for login, configuration changes, invoice posting, payment posting, payroll run, and period locking.
-- [ ] T014 P1 - Add two-factor authentication for admin and accountant roles.
-- [ ] T015 P1 - Add IP/device history and suspicious login notifications.
-- [ ] T016 P1 - Add subscription feature gates that lock writes while keeping read/export access.
-- [ ] T017 P2 - Add data retention policies and tenant export/delete workflows.
+- [x] T009 P0 - Replace demo auth with password login, refresh tokens, password reset, and secure session storage.
+- [x] T010 P0 - Add role-based navigation and route guards for owner, admin, accountant, sales, stock, HR, cashier, and read-only roles.
+- [x] T011 P0 - Add server-side permission checks on every write endpoint.
+- [x] T012 P0 - Add tenant isolation tests for every module controller and repository.
+- [x] T013 P0 - Add audit log entries for login, configuration changes, invoice posting, payment posting, payroll run, and period locking.
+- [x] T014 P1 - Add two-factor authentication for admin and accountant roles.
+- [x] T015 P1 - Add IP/device history and suspicious login notifications.
+- [x] T016 P1 - Add subscription feature gates that lock writes while keeping read/export access.
+- [x] T017 P2 - Add data retention policies and tenant export/delete workflows.
 
 ## Sales And CRM
 
@@ -47,15 +47,15 @@ This backlog contains concrete tasks to improve the app from the current working
 ## Purchases, Suppliers, And Inventory
 
 - [x] T028 P0 - Add supplier CRUD with ICE/IF, payment terms, contacts, and bank details.
-- [ ] T029 P0 - Add purchase order workflow with draft, approved, partially received, received, cancelled states.
-- [ ] T030 P0 - Add purchase receipt posting that updates stock and CUMP valuation.
-- [ ] T031 P0 - Add supplier invoice posting and payable balance update.
-- [ ] T032 P0 - Add stock adjustment workflow with reason codes and accounting entries.
-- [ ] T033 P0 - Add warehouse CRUD and stock per warehouse.
-- [ ] T034 P1 - Add stock transfer between warehouses with in-transit state.
-- [ ] T035 P1 - Add minimum stock alerts and replenishment suggestions.
-- [ ] T036 P1 - Add inventory count sheets with variance approval.
-- [ ] T037 P2 - Add barcode fields and scan-friendly product lookup.
+- [x] T029 P0 - Add purchase order workflow with draft, approved, partially received, received, cancelled states.
+- [x] T030 P0 - Add purchase receipt posting that updates stock and CUMP valuation.
+- [x] T031 P0 - Add supplier invoice posting and payable balance update.
+- [x] T032 P0 - Add stock adjustment workflow with reason codes and accounting entries.
+- [x] T033 P0 - Add warehouse CRUD and stock per warehouse.
+- [x] T034 P1 - Add stock transfer between warehouses with in-transit state.
+- [x] T035 P1 - Add minimum stock alerts and replenishment suggestions.
+- [x] T036 P1 - Add inventory count sheets with variance approval.
+- [x] T037 P2 - Add barcode fields and scan-friendly product lookup.
 
 ## Accounting And Morocco Compliance
 

@@ -7,6 +7,7 @@ describe('ErpStoreService working ERP workflows', () => {
   const cls = { get: jest.fn(() => 'tenant-demo') } as unknown as ClsService;
 
   beforeEach(() => {
+    (cls.get as jest.Mock).mockImplementation((key?: string) => key === 'userRole' ? 'OWNER' : 'tenant-demo');
     store = new ErpStoreService(cls);
   });
 
@@ -1153,5 +1154,146 @@ describe('ErpStoreService working ERP workflows', () => {
       'implementation.client-created',
       'implementation.client-onboarding-updated',
     ]));
+  });
+
+  it('runs secure auth sessions, refresh, password reset, 2FA, device history, role navigation, and write gates', () => {
+    const firstLogin = store.login({
+      email: 'owner@atlas.ma',
+      password: 'demo1234',
+      ip: '41.248.10.1',
+      userAgent: 'Chrome Casablanca',
+    });
+    const refreshed = store.refreshSession(firstLogin.refresh_token);
+    const reset = store.requestPasswordReset('owner@atlas.ma');
+    const passwordUpdate = store.resetPassword({ token: reset.resetToken!, password: 'new-demo-1234' });
+    const secondLogin = store.login({
+      email: 'owner@atlas.ma',
+      password: 'new-demo-1234',
+      ip: '41.248.10.99',
+      userAgent: 'Firefox Rabat',
+    });
+    const twoFactor = store.login({ email: 'accountant@atlas.ma', password: 'demo1234' });
+    const verified = store.login({ email: 'accountant@atlas.ma', password: 'demo1234', twoFactorCode: '246810' });
+    const deviceHistory = store.deviceHistory();
+    const nav = store.roleNavigation('READ_ONLY');
+
+    expect(firstLogin.status).toBe('AUTHENTICATED');
+    expect(firstLogin.access_token).toMatch(/^access_/);
+    expect(refreshed.access_token).toMatch(/^access_/);
+    expect(refreshed.access_token).not.toBe(firstLogin.access_token);
+    expect(passwordUpdate).toMatchObject({ status: 'PASSWORD_UPDATED' });
+    expect(secondLogin.status).toBe('AUTHENTICATED');
+    expect(twoFactor).toMatchObject({ status: 'TWO_FACTOR_REQUIRED', tenantId: 'tenant-demo' });
+    expect(verified.status).toBe('AUTHENTICATED');
+    expect(deviceHistory.suspicious).toBeGreaterThanOrEqual(1);
+    expect(deviceHistory.notifications.map((notification) => notification.type)).toEqual(expect.arrayContaining(['PASSWORD_RESET', 'SUSPICIOUS_LOGIN']));
+    expect(nav.modules.every((module) => module.visible)).toBe(true);
+    expect(nav.modules.every((module) => !module.canWrite)).toBe(true);
+    expect(store.auditLogs().map((entry) => entry.action)).toEqual(expect.arrayContaining(['auth.login', 'auth.session-refreshed', 'auth.password-reset-completed']));
+
+    (cls.get as jest.Mock).mockImplementation((key?: string) => key === 'userRole' ? 'READ_ONLY' : 'tenant-demo');
+    expect(() => store.addCustomer({ name: 'Client lecture seule' })).toThrow(ForbiddenException);
+    (cls.get as jest.Mock).mockImplementation((key?: string) => key === 'userRole' ? 'OWNER' : 'tenant-demo');
+
+    const gate = store.updateSubscriptionGate({ writeLocked: true, reason: 'Facture abonnement en retard' });
+    expect(gate.writeLocked).toBe(true);
+    expect(() => store.addCustomer({ name: 'Client verrouillé' })).toThrow(ForbiddenException);
+    expect(store.listCustomers()).toHaveLength(1);
+    const manifest = store.requestTenantExport();
+    const retention = store.requestTenantDelete({ retentionDays: 365 });
+    expect(manifest.status).toBe('READY_FOR_DOWNLOAD');
+    expect(manifest.files.map((file) => file.name)).toEqual(expect.arrayContaining(['customers.json', 'audit-logs.json']));
+    expect(retention.deleteScheduled).toBe(true);
+    store.updateSubscriptionGate({ writeLocked: false, reason: '' });
+  });
+
+  it('keeps tenants isolated across auth, CRM, sales, inventory, payroll, accounting, and audit data', () => {
+    const tenant = store.createTenant({
+      tradeName: 'Tenant Isolation SARL',
+      ice: '001234000999888',
+      ifNumber: '991122',
+      rc: 'CASA-ISO-1',
+      patente: '445566',
+      cnssNumber: '998877',
+      address: 'Maarif',
+      city: 'Casablanca',
+    });
+    const customer = store.addCustomer({ name: 'Client isolé' }, tenant.id);
+    const product = store.addProduct({ sku: 'ISO-SVC', name: 'Service isolé', type: 'SERVICE', salePrice: 1000 }, tenant.id);
+    const invoice = store.createInvoice({ customerId: customer.id, lines: [{ productId: product.id, quantity: 1 }] }, tenant.id);
+    const employee = store.addEmployee({ fullName: 'Salarié Isolé', cin: 'II123456', hireDate: '2026-02-01', baseSalary: 5000 }, tenant.id);
+
+    expect(store.listCustomers()).toHaveLength(1);
+    expect(store.listCustomers(tenant.id).map((item) => item.name)).toEqual(['Client isolé']);
+    expect(store.listProducts().some((item) => item.sku === 'ISO-SVC')).toBe(false);
+    expect(store.listInvoices()).toHaveLength(0);
+    expect(store.listInvoices(tenant.id)[0].id).toBe(invoice.id);
+    expect(store.listEmployees(tenant.id)[0].id).toBe(employee.id);
+    expect(store.listJournalEntries(tenant.id)).toHaveLength(1);
+    expect(store.auditLogs(tenant.id).every((entry) => entry.tenantId === tenant.id)).toBe(true);
+    expect(() => store.getCustomer(customer.id)).toThrow();
+  });
+
+  it('runs purchase orders through approval, partial/full receipt, supplier invoice posting, CUMP, and payable accounting', () => {
+    const order = store.createPurchaseOrder({
+      supplierId: 'sup-1',
+      expectedDate: '2026-06-10',
+      lines: [{ productId: 'prd-1', quantity: 10, unitCost: 650 }],
+    });
+    const approved = store.approvePurchaseOrder(order.id);
+    const partial = store.createPurchaseReceipt({
+      purchaseOrderId: approved.id,
+      lines: [{ productId: 'prd-1', quantity: 4, unitCost: 650 }],
+    });
+    const completed = store.createPurchaseReceipt({ purchaseOrderId: approved.id });
+    const supplierInvoice = store.createSupplierInvoice({
+      purchaseReceiptId: completed.id,
+      supplierInvoiceNumber: 'F-CASA-100',
+      vatRate: 0.2,
+    });
+    const product = store.getProduct('prd-1');
+
+    expect(order.number).toMatch(/^BA-/);
+    expect(order.status).toBe('RECEIVED');
+    expect(partial.purchaseOrderId).toBe(order.id);
+    expect(partial.total).toBe(2600);
+    expect(completed.total).toBe(3900);
+    expect(product.stockOnHand).toBe(60);
+    expect(product.weightedAverageCost).toBeCloseTo(541.67, 2);
+    expect(supplierInvoice).toMatchObject({ status: 'POSTED', subtotal: 3900, vatTotal: 780, total: 4680 });
+    expect(store.listJournalEntries().map((entry) => entry.source)).toEqual(expect.arrayContaining([partial.number, completed.number, supplierInvoice.number]));
+  });
+
+  it('manages warehouses, stock by warehouse, transfers, adjustments, counts, alerts, reservations, and barcode lookup', () => {
+    const secondary = store.createWarehouse({ name: 'Dépôt Rabat', city: 'Rabat', address: 'Agdal' });
+    const transfer = store.transferStock({
+      productId: 'prd-1',
+      fromWarehouseId: 'wh-1',
+      toWarehouseId: secondary.id,
+      quantity: 5,
+    });
+    const receivedTransfer = store.receiveStockTransfer(transfer.id);
+    const adjustment = store.adjustStock('prd-1', -2, 'CASSE');
+    store.updateProduct('prd-1', { reorderPoint: 60 });
+    const count = store.createInventoryCount({
+      warehouseId: secondary.id,
+      lines: [{ productId: 'prd-1', countedQuantity: 8 }],
+    });
+    const postedCount = store.approveInventoryCount(count.id);
+    const lookup = store.barcodeLookup('6111000000010');
+    const alerts = store.stockAlerts();
+    const order = store.createSalesOrder({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 3 }] });
+    const reservations = store.stockReservationVisibility();
+
+    expect(receivedTransfer.status).toBe('RECEIVED');
+    expect(adjustment).toMatchObject({ reasonCode: 'CASSE', type: 'ADJUSTMENT' });
+    expect(postedCount.status).toBe('POSTED');
+    expect(store.listWarehouseStock().find((line) => line.warehouseId === secondary.id && line.productId === 'prd-1')?.quantity).toBe(8);
+    expect(lookup.product.sku).toBe('SKU-CHAIR');
+    expect(alerts.rows.map((row) => row.sku)).toContain('SKU-CHAIR');
+    expect(reservations.rows).toEqual(expect.arrayContaining([expect.objectContaining({ source: 'ORDER', sourceNumber: order.number, quantity: 3 })]));
+    expect(store.listStockTransfers()).toHaveLength(1);
+    expect(store.listInventoryCounts()).toHaveLength(1);
+    expect(store.listStock().find((line) => line.productId === 'prd-1')?.reservedStock).toBe(3);
   });
 });

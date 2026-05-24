@@ -38,6 +38,16 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/inventory/suppliers/import-template.csv'));
   assert.ok(staticPage.includes('/inventory/products/margin-alerts'));
   assert.ok(staticPage.includes('/inventory/products/import-template.csv'));
+  assert.ok(staticPage.includes('/inventory/purchase-orders'));
+  assert.ok(staticPage.includes('/inventory/purchase-receipts'));
+  assert.ok(staticPage.includes('/inventory/supplier-invoices'));
+  assert.ok(staticPage.includes('/inventory/warehouses'));
+  assert.ok(staticPage.includes('/inventory/warehouse-stock'));
+  assert.ok(staticPage.includes('/inventory/stock-alerts'));
+  assert.ok(staticPage.includes('/inventory/reservations'));
+  assert.ok(staticPage.includes('/inventory/stock-transfers'));
+  assert.ok(staticPage.includes('/inventory/inventory-counts'));
+  assert.ok(staticPage.includes('/inventory/barcode/6111000000010'));
   assert.ok(staticPage.includes('/inventory/suppliers/risk-reminders'));
   assert.ok(staticPage.includes('/inventory/suppliers/${supplier.id}/document-placeholders'));
   assert.ok(staticPage.includes('/inventory/suppliers/export.csv'));
@@ -46,6 +56,10 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/tenant/setup-checklist'));
   assert.ok(staticPage.includes('/tenant/dashboard-filters'));
   assert.ok(staticPage.includes('/tenant/role-widgets'));
+  assert.ok(staticPage.includes('/tenant/role-navigation/READ_ONLY'));
+  assert.ok(staticPage.includes('/tenant/subscription-gate'));
+  assert.ok(staticPage.includes('/tenant/retention-policy'));
+  assert.ok(staticPage.includes('/tenant/data-export'));
   assert.ok(staticPage.includes('/tenant/import-templates'));
   assert.ok(staticPage.includes('/tenant/implementation-partner/workspace'));
   assert.ok(staticPage.includes('/tenant/implementation-partner/clients'));
@@ -67,6 +81,10 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/inventory/products'));
   assert.ok(staticPage.includes('/payroll/employees'));
   assert.ok(staticPage.includes('/payroll/employees/import-template.csv'));
+  assert.ok(staticPage.includes('/auth/login'));
+  assert.ok(staticPage.includes('/auth/refresh'));
+  assert.ok(staticPage.includes('/auth/2fa/verify'));
+  assert.ok(staticPage.includes('/auth/device-history'));
 });
 
 test('static dashboard uses sidebar module navigation instead of showing one compacted page', () => {
@@ -193,6 +211,18 @@ test('static dashboard exposes Arabic-ready fields, CSV templates, employees, an
     assert.ok(staticPage.includes(endpoint), `${endpoint} endpoint is wired`);
   }
   for (const cssToken of ['.templateGrid', '.templateCard']) {
+    assert.ok(staticCss.includes(cssToken), `${cssToken} style exists`);
+  }
+});
+
+test('static dashboard exposes security, subscription, retention, purchase, and inventory batch workflows', () => {
+  for (const text of ['Sécurité et abonnement', 'Sessions, rôles et rétention', 'Tester connexion sécurisée', 'Exporter tenant', 'Navigation par rôle', 'Verrou écriture abonnement', 'Rétention données', 'Événement sécurité', 'Commandes, réceptions, factures et dépôts', 'Lancer achat démo', 'Transfert dépôt', 'Comptage inventaire', 'Alertes stock minimum', 'Réservations commandes et POS', 'Recherche code-barres']) {
+    assert.ok(staticPage.includes(text), `${text} batch workflow label is present`);
+  }
+  for (const marker of ['renderSecurityAndProcurement', 'runSecurityDemo', 'runPurchaseBatch', 'runTransferBatch', 'runInventoryCount', 'purchaseWorkflowRows', 'warehouseStockRows']) {
+    assert.ok(staticPage.includes(marker), `${marker} batch helper is present`);
+  }
+  for (const cssToken of ['.securityGrid', '.procurementGrid']) {
     assert.ok(staticCss.includes(cssToken), `${cssToken} style exists`);
   }
 });

@@ -1,18 +1,24 @@
 export type SubscriptionPlan = 'INTILAQ' | 'NUMOW' | 'ENTERPRISE';
 export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED';
-export type UserRole = 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'SALES' | 'WAREHOUSE' | 'PAYROLL' | 'CASHIER' | 'IMPLEMENTATION_PARTNER';
+export type UserRole = 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'SALES' | 'WAREHOUSE' | 'PAYROLL' | 'CASHIER' | 'READ_ONLY' | 'IMPLEMENTATION_PARTNER';
 export type VatRate = 0 | 0.07 | 0.1 | 0.14 | 0.2;
 export type DocumentStatus = 'DRAFT' | 'POSTED' | 'PAID' | 'VOID';
 export type QuoteStatus = 'DRAFT' | 'APPROVED' | 'CONVERTED' | 'VOID';
 export type SalesOrderStatus = 'CONFIRMED' | 'DELIVERED' | 'INVOICED' | 'CANCELLED';
 export type DeliveryNoteStatus = 'POSTED' | 'CANCELLED';
-export type StockMoveType = 'RECEIPT' | 'DELIVERY' | 'DELIVERY_REVERSAL' | 'ADJUSTMENT' | 'PRODUCTION_CONSUME' | 'PRODUCTION_OUTPUT' | 'POS_SALE' | 'RESERVATION' | 'RESERVATION_RELEASE';
+export type PurchaseOrderStatus = 'DRAFT' | 'APPROVED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CANCELLED';
+export type SupplierInvoiceStatus = 'POSTED' | 'PAID' | 'VOID';
+export type StockTransferStatus = 'IN_TRANSIT' | 'RECEIVED' | 'CANCELLED';
+export type InventoryCountStatus = 'DRAFT' | 'APPROVED' | 'POSTED';
+export type StockMoveType = 'RECEIPT' | 'DELIVERY' | 'DELIVERY_REVERSAL' | 'ADJUSTMENT' | 'PRODUCTION_CONSUME' | 'PRODUCTION_OUTPUT' | 'POS_SALE' | 'RESERVATION' | 'RESERVATION_RELEASE' | 'TRANSFER_OUT' | 'TRANSFER_IN' | 'COUNT_VARIANCE';
 export type BusinessSearchType = 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
 export type ApprovalStatus = 'AUTO_APPROVED' | 'REQUIRED' | 'APPROVED';
 export type CollaborationEntityType = 'CUSTOMER' | 'SUPPLIER' | 'INVOICE' | 'PAYROLL_RUN';
 export type InternalTaskStatus = 'OPEN' | 'DONE';
 export type PreferredLanguage = 'FR' | 'AR' | 'BILINGUAL';
 export type ImportTemplateKind = 'customers' | 'suppliers' | 'products' | 'employees' | 'chart-of-accounts';
+export type PermissionAction = 'READ' | 'WRITE' | 'ADMIN';
+export type ErpModuleKey = 'tenant' | 'auth' | 'crm' | 'sales' | 'inventory' | 'accounting' | 'payroll' | 'pos' | 'production' | 'compliance';
 
 export interface LocalizedFields {
   arabicName?: string;
@@ -70,6 +76,17 @@ export interface TenantSettings {
     purchase: number;
     stockAdjustment: number;
   };
+  featureGates: {
+    writeLocked: boolean;
+    reason?: string;
+    allowedModules: ErpModuleKey[];
+  };
+  retention: {
+    retentionDays: number;
+    exportRequestedAt?: string;
+    deleteRequestedAt?: string;
+    deleteScheduledAt?: string;
+  };
 }
 
 export interface Tenant {
@@ -90,7 +107,61 @@ export interface ErpUser {
   name: string;
   role: UserRole;
   password: string;
+  passwordHash?: string;
+  passwordUpdatedAt?: string;
+  twoFactorEnabled?: boolean;
+  twoFactorSecret?: string;
   active: boolean;
+}
+
+export interface AuthSession {
+  id: string;
+  tenantId: string;
+  userId: string;
+  accessToken: string;
+  refreshToken: string;
+  createdAt: string;
+  expiresAt: string;
+  refreshExpiresAt: string;
+  revokedAt?: string;
+  device: {
+    ip?: string;
+    userAgent?: string;
+    fingerprint: string;
+  };
+}
+
+export interface PasswordResetToken {
+  id: string;
+  tenantId: string;
+  userId: string;
+  token: string;
+  requestedAt: string;
+  expiresAt: string;
+  usedAt?: string;
+}
+
+export interface DeviceLoginEvent {
+  id: string;
+  tenantId: string;
+  userId: string;
+  email: string;
+  ip?: string;
+  userAgent?: string;
+  fingerprint: string;
+  at: string;
+  suspicious: boolean;
+  reason?: string;
+}
+
+export interface SecurityNotification {
+  id: string;
+  tenantId: string;
+  userId: string;
+  type: 'SUSPICIOUS_LOGIN' | 'PASSWORD_RESET' | 'TWO_FACTOR_ENABLED';
+  message: string;
+  at: string;
+  read: boolean;
 }
 
 export interface Customer {
@@ -188,6 +259,14 @@ export interface Product {
   updatedAt: string;
 }
 
+export interface WarehouseStock {
+  tenantId: string;
+  warehouseId: string;
+  productId: string;
+  quantity: number;
+  reserved: number;
+}
+
 export interface Employee {
   id: string;
   tenantId: string;
@@ -214,6 +293,8 @@ export interface Warehouse {
   tenantId: string;
   name: string;
   city: string;
+  address?: string;
+  active: boolean;
 }
 
 export interface DocumentLineInput {
@@ -333,24 +414,97 @@ export interface StockMove {
   tenantId: string;
   productId: string;
   warehouseId: string;
+  toWarehouseId?: string;
   type: StockMoveType;
   quantity: number;
   unitCost: number;
   value: number;
   reference: string;
+  reasonCode?: string;
+  beforeQty?: number;
+  afterQty?: number;
   approvalStatus: ApprovalStatus;
   createdAt: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  tenantId: string;
+  supplierId: string;
+  number: string;
+  date: string;
+  expectedDate?: string;
+  status: PurchaseOrderStatus;
+  approvalStatus: ApprovalStatus;
+  lines: Array<{
+    productId: string;
+    quantity: number;
+    unitCost: number;
+    receivedQuantity: number;
+    value: number;
+  }>;
+  total: number;
 }
 
 export interface PurchaseReceipt {
   id: string;
   tenantId: string;
   supplierId: string;
+  purchaseOrderId?: string;
   number: string;
   date: string;
+  warehouseId?: string;
   lines: Array<{ productId: string; quantity: number; unitCost: number; value: number }>;
   total: number;
   approvalStatus: ApprovalStatus;
+}
+
+export interface SupplierInvoice {
+  id: string;
+  tenantId: string;
+  supplierId: string;
+  purchaseOrderId?: string;
+  purchaseReceiptId?: string;
+  number: string;
+  supplierInvoiceNumber?: string;
+  date: string;
+  dueDate: string;
+  status: SupplierInvoiceStatus;
+  subtotal: number;
+  vatTotal: number;
+  total: number;
+  paidAmount: number;
+}
+
+export interface StockTransfer {
+  id: string;
+  tenantId: string;
+  number: string;
+  productId: string;
+  fromWarehouseId: string;
+  toWarehouseId: string;
+  quantity: number;
+  status: StockTransferStatus;
+  shippedAt: string;
+  receivedAt?: string;
+}
+
+export interface InventoryCountSheet {
+  id: string;
+  tenantId: string;
+  number: string;
+  warehouseId: string;
+  status: InventoryCountStatus;
+  createdAt: string;
+  approvedAt?: string;
+  lines: Array<{
+    productId: string;
+    expectedQuantity: number;
+    countedQuantity: number;
+    variance: number;
+    valueImpact: number;
+  }>;
+  totalVarianceValue: number;
 }
 
 export interface JournalEntry {
@@ -464,20 +618,29 @@ export interface InternalTask {
 export interface TenantWorkspace {
   tenant: Tenant;
   users: ErpUser[];
+  sessions: AuthSession[];
+  passwordResetTokens: PasswordResetToken[];
+  deviceLoginEvents: DeviceLoginEvent[];
+  securityNotifications: SecurityNotification[];
   customers: Customer[];
   suppliers: Supplier[];
   employees: Employee[];
   leads: Lead[];
   products: Product[];
   warehouses: Warehouse[];
+  warehouseStocks: WarehouseStock[];
   quotes: Quote[];
   salesOrders: SalesOrder[];
   deliveryNotes: DeliveryNote[];
   invoices: Invoice[];
   creditNotes: CreditNote[];
   payments: Payment[];
+  purchaseOrders: PurchaseOrder[];
   stockMoves: StockMove[];
   purchaseReceipts: PurchaseReceipt[];
+  supplierInvoices: SupplierInvoice[];
+  stockTransfers: StockTransfer[];
+  inventoryCounts: InventoryCountSheet[];
   journalEntries: JournalEntry[];
   fiscalPeriods: FiscalPeriod[];
   posTransactions: PosTransaction[];

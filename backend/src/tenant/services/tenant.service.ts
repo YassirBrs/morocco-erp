@@ -25,6 +25,30 @@ export class TenantService {
     return this.store.roleDashboardWidgets();
   }
 
+  roleNavigation(role?: string) {
+    return this.store.roleNavigation(role);
+  }
+
+  subscriptionGate() {
+    return this.store.subscriptionGate();
+  }
+
+  updateSubscriptionGate(data: any) {
+    return this.store.updateSubscriptionGate(data);
+  }
+
+  retentionPolicy() {
+    return this.store.dataRetentionPolicy();
+  }
+
+  requestDataExport() {
+    return this.store.requestTenantExport();
+  }
+
+  requestTenantDelete(data: any) {
+    return this.store.requestTenantDelete(data);
+  }
+
   importTemplates() {
     return this.store.importTemplates();
   }

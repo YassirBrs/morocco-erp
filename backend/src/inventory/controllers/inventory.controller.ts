@@ -32,10 +32,29 @@ export class InventoryController {
   @Patch('suppliers/:id') updateSupplier(@Param('id') id: string, @Body() body: any) { return this.inventoryService.updateSupplier(id, body); }
   @Delete('suppliers/:id') archiveSupplier(@Param('id') id: string) { return this.inventoryService.archiveSupplier(id); }
   @Get('warehouses') warehouses() { return this.inventoryService.listWarehouses(); }
+  @Post('warehouses') createWarehouse(@Body() body: any) { return this.inventoryService.createWarehouse(body); }
+  @Patch('warehouses/:id') updateWarehouse(@Param('id') id: string, @Body() body: any) { return this.inventoryService.updateWarehouse(id, body); }
+  @Get('warehouse-stock') warehouseStock() { return this.inventoryService.warehouseStock(); }
+  @Get('barcode/:code') barcodeLookup(@Param('code') code: string) { return this.inventoryService.barcodeLookup(code); }
+  @Get('stock-alerts') stockAlerts() { return this.inventoryService.stockAlerts(); }
+  @Get('reservations') reservationVisibility() { return this.inventoryService.reservationVisibility(); }
   @Post('adjustments') adjust(@Body() body: { productId: string; quantity: number; reason?: string }) {
     return this.inventoryService.adjustStock(body.productId, body.quantity, body.reason);
   }
   @Post('stock-moves/:id/approve') approveStockMove(@Param('id') id: string) { return this.inventoryService.approveStockMove(id); }
+  @Get('purchase-orders') purchaseOrders() { return this.inventoryService.listPurchaseOrders(); }
+  @Post('purchase-orders') createPurchaseOrder(@Body() body: any) { return this.inventoryService.createPurchaseOrder(body); }
+  @Post('purchase-orders/:id/approve') approvePurchaseOrder(@Param('id') id: string) { return this.inventoryService.approvePurchaseOrder(id); }
+  @Post('purchase-orders/:id/cancel') cancelPurchaseOrder(@Param('id') id: string) { return this.inventoryService.cancelPurchaseOrder(id); }
+  @Get('purchase-receipts') purchaseReceipts() { return this.inventoryService.listPurchaseReceipts(); }
   @Post('purchase-receipts') purchaseReceipt(@Body() body: any) { return this.inventoryService.receivePurchase(body); }
   @Post('purchase-receipts/:id/approve') approvePurchaseReceipt(@Param('id') id: string) { return this.inventoryService.approvePurchaseReceipt(id); }
+  @Get('supplier-invoices') supplierInvoices() { return this.inventoryService.listSupplierInvoices(); }
+  @Post('supplier-invoices') createSupplierInvoice(@Body() body: any) { return this.inventoryService.createSupplierInvoice(body); }
+  @Get('stock-transfers') stockTransfers() { return this.inventoryService.listStockTransfers(); }
+  @Post('stock-transfers') transferStock(@Body() body: any) { return this.inventoryService.transferStock(body); }
+  @Post('stock-transfers/:id/receive') receiveTransfer(@Param('id') id: string) { return this.inventoryService.receiveTransfer(id); }
+  @Get('inventory-counts') inventoryCounts() { return this.inventoryService.listInventoryCounts(); }
+  @Post('inventory-counts') createInventoryCount(@Body() body: any) { return this.inventoryService.createInventoryCount(body); }
+  @Post('inventory-counts/:id/approve') approveInventoryCount(@Param('id') id: string) { return this.inventoryService.approveInventoryCount(id); }
 }

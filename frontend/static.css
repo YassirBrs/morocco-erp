@@ -640,6 +640,40 @@ button:disabled {
   background: var(--blue-soft);
 }
 
+.securityGrid,
+.procurementGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+
+.securityGrid div,
+.procurementGrid div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border-right: 1px solid var(--line);
+  padding: 14px 16px;
+}
+
+.securityGrid div:last-child,
+.procurementGrid div:last-child {
+  border-right: 0;
+}
+
+.securityGrid span,
+.securityGrid small,
+.procurementGrid span,
+.procurementGrid small {
+  color: var(--muted);
+}
+
+.securityGrid strong,
+.procurementGrid strong {
+  color: var(--primary);
+  font-size: 18px;
+}
+
 .vatReviewGrid {
   display: grid;
   grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
@@ -1026,6 +1060,8 @@ tbody tr:hover {
   .opsGrid,
   .roleWidgetGrid,
   .templateGrid,
+  .securityGrid,
+  .procurementGrid,
   .vatReviewGrid,
   .filterCards,
   .kpis {
@@ -1056,6 +1092,17 @@ tbody tr:hover {
 
   .roleWidgetCard:first-child,
   .templateCard:first-child {
+    border-top: 0;
+  }
+
+  .securityGrid div,
+  .procurementGrid div {
+    border-right: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .securityGrid div:first-child,
+  .procurementGrid div:first-child {
     border-top: 0;
   }
 

@@ -253,6 +253,87 @@
           </div>
         </section>
 
+        <section class="panel securityPanel" data-view-section="dashboard accounting implementation">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Sécurité et abonnement</p>
+              <h2>Sessions, rôles et rétention</h2>
+            </div>
+            <div class="headerActions">
+              <span id="securityBadge" class="badge">0 alerte</span>
+              <button id="runSecurityDemo" type="button">Tester connexion sécurisée</button>
+              <button id="requestDataExport" type="button">Exporter tenant</button>
+            </div>
+          </div>
+          <div class="securityGrid">
+            <div>
+              <span>Navigation par rôle</span>
+              <strong id="roleGuardSummary">Chargement</strong>
+              <small>Owner, admin, comptable, ventes, stock, RH, caisse, lecture seule</small>
+            </div>
+            <div>
+              <span>Verrou écriture abonnement</span>
+              <strong id="subscriptionGateSummary">Actif</strong>
+              <small>Lecture et exports restent disponibles</small>
+            </div>
+            <div>
+              <span>Rétention données</span>
+              <strong id="retentionSummary">-</strong>
+              <small>Export, suppression programmée et audit</small>
+            </div>
+          </div>
+          <div class="tableWrap">
+            <table class="miniTable">
+              <thead><tr><th>Événement sécurité</th><th>Utilisateur</th><th>Appareil</th><th>Statut</th></tr></thead>
+              <tbody id="deviceHistoryRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel procurementPanel" data-view-section="stock accounting">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Achats et stock</p>
+              <h2>Commandes, réceptions, factures et dépôts</h2>
+            </div>
+            <div class="headerActions">
+              <span id="procurementBadge" class="badge">0 commande</span>
+              <button id="runPurchaseBatch" type="button">Lancer achat démo</button>
+              <button id="runTransferBatch" type="button">Transfert dépôt</button>
+              <button id="runInventoryCount" type="button">Comptage inventaire</button>
+            </div>
+          </div>
+          <div class="procurementGrid">
+            <div>
+              <span>Alertes stock minimum</span>
+              <strong id="stockAlertSummary">0 article</strong>
+              <small>Suggestions de réapprovisionnement</small>
+            </div>
+            <div>
+              <span>Réservations commandes et POS</span>
+              <strong id="reservationSummary">0 réservation</strong>
+              <small>Visibilité par article et source</small>
+            </div>
+            <div>
+              <span>Recherche code-barres</span>
+              <strong id="barcodeSummary">SKU-CHAIR</strong>
+              <small>Lookup scan-friendly</small>
+            </div>
+          </div>
+          <div class="tableWrap">
+            <table class="miniTable">
+              <thead><tr><th>Flux achat</th><th>Statut</th><th>Montant</th><th>Détails</th></tr></thead>
+              <tbody id="purchaseWorkflowRows"></tbody>
+            </table>
+          </div>
+          <div class="tableWrap">
+            <table class="miniTable">
+              <thead><tr><th>Dépôt</th><th>Article</th><th>Disponible</th><th>Valeur</th></tr></thead>
+              <tbody id="warehouseStockRows"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="panel collaborationPanel" data-view-section="dashboard sales crm stock payroll">
           <div class="panelHeader">
             <div>
@@ -710,7 +791,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], customers: [], products: [], suppliers: [], employees: [], importTemplates: null, partnerWorkspace: null, statement: null, profile: null, audit: [], customerTimeline: null, supplierTimeline: null, invoiceTimeline: null, payrollTimeline: null, collaborationBoard: null };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', roleNavigation: null, subscriptionGate: null, retentionPolicy: null, deviceHistory: null, paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], customers: [], products: [], suppliers: [], employees: [], importTemplates: null, partnerWorkspace: null, purchaseOrders: [], purchaseReceipts: [], supplierInvoices: [], warehouses: [], warehouseStock: [], stockAlerts: null, stockReservations: null, stockTransfers: [], inventoryCounts: [], barcodeLookup: null, statement: null, profile: null, audit: [], customerTimeline: null, supplierTimeline: null, invoiceTimeline: null, payrollTimeline: null, collaborationBoard: null };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -727,6 +808,10 @@
           PAID: 'Payée',
           CANCELLED: 'Annulée',
           VOID: 'Annulée',
+          RECEIVED: 'Réceptionnée',
+          PARTIALLY_RECEIVED: 'Partiellement reçue',
+          IN_TRANSIT: 'En transit',
+          AUTO_APPROVED: 'Auto-approuvé',
           PREPARED: 'Préparé',
           PENDING_REVIEW: 'En attente revue',
           REJECTED: 'Rejeté'
@@ -900,6 +985,36 @@
         state.payrollTimeline = payrollTimeline;
         state.collaborationBoard = collaborationBoard;
         state.invoiceTimeline = latest(invoices) ? await get(`/sales/invoices/${latest(invoices).id}/timeline`) : null;
+        const [roleNavigation, subscriptionGate, retentionPolicy, deviceHistory, purchaseOrders, purchaseReceipts, supplierInvoices, warehouses, warehouseStock, stockAlerts, stockReservations, stockTransfers, inventoryCounts, barcodeLookup] = await Promise.all([
+          get('/tenant/role-navigation/READ_ONLY'),
+          get('/tenant/subscription-gate'),
+          get('/tenant/retention-policy'),
+          get('/auth/device-history'),
+          get('/inventory/purchase-orders'),
+          get('/inventory/purchase-receipts'),
+          get('/inventory/supplier-invoices'),
+          get('/inventory/warehouses'),
+          get('/inventory/warehouse-stock'),
+          get('/inventory/stock-alerts'),
+          get('/inventory/reservations'),
+          get('/inventory/stock-transfers'),
+          get('/inventory/inventory-counts'),
+          get('/inventory/barcode/6111000000010')
+        ]);
+        state.roleNavigation = roleNavigation;
+        state.subscriptionGate = subscriptionGate;
+        state.retentionPolicy = retentionPolicy;
+        state.deviceHistory = deviceHistory;
+        state.purchaseOrders = purchaseOrders;
+        state.purchaseReceipts = purchaseReceipts;
+        state.supplierInvoices = supplierInvoices;
+        state.warehouses = warehouses;
+        state.warehouseStock = warehouseStock;
+        state.stockAlerts = stockAlerts;
+        state.stockReservations = stockReservations;
+        state.stockTransfers = stockTransfers;
+        state.inventoryCounts = inventoryCounts;
+        state.barcodeLookup = barcodeLookup;
         const entity = summary.tenant.legalEntity;
         qs('#tradeName').textContent = entity.tradeName;
         qs('#identity').innerHTML = [
@@ -938,6 +1053,7 @@
         renderImportTemplates();
         renderPartnerWorkspace();
         renderEmployees();
+        renderSecurityAndProcurement();
         switchModuleView(state.activeView);
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
         qs('#setupBadge').className = setup.ready ? 'badge green' : 'badge';
@@ -1122,6 +1238,52 @@
             <td>${employee.preferredLanguage}<small>${employee.documentExpiries?.[0]?.arabicType || employee.documentExpiries?.[0]?.type || 'Aucun document'}</small></td>
           </tr>
         `).join('') : emptyRow('Aucun salarié créé', 5);
+      }
+
+      function renderSecurityAndProcurement() {
+        const modules = state.roleNavigation?.modules || [];
+        const writableModules = modules.filter((module) => module.canWrite).length;
+        qs('#roleGuardSummary').textContent = `${modules.length} modules · ${writableModules} écriture lecture seule`;
+        qs('#subscriptionGateSummary').textContent = state.subscriptionGate?.writeLocked ? 'Lecture seule' : 'Écritures ouvertes';
+        qs('#retentionSummary').textContent = `${state.retentionPolicy?.retentionDays || 0} jours`;
+        const securityEvents = state.deviceHistory?.events || [];
+        qs('#securityBadge').textContent = `${state.deviceHistory?.suspicious || 0} alerte${(state.deviceHistory?.suspicious || 0) > 1 ? 's' : ''}`;
+        qs('#deviceHistoryRows').innerHTML = securityEvents.length ? securityEvents.slice(0, 5).map((event) => `
+          <tr>
+            <td>${event.at.slice(0, 10)}</td>
+            <td>${event.email}</td>
+            <td>${event.ip || '-'}<small>${event.userAgent || event.fingerprint}</small></td>
+            <td>${event.suspicious ? '<span class="statusPill warning">Connexion suspecte</span>' : '<span class="statusPill success">Reconnu</span>'}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun historique appareil', 4);
+
+        qs('#procurementBadge').textContent = `${state.purchaseOrders.length} commande${state.purchaseOrders.length > 1 ? 's' : ''}`;
+        qs('#stockAlertSummary').textContent = `${state.stockAlerts?.count || 0} article${(state.stockAlerts?.count || 0) > 1 ? 's' : ''}`;
+        qs('#reservationSummary').textContent = `${state.stockReservations?.rows?.length || 0} réservation${(state.stockReservations?.rows?.length || 0) > 1 ? 's' : ''}`;
+        qs('#barcodeSummary').textContent = state.barcodeLookup?.product?.sku || 'Aucun scan';
+        const purchaseRows = [
+          ...state.purchaseOrders.map((order) => ({ label: order.number, status: order.status, amount: order.total, detail: `${order.lines.length} ligne(s)` })),
+          ...state.purchaseReceipts.map((receipt) => ({ label: receipt.number, status: 'RECEIVED', amount: receipt.total, detail: receipt.purchaseOrderId || 'Réception directe' })),
+          ...state.supplierInvoices.map((invoice) => ({ label: invoice.number, status: invoice.status, amount: invoice.total, detail: invoice.supplierInvoiceNumber || invoice.dueDate })),
+          ...state.stockTransfers.map((transfer) => ({ label: transfer.number, status: transfer.status, amount: transfer.quantity, detail: `${transfer.fromWarehouseId} → ${transfer.toWarehouseId}` })),
+          ...state.inventoryCounts.map((count) => ({ label: count.number, status: count.status, amount: count.totalVarianceValue, detail: `${count.lines.length} ligne(s)` }))
+        ];
+        qs('#purchaseWorkflowRows').innerHTML = purchaseRows.length ? purchaseRows.slice(-8).map((row) => `
+          <tr>
+            <td><strong>${row.label}</strong></td>
+            <td><span class="statusPill ${['RECEIVED', 'POSTED', 'APPROVED'].includes(row.status) ? 'success' : 'warning'}">${translate('statuses', row.status)}</span></td>
+            <td>${typeof row.amount === 'number' && row.amount > 100 ? mad(row.amount) : row.amount}</td>
+            <td>${row.detail}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun flux achat ou inventaire lancé', 4);
+        qs('#warehouseStockRows').innerHTML = state.warehouseStock.length ? state.warehouseStock.slice(0, 8).map((line) => `
+          <tr>
+            <td><strong>${line.warehouseName}</strong></td>
+            <td>${line.sku}<small>${line.name}</small></td>
+            <td>${line.available}<small>réservé ${line.reserved}</small></td>
+            <td>${mad(line.value)}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun stock par dépôt', 4);
       }
 
       function renderProfile() {
@@ -1500,6 +1662,54 @@
           });
           const createdTradeName = result.tenant?.legalEntity?.tradeName || result.tenant?.tradeName || 'client';
           showMessage('success', `Tenant client ${createdTradeName} créé pour le partenaire.`);
+        });
+      });
+
+      qs('#runSecurityDemo').addEventListener('click', async () => {
+        await runAction('#runSecurityDemo', 'Sécurité...', async () => {
+          const login = await post('/auth/login', { email: 'owner@atlas.ma', password: 'demo1234', ip: '41.248.10.10', userAgent: 'Morocco ERP Browser' });
+          if (login.refresh_token) await post('/auth/refresh', { refreshToken: login.refresh_token });
+          await post('/auth/2fa/verify', { userId: 'usr-accountant', code: '246810' });
+          showMessage('success', 'Connexion sécurisée, refresh token, 2FA et historique appareil vérifiés.');
+        });
+      });
+
+      qs('#requestDataExport').addEventListener('click', async () => {
+        await runAction('#requestDataExport', 'Export...', async () => {
+          const manifest = await post('/tenant/data-export', {});
+          showMessage('success', `Export tenant prêt: ${manifest.files.length} fichiers avec checksums.`);
+        });
+      });
+
+      qs('#runPurchaseBatch').addEventListener('click', async () => {
+        await runAction('#runPurchaseBatch', 'Achat...', async () => {
+          const order = await post('/inventory/purchase-orders', {
+            supplierId: 'sup-1',
+            expectedDate: '2026-06-10',
+            lines: [{ productId: 'prd-1', quantity: 6, unitCost: 640 }]
+          });
+          await post(`/inventory/purchase-orders/${order.id}/approve`, {});
+          const receipt = await post('/inventory/purchase-receipts', { purchaseOrderId: order.id });
+          const invoice = await post('/inventory/supplier-invoices', { purchaseReceiptId: receipt.id, supplierInvoiceNumber: `F-${order.number}` });
+          showMessage('success', `Achat ${order.number} réceptionné et facture ${invoice.number} comptabilisée.`);
+        });
+      });
+
+      qs('#runTransferBatch').addEventListener('click', async () => {
+        await runAction('#runTransferBatch', 'Transfert...', async () => {
+          const warehouse = await post('/inventory/warehouses', { name: `Dépôt Rabat ${state.warehouses.length + 1}`, city: 'Rabat', address: 'Agdal' });
+          const transfer = await post('/inventory/stock-transfers', { productId: 'prd-1', fromWarehouseId: 'wh-1', toWarehouseId: warehouse.id, quantity: 2 });
+          await post(`/inventory/stock-transfers/${transfer.id}/receive`, {});
+          showMessage('success', `Transfert ${transfer.number} reçu au dépôt ${warehouse.name}.`);
+        });
+      });
+
+      qs('#runInventoryCount').addEventListener('click', async () => {
+        await runAction('#runInventoryCount', 'Comptage...', async () => {
+          const targetWarehouse = latest(state.warehouses) || { id: 'wh-1' };
+          const count = await post('/inventory/inventory-counts', { warehouseId: targetWarehouse.id, lines: [{ productId: 'prd-1', countedQuantity: 1 }] });
+          await post(`/inventory/inventory-counts/${count.id}/approve`, {});
+          showMessage('success', `Comptage ${count.number} approuvé avec écriture d’écart.`);
         });
       });
 
