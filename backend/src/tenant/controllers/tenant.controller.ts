@@ -66,6 +66,17 @@ export class TenantController {
   @Get('operations/webhook-retries') webhookRetries() { return this.tenantService.webhookRetries(); }
   @Post('operations/webhook-retries') retryWebhook(@Body() body: any) { return this.tenantService.retryWebhook(body); }
   @Get('operations/export-status-center') exportStatusCenter() { return this.tenantService.exportStatusCenter(); }
+  @Get('approval-delegations') approvalDelegations() { return this.tenantService.approvalDelegations(); }
+  @Post('approval-delegations') createApprovalDelegation(@Body() body: any) { return this.tenantService.createApprovalDelegation(body); }
+  @Get('import-validation-sandbox') importValidationRuns() { return this.tenantService.importValidationRuns(); }
+  @Post('import-validation-sandbox') importValidationSandbox(@Body() body: any) { return this.tenantService.importValidationSandbox(body); }
+  @Get('data-quality-score') dataQualityScore() { return this.tenantService.tenantDataQualityScore(); }
+  @Get('accountant-handoff-pack') accountantHandoffPack(@Query('period') period?: string) { return this.tenantService.guidedAccountantHandoffPack(period); }
+  @Get('implementation-partner/margin-workload') implementationPartnerMarginWorkload() { return this.tenantService.implementationPartnerMarginWorkloadDashboard(); }
+  @Get('support-tickets') supportTickets() { return this.tenantService.listSupportTickets(); }
+  @Post('support-tickets') createSupportTicket(@Body() body: any) { return this.tenantService.createSupportTicket(body); }
+  @Get('admin-health-checks') adminHealthChecks() { return this.tenantService.adminHealthChecks(); }
+  @Get('resilience-runbook') resilienceRunbook() { return this.tenantService.tenantResilienceRunbookStatus(); }
   @Get('onboarding-progress') onboardingProgress(@Query('companyType') companyType?: any) { return this.tenantService.onboardingProgress(companyType); }
   @Post('sample-data/reset-module') resetSampleModule(@Body() body: any) { return this.tenantService.resetSampleModule(body); }
   @Get('kpi-targets/variance') kpiVariance() { return this.tenantService.kpiVariance(); }
@@ -97,6 +108,7 @@ export class TenantController {
   @Post('webhooks') emitWebhook(@Body() body: any) { return this.tenantService.emitWebhook(body); }
   @Get('api-keys') apiKeys() { return this.tenantService.apiKeys(); }
   @Post('api-keys') createApiKey(@Body() body: any) { return this.tenantService.createApiKey(body); }
+  @Patch('api-keys/:id/last-used') recordApiKeyUse(@Param('id') id: string, @Body() body: any) { return this.tenantService.recordApiKeyUse(id, body); }
   @Get('implementation-partner/workspace') implementationPartnerWorkspace() { return this.tenantService.implementationPartnerWorkspace(); }
   @Post('implementation-partner/clients') createPartnerClient(@Body() body: any) { return this.tenantService.createPartnerClient(body); }
   @Patch('implementation-partner/clients/:tenantId/onboarding') updatePartnerClientOnboarding(@Param('tenantId') tenantId: string, @Body() body: any) {

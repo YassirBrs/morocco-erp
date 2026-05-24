@@ -2110,4 +2110,69 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(hrAudit.map((entry) => entry.category)).toContain('SALARY');
     expect(billing).toMatchObject({ projectId: project.id, retainerAmount: 5000 });
   });
+
+  it('covers service contracts, SAV, production quality, admin controls, Moroccan tax, and CNSS anomaly workflows', () => {
+    const contract = store.createServiceContract({ customerId: 'cus-1', name: 'Contrat support Rabat', monthlyAmount: 1200, renewalDate: '2026-06-15' });
+    const drafts = store.generateServiceContractDraftInvoices({ period: '2026-05' });
+    const renewals = store.serviceContractRenewalReminders();
+    const warranty = store.createWarrantyServiceCase({ customerId: 'cus-1', productId: 'prd-1', serialNumber: 'SN-001', issue: 'Remplacement assise', replacementProductId: 'prd-1' });
+
+    const bom = store.createBillOfMaterial({ finishedProductId: 'prd-fg', version: 'QA', components: [{ productId: 'prd-raw', quantity: 1, unitCost: 90 }] });
+    const production = store.createProductionOrder({ finishedProductId: 'prd-fg', quantity: 1, billOfMaterialId: bom.id });
+    const quality = store.createProductionQualityCheck({ productionOrderId: production.id, result: 'FAIL', scrapQuantity: 1, reworkCost: 250, evidenceReference: 'qa-fail.pdf' });
+
+    const asset = store.createMaintenanceAsset({ name: 'Scie atelier', category: 'Production' });
+    const workOrder = store.createMaintenanceWorkOrder({ assetId: asset.id, technician: 'Technicien Casa', cost: 100, description: 'Changement pièce' });
+    const spare = store.reserveMaintenanceSparePart({ workOrderId: workOrder.id, productId: 'prd-raw', quantity: 2 });
+    const consumed = store.consumeMaintenanceSparePart(spare.id);
+    const vehicle = store.createFleetVehicle({ plate: 'WW-654321', driver: 'Karim Routier' });
+    const fleetCase = store.createFleetComplianceCase({ vehicleId: vehicle.id, type: 'INSURANCE_RENEWAL', amount: 3200, dueDate: '2026-06-30', description: 'Renouvellement assurance' });
+
+    const delegation = store.createApprovalDelegation({ fromUserId: 'usr-owner', toUserId: 'usr-accountant', module: 'accounting', startDate: '2026-05-01', endDate: '2026-06-01', reason: 'Absence gérant' });
+    const apiKey = store.createPartnerApiKey({ name: 'Stock lecture', scopes: ['inventory:read'], moduleScopes: ['inventory'], ipAllowlist: ['127.0.0.1'], expiresAt: '2026-12-31' });
+    const usedKey = store.recordApiKeyUse(apiKey.id, { ip: '127.0.0.1', evidence: 'health-check' });
+    const importRun = store.importValidationSandbox({ kind: 'customers', csv: 'name,ice\nClient sans ICE,' });
+    const exportCenter = store.exportStatusCenter();
+    const qualityScore = store.tenantDataQualityScore();
+    const handoff = store.guidedAccountantHandoffPack({ period: '2026-05' });
+    const partnerWorkload = store.implementationPartnerMarginWorkloadDashboard();
+    const ticket = store.createSupportTicket({ module: 'sales', subject: 'Erreur facture SAV', severity: 'HIGH', screenshotReferences: ['sav.png'] });
+    const health = store.adminHealthChecks();
+    const resilience = store.tenantResilienceRunbookStatus();
+
+    const receipt = store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 2, unitCost: 100 }] });
+    store.createSupplierInvoice({ purchaseReceiptId: receipt.id });
+    const prorata = store.createVatProrataRule({ period: '2026-05', deductiblePercent: 75, activityNote: 'Activité mixte taxable/exonérée', evidenceReference: 'prorata.pdf' });
+    const prorataReport = store.vatProrataReport({ period: '2026-05' });
+    const isEstimate = store.isEstimateDashboard({ period: '2026-05' });
+    const professionalTax = store.createProfessionalTaxRecord({ establishment: 'Siège Casablanca', city: 'Casablanca', rentalValue: 120000, dueDate: '2026-12-31' });
+    const dgiCalendar = store.dgiDeclarationCalendar();
+    const cnssAnomalies = store.cnssEmployeeAnomalyDrilldown();
+
+    expect(contract).toMatchObject({ customerId: 'cus-1', active: true });
+    expect(drafts.draftInvoices[0].invoice).toMatchObject({ status: 'DRAFT' });
+    expect(renewals.rows.map((row) => row.id)).toContain(contract.id);
+    expect(warranty).toMatchObject({ status: 'REPLACEMENT_RESERVED', replacementProductId: 'prd-1' });
+    expect(quality).toMatchObject({ result: 'FAIL', evidenceReference: 'qa-fail.pdf' });
+    expect(store.getProduct('prd-fg').lifecycleState).toBe('BLOCKED');
+    expect(consumed).toMatchObject({ status: 'CONSUMED' });
+    expect(store.listMaintenance().workOrders.find((order) => order.id === workOrder.id)?.cost).toBeGreaterThan(100);
+    expect(fleetCase).toMatchObject({ type: 'INSURANCE_RENEWAL', status: 'OPEN' });
+    expect(delegation).toMatchObject({ module: 'accounting', active: true });
+    expect(usedKey).toMatchObject({ lastUseEvidence: 'health-check' });
+    expect(importRun.errors[0]).toMatchObject({ field: 'ice' });
+    expect(exportCenter.filters).toEqual(expect.arrayContaining(['period', 'module', 'checksum']));
+    expect(qualityScore).toHaveProperty('score');
+    expect(handoff).toHaveProperty('checksum');
+    expect(partnerWorkload.totals).toHaveProperty('workloadHours');
+    expect(ticket).toMatchObject({ severity: 'HIGH', status: 'OPEN' });
+    expect(health.queues).toHaveProperty('status');
+    expect(resilience).toHaveProperty('incidentContacts');
+    expect(prorata).toMatchObject({ deductiblePercent: 75 });
+    expect(prorataReport.deductibleVat).toBeGreaterThan(0);
+    expect(isEstimate.installments).toHaveLength(4);
+    expect(professionalTax).toMatchObject({ city: 'Casablanca', professionalTaxEstimate: 12000 });
+    expect(dgiCalendar.rows.map((row) => row.declaration)).toEqual(expect.arrayContaining(['VAT', 'IR', 'IS']));
+    expect(cnssAnomalies.summary).toHaveProperty('missingAffiliation');
+  });
 });

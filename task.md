@@ -365,29 +365,29 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T268 P1 - Add payroll social declaration reconciliation between payslips, Damancom exports, and accounting entries.
 - [x] T269 P1 - Add role-restricted HR audit trail for salary, disciplinary, medical, and identity document changes.
 - [x] T270 P1 - Add project retainer and milestone billing with revenue recognition notes for accountant review.
-- [ ] T271 P1 - Add service contract recurring billing with automatic draft invoices and renewal reminders.
-- [ ] T272 P1 - Add warranty and after-sales service cases linked to products, serials, invoices, and stock replacements.
-- [ ] T273 P1 - Add production quality checks with pass/fail, scrap quantity, rework cost, and traceability evidence.
-- [ ] T274 P1 - Add maintenance spare-parts reservation and consumption with CUMP valuation.
-- [ ] T275 P1 - Add fleet fines, tolls, insurance renewals, and accident case tracking.
-- [ ] T276 P1 - Add tenant-specific approval delegation during absences with date range and audit trail.
-- [ ] T277 P1 - Add granular API keys by module scope, tenant, expiry, IP allowlist, and last-used evidence.
-- [ ] T278 P1 - Add import validation sandbox that previews customer, supplier, product, payroll, and accounting CSV errors.
-- [ ] T279 P1 - Add export center filters by period, module, status, checksum, requester, and evidence archive.
-- [ ] T280 P1 - Add automatic data quality score for tenant identifiers, duplicate records, missing documents, and stale actions.
-- [ ] T281 P1 - Add guided accountant handoff pack with trial balance, VAT review, payroll exports, and unresolved blockers.
-- [ ] T282 P1 - Add implementation partner margin and workload dashboard by tenant, phase, blocker, and go-live date.
-- [ ] T283 P1 - Add support ticket intake from tenant users with module context, screenshots, severity, and SLA.
-- [ ] T284 P1 - Add admin health checks for queues, scheduled jobs, exports, email delivery, and adapter availability.
-- [ ] T285 P1 - Add tenant resilience runbook status covering backups, restore rehearsal, legal archive, and incident contacts.
+- [x] T271 P1 - Add service contract recurring billing with automatic draft invoices and renewal reminders.
+- [x] T272 P1 - Add warranty and after-sales service cases linked to products, serials, invoices, and stock replacements.
+- [x] T273 P1 - Add production quality checks with pass/fail, scrap quantity, rework cost, and traceability evidence.
+- [x] T274 P1 - Add maintenance spare-parts reservation and consumption with CUMP valuation.
+- [x] T275 P1 - Add fleet fines, tolls, insurance renewals, and accident case tracking.
+- [x] T276 P1 - Add tenant-specific approval delegation during absences with date range and audit trail.
+- [x] T277 P1 - Add granular API keys by module scope, tenant, expiry, IP allowlist, and last-used evidence.
+- [x] T278 P1 - Add import validation sandbox that previews customer, supplier, product, payroll, and accounting CSV errors.
+- [x] T279 P1 - Add export center filters by period, module, status, checksum, requester, and evidence archive.
+- [x] T280 P1 - Add automatic data quality score for tenant identifiers, duplicate records, missing documents, and stale actions.
+- [x] T281 P1 - Add guided accountant handoff pack with trial balance, VAT review, payroll exports, and unresolved blockers.
+- [x] T282 P1 - Add implementation partner margin and workload dashboard by tenant, phase, blocker, and go-live date.
+- [x] T283 P1 - Add support ticket intake from tenant users with module context, screenshots, severity, and SLA.
+- [x] T284 P1 - Add admin health checks for queues, scheduled jobs, exports, email delivery, and adapter availability.
+- [x] T285 P1 - Add tenant resilience runbook status covering backups, restore rehearsal, legal archive, and incident contacts.
 
 ## Morocco Competitive Edge Backlog
 
-- [ ] T286 P1 - Add Moroccan VAT prorata management for partially deductible purchases and mixed activity tenants.
-- [ ] T287 P1 - Add simplified IS estimate dashboard with installments, taxable result adjustments, and evidence notes.
-- [ ] T288 P1 - Add professional tax tracking by establishment, city, rental value, and due date.
-- [ ] T289 P1 - Add tenant-level DGI declaration calendar with VAT, IS, IR salaries, and supporting evidence.
-- [ ] T290 P1 - Add CNSS anomaly detector for missing affiliation, duplicate CNSS numbers, and invalid salary bases.
+- [x] T286 P1 - Add Moroccan VAT prorata management for partially deductible purchases and mixed activity tenants.
+- [x] T287 P1 - Add simplified IS estimate dashboard with installments, taxable result adjustments, and evidence notes.
+- [x] T288 P1 - Add professional tax tracking by establishment, city, rental value, and due date.
+- [x] T289 P1 - Add tenant-level DGI declaration calendar with VAT, IS, IR salaries, and supporting evidence.
+- [x] T290 P1 - Add CNSS anomaly detector for missing affiliation, duplicate CNSS numbers, and invalid salary bases.
 - [ ] T291 P1 - Add AMO reconciliation between payroll slips, employer charges, and Damancom export totals.
 - [ ] T292 P1 - Add Moroccan public holiday calendar with payroll, leave, and delivery planning impact.
 - [ ] T293 P1 - Add Moroccan city and region reference data for customers, suppliers, deliveries, and analytics.
@@ -486,3 +486,56 @@ This backlog contains concrete tasks to improve the app from the current working
 - [ ] T383 P1 - Add implementation checklist templates by industry: retail, wholesale, services, manufacturing, and construction.
 - [ ] T384 P1 - Add usage telemetry dashboard for module adoption, dormant users, failed actions, and training needs.
 - [ ] T385 P1 - Add competitive gap heatmap against Odoo, Sage, Cegid, Zoho, and local Moroccan ERP alternatives.
+
+## Morocco Enterprise Depth Backlog
+
+- [ ] T386 P1 - Add electronic document retention policy by Moroccan fiscal period, document type, checksum, and legal hold.
+- [ ] T387 P1 - Add invoice e-signature readiness with certificate metadata, signer workflow, and immutable archive status.
+- [ ] T388 P1 - Add customer onboarding risk questionnaire for ICE/IF/RC validation, sector, credit terms, and sanctions notes.
+- [ ] T389 P1 - Add supplier onboarding risk questionnaire for tax status, CNSS certificate, RIB ownership, and contract evidence.
+- [ ] T390 P1 - Add delivery proof photo OCR placeholder with manual validation, geotag, timestamp, and driver signature.
+- [ ] T391 P1 - Add transporter invoice reconciliation against route pricing, delivery proofs, penalties, and fuel surcharge.
+- [ ] T392 P1 - Add warehouse security incident log with product, quantity, CCTV reference, insurance claim, and stock adjustment proposal.
+- [ ] T393 P1 - Add inventory obsolescence provision proposal by age bucket, family, CUMP value, and accountant approval.
+- [ ] T394 P1 - Add Moroccan import VAT recovery tracker by DUM, customs receipt, supplier invoice, and deductible period.
+- [ ] T395 P1 - Add purchase three-way match between PO, receipt, supplier invoice, landed costs, and approval exceptions.
+- [ ] T396 P1 - Add supplier payment run approval with bank balance, due invoices, blocked disputes, and treasury forecast.
+- [ ] T397 P1 - Add customer dunning email template variants by French/Arabic preference, dunning level, and legal identifiers.
+- [ ] T398 P1 - Add collection call log with promise tracking, dispute escalation, next owner, and evidence attachments.
+- [ ] T399 P1 - Add cash receipt numbering audit for gaps, duplicates, branch series, and cashier accountability.
+- [ ] T400 P1 - Add POS Z-report closure with tax totals, cash/card split, refunds, and supervisor signature.
+- [ ] T401 P1 - Add bank reconciliation statement PDF with matched/unmatched lines, balances, and reviewer sign-off.
+- [ ] T402 P1 - Add bank transfer payment file adapter interface with bank format, approval chain, and status polling.
+- [ ] T403 P1 - Add payroll bank transfer export with employee RIB validation, net salary totals, and approval evidence.
+- [ ] T404 P1 - Add payroll benefit-in-kind tracking for car, housing, phone, and taxable base preview.
+- [ ] T405 P1 - Add payroll end-of-contract settlement with leave balance, indemnity placeholders, final payslip, and archive.
+- [ ] T406 P1 - Add occupational health document reminders with restricted access, renewal date, and HR evidence vault.
+- [ ] T407 P1 - Add employee disciplinary workflow with restricted notes, decision, appeal status, and legal evidence.
+- [ ] T408 P1 - Add HR headcount dashboard by contract type, city, department, salary band, and CNSS readiness.
+- [ ] T409 P1 - Add production component shortage forecast by BOM, open orders, reservations, and purchase lead time.
+- [ ] T410 P1 - Add production subcontracting workflow with supplier, components issued, receipt, quality check, and cost rollup.
+- [ ] T411 P1 - Add maintenance downtime analytics by asset, cause, spare parts, technician, and lost production estimate.
+- [ ] T412 P1 - Add fleet mileage reimbursement workflow with route, driver, rate, approval, and payroll/accounting linkage.
+- [ ] T413 P1 - Add fleet fuel card import sandbox with card number, vehicle, duplicate transaction, and exception preview.
+- [ ] T414 P1 - Add project procurement commitment report by budget, PO, receipt, supplier invoice, and remaining forecast.
+- [ ] T415 P1 - Add project timesheet approval workflow with employee, rate, billable flag, customer approval, and WIP impact.
+- [ ] T416 P1 - Add customer portal payment promise workflow with secure token, message thread, due date, and audit trail.
+- [ ] T417 P1 - Add supplier portal certificate renewal workflow with upload placeholder, validation status, and blocker alerts.
+- [ ] T418 P1 - Add accountant review annotations on invoices, journals, payroll runs, and tax declarations with resolution status.
+- [ ] T419 P1 - Add legal archive export bundle by fiscal year with manifest, evidence checksums, and restore verification.
+- [ ] T420 P1 - Add DGI VAT declaration sandbox payload builder with line totals, prorata, validation messages, and archive.
+- [ ] T421 P1 - Add IR salary declaration sandbox payload builder with payslip totals, employee identifiers, and validation messages.
+- [ ] T422 P1 - Add CNSS declaration amendment workflow with corrected lines, reason, approval, and Damancom archive.
+- [ ] T423 P1 - Add Moroccan public procurement customer flag with withholding/payment terms, documents, and exposure reporting.
+- [ ] T424 P1 - Add construction retention guarantee tracking with invoice holdback, release milestone, and accounting proposal.
+- [ ] T425 P1 - Add branch profit center P&L by sales, COGS, payroll allocation, rent, and shared overhead.
+- [ ] T426 P1 - Add multi-company accountant dashboard with compliance status, blockers, due declarations, and workload scoring.
+- [ ] T427 P1 - Add tenant security review checklist with MFA, API keys, inactive users, data exports, and admin actions.
+- [ ] T428 P1 - Add role permission simulator with module, action, branch, amount, and expected allow/deny explanation.
+- [ ] T429 P1 - Add audit anomaly detector for after-hours changes, large discounts, manual journals, and payroll edits.
+- [ ] T430 P1 - Add customer profitability report by invoice margin, support tickets, delivery cost, discounts, and payment delay.
+- [ ] T431 P1 - Add supplier profitability and risk report by purchase volume, disputes, lead time, price variance, and documents.
+- [ ] T432 P1 - Add SaaS onboarding wizard state persistence with completed steps, owner, deadline, and blocker escalation.
+- [ ] T433 P1 - Add training checklist by role with completed lessons, failed actions, module adoption, and support nudges.
+- [ ] T434 P1 - Add tenant success score combining activation, data quality, compliance, support SLA, and payment status.
+- [ ] T435 P1 - Add competitor migration ROI calculator comparing license cost, implementation time, feature gaps, and local compliance fit.

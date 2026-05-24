@@ -434,3 +434,15 @@ test('Next primary workspace exposes logistics, close, compliance, payroll, HR a
     assert.ok(api.includes(endpoint), `${endpoint} logistics/close API route is wired`);
   }
 });
+
+test('Next primary workspace exposes regulated service, admin, tax, support, and CNSS control batch', () => {
+  for (const text of ['Contrôles réglementaires et service client', 'Contrats service', 'Score qualité données', 'Prorata TVA', 'Anomalies CNSS', 'Service client et opérations', 'Admin SaaS et support', 'Fiscal Maroc', 'Clés API granulaires', 'Sandbox import', 'Centre exports filtres', 'Calendrier DGI preuves manquantes']) {
+    assert.ok(page.includes(text), `${text} regulated service label is present`);
+  }
+  for (const endpoint of ['/sales/service-contracts', '/sales/service-contracts/draft-invoices', '/sales/service-contracts/renewal-reminders', '/sales/warranty-cases', '/production/quality-checks', '/production/maintenance/spare-parts', '/production/fleet/compliance-cases', '/tenant/approval-delegations', '/tenant/import-validation-sandbox', '/tenant/data-quality-score', '/tenant/accountant-handoff-pack', '/tenant/implementation-partner/margin-workload', '/tenant/support-tickets', '/tenant/admin-health-checks', '/tenant/resilience-runbook', '/ledger/vat-prorata-rules', '/ledger/vat-prorata-report', '/ledger/is-estimate', '/ledger/professional-tax-records', '/ledger/dgi-declaration-calendar', '/payroll/employees/cnss-anomalies']) {
+    assert.ok(api.includes(endpoint), `${endpoint} regulated service endpoint is wired`);
+  }
+  assert.ok(api.includes('getRegulatedServiceReadiness'));
+  assert.ok(api.includes("moduleScopes: ['inventory']"));
+  assert.ok(api.includes("kind: 'customers'"));
+});

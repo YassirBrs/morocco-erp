@@ -14,6 +14,7 @@ import {
   getOperationalReports,
   getPlatformReadiness,
   getPayrollSnapshot,
+  getRegulatedServiceReadiness,
   getSalesDashboard,
   getStock,
   searchBusiness,
@@ -46,7 +47,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -65,6 +66,7 @@ export default async function DashboardPage() {
     getEnterpriseControlReadiness(),
     getGrowthControlReadiness(),
     getLogisticsCloseReadiness(),
+    getRegulatedServiceReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -519,6 +521,43 @@ export default async function DashboardPage() {
               `Audit RH ${logisticsClose.hrAuditTrail.length}`,
               `Plans facturation projet ${logisticsClose.projectBillingPlans.length}`,
               'Avenants, overtime et remboursements reliés aux journaux',
+            ]} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Contrôles réglementaires et service client">
+          <PanelHeader title="Contrôles réglementaires et service client" action="Valider conformité" />
+          <div className="reportGrid">
+            <Metric label="Contrats service" value={String(regulatedServices.serviceContracts.length)} />
+            <Metric label="Score qualité données" value={`${regulatedServices.dataQuality.score}%`} />
+            <Metric label="Prorata TVA" value={formatMad(regulatedServices.vatProrata.deductibleVat)} />
+            <Metric label="Anomalies CNSS" value={String(regulatedServices.cnssAnomalies.count)} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Service client et opérations" rows={[
+              `Factures brouillon contrats ${regulatedServices.draftInvoices.count}`,
+              `Renouvellements ${regulatedServices.renewalReminders.dueSoon}`,
+              `Dossiers SAV ${regulatedServices.warrantyCases.length}`,
+              `Contrôles qualité production ${regulatedServices.qualityChecks.length}`,
+              `Pièces maintenance ${regulatedServices.spareParts.length}`,
+              `Dossiers flotte ${regulatedServices.fleetCases.length}`,
+            ]} empty="-" />
+            <MiniList title="Admin SaaS et support" rows={[
+              `Délégations approbation ${regulatedServices.approvalDelegations.length}`,
+              `Clés API granulaires ${regulatedServices.apiKeys.length}`,
+              `Sandbox import ${regulatedServices.importSandbox.length}`,
+              `Centre exports filtres ${regulatedServices.exportCenter.filters.join(', ')}`,
+              `Tickets support ${regulatedServices.supportTickets.length}`,
+              `Santé files ${regulatedServices.adminHealth.queues.status}`,
+              `Runbook archive ${regulatedServices.resilience.legalArchive}`,
+            ]} empty="-" />
+            <MiniList title="Fiscal Maroc" rows={[
+              `Pack comptable ${regulatedServices.accountantHandoff.checksum.slice(0, 10) || 'à générer'}`,
+              `Charge partenaire ${regulatedServices.partnerWorkload.totals.workloadHours}h`,
+              `IS estimé ${formatMad(regulatedServices.isEstimate.estimatedIs)}`,
+              `Taxe professionnelle ${regulatedServices.professionalTax.length}`,
+              `Calendrier DGI preuves manquantes ${regulatedServices.dgiCalendar.missingEvidence}`,
+              `CNSS affiliation manquante ${regulatedServices.cnssAnomalies.summary.missingAffiliation ?? 0}`,
             ]} empty="-" />
           </div>
         </section>

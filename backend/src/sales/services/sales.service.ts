@@ -55,6 +55,12 @@ export class SalesService {
   approveDiscountApproval(id: string) { return this.store.approveDiscountApproval(id); }
   listRecurringInvoiceBatches() { return this.store.listRecurringInvoiceBatches(); }
   generateRecurringInvoiceBatch(data: any) { return this.store.generateRecurringInvoiceBatch(data); }
+  listServiceContracts() { return this.store.listServiceContracts(); }
+  createServiceContract(data: any) { return this.store.createServiceContract(data); }
+  generateServiceContractDraftInvoices(data: any) { return this.store.generateServiceContractDraftInvoices(data); }
+  serviceContractRenewalReminders() { return this.store.serviceContractRenewalReminders(); }
+  listWarrantyServiceCases() { return this.store.listWarrantyServiceCases(); }
+  createWarrantyServiceCase(data: any) { return this.store.createWarrantyServiceCase(data); }
   paymentReminderSchedule() { return this.store.paymentReminderSchedule(); }
   recordPayment(data: any) { return this.store.recordPayment(data); }
 }

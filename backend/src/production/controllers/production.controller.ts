@@ -15,8 +15,15 @@ export class ProductionController {
   @Post('maintenance/assets') createMaintenanceAsset(@Body() body: any) { return this.productionService.createMaintenanceAsset(body); }
   @Post('maintenance/work-orders') createMaintenanceWorkOrder(@Body() body: any) { return this.productionService.createMaintenanceWorkOrder(body); }
   @Post('maintenance/work-orders/:id/complete') completeMaintenanceWorkOrder(@Param('id') id: string) { return this.productionService.completeMaintenanceWorkOrder(id); }
+  @Get('maintenance/spare-parts') maintenanceSpareParts() { return this.productionService.listMaintenanceSpareParts(); }
+  @Post('maintenance/spare-parts') reserveMaintenanceSparePart(@Body() body: any) { return this.productionService.reserveMaintenanceSparePart(body); }
+  @Post('maintenance/spare-parts/:id/consume') consumeMaintenanceSparePart(@Param('id') id: string) { return this.productionService.consumeMaintenanceSparePart(id); }
+  @Get('quality-checks') qualityChecks() { return this.productionService.listProductionQualityChecks(); }
+  @Post('quality-checks') createQualityCheck(@Body() body: any) { return this.productionService.createProductionQualityCheck(body); }
   @Get('fleet') fleet() { return this.productionService.listFleet(); }
   @Get('fleet/fuel-efficiency') fleetFuelEfficiency(@Query('month') month?: string) { return this.productionService.fleetFuelEfficiencyReport(month); }
+  @Get('fleet/compliance-cases') fleetComplianceCases() { return this.productionService.listFleetComplianceCases(); }
+  @Post('fleet/compliance-cases') createFleetComplianceCase(@Body() body: any) { return this.productionService.createFleetComplianceCase(body); }
   @Post('fleet/vehicles') createFleetVehicle(@Body() body: any) { return this.productionService.createFleetVehicle(body); }
   @Post('fleet/logs') addFleetLog(@Body() body: any) { return this.productionService.addFleetLog(body); }
   @Get('projects') projects() { return this.productionService.listProjects(); }

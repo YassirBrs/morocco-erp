@@ -126,14 +126,24 @@ import {
   CustomerContract,
   DiscountApproval,
   DunningPolicy,
+  ApprovalDelegation,
   PromiseToPay,
   ReleaseNote,
   SupportImpersonationApproval,
+  SupportTicket,
   AccountingAttachmentRequirement,
   ComplianceOwnerAssignment,
   ContractAmendment,
   OvertimeApproval,
   Transporter,
+  FleetComplianceCase,
+  ImportValidationSandboxRun,
+  MaintenanceSparePartReservation,
+  ProfessionalTaxRecord,
+  ProductionQualityCheck,
+  ServiceContract,
+  VatProrataRule,
+  WarrantyServiceCase,
 } from './erp.types';
 
 const r2 = (value: number): number => Math.round(value * 100) / 100;
@@ -503,6 +513,8 @@ export class ErpStoreService {
       stockQuarantines: [],
       deliveryProofs: [],
       customerContracts: [],
+      serviceContracts: [],
+      warrantyServiceCases: [],
       supplierContracts: [],
       pricingRules: [],
       discountApprovals: [],
@@ -514,12 +526,18 @@ export class ErpStoreService {
       hrPrivateNotes: [],
       assetAssignments: [],
       preventiveMaintenanceSchedules: [],
+      productionQualityChecks: [],
+      maintenanceSparePartReservations: [],
+      fleetComplianceCases: [],
       procurementBudgets: [],
       branches: [],
       accountantPortalReviews: [],
       partnerImplementationChecklists: [],
       complianceRuleRollouts: [],
       featureFlagAudits: [],
+      approvalDelegations: [],
+      importValidationRuns: [],
+      supportTickets: [],
       supportImpersonations: [],
       releaseNotes: [],
       escalationRules: [],
@@ -544,6 +562,8 @@ export class ErpStoreService {
       contractAmendments: [],
       hrAuditTrailEntries: [],
       projectBillingPlans: [],
+      vatProrataRules: [],
+      professionalTaxRecords: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -660,6 +680,8 @@ export class ErpStoreService {
       stockQuarantines: [],
       deliveryProofs: [],
       customerContracts: [],
+      serviceContracts: [],
+      warrantyServiceCases: [],
       supplierContracts: [],
       pricingRules: [],
       discountApprovals: [],
@@ -671,12 +693,18 @@ export class ErpStoreService {
       hrPrivateNotes: [],
       assetAssignments: [],
       preventiveMaintenanceSchedules: [],
+      productionQualityChecks: [],
+      maintenanceSparePartReservations: [],
+      fleetComplianceCases: [],
       procurementBudgets: [],
       branches: [],
       accountantPortalReviews: [],
       partnerImplementationChecklists: [],
       complianceRuleRollouts: [],
       featureFlagAudits: [],
+      approvalDelegations: [],
+      importValidationRuns: [],
+      supportTickets: [],
       supportImpersonations: [],
       releaseNotes: [],
       escalationRules: [],
@@ -701,6 +729,8 @@ export class ErpStoreService {
       contractAmendments: [],
       hrAuditTrailEntries: [],
       projectBillingPlans: [],
+      vatProrataRules: [],
+      professionalTaxRecords: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -5223,10 +5253,11 @@ export class ErpStoreService {
     return this.workspace(tenantId).webhookEvents;
   }
 
-  createPartnerApiKey(input: { name: string; scopes: string[]; expiresAt?: string }, tenantId?: string) {
+  createPartnerApiKey(input: { name: string; scopes: string[]; moduleScopes?: ErpModuleKey[]; ipAllowlist?: string[]; expiresAt?: string }, tenantId?: string) {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
     const rawToken = `mep_${randomBytes(18).toString('hex')}`;
+    const moduleScopes = [...new Set((input.moduleScopes?.length ? input.moduleScopes : input.scopes ?? []).filter((scope): scope is ErpModuleKey => allModules.includes(scope as ErpModuleKey)))];
     const key: PartnerApiKey = {
       id: this.id('apikey'),
       tenantId: workspace.tenant.id,
@@ -5234,6 +5265,8 @@ export class ErpStoreService {
       tokenHash: createHash('sha256').update(rawToken).digest('hex'),
       tokenPreview: `${rawToken.slice(0, 8)}...${rawToken.slice(-4)}`,
       scopes: [...new Set(input.scopes ?? [])],
+      moduleScopes,
+      ipAllowlist: [...new Set(input.ipAllowlist ?? [])],
       active: true,
       expiresAt: input.expiresAt ? this.isoDate(input.expiresAt, 'Expiration clé API invalide') : undefined,
       createdAt: new Date().toISOString(),
@@ -5245,6 +5278,19 @@ export class ErpStoreService {
 
   listPartnerApiKeys(tenantId?: string): Array<Omit<PartnerApiKey, 'tokenHash'>> {
     return this.workspace(tenantId).partnerApiKeys.map(({ tokenHash: _tokenHash, ...key }) => key);
+  }
+
+  recordApiKeyUse(keyId: string, input: { ip?: string; evidence?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const key = workspace.partnerApiKeys.find((candidate) => candidate.id === keyId);
+    if (!key) throw new NotFoundException('Clé API introuvable');
+    if (key.ipAllowlist?.length && input.ip && !key.ipAllowlist.includes(input.ip)) {
+      throw new ForbiddenException('Adresse IP non autorisée pour cette clé API');
+    }
+    key.lastUsedAt = new Date().toISOString();
+    key.lastUseEvidence = this.clean(input.evidence) ?? (input.ip ? `IP ${input.ip}` : 'Utilisation API validée');
+    const { tokenHash: _tokenHash, ...safeKey } = key;
+    return safeKey;
   }
 
   acceptanceScenarios(tenantId?: string) {
@@ -5618,10 +5664,201 @@ export class ErpStoreService {
 
   exportStatusCenter(tenantId?: string) {
     const workspace = this.workspace(tenantId);
+    const rows = [
+      ...workspace.backgroundJobs.filter((job) => ['PDF', 'EXPORT', 'DECLARATION', 'IMPORT'].includes(job.kind)).map((job) => ({
+        period: job.createdAt.slice(0, 7),
+        module: job.queue,
+        status: job.status,
+        checksum: createHash('sha256').update(JSON.stringify(job.payload)).digest('hex'),
+        requester: 'system',
+        evidenceArchived: workspace.legalEvidences.some((evidence) => evidence.reference === job.reference),
+      })),
+      ...workspace.legalEvidences.map((evidence) => ({
+        period: evidence.archivedAt.slice(0, 7),
+        module: evidence.type.toLowerCase(),
+        status: evidence.status,
+        checksum: evidence.checksum,
+        requester: String((evidence.metadata as any).requester ?? 'owner@atlas.ma'),
+        evidenceArchived: true,
+      })),
+    ];
     return {
+      rows,
       jobs: workspace.backgroundJobs.filter((job) => ['PDF', 'EXPORT', 'DECLARATION', 'IMPORT'].includes(job.kind)),
       evidences: workspace.legalEvidences.map((evidence) => ({ reference: evidence.reference, type: evidence.type, checksum: evidence.checksum, status: evidence.status })),
       filters: ['period', 'module', 'status', 'checksum', 'requester'],
+    };
+  }
+
+  createApprovalDelegation(input: { fromUserId: string; toUserId: string; module: ErpModuleKey; startDate: string; endDate: string; reason: string }, tenantId?: string): ApprovalDelegation {
+    const workspace = this.workspace(tenantId);
+    const from = this.user(workspace, input.fromUserId);
+    const to = this.user(workspace, input.toUserId);
+    if (!allModules.includes(input.module)) throw new BadRequestException('Module délégation invalide');
+    const delegation: ApprovalDelegation = {
+      id: this.id('deleg'),
+      tenantId: workspace.tenant.id,
+      fromUserId: from.id,
+      toUserId: to.id,
+      module: input.module,
+      startDate: this.isoDate(input.startDate, 'Date début délégation invalide'),
+      endDate: this.isoDate(input.endDate, 'Date fin délégation invalide'),
+      reason: this.nonEmpty(input.reason, 'Motif délégation obligatoire'),
+      active: input.startDate <= today() && input.endDate >= today(),
+      auditTrail: [{ at: new Date().toISOString(), action: 'CREATED', actor: from.email }],
+    };
+    workspace.approvalDelegations.push(delegation);
+    return delegation;
+  }
+
+  approvalDelegations(tenantId?: string): ApprovalDelegation[] {
+    return this.workspace(tenantId).approvalDelegations;
+  }
+
+  importValidationSandbox(input: { kind: ImportValidationSandboxRun['kind']; csv: string }, tenantId?: string): ImportValidationSandboxRun {
+    const workspace = this.workspace(tenantId);
+    const rows = this.parseCsv(input.csv ?? '');
+    const required: Record<ImportValidationSandboxRun['kind'], string[]> = {
+      customers: ['name', 'ice'],
+      suppliers: ['name', 'rib'],
+      products: ['sku', 'name'],
+      employees: ['fullName', 'cin'],
+      accounting: ['account', 'labelFr'],
+    };
+    const requiredFields = required[input.kind];
+    if (!requiredFields) throw new BadRequestException('Type import sandbox invalide');
+    const errors = rows.flatMap((row, index) => requiredFields
+      .filter((field) => !this.clean(row[field]))
+      .map((field) => ({ row: index + 2, field, message: `Champ obligatoire manquant: ${field}` })));
+    const run: ImportValidationSandboxRun = {
+      id: this.id('impsbx'),
+      tenantId: workspace.tenant.id,
+      kind: input.kind,
+      rows: rows.length,
+      validRows: rows.length - new Set(errors.map((error) => error.row)).size,
+      errors,
+      preview: rows.slice(0, 5),
+      checksum: createHash('sha256').update(input.csv ?? '').digest('hex'),
+      createdAt: new Date().toISOString(),
+    };
+    workspace.importValidationRuns.push(run);
+    return run;
+  }
+
+  importValidationRuns(tenantId?: string): ImportValidationSandboxRun[] {
+    return this.workspace(tenantId).importValidationRuns;
+  }
+
+  tenantDataQualityScore(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const legalMissing = ['ice', 'ifNumber', 'rc', 'patente', 'cnssNumber'].filter((key) => !this.clean((workspace.tenant.legalEntity as any)[key]));
+    const duplicateRecords = [
+      ...workspace.customers.filter((customer) => customer.duplicateWarnings?.length),
+      ...workspace.suppliers.filter((supplier) => supplier.duplicateWarnings?.length),
+      ...workspace.products.filter((product) => product.duplicateWarnings?.length),
+    ].length;
+    const missingDocuments = [
+      ...workspace.customers.flatMap((customer) => customer.documentExpiries),
+      ...workspace.suppliers.flatMap((supplier) => supplier.documentExpiries),
+      ...workspace.employees.flatMap((employee) => employee.documentExpiries),
+    ].filter((document) => this.daysUntil(document.expiresAt) < 0).length;
+    const staleActions = workspace.internalTasks.filter((task) => task.status === 'OPEN' && task.dueDate && task.dueDate < today()).length;
+    const penalty = legalMissing.length * 12 + duplicateRecords * 8 + missingDocuments * 6 + staleActions * 5;
+    return {
+      score: Math.max(0, 100 - penalty),
+      legalMissing,
+      duplicateRecords,
+      missingDocuments,
+      staleActions,
+      recommendations: [
+        legalMissing.length ? 'Compléter les identifiants ICE/IF/RC/Patente/CNSS' : undefined,
+        duplicateRecords ? 'Fusionner les tiers ou articles en doublon' : undefined,
+        missingDocuments ? 'Renouveler les documents expirés' : undefined,
+        staleActions ? 'Traiter les actions en retard' : undefined,
+      ].filter(Boolean),
+    };
+  }
+
+  guidedAccountantHandoffPack(input: { period?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.period ?? today().slice(0, 7);
+    const vatReview = this.vatDeclarationReviewChecklist(workspace.tenant.id);
+    const pack = {
+      period,
+      trialBalance: this.exportAccounting('JSON', {}, workspace.tenant.id).rowCount,
+      vatReview: { exceptions: vatReview.exceptions.length, complete: vatReview.status === 'READY_FOR_REVIEW' },
+      payrollExports: workspace.payrollExportArchives.filter((archive) => archive.period === period).length,
+      unresolvedBlockers: [
+        ...vatReview.exceptions.map((exception) => exception.message),
+        ...this.cnssEmployeeAnomalyDrilldown(workspace.tenant.id).rows.map((row) => `CNSS salarié: ${row.employeeName}`),
+      ],
+      evidence: this.accountantEvidenceBinder({ year: Number(period.slice(0, 4)), month: Number(period.slice(5, 7)) }, workspace.tenant.id),
+    };
+    return { ...pack, checksum: createHash('sha256').update(JSON.stringify(pack)).digest('hex') };
+  }
+
+  implementationPartnerMarginWorkloadDashboard(tenantId?: string) {
+    this.workspace(tenantId);
+    const clients = this.implementationPartnerWorkspace().clients.map((client) => {
+      const plan = this.pricingPlans().find((candidate) => candidate.id === client.plan);
+      const workloadHours = Math.max(4, client.total - client.completed) * 3;
+      const expectedRevenue = plan?.monthlyMad ?? 0;
+      const deliveryCost = workloadHours * 250;
+      return { ...client, phase: client.ready ? 'GO_LIVE' : 'IMPLEMENTATION', blockerCount: client.blockers.length, goLiveDate: addDays(today(), client.ready ? 7 : 30), workloadHours, expectedMargin: r2(expectedRevenue - deliveryCost) };
+    });
+    return { clients, totals: { workloadHours: clients.reduce((sum, client) => sum + client.workloadHours, 0), expectedMargin: r2(clients.reduce((sum, client) => sum + client.expectedMargin, 0)) } };
+  }
+
+  createSupportTicket(input: { module: ErpModuleKey; subject: string; severity?: SupportTicket['severity']; reporter?: string; contextUrl?: string; screenshotReferences?: string[] }, tenantId?: string): SupportTicket {
+    const workspace = this.workspace(tenantId);
+    if (!allModules.includes(input.module)) throw new BadRequestException('Module ticket support invalide');
+    const severity = input.severity ?? 'MEDIUM';
+    const slaHours = severity === 'CRITICAL' ? 4 : severity === 'HIGH' ? 8 : severity === 'MEDIUM' ? 24 : 72;
+    const ticket: SupportTicket = {
+      id: this.id('ticket'),
+      tenantId: workspace.tenant.id,
+      module: input.module,
+      subject: this.nonEmpty(input.subject, 'Sujet ticket obligatoire'),
+      severity,
+      reporter: this.clean(input.reporter) ?? 'owner@atlas.ma',
+      contextUrl: this.clean(input.contextUrl),
+      screenshotReferences: input.screenshotReferences ?? [],
+      slaDueAt: new Date(Date.now() + slaHours * 3600000).toISOString(),
+      status: 'OPEN',
+      createdAt: new Date().toISOString(),
+    };
+    workspace.supportTickets.push(ticket);
+    return ticket;
+  }
+
+  listSupportTickets(tenantId?: string): SupportTicket[] {
+    return this.workspace(tenantId).supportTickets;
+  }
+
+  adminHealthChecks(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      queues: { status: workspace.backgroundJobs.some((job) => job.status === 'FAILED') ? 'DEGRADED' : 'OK', depth: workspace.backgroundJobs.filter((job) => ['QUEUED', 'RUNNING'].includes(job.status)).length },
+      scheduledJobs: { status: 'OK', next: ['tax-calendar-reminders', 'payroll-export-preflight', 'backup-rehearsal'] },
+      exports: { status: this.exportStatusCenter(workspace.tenant.id).rows.some((row) => row.status === 'FAILED') ? 'DEGRADED' : 'OK' },
+      emailDelivery: { status: workspace.emailDeliveries.some((email) => email.status === 'FAILED') ? 'DEGRADED' : 'OK', queued: workspace.emailDeliveries.filter((email) => email.status === 'QUEUED').length },
+      adapters: this.integrationHealthDashboard(workspace.tenant.id).rows,
+    };
+  }
+
+  tenantResilienceRunbookStatus(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const backup = this.backupPlan(workspace.tenant.id);
+    const restore = this.restoreRehearsalChecklist({}, workspace.tenant.id);
+    return {
+      backups: backup.status,
+      restoreRehearsal: restore.status,
+      legalArchive: this.exportTamperEvidenceReport(workspace.tenant.id).tamperEvidence ? 'VERIFIED' : 'NEEDS_REVIEW',
+      incidentContacts: [
+        { role: 'OWNER', email: workspace.users.find((user) => user.role === 'OWNER')?.email ?? 'owner@atlas.ma' },
+        { role: 'ACCOUNTANT', email: workspace.users.find((user) => user.role === 'ACCOUNTANT')?.email ?? 'accountant@atlas.ma' },
+      ],
+      runbookReady: backup.status === 'CONFIGURED' && restore.status !== 'NO_BACKUP_AVAILABLE',
     };
   }
 
@@ -6017,6 +6254,107 @@ export class ErpStoreService {
     return this.workspace(tenantId).recurringInvoiceBatches;
   }
 
+  createServiceContract(input: { customerId: string; name: string; monthlyAmount: number; renewalDate: string; startDate?: string; frequency?: ServiceContract['frequency'] }, tenantId?: string): ServiceContract {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const customer = this.customer(workspace, input.customerId);
+    const contract: ServiceContract = {
+      id: this.id('svcctr'),
+      tenantId: workspace.tenant.id,
+      customerId: customer.id,
+      name: this.nonEmpty(input.name, 'Nom contrat service obligatoire'),
+      monthlyAmount: this.positive(input.monthlyAmount, 'Montant mensuel contrat invalide'),
+      frequency: input.frequency ?? 'MONTHLY',
+      startDate: input.startDate ? this.isoDate(input.startDate, 'Date début contrat invalide') : today(),
+      renewalDate: this.isoDate(input.renewalDate, 'Date renouvellement contrat invalide'),
+      draftInvoiceIds: [],
+      active: true,
+    };
+    workspace.serviceContracts.push(contract);
+    this.audit(workspace, 'service-contract.created', 'ServiceContract', contract.id, contract);
+    return contract;
+  }
+
+  listServiceContracts(tenantId?: string): ServiceContract[] {
+    return this.workspace(tenantId).serviceContracts;
+  }
+
+  generateServiceContractDraftInvoices(input: { period?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const period = input.period ?? today().slice(0, 7);
+    const serviceProduct = workspace.products.find((product) => product.type === 'SERVICE') ?? this.defaultQuotableProduct(workspace);
+    const draftInvoices = workspace.serviceContracts
+      .filter((contract) => contract.active)
+      .map((contract) => {
+        const customer = this.customer(workspace, contract.customerId);
+        const lines = this.documentLines(workspace, [{ productId: serviceProduct.id, quantity: 1, unitPrice: contract.monthlyAmount, description: `${contract.name} - ${period}` }]);
+        const invoice: Invoice = {
+          id: this.id('inv'),
+          tenantId: workspace.tenant.id,
+          number: this.nextNumber(workspace, workspace.tenant.settings.invoiceSeries),
+          customerId: customer.id,
+          status: 'DRAFT',
+          date: today(),
+          dueDate: addDays(today(), customer.paymentTermsDays),
+          lines,
+          totals: this.totals(lines),
+          paidAmount: 0,
+          compliance: { legalMentions: this.morocco2026Rules.invoiceMentions, validated: false, adapterStatus: 'NOT_SUBMITTED' },
+        };
+        workspace.invoices.push(invoice);
+        contract.draftInvoiceIds.push(invoice.id);
+        return { contractId: contract.id, invoice };
+      });
+    this.audit(workspace, 'service-contract.draft-invoices-generated', 'ServiceContract', 'bulk', { period, count: draftInvoices.length });
+    return { period, draftInvoices, count: draftInvoices.length };
+  }
+
+  serviceContractRenewalReminders(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.serviceContracts
+      .filter((contract) => contract.active)
+      .map((contract) => ({ ...contract, customerName: this.customer(workspace, contract.customerId).name, daysUntilRenewal: this.daysUntil(contract.renewalDate), status: this.daysUntil(contract.renewalDate) <= 30 ? 'URGENT' : this.daysUntil(contract.renewalDate) <= 60 ? 'DUE_SOON' : 'OK' }));
+    return { rows, dueSoon: rows.filter((row) => row.status !== 'OK').length };
+  }
+
+  createWarrantyServiceCase(input: { customerId: string; productId: string; invoiceId?: string; serialNumber?: string; issue: string; replacementProductId?: string }, tenantId?: string): WarrantyServiceCase {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const customer = this.customer(workspace, input.customerId);
+    const product = this.product(workspace, input.productId);
+    if (input.invoiceId) this.invoice(workspace, input.invoiceId);
+    let stockMoveId: string | undefined;
+    if (input.replacementProductId) {
+      const replacement = this.product(workspace, input.replacementProductId);
+      if (replacement.trackStock && this.availableStock(replacement) < 1) throw new BadRequestException('Stock remplacement insuffisant');
+      if (replacement.trackStock) {
+        replacement.reservedStock = r2(replacement.reservedStock + 1);
+        stockMoveId = this.stockMove(workspace, replacement, 1, replacement.weightedAverageCost, 'RESERVATION', 'SAV remplacement').id;
+      }
+    }
+    const serviceCase: WarrantyServiceCase = {
+      id: this.id('sav'),
+      tenantId: workspace.tenant.id,
+      customerId: customer.id,
+      productId: product.id,
+      invoiceId: this.clean(input.invoiceId),
+      serialNumber: this.clean(input.serialNumber),
+      issue: this.nonEmpty(input.issue, 'Motif SAV obligatoire'),
+      replacementProductId: this.clean(input.replacementProductId),
+      stockMoveId,
+      status: stockMoveId ? 'REPLACEMENT_RESERVED' : 'OPEN',
+      createdAt: today(),
+    };
+    workspace.warrantyServiceCases.push(serviceCase);
+    this.audit(workspace, 'warranty-service-case.created', 'WarrantyServiceCase', serviceCase.id, serviceCase);
+    return serviceCase;
+  }
+
+  listWarrantyServiceCases(tenantId?: string): WarrantyServiceCase[] {
+    return this.workspace(tenantId).warrantyServiceCases;
+  }
+
   createRecurringPurchaseSchedule(input: { supplierId: string; category: RecurringPurchaseSchedule['category']; amount: number; nextRunDate: string; frequency?: RecurringPurchaseSchedule['frequency']; active?: boolean }, tenantId?: string): RecurringPurchaseSchedule {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
@@ -6171,6 +6509,10 @@ export class ErpStoreService {
 
   cnssEmployeeAnomalyDrilldown(tenantId?: string) {
     const workspace = this.workspace(tenantId);
+    const cnssCounts = new Map<string, number>();
+    for (const employee of workspace.employees) {
+      if (employee.cnssNumber) cnssCounts.set(employee.cnssNumber, (cnssCounts.get(employee.cnssNumber) ?? 0) + 1);
+    }
     const rows = workspace.employees
       .map((employee) => {
         const contract = workspace.employmentContracts.find((candidate) => candidate.employeeId === employee.id && candidate.active);
@@ -6180,10 +6522,26 @@ export class ErpStoreService {
           contract ? undefined : 'Contrat',
         ].filter(Boolean);
         const inconsistentBase = contract ? Math.abs(contract.salary - employee.baseSalary) > 1 : false;
-        return { employeeId: employee.id, employeeName: employee.fullName, missing, baseSalary: employee.baseSalary, contractSalary: contract?.salary, inconsistentBase, status: missing.length || inconsistentBase ? 'NEEDS_REVIEW' : 'OK' };
+        const duplicateCnss = Boolean(employee.cnssNumber && (cnssCounts.get(employee.cnssNumber) ?? 0) > 1);
+        const invalidSalaryBase = employee.baseSalary <= 0 || (contract?.salary ?? employee.baseSalary) <= 0;
+        const anomalyTypes = [
+          ...missing.map((item) => `MISSING_${item}`),
+          inconsistentBase ? 'INVALID_SALARY_BASE' : undefined,
+          duplicateCnss ? 'DUPLICATE_CNSS' : undefined,
+          invalidSalaryBase ? 'INVALID_SALARY_BASE' : undefined,
+        ].filter(Boolean);
+        return { employeeId: employee.id, employeeName: employee.fullName, cnssNumber: employee.cnssNumber, missing, duplicateCnss, baseSalary: employee.baseSalary, contractSalary: contract?.salary, inconsistentBase, invalidSalaryBase, anomalyTypes, status: anomalyTypes.length ? 'NEEDS_REVIEW' : 'OK' };
       })
       .filter((row) => row.status !== 'OK');
-    return { rows, count: rows.length };
+    return {
+      rows,
+      count: rows.length,
+      summary: {
+        missingAffiliation: rows.filter((row) => row.missing.includes('CNSS')).length,
+        duplicateCnss: rows.filter((row) => row.duplicateCnss).length,
+        invalidSalaryBase: rows.filter((row) => row.invalidSalaryBase || row.inconsistentBase).length,
+      },
+    };
   }
 
   payrollVarianceReport(input: { period?: string } = {}, tenantId?: string) {
@@ -6338,6 +6696,105 @@ export class ErpStoreService {
 
   listPreventiveMaintenanceSchedules(tenantId?: string): PreventiveMaintenanceSchedule[] {
     return this.workspace(tenantId).preventiveMaintenanceSchedules;
+  }
+
+  createProductionQualityCheck(input: { productionOrderId: string; result: ProductionQualityCheck['result']; scrapQuantity?: number; reworkCost?: number; evidenceReference?: string; traceabilityNote?: string }, tenantId?: string): ProductionQualityCheck {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const order = workspace.productionOrders.find((candidate) => candidate.id === input.productionOrderId);
+    if (!order) throw new NotFoundException('Ordre de production introuvable');
+    const check: ProductionQualityCheck = {
+      id: this.id('qchk'),
+      tenantId: workspace.tenant.id,
+      productionOrderId: order.id,
+      result: input.result,
+      scrapQuantity: this.nonNegative(input.scrapQuantity ?? 0, 'Quantité rebut invalide'),
+      reworkCost: this.nonNegative(input.reworkCost ?? 0, 'Coût reprise invalide'),
+      evidenceReference: this.clean(input.evidenceReference) ?? 'quality-check.pdf',
+      traceabilityNote: this.clean(input.traceabilityNote) ?? `Contrôle qualité ${order.number}`,
+      createdAt: today(),
+    };
+    if (check.result === 'FAIL') {
+      const finished = this.product(workspace, order.finishedProductId);
+      finished.lifecycleState = 'BLOCKED';
+    }
+    workspace.productionQualityChecks.push(check);
+    this.audit(workspace, 'production-quality-check.created', 'ProductionQualityCheck', check.id, check);
+    return check;
+  }
+
+  listProductionQualityChecks(tenantId?: string): ProductionQualityCheck[] {
+    return this.workspace(tenantId).productionQualityChecks;
+  }
+
+  reserveMaintenanceSparePart(input: { workOrderId: string; productId: string; quantity: number }, tenantId?: string): MaintenanceSparePartReservation {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const workOrder = this.maintenanceWorkOrder(workspace, input.workOrderId);
+    const product = this.product(workspace, input.productId);
+    const quantity = this.positive(input.quantity, 'Quantité pièce maintenance invalide');
+    if (!product.trackStock) throw new BadRequestException('La pièce maintenance doit être stockée');
+    if (this.availableStock(product) < quantity) throw new BadRequestException('Stock pièce maintenance insuffisant');
+    product.reservedStock = r2(product.reservedStock + quantity);
+    const move = this.stockMove(workspace, product, quantity, product.weightedAverageCost, 'RESERVATION', workOrder.id);
+    const reservation: MaintenanceSparePartReservation = {
+      id: this.id('msp'),
+      tenantId: workspace.tenant.id,
+      workOrderId: workOrder.id,
+      productId: product.id,
+      quantity,
+      unitCost: product.weightedAverageCost,
+      value: r2(quantity * product.weightedAverageCost),
+      stockMoveIds: [move.id],
+      status: 'RESERVED',
+      createdAt: today(),
+    };
+    workspace.maintenanceSparePartReservations.push(reservation);
+    return reservation;
+  }
+
+  consumeMaintenanceSparePart(reservationId: string, tenantId?: string): MaintenanceSparePartReservation {
+    const workspace = this.workspace(tenantId);
+    const reservation = workspace.maintenanceSparePartReservations.find((candidate) => candidate.id === reservationId);
+    if (!reservation) throw new NotFoundException('Réservation pièce maintenance introuvable');
+    if (reservation.status === 'CONSUMED') return reservation;
+    const product = this.product(workspace, reservation.productId);
+    product.reservedStock = r2(Math.max(0, product.reservedStock - reservation.quantity));
+    const move = this.stockMove(workspace, product, -reservation.quantity, reservation.unitCost, 'PRODUCTION_CONSUME', reservation.workOrderId);
+    const workOrder = this.maintenanceWorkOrder(workspace, reservation.workOrderId);
+    workOrder.cost = r2(workOrder.cost + reservation.value);
+    reservation.stockMoveIds.push(move.id);
+    reservation.status = 'CONSUMED';
+    reservation.consumedAt = today();
+    return reservation;
+  }
+
+  listMaintenanceSpareParts(tenantId?: string): MaintenanceSparePartReservation[] {
+    return this.workspace(tenantId).maintenanceSparePartReservations;
+  }
+
+  createFleetComplianceCase(input: { vehicleId: string; type: FleetComplianceCase['type']; amount?: number; dueDate: string; description: string; evidenceReference?: string; status?: FleetComplianceCase['status'] }, tenantId?: string): FleetComplianceCase {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const vehicle = this.fleetVehicle(workspace, input.vehicleId);
+    const item: FleetComplianceCase = {
+      id: this.id('flcase'),
+      tenantId: workspace.tenant.id,
+      vehicleId: vehicle.id,
+      type: input.type,
+      amount: this.nonNegative(input.amount ?? 0, 'Montant dossier flotte invalide'),
+      dueDate: this.isoDate(input.dueDate, 'Date échéance flotte invalide'),
+      description: this.nonEmpty(input.description, 'Description dossier flotte obligatoire'),
+      evidenceReference: this.clean(input.evidenceReference),
+      status: input.status ?? 'OPEN',
+      createdAt: today(),
+    };
+    workspace.fleetComplianceCases.push(item);
+    return item;
+  }
+
+  listFleetComplianceCases(tenantId?: string): FleetComplianceCase[] {
+    return this.workspace(tenantId).fleetComplianceCases;
   }
 
   projectWipReport(tenantId?: string) {
@@ -7085,6 +7542,102 @@ export class ErpStoreService {
         { declaration: 'PAYROLL', label: 'Livre de paie', dueDay: 5, frequency: 'MONTHLY' },
       ],
     };
+  }
+
+  createVatProrataRule(input: { period: string; deductiblePercent: number; activityNote: string; evidenceReference: string }, tenantId?: string): VatProrataRule {
+    const workspace = this.workspace(tenantId);
+    const deductiblePercent = this.nonNegative(input.deductiblePercent, 'Prorata TVA invalide');
+    if (deductiblePercent > 100) throw new BadRequestException('Le prorata TVA ne peut pas dépasser 100%');
+    const rule: VatProrataRule = {
+      id: this.id('vatpro'),
+      tenantId: workspace.tenant.id,
+      period: this.nonEmpty(input.period, 'Période prorata TVA obligatoire'),
+      deductiblePercent,
+      activityNote: this.nonEmpty(input.activityNote, 'Note activité mixte obligatoire'),
+      evidenceReference: this.nonEmpty(input.evidenceReference, 'Preuve prorata TVA obligatoire'),
+      createdAt: today(),
+    };
+    workspace.vatProrataRules.push(rule);
+    return rule;
+  }
+
+  vatProrataRules(tenantId?: string): VatProrataRule[] {
+    return this.workspace(tenantId).vatProrataRules;
+  }
+
+  vatProrataReport(input: { period?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.period ?? today().slice(0, 7);
+    const rule = [...workspace.vatProrataRules].reverse().find((candidate) => candidate.period === period) ?? {
+      id: 'default',
+      tenantId: workspace.tenant.id,
+      period,
+      deductiblePercent: 100,
+      activityNote: 'Activité entièrement taxable par défaut',
+      evidenceReference: 'default',
+      createdAt: today(),
+    };
+    const supplierInvoices = workspace.supplierInvoices.filter((invoice) => invoice.date.startsWith(period));
+    const vatTotal = r2(supplierInvoices.reduce((sum, invoice) => sum + invoice.vatTotal, 0));
+    const deductibleVat = r2(vatTotal * (rule.deductiblePercent / 100));
+    return { period, rule, vatTotal, deductibleVat, nonDeductibleVat: r2(vatTotal - deductibleVat), rows: supplierInvoices.map((invoice) => ({ invoiceId: invoice.id, supplierId: invoice.supplierId, vatTotal: invoice.vatTotal, deductibleVat: r2(invoice.vatTotal * (rule.deductiblePercent / 100)) })) };
+  }
+
+  isEstimateDashboard(input: { period?: string; adjustments?: Array<{ label: string; amount: number; evidenceNote?: string }> } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.period ?? today().slice(0, 7);
+    const pnl = this.profitAndLossReport({ year: Number(period.slice(0, 4)), month: Number(period.slice(5, 7)) }, workspace.tenant.id);
+    const adjustments = input.adjustments ?? [
+      { label: 'Réintégrations non déductibles estimées', amount: 0, evidenceNote: 'À valider par cabinet comptable' },
+      { label: 'Déductions fiscales estimées', amount: 0, evidenceNote: 'À valider par cabinet comptable' },
+    ];
+    const taxableResult = r2(pnl.netIncome + adjustments.reduce((sum, item) => sum + item.amount, 0));
+    const estimatedIs = r2(Math.max(0, taxableResult) * 0.2);
+    return {
+      period,
+      taxableResult,
+      estimatedIs,
+      installments: [1, 2, 3, 4].map((quarter) => ({ quarter, amount: r2(estimatedIs / 4), dueDate: `${period.slice(0, 4)}-${String(quarter * 3).padStart(2, '0')}-31` })),
+      adjustments,
+      evidenceNotes: adjustments.map((item) => item.evidenceNote).filter(Boolean),
+    };
+  }
+
+  createProfessionalTaxRecord(input: { establishment: string; city: string; rentalValue: number; dueDate: string; ratePercent?: number; evidenceReference?: string; status?: ProfessionalTaxRecord['status'] }, tenantId?: string): ProfessionalTaxRecord {
+    const workspace = this.workspace(tenantId);
+    const rentalValue = this.nonNegative(input.rentalValue, 'Valeur locative invalide');
+    const tax: ProfessionalTaxRecord = {
+      id: this.id('ptax'),
+      tenantId: workspace.tenant.id,
+      establishment: this.nonEmpty(input.establishment, 'Établissement obligatoire'),
+      city: this.nonEmpty(input.city, 'Ville taxe professionnelle obligatoire'),
+      rentalValue,
+      dueDate: this.isoDate(input.dueDate, 'Échéance taxe professionnelle invalide'),
+      professionalTaxEstimate: r2(rentalValue * ((input.ratePercent ?? 10) / 100)),
+      evidenceReference: this.clean(input.evidenceReference),
+      status: input.status ?? 'OPEN',
+    };
+    workspace.professionalTaxRecords.push(tax);
+    return tax;
+  }
+
+  professionalTaxRecords(tenantId?: string): ProfessionalTaxRecord[] {
+    return this.workspace(tenantId).professionalTaxRecords;
+  }
+
+  dgiDeclarationCalendar(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const evidenceByDeclaration = new Map(workspace.legalEvidences.map((evidence) => [String((evidence.metadata as any).declaration ?? evidence.type), evidence]));
+    const rows = this.moroccoTaxCalendar(workspace.tenant.id).rows
+      .filter((row) => ['VAT', 'IR', 'IS'].includes(row.declaration))
+      .map((row) => ({
+        ...row,
+        tenantId: workspace.tenant.id,
+        fiscalIdentifier: workspace.tenant.legalEntity.ifNumber,
+        evidenceStatus: evidenceByDeclaration.has(row.declaration) ? 'ARCHIVED' : 'MISSING',
+        supportingEvidence: evidenceByDeclaration.get(row.declaration)?.reference,
+      }));
+    return { rows, missingEvidence: rows.filter((row) => row.evidenceStatus === 'MISSING').length };
   }
 
   assignComplianceOwner(input: { declaration: ComplianceOwnerAssignment['declaration']; owner: string; dueDay: number; reminderDaysBefore?: number }, tenantId?: string): ComplianceOwnerAssignment {

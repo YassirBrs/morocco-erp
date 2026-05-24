@@ -710,10 +710,13 @@ export interface PartnerApiKey {
   tokenHash: string;
   tokenPreview: string;
   scopes: string[];
+  moduleScopes?: ErpModuleKey[];
+  ipAllowlist?: string[];
   active: boolean;
   expiresAt?: string;
   createdAt: string;
   lastUsedAt?: string;
+  lastUseEvidence?: string;
 }
 
 export interface WebhookEvent {
@@ -960,6 +963,33 @@ export interface RecurringInvoiceBatch {
   createdAt: string;
 }
 
+export interface ServiceContract {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  name: string;
+  monthlyAmount: number;
+  frequency: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  startDate: string;
+  renewalDate: string;
+  draftInvoiceIds: string[];
+  active: boolean;
+}
+
+export interface WarrantyServiceCase {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  productId: string;
+  invoiceId?: string;
+  serialNumber?: string;
+  issue: string;
+  replacementProductId?: string;
+  stockMoveId?: string;
+  status: 'OPEN' | 'REPLACEMENT_RESERVED' | 'CLOSED';
+  createdAt: string;
+}
+
 export interface RecurringPurchaseSchedule {
   id: string;
   tenantId: string;
@@ -1041,6 +1071,45 @@ export interface PreventiveMaintenanceSchedule {
   active: boolean;
 }
 
+export interface ProductionQualityCheck {
+  id: string;
+  tenantId: string;
+  productionOrderId: string;
+  result: 'PASS' | 'FAIL';
+  scrapQuantity: number;
+  reworkCost: number;
+  evidenceReference: string;
+  traceabilityNote: string;
+  createdAt: string;
+}
+
+export interface MaintenanceSparePartReservation {
+  id: string;
+  tenantId: string;
+  workOrderId: string;
+  productId: string;
+  quantity: number;
+  unitCost: number;
+  value: number;
+  stockMoveIds: string[];
+  status: 'RESERVED' | 'CONSUMED';
+  createdAt: string;
+  consumedAt?: string;
+}
+
+export interface FleetComplianceCase {
+  id: string;
+  tenantId: string;
+  vehicleId: string;
+  type: 'FINE' | 'TOLL' | 'INSURANCE_RENEWAL' | 'ACCIDENT';
+  amount: number;
+  dueDate: string;
+  description: string;
+  evidenceReference?: string;
+  status: 'OPEN' | 'PAID' | 'CLOSED';
+  createdAt: string;
+}
+
 export interface ProcurementBudgetControl {
   id: string;
   tenantId: string;
@@ -1100,6 +1169,45 @@ export interface FeatureFlagAudit {
   actor: string;
   reason: string;
   rollbackData: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface ApprovalDelegation {
+  id: string;
+  tenantId: string;
+  fromUserId: string;
+  toUserId: string;
+  module: ErpModuleKey;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  active: boolean;
+  auditTrail: Array<{ at: string; action: string; actor: string }>;
+}
+
+export interface ImportValidationSandboxRun {
+  id: string;
+  tenantId: string;
+  kind: 'customers' | 'suppliers' | 'products' | 'employees' | 'accounting';
+  rows: number;
+  validRows: number;
+  errors: Array<{ row: number; field: string; message: string }>;
+  preview: Array<Record<string, string>>;
+  checksum: string;
+  createdAt: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  tenantId: string;
+  module: ErpModuleKey;
+  subject: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  reporter: string;
+  contextUrl?: string;
+  screenshotReferences: string[];
+  slaDueAt: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
   createdAt: string;
 }
 
@@ -1352,6 +1460,28 @@ export interface ProjectBillingPlan {
   projectId: string;
   retainerAmount: number;
   milestones: Array<{ label: string; amount: number; revenueRecognitionNote: string; accountantReview: boolean }>;
+}
+
+export interface VatProrataRule {
+  id: string;
+  tenantId: string;
+  period: string;
+  deductiblePercent: number;
+  activityNote: string;
+  evidenceReference: string;
+  createdAt: string;
+}
+
+export interface ProfessionalTaxRecord {
+  id: string;
+  tenantId: string;
+  establishment: string;
+  city: string;
+  rentalValue: number;
+  dueDate: string;
+  professionalTaxEstimate: number;
+  evidenceReference?: string;
+  status: 'OPEN' | 'PAID';
 }
 
 export interface StructuredLogEntry {
@@ -1651,6 +1781,8 @@ export interface TenantWorkspace {
   stockQuarantines: StockQuarantine[];
   deliveryProofs: DeliveryProof[];
   customerContracts: CustomerContract[];
+  serviceContracts: ServiceContract[];
+  warrantyServiceCases: WarrantyServiceCase[];
   supplierContracts: SupplierContract[];
   pricingRules: PricingRule[];
   discountApprovals: DiscountApproval[];
@@ -1662,12 +1794,18 @@ export interface TenantWorkspace {
   hrPrivateNotes: HrPrivateNote[];
   assetAssignments: AssetAssignment[];
   preventiveMaintenanceSchedules: PreventiveMaintenanceSchedule[];
+  productionQualityChecks: ProductionQualityCheck[];
+  maintenanceSparePartReservations: MaintenanceSparePartReservation[];
+  fleetComplianceCases: FleetComplianceCase[];
   procurementBudgets: ProcurementBudgetControl[];
   branches: Branch[];
   accountantPortalReviews: AccountantPortalReview[];
   partnerImplementationChecklists: PartnerImplementationChecklist[];
   complianceRuleRollouts: ComplianceRuleRollout[];
   featureFlagAudits: FeatureFlagAudit[];
+  approvalDelegations: ApprovalDelegation[];
+  importValidationRuns: ImportValidationSandboxRun[];
+  supportTickets: SupportTicket[];
   supportImpersonations: SupportImpersonationApproval[];
   releaseNotes: ReleaseNote[];
   escalationRules: EscalationRule[];
@@ -1692,6 +1830,8 @@ export interface TenantWorkspace {
   contractAmendments: ContractAmendment[];
   hrAuditTrailEntries: HrAuditTrailEntry[];
   projectBillingPlans: ProjectBillingPlan[];
+  vatProrataRules: VatProrataRule[];
+  professionalTaxRecords: ProfessionalTaxRecord[];
   structuredLogs: StructuredLogEntry[];
   metricSamples: MetricSample[];
   backgroundJobs: BackgroundJob[];

@@ -174,6 +174,17 @@ export class TenantService {
   webhookRetries() { return this.store.webhookRetryLogs(); }
   retryWebhook(data: any) { return this.store.retryWebhook(data.webhookEventId); }
   exportStatusCenter() { return this.store.exportStatusCenter(); }
+  createApprovalDelegation(data: any) { return this.store.createApprovalDelegation(data); }
+  approvalDelegations() { return this.store.approvalDelegations(); }
+  importValidationSandbox(data: any) { return this.store.importValidationSandbox(data); }
+  importValidationRuns() { return this.store.importValidationRuns(); }
+  tenantDataQualityScore() { return this.store.tenantDataQualityScore(); }
+  guidedAccountantHandoffPack(period?: string) { return this.store.guidedAccountantHandoffPack({ period }); }
+  implementationPartnerMarginWorkloadDashboard() { return this.store.implementationPartnerMarginWorkloadDashboard(); }
+  createSupportTicket(data: any) { return this.store.createSupportTicket(data); }
+  listSupportTickets() { return this.store.listSupportTickets(); }
+  adminHealthChecks() { return this.store.adminHealthChecks(); }
+  tenantResilienceRunbookStatus() { return this.store.tenantResilienceRunbookStatus(); }
   onboardingProgress(companyType?: any) { return this.store.onboardingProgress(companyType); }
   resetSampleModule(data: any) { return this.store.resetSampleModule(data); }
   upsertKpiTarget(data: any) { return this.store.upsertKpiTarget(data); }
@@ -227,6 +238,10 @@ export class TenantService {
 
   createApiKey(data: any) {
     return this.store.createPartnerApiKey(data);
+  }
+
+  recordApiKeyUse(id: string, data: any) {
+    return this.store.recordApiKeyUse(id, data);
   }
 
   implementationPartnerWorkspace() {

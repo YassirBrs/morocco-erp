@@ -56,6 +56,12 @@ export class SalesController {
   @Post('discount-approvals/:id/approve') approveDiscountApproval(@Param('id') id: string) { return this.salesService.approveDiscountApproval(id); }
   @Get('recurring-invoices') recurringInvoices() { return this.salesService.listRecurringInvoiceBatches(); }
   @Post('recurring-invoices/generate') generateRecurringInvoice(@Body() body: any) { return this.salesService.generateRecurringInvoiceBatch(body); }
+  @Get('service-contracts') serviceContracts() { return this.salesService.listServiceContracts(); }
+  @Post('service-contracts') createServiceContract(@Body() body: any) { return this.salesService.createServiceContract(body); }
+  @Post('service-contracts/draft-invoices') serviceContractDraftInvoices(@Body() body: any) { return this.salesService.generateServiceContractDraftInvoices(body); }
+  @Get('service-contracts/renewal-reminders') serviceContractRenewals() { return this.salesService.serviceContractRenewalReminders(); }
+  @Get('warranty-cases') warrantyCases() { return this.salesService.listWarrantyServiceCases(); }
+  @Post('warranty-cases') createWarrantyCase(@Body() body: any) { return this.salesService.createWarrantyServiceCase(body); }
   @Get('payment-reminders') paymentReminders() { return this.salesService.paymentReminderSchedule(); }
   @Post('payments') payment(@Body() body: any) { return this.salesService.recordPayment(body); }
 }

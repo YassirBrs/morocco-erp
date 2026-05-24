@@ -60,6 +60,13 @@ export class LedgerController {
   @Post('attachment-requirements') createAttachmentRequirement(@Body() body: any) { return this.ledgerService.createAttachmentRequirement(body); }
   @Get('pre-closing-accruals') preClosingAccruals() { return this.ledgerService.preClosingAccrualSuggestions(); }
   @Get('tax-calendar') taxCalendar() { return this.ledgerService.taxCalendar(); }
+  @Get('vat-prorata-rules') vatProrataRules() { return this.ledgerService.vatProrataRules(); }
+  @Post('vat-prorata-rules') createVatProrataRule(@Body() body: any) { return this.ledgerService.createVatProrataRule(body); }
+  @Get('vat-prorata-report') vatProrataReport(@Query('period') period?: string) { return this.ledgerService.vatProrataReport(period); }
+  @Get('is-estimate') isEstimate(@Query('period') period?: string) { return this.ledgerService.isEstimate(period); }
+  @Get('professional-tax-records') professionalTaxRecords() { return this.ledgerService.professionalTaxRecords(); }
+  @Post('professional-tax-records') createProfessionalTaxRecord(@Body() body: any) { return this.ledgerService.createProfessionalTaxRecord(body); }
+  @Get('dgi-declaration-calendar') dgiDeclarationCalendar() { return this.ledgerService.dgiDeclarationCalendar(); }
   @Get('compliance-owner-reminders') complianceOwnerReminders() { return this.ledgerService.complianceOwnerReminders(); }
   @Post('compliance-owner-reminders') assignComplianceOwner(@Body() body: any) { return this.ledgerService.assignComplianceOwner(body); }
   @Get('expense-claims') expenseClaims() { return this.ledgerService.listExpenseClaims(); }

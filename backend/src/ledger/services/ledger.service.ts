@@ -46,6 +46,13 @@ export class LedgerService {
   attachmentRequirements() { return this.store.accountingAttachmentRequirements(); }
   preClosingAccrualSuggestions() { return this.store.preClosingAccrualSuggestions(); }
   taxCalendar() { return this.store.moroccoTaxCalendar(); }
+  createVatProrataRule(data: any) { return this.store.createVatProrataRule(data); }
+  vatProrataRules() { return this.store.vatProrataRules(); }
+  vatProrataReport(period?: string) { return this.store.vatProrataReport({ period }); }
+  isEstimate(period?: string) { return this.store.isEstimateDashboard({ period }); }
+  createProfessionalTaxRecord(data: any) { return this.store.createProfessionalTaxRecord(data); }
+  professionalTaxRecords() { return this.store.professionalTaxRecords(); }
+  dgiDeclarationCalendar() { return this.store.dgiDeclarationCalendar(); }
   assignComplianceOwner(data: any) { return this.store.assignComplianceOwner(data); }
   complianceOwnerReminders() { return this.store.complianceOwnerReminders(); }
   listExpenseClaims() { return this.store.listExpenseClaims(); }

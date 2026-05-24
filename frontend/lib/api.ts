@@ -268,6 +268,31 @@ export type LogisticsCloseReadiness = {
   projectBillingPlans: unknown[];
 };
 
+export type RegulatedServiceReadiness = {
+  serviceContracts: unknown[];
+  draftInvoices: { count: number };
+  renewalReminders: { rows: unknown[]; dueSoon: number };
+  warrantyCases: unknown[];
+  qualityChecks: unknown[];
+  spareParts: unknown[];
+  fleetCases: unknown[];
+  approvalDelegations: unknown[];
+  apiKeys: unknown[];
+  importSandbox: unknown[];
+  exportCenter: { rows: unknown[]; filters: string[] };
+  dataQuality: { score: number; recommendations: unknown[] };
+  accountantHandoff: { checksum: string; unresolvedBlockers: unknown[] };
+  partnerWorkload: { totals: { workloadHours: number; expectedMargin: number } };
+  supportTickets: unknown[];
+  adminHealth: { queues: { status: string }; emailDelivery: { status: string } };
+  resilience: { legalArchive: string; runbookReady: boolean };
+  vatProrata: { deductibleVat: number; nonDeductibleVat: number };
+  isEstimate: { estimatedIs: number };
+  professionalTax: unknown[];
+  dgiCalendar: { rows: unknown[]; missingEvidence: number };
+  cnssAnomalies: { count: number; summary: Record<string, number> };
+};
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -596,4 +621,57 @@ export async function getLogisticsCloseReadiness(): Promise<LogisticsCloseReadin
     getJson('/production/project-billing-plans', []),
   ]);
   return { reservationAging, deliveryInstructions, transporters, deliveryInvoiceExceptions, procurementMatrices, supplierPriceHistory, substituteRecommendations, deadStock, cumpRehearsal, attachmentRequirements, accruals, taxCalendar, complianceOwners, payrollLoans, socialReconciliation, hrAuditTrail, projectBillingPlans };
+}
+
+export async function getRegulatedServiceReadiness(): Promise<RegulatedServiceReadiness> {
+  const [serviceContract, draftInvoices, renewalReminders, warrantyCase, qualityCheck, sparePart, fleetCase, delegation, apiKey, importSandboxRun, exportCenter, dataQuality, accountantHandoff, partnerWorkload, supportTicket, adminHealth, resilience, vatRule, vatProrata, isEstimate, professionalTaxRecord, professionalTax, dgiCalendar, cnssAnomalies] = await Promise.all([
+    postJson('/sales/service-contracts', { customerId: 'cus-1', name: 'Contrat maintenance Rabat', monthlyAmount: 1200, renewalDate: '2026-06-30' }, { id: 'fallback-service-contract' }),
+    postJson('/sales/service-contracts/draft-invoices', { period: '2026-05' }, { count: 0 }),
+    getJson('/sales/service-contracts/renewal-reminders', { rows: [], dueSoon: 0 }),
+    postJson('/sales/warranty-cases', { customerId: 'cus-1', productId: 'prd-1', serialNumber: 'SN-ERP-001', issue: 'Chaise à remplacer', replacementProductId: 'prd-1' }, { id: 'fallback-warranty' }),
+    getJson('/production/quality-checks', []),
+    getJson('/production/maintenance/spare-parts', []),
+    getJson('/production/fleet/compliance-cases', []),
+    postJson('/tenant/approval-delegations', { fromUserId: 'usr-owner', toUserId: 'usr-accountant', module: 'accounting', startDate: '2026-05-01', endDate: '2026-05-31', reason: 'Absence direction' }, { id: 'fallback-delegation' }),
+    postJson('/tenant/api-keys', { name: 'Clé stock lecture', scopes: ['inventory:read'], moduleScopes: ['inventory'], ipAllowlist: ['127.0.0.1'], expiresAt: '2026-12-31' }, { id: 'fallback-api-key' }),
+    postJson('/tenant/import-validation-sandbox', { kind: 'customers', csv: 'name,ice\\nClient test,' }, { errors: [] }),
+    getJson('/tenant/operations/export-status-center', { rows: [], filters: [] }),
+    getJson('/tenant/data-quality-score', { score: 0, recommendations: [] }),
+    getJson('/tenant/accountant-handoff-pack?period=2026-05', { checksum: '', unresolvedBlockers: [] }),
+    getJson('/tenant/implementation-partner/margin-workload', { totals: { workloadHours: 0, expectedMargin: 0 } }),
+    postJson('/tenant/support-tickets', { module: 'sales', subject: 'Question facture SAV', severity: 'HIGH', screenshotReferences: ['sav.png'] }, { id: 'fallback-ticket' }),
+    getJson('/tenant/admin-health-checks', { queues: { status: 'OK' }, emailDelivery: { status: 'OK' } }),
+    getJson('/tenant/resilience-runbook', { legalArchive: 'UNKNOWN', runbookReady: false }),
+    postJson('/ledger/vat-prorata-rules', { period: '2026-05', deductiblePercent: 75, activityNote: 'Activité mixte taxable/exonérée', evidenceReference: 'prorata-2026.pdf' }, { id: 'fallback-prorata' }),
+    getJson('/ledger/vat-prorata-report?period=2026-05', { deductibleVat: 0, nonDeductibleVat: 0 }),
+    getJson('/ledger/is-estimate?period=2026-05', { estimatedIs: 0 }),
+    postJson('/ledger/professional-tax-records', { establishment: 'Siège Casablanca', city: 'Casablanca', rentalValue: 120000, dueDate: '2026-12-31', evidenceReference: 'tp-casa.pdf' }, { id: 'fallback-ptax' }),
+    getJson('/ledger/professional-tax-records', []),
+    getJson('/ledger/dgi-declaration-calendar', { rows: [], missingEvidence: 0 }),
+    getJson('/payroll/employees/cnss-anomalies', { count: 0, summary: {} }),
+  ]);
+  return {
+    serviceContracts: [serviceContract],
+    draftInvoices,
+    renewalReminders,
+    warrantyCases: [warrantyCase],
+    qualityChecks: [qualityCheck].filter(Boolean),
+    spareParts: [sparePart].flat(),
+    fleetCases: [fleetCase].flat(),
+    approvalDelegations: [delegation],
+    apiKeys: [apiKey],
+    importSandbox: [importSandboxRun],
+    exportCenter,
+    dataQuality,
+    accountantHandoff,
+    partnerWorkload,
+    supportTickets: [supportTicket],
+    adminHealth,
+    resilience,
+    vatProrata: vatRule ? vatProrata : vatProrata,
+    isEstimate,
+    professionalTax: professionalTax.length ? professionalTax : [professionalTaxRecord],
+    dgiCalendar,
+    cnssAnomalies,
+  };
 }
