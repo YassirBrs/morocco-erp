@@ -35,6 +35,9 @@ const enterpriseIntelligencePageFiles = readdirSync(new URL('../pages/enterprise
 const enterpriseAutomationConfig = readFileSync(new URL('../features/enterprise-automation/enterprise-automation-feature-config.ts', import.meta.url), 'utf8');
 const enterpriseAutomationFeaturePage = readFileSync(new URL('../features/enterprise-automation/enterprise-automation-feature-page.tsx', import.meta.url), 'utf8');
 const enterpriseAutomationPageFiles = readdirSync(new URL('../pages/enterprise-automation', import.meta.url));
+const enterpriseAssuranceConfig = readFileSync(new URL('../features/enterprise-assurance/enterprise-assurance-feature-config.ts', import.meta.url), 'utf8');
+const enterpriseAssuranceFeaturePage = readFileSync(new URL('../features/enterprise-assurance/enterprise-assurance-feature-page.tsx', import.meta.url), 'utf8');
+const enterpriseAssurancePageFiles = readdirSync(new URL('../pages/enterprise-assurance', import.meta.url));
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -895,4 +898,71 @@ test('Enterprise automation batch has one descriptive dedicated frontend page pe
   assert.ok(enterpriseAutomationFeaturePage.includes('EnterpriseAutomationFeaturePage'), 'shared automation feature page component exists');
   assert.ok(enterpriseAutomationConfig.includes('enterpriseAutomationFeatureDefinitions'), 'automation feature definitions are centralized');
   assert.ok(page.includes('enterpriseAutomationFeatureDefinitions'), 'dashboard links to dedicated automation feature pages');
+});
+
+test('Next primary workspace exposes 40-task Morocco enterprise assurance controls batch', () => {
+  for (const text of ['Assurance entreprise Maroc', 'Risques assurance', 'Couverture contrôles', 'Preuves en retard', 'Readiness release', 'Données, fiscalité et comptabilité', 'Master data, stock et achats', 'Sécurité, opérations et intégrations']) {
+    assert.ok(page.includes(text), `${text} enterprise assurance label is present`);
+  }
+  for (const marker of ['getEnterpriseAssuranceReadiness', 'enterpriseAssurance.executiveAssuranceDigest', 'enterpriseAssurance.dataResidencyEvidence', 'enterpriseAssurance.roleSegregationMatrix', 'enterpriseAssuranceFeatureDefinitions']) {
+    assert.ok(page.includes(marker), `${marker} enterprise assurance helper is present`);
+  }
+  assert.ok(api.includes('/tenant/enterprise-assurance-readiness'), 'enterprise assurance endpoint is wired');
+  for (const token of ['dataResidencyEvidence', 'privacyConsentAudit', 'chartAccountAnomalyGuard', 'journalDuplicateDetection', 'fiscalLockImpact', 'taxCalendarEvidenceSla', 'cnssIdentityReadiness', 'payrollBankApprovalQueue', 'expensePolicyExceptions', 'vendorDuplicateDetector', 'customerDuplicateDetector', 'productCompletenessScore', 'warehouseCapacityHeatmap', 'stockAgingLiquidation', 'countVarianceApproval', 'purchaseLeadTimeReliability', 'supplierOnboardingRisk', 'customerCreditRenewal', 'quoteMarginApproval', 'contractRenewalObligations', 'deliveryPromiseAdherence', 'returnsRootCause', 'posCashierPerformance', 'cashForecastVariance', 'bankReconciliationAging', 'assetInsuranceEvidence', 'sparePartsAvailability', 'fleetDocumentCompliance', 'projectDeliveryRisk', 'materialShortageBridge', 'serviceTicketSlaHealth', 'portalNotificationAudit', 'apiUsageAnomaly', 'webhookSchemaDrift', 'backupEvidenceFreshness', 'roleSegregationMatrix', 'auditEvidenceRequests', 'releaseRollbackChecklist', 'configurationDriftMonitor', 'executiveAssuranceDigest']) {
+    assert.ok(api.includes(token), `${token} enterprise assurance data key is represented`);
+  }
+});
+
+test('Enterprise assurance batch has one descriptive dedicated frontend page per feature', () => {
+  const expectedFiles = [
+    'data-residency-evidence-register-page.tsx',
+    'privacy-consent-audit-page.tsx',
+    'chart-account-anomaly-guard-page.tsx',
+    'journal-duplicate-detection-page.tsx',
+    'fiscal-lock-impact-preview-page.tsx',
+    'tax-calendar-evidence-sla-page.tsx',
+    'cnss-employee-identity-readiness-board-page.tsx',
+    'payroll-bank-file-approval-queue-page.tsx',
+    'expense-policy-exception-monitor-page.tsx',
+    'vendor-master-duplicate-detector-page.tsx',
+    'customer-master-duplicate-detector-page.tsx',
+    'product-master-completeness-score-page.tsx',
+    'warehouse-capacity-heatmap-page.tsx',
+    'stock-aging-liquidation-planner-page.tsx',
+    'inventory-count-variance-approval-board-page.tsx',
+    'purchase-lead-time-reliability-dashboard-page.tsx',
+    'supplier-onboarding-risk-pack-page.tsx',
+    'customer-credit-renewal-campaign-page.tsx',
+    'quote-margin-approval-simulator-page.tsx',
+    'contract-renewal-obligation-board-page.tsx',
+    'delivery-promise-adherence-monitor-page.tsx',
+    'returns-root-cause-board-page.tsx',
+    'pos-cashier-performance-scorecard-page.tsx',
+    'cash-forecast-variance-monitor-page.tsx',
+    'bank-reconciliation-aging-queue-page.tsx',
+    'fixed-asset-insurance-evidence-board-page.tsx',
+    'maintenance-spare-parts-availability-page.tsx',
+    'fleet-document-compliance-score-page.tsx',
+    'project-delivery-risk-radar-page.tsx',
+    'production-material-shortage-bridge-page.tsx',
+    'service-ticket-sla-health-board-page.tsx',
+    'portal-notification-delivery-audit-page.tsx',
+    'api-client-usage-anomaly-monitor-page.tsx',
+    'webhook-schema-drift-detector-page.tsx',
+    'backup-evidence-freshness-monitor-page.tsx',
+    'role-segregation-of-duties-matrix-page.tsx',
+    'audit-evidence-request-tracker-page.tsx',
+    'release-rollback-rehearsal-checklist-page.tsx',
+    'tenant-configuration-drift-monitor-page.tsx',
+    'executive-assurance-digest-page.tsx',
+  ];
+  assert.equal(enterpriseAssurancePageFiles.filter((file) => file.endsWith('-page.tsx')).length, 40);
+  for (const file of expectedFiles) {
+    assert.ok(enterpriseAssurancePageFiles.includes(file), `${file} dedicated page exists`);
+    const source = readFileSync(new URL(`../pages/enterprise-assurance/${file}`, import.meta.url), 'utf8');
+    assert.ok(source.includes('makeEnterpriseAssuranceServerSideProps'), `${file} has server-side data wiring`);
+  }
+  assert.ok(enterpriseAssuranceFeaturePage.includes('EnterpriseAssuranceFeaturePage'), 'shared assurance feature page component exists');
+  assert.ok(enterpriseAssuranceConfig.includes('enterpriseAssuranceFeatureDefinitions'), 'assurance feature definitions are centralized');
+  assert.ok(page.includes('enterpriseAssuranceFeatureDefinitions'), 'dashboard links to dedicated assurance feature pages');
 });

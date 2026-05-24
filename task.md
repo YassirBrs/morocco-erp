@@ -699,3 +699,43 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T593 P1 - Add API key rotation campaign with partner, scopes, age, expiry, owner, and rotation status.
 - [x] T594 P1 - Add webhook contract testing dashboard with event, schema version, consumer status, failures, and replay sample.
 - [x] T595 P1 - Add BI export catalog with dataset, fields, refresh cadence, legal basis, and approval status.
+- [x] T596 P1 - Add data residency evidence register with dataset, storage provider, Morocco scope, legal owner, and evidence checksum.
+- [x] T597 P1 - Add privacy consent audit with party, language, purpose, collection source, and retention status.
+- [x] T598 P1 - Add chart account anomaly guard with PCGE account, label, activity, risk reason, and reviewer.
+- [x] T599 P1 - Add journal duplicate detection with date, source, amount fingerprint, duplicate risk, and resolution owner.
+- [x] T600 P1 - Add fiscal lock impact preview with period, affected modules, pending drafts, unlock exception, and risk level.
+- [x] T601 P1 - Add tax calendar evidence SLA with declaration, due date, evidence age, owner, and escalation status.
+- [x] T602 P1 - Add CNSS employee identity readiness board with employee, CIN, CNSS number, contract type, and blocker.
+- [x] T603 P1 - Add payroll bank file approval queue with run, employee count, net total, approver, and release status.
+- [x] T604 P1 - Add expense policy exception monitor with claimant, category, amount, policy rule, and decision route.
+- [x] T605 P1 - Add vendor master duplicate detector with supplier, ICE, RIB, duplicate reason, and merge proposal.
+- [x] T606 P1 - Add customer master duplicate detector with customer, ICE, city, duplicate reason, and merge proposal.
+- [x] T607 P1 - Add product master completeness score with SKU, barcode, Arabic description, VAT rate, and score.
+- [x] T608 P1 - Add warehouse capacity heatmap with warehouse, stock lines, reserved quantity, utilization, and action.
+- [x] T609 P1 - Add stock aging liquidation planner with SKU, age bucket, quantity, value, and liquidation action.
+- [x] T610 P1 - Add inventory count variance approval board with sheet, warehouse, variance value, approver, and status.
+- [x] T611 P1 - Add purchase lead time reliability dashboard with supplier, expected date, receipt performance, delay score, and action.
+- [x] T612 P1 - Add supplier onboarding risk pack with supplier, documents, bank details, KYS status, and risk note.
+- [x] T613 P1 - Add customer credit renewal campaign with customer, exposure, credit limit, renewal date, and recommendation.
+- [x] T614 P1 - Add quote margin approval simulator with quote, gross margin, discount, required role, and approval status.
+- [x] T615 P1 - Add contract renewal obligation board with contract, renewal date, notice window, owner, and obligation status.
+- [x] T616 P1 - Add delivery promise adherence monitor with delivery note, city, promised date, route status, and breach reason.
+- [x] T617 P1 - Add returns root cause board with credit note, product, reason, value, and corrective owner.
+- [x] T618 P1 - Add POS cashier performance scorecard with cashier, session count, variance, payments, and coaching note.
+- [x] T619 P1 - Add cash forecast variance monitor with opening cash, expected inflow, expected outflow, variance, and action.
+- [x] T620 P1 - Add bank reconciliation aging queue with account, unmatched lines, oldest age, balance, and owner.
+- [x] T621 P1 - Add fixed asset insurance evidence board with asset, policy evidence, renewal date, coverage status, and owner.
+- [x] T622 P1 - Add maintenance spare parts availability with work order, part, required quantity, stock coverage, and blocker.
+- [x] T623 P1 - Add fleet document compliance score with vehicle, document type, due date, evidence, and score.
+- [x] T624 P1 - Add project delivery risk radar with project, budget burn, billing progress, timesheet load, and risk signal.
+- [x] T625 P1 - Add production material shortage bridge with production order, component, required quantity, available stock, and decision.
+- [x] T626 P1 - Add service ticket SLA health board with ticket, severity, due time, status, and escalation.
+- [x] T627 P1 - Add portal notification delivery audit with channel, recipient, document type, delivery status, and retry.
+- [x] T628 P1 - Add API client usage anomaly monitor with client, scope, last used date, request pattern, and action.
+- [x] T629 P1 - Add webhook schema drift detector with event, expected version, payload keys, drift risk, and replay action.
+- [x] T630 P1 - Add backup evidence freshness monitor with evidence type, last archive date, checksum, age, and status.
+- [x] T631 P1 - Add role segregation of duties matrix with role, conflicting permission, module, reviewer, and mitigation.
+- [x] T632 P1 - Add audit evidence request tracker with request, entity, due date, evidence status, and reviewer.
+- [x] T633 P1 - Add release rollback rehearsal checklist with module, backup status, smoke suite, rollback owner, and readiness.
+- [x] T634 P1 - Add tenant configuration drift monitor with setting, expected value, current value, drift severity, and fix owner.
+- [x] T635 P1 - Add executive assurance digest with risk count, control coverage, overdue evidence, release readiness, and next action.

@@ -323,6 +323,7 @@ export type EnterpriseExpansionReadiness = Record<string, any>;
 export type EnterpriseAccelerationReadiness = Record<string, any>;
 export type EnterpriseIntelligenceReadiness = Record<string, any>;
 export type EnterpriseAutomationReadiness = Record<string, any>;
+export type EnterpriseAssuranceReadiness = Record<string, any>;
 
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
@@ -1087,5 +1088,50 @@ export async function getEnterpriseAutomationReadiness(): Promise<EnterpriseAuto
     apiKeyRotationCampaign: { rows: [] },
     webhookContractTesting: { rows: [] },
     biExportCatalog: { rows: [] },
+  });
+}
+
+export async function getEnterpriseAssuranceReadiness(): Promise<EnterpriseAssuranceReadiness> {
+  return getJson('/tenant/enterprise-assurance-readiness', {
+    dataResidencyEvidence: { rows: [] },
+    privacyConsentAudit: { rows: [] },
+    chartAccountAnomalyGuard: { rows: [] },
+    journalDuplicateDetection: { rows: [] },
+    fiscalLockImpact: { rows: [] },
+    taxCalendarEvidenceSla: { rows: [] },
+    cnssIdentityReadiness: { rows: [] },
+    payrollBankApprovalQueue: { rows: [] },
+    expensePolicyExceptions: { rows: [] },
+    vendorDuplicateDetector: { rows: [] },
+    customerDuplicateDetector: { rows: [] },
+    productCompletenessScore: { rows: [] },
+    warehouseCapacityHeatmap: { rows: [] },
+    stockAgingLiquidation: { rows: [] },
+    countVarianceApproval: { rows: [] },
+    purchaseLeadTimeReliability: { rows: [] },
+    supplierOnboardingRisk: { rows: [] },
+    customerCreditRenewal: { rows: [] },
+    quoteMarginApproval: { rows: [] },
+    contractRenewalObligations: { rows: [] },
+    deliveryPromiseAdherence: { rows: [] },
+    returnsRootCause: { rows: [] },
+    posCashierPerformance: { rows: [] },
+    cashForecastVariance: { variance: 0 },
+    bankReconciliationAging: { rows: [] },
+    assetInsuranceEvidence: { rows: [] },
+    sparePartsAvailability: { rows: [] },
+    fleetDocumentCompliance: { rows: [] },
+    projectDeliveryRisk: { rows: [] },
+    materialShortageBridge: { rows: [] },
+    serviceTicketSlaHealth: { rows: [] },
+    portalNotificationAudit: { rows: [] },
+    apiUsageAnomaly: { rows: [] },
+    webhookSchemaDrift: { rows: [] },
+    backupEvidenceFreshness: { rows: [] },
+    roleSegregationMatrix: { rows: [] },
+    auditEvidenceRequests: { rows: [] },
+    releaseRollbackChecklist: { readiness: 'READY' },
+    configurationDriftMonitor: { rows: [] },
+    executiveAssuranceDigest: { riskCount: 0, controlCoverage: 0, overdueEvidence: 0, releaseReadiness: 'READY' },
   });
 }

@@ -192,6 +192,7 @@ export class TenantService {
   enterpriseAccelerationReadiness() { return this.store.moroccoEnterpriseAccelerationReadiness(); }
   enterpriseIntelligenceReadiness() { return this.store.moroccoEnterpriseIntelligenceReadiness(); }
   enterpriseAutomationReadiness() { return this.store.moroccoEnterpriseAutomationReadiness(); }
+  enterpriseAssuranceReadiness() { return this.store.moroccoEnterpriseAssuranceReadiness(); }
   tenantDataQualityScore() { return this.store.tenantDataQualityScore(); }
   guidedAccountantHandoffPack(period?: string) { return this.store.guidedAccountantHandoffPack({ period }); }
   implementationPartnerMarginWorkloadDashboard() { return this.store.implementationPartnerMarginWorkloadDashboard(); }

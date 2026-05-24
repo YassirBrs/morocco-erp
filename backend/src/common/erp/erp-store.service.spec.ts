@@ -2656,4 +2656,130 @@ describe('ErpStoreService working ERP workflows', () => {
       legalEvidences: store.listLegalEvidences().length,
     }).toEqual(before);
   });
+
+  it('covers the enterprise assurance batch for data, fiscal, payroll, stock, operations, security, and platform controls', () => {
+    store.createQuote({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    const invoice = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    store.createCreditNote({ invoiceId: invoice.id, lines: [{ productId: 'prd-2', quantity: 0.25 }], reason: 'Retour qualité client' });
+    const order = store.createSalesOrder({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    store.createDeliveryNoteFromOrder(order.id);
+    store.createCustomerContract({ customerId: 'cus-1', name: 'Contrat assurance retail', renewalDate: '2026-06-20', documentStatus: 'RECEIVED' });
+    store.createMaintenanceAsset({ name: 'Presse assurance', category: 'Production', location: 'Casablanca' });
+    store.createFleetVehicle({ plate: 'WW-ASS-2026', driver: 'Karim Routier', documentExpiry: '2026-08-30' });
+    store.createProject({
+      customerId: 'cus-1',
+      name: 'Projet assurance delivery',
+      budget: 50000,
+      expenses: [{ label: 'Consulting', amount: 12000 }],
+      timesheets: [{ employeeId: 'emp-1', hours: 10, costRate: 200 }],
+      invoiceMilestones: [{ label: 'Phase 1', amount: 18000, invoiced: true }],
+    });
+    store.createSupportTicket({ module: 'sales', subject: 'SLA client assurance', severity: 'HIGH', reporter: 'client@atlas.ma' });
+    store.createPartnerApiKey({ name: 'Partenaire assurance', scopes: ['sales:read', 'accounting:read'], expiresAt: '2026-12-31' });
+    store.emitWebhookEvent({ event: 'invoice.posted', payload: { invoiceId: invoice.id, total: invoice.totals.total } });
+
+    const batch = store.moroccoEnterpriseAssuranceReadiness();
+
+    expect(Object.keys(batch).sort()).toEqual([
+      'apiUsageAnomaly',
+      'assetInsuranceEvidence',
+      'auditEvidenceRequests',
+      'backupEvidenceFreshness',
+      'bankReconciliationAging',
+      'cashForecastVariance',
+      'chartAccountAnomalyGuard',
+      'cnssIdentityReadiness',
+      'configurationDriftMonitor',
+      'contractRenewalObligations',
+      'countVarianceApproval',
+      'customerCreditRenewal',
+      'customerDuplicateDetector',
+      'dataResidencyEvidence',
+      'deliveryPromiseAdherence',
+      'executiveAssuranceDigest',
+      'expensePolicyExceptions',
+      'fiscalLockImpact',
+      'fleetDocumentCompliance',
+      'journalDuplicateDetection',
+      'materialShortageBridge',
+      'payrollBankApprovalQueue',
+      'portalNotificationAudit',
+      'posCashierPerformance',
+      'privacyConsentAudit',
+      'productCompletenessScore',
+      'projectDeliveryRisk',
+      'purchaseLeadTimeReliability',
+      'quoteMarginApproval',
+      'releaseRollbackChecklist',
+      'returnsRootCause',
+      'roleSegregationMatrix',
+      'serviceTicketSlaHealth',
+      'sparePartsAvailability',
+      'stockAgingLiquidation',
+      'supplierOnboardingRisk',
+      'taxCalendarEvidenceSla',
+      'vendorDuplicateDetector',
+      'warehouseCapacityHeatmap',
+      'webhookSchemaDrift',
+    ].sort());
+
+    expect(batch.dataResidencyEvidence.rows[0]).toHaveProperty('evidenceChecksum');
+    expect(batch.privacyConsentAudit.rows[0]).toHaveProperty('retentionStatus', '10_YEARS_LEGAL');
+    expect(batch.chartAccountAnomalyGuard.rows[0]).toHaveProperty('reviewer');
+    expect(batch.journalDuplicateDetection.rows[0]).toHaveProperty('amountFingerprint');
+    expect(batch.fiscalLockImpact.rows[0]).toHaveProperty('affectedModules');
+    expect(batch.taxCalendarEvidenceSla.rows[0]).toHaveProperty('escalationStatus');
+    expect(batch.cnssIdentityReadiness.rows[0]).toHaveProperty('cnssNumber');
+    expect(batch.payrollBankApprovalQueue).toHaveProperty('rows');
+    expect(batch.expensePolicyExceptions).toHaveProperty('rows');
+    expect(batch.vendorDuplicateDetector.rows[0]).toHaveProperty('mergeProposal');
+    expect(batch.customerDuplicateDetector.rows[0]).toHaveProperty('duplicateReason');
+    expect(batch.productCompletenessScore.rows[0]).toHaveProperty('score');
+    expect(batch.warehouseCapacityHeatmap.rows[0]).toHaveProperty('utilization');
+    expect(batch.stockAgingLiquidation.rows[0]).toHaveProperty('liquidationAction');
+    expect(batch.countVarianceApproval).toHaveProperty('rows');
+    expect(batch.purchaseLeadTimeReliability).toHaveProperty('rows');
+    expect(batch.supplierOnboardingRisk.rows[0]).toHaveProperty('kysStatus');
+    expect(batch.customerCreditRenewal.rows[0]).toHaveProperty('recommendation');
+    expect(batch.quoteMarginApproval.rows[0]).toHaveProperty('requiredRole');
+    expect(batch.contractRenewalObligations.rows[0]).toHaveProperty('obligationStatus');
+    expect(batch.deliveryPromiseAdherence.rows[0]).toHaveProperty('breachReason');
+    expect(batch.returnsRootCause.rows[0]).toHaveProperty('correctiveOwner');
+    expect(batch.posCashierPerformance).toHaveProperty('rows');
+    expect(batch.cashForecastVariance).toHaveProperty('action');
+    expect(batch.bankReconciliationAging.rows[0]).toHaveProperty('oldestAge');
+    expect(batch.assetInsuranceEvidence.rows[0]).toHaveProperty('coverageStatus');
+    expect(batch.sparePartsAvailability).toHaveProperty('rows');
+    expect(batch.fleetDocumentCompliance.rows[0]).toHaveProperty('score');
+    expect(batch.projectDeliveryRisk.rows[0]).toHaveProperty('riskSignal');
+    expect(batch.materialShortageBridge).toHaveProperty('rows');
+    expect(batch.serviceTicketSlaHealth.rows[0]).toHaveProperty('escalation');
+    expect(batch.portalNotificationAudit).toHaveProperty('rows');
+    expect(batch.apiUsageAnomaly.rows[0]).toHaveProperty('action');
+    expect(batch.webhookSchemaDrift).toHaveProperty('rows');
+    expect(batch.backupEvidenceFreshness.rows[0]).toHaveProperty('checksum');
+    expect(batch.roleSegregationMatrix.rows[0]).toHaveProperty('mitigation');
+    expect(batch.auditEvidenceRequests).toHaveProperty('rows');
+    expect(batch.releaseRollbackChecklist).toHaveProperty('rollbackOwner');
+    expect(batch.configurationDriftMonitor.rows[0]).toHaveProperty('fixOwner');
+    expect(batch.executiveAssuranceDigest).toHaveProperty('nextAction');
+  });
+
+  it('keeps enterprise assurance readiness read-only for tenant operational records', () => {
+    const before = {
+      invoices: store.listInvoices().length,
+      journalEntries: store.listJournalEntries().length,
+      auditLogs: store.auditLogs().length,
+      legalEvidences: store.listLegalEvidences().length,
+    };
+
+    store.moroccoEnterpriseAssuranceReadiness();
+
+    expect({
+      invoices: store.listInvoices().length,
+      journalEntries: store.listJournalEntries().length,
+      auditLogs: store.auditLogs().length,
+      legalEvidences: store.listLegalEvidences().length,
+    }).toEqual(before);
+  });
 });

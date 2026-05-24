@@ -5,6 +5,7 @@ import {
   getDocumentOperations,
   getEnterpriseControlReadiness,
   getEnterpriseAccelerationReadiness,
+  getEnterpriseAssuranceReadiness,
   getEnterpriseAutomationReadiness,
   getEnterpriseDepthReadiness,
   getEnterpriseExpansionReadiness,
@@ -29,6 +30,7 @@ import {
 } from '../lib/api';
 import { enterpriseDepthFeatureDefinitions } from '../features/enterprise-depth/enterprise-depth-feature-config';
 import { enterpriseAccelerationFeatureDefinitions } from '../features/enterprise-acceleration/enterprise-acceleration-feature-config';
+import { enterpriseAssuranceFeatureDefinitions } from '../features/enterprise-assurance/enterprise-assurance-feature-config';
 import { enterpriseAutomationFeatureDefinitions } from '../features/enterprise-automation/enterprise-automation-feature-config';
 import { enterpriseExpansionFeatureDefinitions } from '../features/enterprise-expansion/enterprise-expansion-feature-config';
 import { enterpriseIntelligenceFeatureDefinitions } from '../features/enterprise-intelligence/enterprise-intelligence-feature-config';
@@ -61,7 +63,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion, enterpriseAcceleration, enterpriseIntelligence, enterpriseAutomation] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion, enterpriseAcceleration, enterpriseIntelligence, enterpriseAutomation, enterpriseAssurance] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -89,6 +91,7 @@ export default async function DashboardPage() {
     getEnterpriseAccelerationReadiness(),
     getEnterpriseIntelligenceReadiness(),
     getEnterpriseAutomationReadiness(),
+    getEnterpriseAssuranceReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -1092,6 +1095,50 @@ export default async function DashboardPage() {
           </div>
           <div className="featureLinks" aria-label="Pages dédiées automatisation entreprise">
             {enterpriseAutomationFeatureDefinitions.map((feature) => (
+              <a key={feature.key} href={feature.route}>{feature.title}</a>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Assurance entreprise Maroc batch">
+          <PanelHeader title="Assurance entreprise Maroc" action="Préparer revue" />
+          <div className="reportGrid">
+            <Metric label="Risques assurance" value={String(enterpriseAssurance.executiveAssuranceDigest.riskCount)} />
+            <Metric label="Couverture contrôles" value={String(enterpriseAssurance.executiveAssuranceDigest.controlCoverage)} />
+            <Metric label="Preuves en retard" value={String(enterpriseAssurance.executiveAssuranceDigest.overdueEvidence)} />
+            <Metric label="Readiness release" value={enterpriseAssurance.executiveAssuranceDigest.releaseReadiness} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Données, fiscalité et comptabilité" rows={[
+              `Résidence données ${enterpriseAssurance.dataResidencyEvidence.status}`,
+              `Consentements ${enterpriseAssurance.privacyConsentAudit.rows.length} partie(s)`,
+              `PCGE anomalies ${enterpriseAssurance.chartAccountAnomalyGuard.rows.length} compte(s)`,
+              `Doublons journal ${enterpriseAssurance.journalDuplicateDetection.rows.length} écriture(s)`,
+              `Verrous fiscaux ${enterpriseAssurance.fiscalLockImpact.rows.length} période(s)`,
+              `SLA fiscal ${enterpriseAssurance.taxCalendarEvidenceSla.rows.length} déclaration(s)`,
+              `Backup preuves ${enterpriseAssurance.backupEvidenceFreshness.rows.length} archive(s)`,
+            ]} empty="-" />
+            <MiniList title="Master data, stock et achats" rows={[
+              `Doublons fournisseurs ${enterpriseAssurance.vendorDuplicateDetector.rows.length}`,
+              `Doublons clients ${enterpriseAssurance.customerDuplicateDetector.rows.length}`,
+              `Complétude articles ${enterpriseAssurance.productCompletenessScore.rows.length} SKU`,
+              `Capacité dépôts ${enterpriseAssurance.warehouseCapacityHeatmap.rows.length} dépôt(s)`,
+              `Stock âgé ${enterpriseAssurance.stockAgingLiquidation.rows.length} article(s)`,
+              `Écarts inventaire ${enterpriseAssurance.countVarianceApproval.rows.length} feuille(s)`,
+              `Onboarding fournisseurs ${enterpriseAssurance.supplierOnboardingRisk.rows.length} dossier(s)`,
+            ]} empty="-" />
+            <MiniList title="Sécurité, opérations et intégrations" rows={[
+              `CNSS identité ${enterpriseAssurance.cnssIdentityReadiness.rows.length} salarié(s)`,
+              `Paie banque ${enterpriseAssurance.payrollBankApprovalQueue.rows.length} run(s)`,
+              `SoD rôles ${enterpriseAssurance.roleSegregationMatrix.rows.length} rôle(s)`,
+              `API anomalies ${enterpriseAssurance.apiUsageAnomaly.rows.length} client(s)`,
+              `Webhooks drift ${enterpriseAssurance.webhookSchemaDrift.rows.length} event(s)`,
+              `Rollback ${enterpriseAssurance.releaseRollbackChecklist.readiness}`,
+              `Drift configuration ${enterpriseAssurance.configurationDriftMonitor.rows.length} setting(s)`,
+            ]} empty="-" />
+          </div>
+          <div className="featureLinks" aria-label="Pages dédiées assurance entreprise">
+            {enterpriseAssuranceFeatureDefinitions.map((feature) => (
               <a key={feature.key} href={feature.route}>{feature.title}</a>
             ))}
           </div>
