@@ -29,6 +29,9 @@ export class LedgerController {
     return this.ledgerService.accountingExport({ format, year: year ? Number(year) : undefined, month: month ? Number(month) : undefined });
   }
   @Get('reconciliation') reconciliation() { return this.ledgerService.reconciliation(); }
+  @Get('anomaly-checks') anomalyChecks() { return this.ledgerService.anomalyChecks(); }
+  @Get('accountant-review-queue') accountantReviewQueue() { return this.ledgerService.accountantReviewQueue(); }
+  @Get('numbering-audit') numberingAudit() { return this.ledgerService.numberingAudit(); }
   @Get('aging') aging() { return this.ledgerService.aging(); }
   @Get('profit-and-loss') profitAndLoss(@Query('year') year?: string, @Query('month') month?: string) {
     return this.ledgerService.profitAndLoss({ year: year ? Number(year) : undefined, month: month ? Number(month) : undefined });

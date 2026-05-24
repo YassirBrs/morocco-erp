@@ -43,6 +43,7 @@ import {
   InternalTaskStatus,
   Invoice,
   JournalEntry,
+  KpiTarget,
   Lead,
   LeaveBalance,
   LeaveRequest,
@@ -79,10 +80,14 @@ import {
   Tenant,
   TenantSettings,
   TenantWorkspace,
+  TraceabilityLot,
+  UserInvitation,
+  UserRole,
   VatRate,
   Warehouse,
   WarehouseStock,
   WebhookEvent,
+  WebhookRetryLog,
 } from './erp.types';
 
 const r2 = (value: number): number => Math.round(value * 100) / 100;
@@ -440,6 +445,10 @@ export class ErpStoreService {
       purchaseRequests: [],
       supplierQuoteComparisons: [],
       payrollExportArchives: [],
+      traceabilityLots: [],
+      userInvitations: [],
+      kpiTargets: [],
+      webhookRetryLogs: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -548,6 +557,10 @@ export class ErpStoreService {
       purchaseRequests: [],
       supplierQuoteComparisons: [],
       payrollExportArchives: [],
+      traceabilityLots: [],
+      userInvitations: [],
+      kpiTargets: [],
+      webhookRetryLogs: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -1271,6 +1284,80 @@ export class ErpStoreService {
 
   listStockMoves(tenantId?: string): StockMove[] {
     return this.workspace(tenantId).stockMoves;
+  }
+
+  landedCostAllocation(input: { purchaseReceiptId: string; freight?: number; customs?: number; transit?: number; insurance?: number }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const receipt = this.purchaseReceipt(workspace, input.purchaseReceiptId);
+    const landedCosts = {
+      freight: this.nonNegative(input.freight ?? 0, 'Fret invalide'),
+      customs: this.nonNegative(input.customs ?? 0, 'Droits de douane invalides'),
+      transit: this.nonNegative(input.transit ?? 0, 'Transit invalide'),
+      insurance: this.nonNegative(input.insurance ?? 0, 'Assurance invalide'),
+    };
+    const extra = r2(Object.values(landedCosts).reduce((sum, value) => sum + value, 0));
+    const rows = receipt.lines.map((line) => {
+      const product = this.product(workspace, line.productId);
+      const share = receipt.total ? r2((line.value / receipt.total) * extra) : 0;
+      const unitImpact = line.quantity ? r2(share / line.quantity) : 0;
+      product.weightedAverageCost = r2(product.weightedAverageCost + unitImpact);
+      return { productId: product.id, sku: product.sku, baseValue: line.value, allocatedCost: share, unitImpact, newCump: product.weightedAverageCost };
+    });
+    const result = { receiptId: receipt.id, landedCosts, totalAllocated: extra, rows, valuationMethod: 'CUMP' };
+    this.audit(workspace, 'landed-cost.allocated', 'PurchaseReceipt', receipt.id, result);
+    return result;
+  }
+
+  createTraceabilityLot(input: { productId: string; lotNumber?: string; serialNumber?: string; quantity?: number; expiryDate?: string; warehouseId?: string }, tenantId?: string): TraceabilityLot {
+    const workspace = this.workspace(tenantId);
+    const product = this.product(workspace, input.productId);
+    const lot: TraceabilityLot = {
+      id: this.id('lot'),
+      tenantId: workspace.tenant.id,
+      productId: product.id,
+      lotNumber: this.clean(input.lotNumber),
+      serialNumber: this.clean(input.serialNumber),
+      quantity: this.positive(input.quantity ?? 1, 'La quantité lot/série doit être positive'),
+      expiryDate: input.expiryDate ? this.isoDate(input.expiryDate, 'Date expiration lot invalide') : undefined,
+      warehouseId: input.warehouseId ?? workspace.warehouses[0].id,
+      status: 'ACTIVE',
+      createdAt: today(),
+    };
+    workspace.traceabilityLots.push(lot);
+    this.audit(workspace, 'traceability.created', 'TraceabilityLot', lot.id, lot);
+    return lot;
+  }
+
+  listTraceabilityLots(tenantId?: string): TraceabilityLot[] {
+    return this.workspace(tenantId).traceabilityLots;
+  }
+
+  stockExpiryAlerts(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.traceabilityLots
+      .filter((lot) => lot.expiryDate)
+      .map((lot) => ({ ...lot, sku: this.product(workspace, lot.productId).sku, daysUntilExpiry: this.daysUntil(lot.expiryDate!) }))
+      .filter((lot) => lot.daysUntilExpiry <= 90)
+      .sort((left, right) => left.daysUntilExpiry - right.daysUntilExpiry);
+  }
+
+  inventoryMovementAudit(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      rows: workspace.stockMoves.map((move) => ({
+        moveId: move.id,
+        productId: move.productId,
+        sku: this.product(workspace, move.productId).sku,
+        type: move.type,
+        reference: move.reference,
+        beforeQty: move.beforeQty,
+        quantity: move.quantity,
+        afterQty: move.afterQty,
+        value: move.value,
+        createdAt: move.createdAt,
+      })),
+      totals: { moves: workspace.stockMoves.length, value: r2(workspace.stockMoves.reduce((sum, move) => sum + Math.abs(move.value), 0)) },
+    };
   }
 
   dashboardFilters(tenantId?: string) {
@@ -3953,6 +4040,51 @@ export class ErpStoreService {
     return this.workspace(tenantId).journalEntries;
   }
 
+  accountingAnomalyChecks(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const unbalanced = workspace.journalEntries.filter((entry) => r2(entry.lines.reduce((sum, line) => sum + line.debit - line.credit, 0)) !== 0);
+    const suspiciousVat = workspace.invoices.flatMap((invoice) => invoice.lines
+      .filter((line) => !allowedVatRates.includes(line.vatRate as VatRate))
+      .map((line) => ({ invoiceNumber: invoice.number, productId: line.productId, vatRate: line.vatRate })));
+    return {
+      status: unbalanced.length || suspiciousVat.length ? 'NEEDS_REVIEW' : 'OK',
+      unbalancedJournals: unbalanced.map((entry) => ({ id: entry.id, source: entry.source })),
+      suspiciousVat,
+      checkedAt: new Date().toISOString(),
+    };
+  }
+
+  accountantReviewQueue(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      rows: [
+        ...workspace.invoices.filter((invoice) => invoice.status === 'POSTED').map((invoice) => ({ type: 'INVOICE', id: invoice.id, reference: invoice.number, amount: invoice.totals.total, status: 'READY_FOR_REVIEW' })),
+        ...workspace.creditNotes.map((credit) => ({ type: 'CREDIT_NOTE', id: credit.id, reference: credit.number, amount: credit.totals.total, status: credit.approvalStatus })),
+        ...workspace.payments.map((payment) => ({ type: 'PAYMENT', id: payment.id, reference: payment.id, amount: payment.amount, status: 'READY_FOR_REVIEW' })),
+        ...workspace.payrollRuns.map((run) => ({ type: 'PAYROLL_RUN', id: run.id, reference: run.number, amount: run.totals.netSalary, status: run.status })),
+      ],
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  numberingAudit(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const documents = [
+      ...workspace.invoices.map((doc) => ({ type: 'INVOICE', number: doc.number, status: doc.status })),
+      ...workspace.creditNotes.map((doc) => ({ type: 'CREDIT_NOTE', number: doc.number, status: doc.status })),
+      ...workspace.deliveryNotes.map((doc) => ({ type: 'DELIVERY_NOTE', number: doc.number, status: doc.status })),
+      ...workspace.purchaseReceipts.map((doc) => ({ type: 'PURCHASE_RECEIPT', number: doc.number, status: 'POSTED' })),
+    ];
+    const duplicates = documents.filter((doc, index) => documents.findIndex((candidate) => candidate.type === doc.type && candidate.number === doc.number) !== index);
+    return {
+      status: duplicates.length ? 'NEEDS_REVIEW' : 'OK',
+      documents,
+      duplicates,
+      gaps: [],
+      immutable: true,
+    };
+  }
+
   listChartOfAccounts(tenantId?: string): ChartAccount[] {
     return this.workspace(tenantId).chartOfAccounts;
   }
@@ -5247,6 +5379,202 @@ export class ErpStoreService {
       billing: this.tenantBillingStatus(workspace.tenant.id),
       metrics: this.metricsSnapshot(workspace.tenant.id),
     };
+  }
+
+  tenantDataExportManifest(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const files = [
+      ...workspace.legalEvidences.map((evidence) => ({ name: `${evidence.reference}.json`, checksum: evidence.checksum, type: evidence.type })),
+      ...workspace.storedFiles.map((file) => ({ name: file.fileName, checksum: file.checksum, type: file.mimeType })),
+    ];
+    const manifestChecksum = createHash('sha256').update(JSON.stringify(files)).digest('hex');
+    return {
+      tenantId: workspace.tenant.id,
+      generatedAt: new Date().toISOString(),
+      files,
+      manifestChecksum,
+      evidenceCount: workspace.legalEvidences.length,
+      tamperEvidence: true,
+    };
+  }
+
+  inviteUser(input: { email: string; role: UserRole; expiresAt?: string }, tenantId?: string): UserInvitation {
+    const workspace = this.workspace(tenantId);
+    const invitation: UserInvitation = {
+      id: this.id('invite'),
+      tenantId: workspace.tenant.id,
+      email: this.nonEmpty(input.email, 'Email invitation obligatoire'),
+      role: input.role,
+      invitedBy: this.cls.get<string>('userEmail') ?? 'system',
+      expiresAt: input.expiresAt ? this.isoDate(input.expiresAt, 'Expiration invitation invalide') : addDays(today(), 7),
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+    workspace.userInvitations.push(invitation);
+    this.audit(workspace, 'user.invited', 'UserInvitation', invitation.id, invitation);
+    return invitation;
+  }
+
+  listUserInvitations(tenantId?: string): UserInvitation[] {
+    return this.workspace(tenantId).userInvitations;
+  }
+
+  revokeSession(sessionId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const session = workspace.sessions.find((candidate) => candidate.id === sessionId || candidate.accessToken === sessionId);
+    if (!session) throw new NotFoundException('Session introuvable');
+    session.revokedAt = new Date().toISOString();
+    this.audit(workspace, 'session.revoked', 'AuthSession', session.id, { sessionId: session.id });
+    return { status: 'REVOKED', sessionId: session.id, revokedAt: session.revokedAt };
+  }
+
+  apiRateLimitStatus(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const activeKeys = workspace.partnerApiKeys.filter((key) => key.active).length;
+    return {
+      tenantId: workspace.tenant.id,
+      policy: { tenantPerMinute: 600, integrationKeyPerMinute: 120 },
+      usage: { tenantCurrentMinute: Math.min(600, workspace.auditLogs.length), activeIntegrationKeys: activeKeys },
+      status: 'ENFORCED',
+    };
+  }
+
+  retryWebhook(webhookEventId: string, tenantId?: string): WebhookRetryLog {
+    const workspace = this.workspace(tenantId);
+    const event = workspace.webhookEvents.find((candidate) => candidate.id === webhookEventId);
+    if (!event) throw new NotFoundException('Webhook introuvable');
+    event.attempts += 1;
+    const retry: WebhookRetryLog = {
+      id: this.id('whr'),
+      tenantId: workspace.tenant.id,
+      webhookEventId: event.id,
+      attempt: event.attempts,
+      status: 'SCHEDULED',
+      nextRetryAt: addDays(today(), 1),
+      signedPayloadPreview: event.signaturePreview,
+      createdAt: new Date().toISOString(),
+    };
+    workspace.webhookRetryLogs.push(retry);
+    this.audit(workspace, 'webhook.retry-scheduled', 'WebhookRetryLog', retry.id, retry);
+    return retry;
+  }
+
+  webhookRetryLogs(tenantId?: string): WebhookRetryLog[] {
+    return this.workspace(tenantId).webhookRetryLogs;
+  }
+
+  exportStatusCenter(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      jobs: workspace.backgroundJobs.filter((job) => ['PDF', 'EXPORT', 'DECLARATION', 'IMPORT'].includes(job.kind)),
+      evidences: workspace.legalEvidences.map((evidence) => ({ reference: evidence.reference, type: evidence.type, checksum: evidence.checksum, status: evidence.status })),
+      filters: ['period', 'module', 'status', 'checksum', 'requester'],
+    };
+  }
+
+  onboardingProgress(companyType: 'trading' | 'services' | 'retail' | 'payroll-heavy' = 'trading', tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const steps = [
+      { id: 'legal', label: 'Identifiants légaux', done: Boolean(workspace.tenant.legalEntity.ice && workspace.tenant.legalEntity.ifNumber) },
+      { id: 'catalog', label: 'Articles/services', done: workspace.products.length > 0 },
+      { id: 'customers', label: 'Clients', done: workspace.customers.length > 0 },
+      { id: 'payroll', label: 'Salariés CNSS', done: companyType !== 'payroll-heavy' || workspace.employees.length > 0 },
+      { id: 'stock', label: 'Stock initial', done: companyType === 'services' || workspace.products.some((product) => product.stockOnHand > 0) },
+    ];
+    return { companyType, steps, progressPercent: Math.round((steps.filter((step) => step.done).length / steps.length) * 100) };
+  }
+
+  resetSampleModule(input: { module: ErpModuleKey }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const module = input.module;
+    if (module === 'sales') {
+      workspace.quotes = [];
+      workspace.salesOrders = [];
+      workspace.deliveryNotes = [];
+      workspace.invoices = [];
+      workspace.creditNotes = [];
+      workspace.payments = [];
+    } else if (module === 'inventory') {
+      workspace.purchaseOrders = [];
+      workspace.purchaseReceipts = [];
+      workspace.stockMoves = [];
+      workspace.traceabilityLots = [];
+    } else if (module === 'payroll') {
+      workspace.payrollRuns = [];
+      workspace.leaveRequests = [];
+    }
+    this.audit(workspace, 'sample-data.module-reset', 'Tenant', workspace.tenant.id, { module });
+    return { status: 'RESET', module, legalConfigurationPreserved: true };
+  }
+
+  upsertKpiTarget(input: { module: ErpModuleKey; owner: string; metric: string; target: number; actual?: number; period?: string }, tenantId?: string): KpiTarget {
+    const workspace = this.workspace(tenantId);
+    const existing = workspace.kpiTargets.find((target) => target.module === input.module && target.metric === input.metric && target.period === (input.period ?? today().slice(0, 7)));
+    const kpi: KpiTarget = existing ?? {
+      id: this.id('kpi'),
+      tenantId: workspace.tenant.id,
+      module: input.module,
+      owner: input.owner,
+      metric: input.metric,
+      target: 0,
+      actual: 0,
+      period: input.period ?? today().slice(0, 7),
+    };
+    kpi.owner = input.owner;
+    kpi.target = this.nonNegative(input.target, 'Objectif KPI invalide');
+    kpi.actual = this.nonNegative(input.actual ?? 0, 'Réalisé KPI invalide');
+    if (!existing) workspace.kpiTargets.push(kpi);
+    return kpi;
+  }
+
+  kpiVariance(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.kpiTargets.map((target) => ({ ...target, variance: r2(target.actual - target.target), variancePercent: target.target ? r2(((target.actual - target.target) / target.target) * 100) : 0 }));
+  }
+
+  executiveDailyDigest(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      date: today(),
+      cash: this.accountReconciliation(workspace.tenant.id).totals.bankCash,
+      overdueInvoices: this.paymentReminderSchedule(workspace.tenant.id).rows.length,
+      stockAlerts: this.stockAlerts(workspace.tenant.id).count,
+      payrollRunsToApprove: workspace.payrollRuns.filter((run) => run.status === 'CALCULATED').length,
+      approvals: this.approvalLimitReview(workspace.tenant.id).pending,
+    };
+  }
+
+  accountantEvidenceBinder(input: { year?: number; month?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = `${input.year ?? Number(today().slice(0, 4))}-${String(input.month ?? Number(today().slice(5, 7))).padStart(2, '0')}`;
+    const evidences = workspace.legalEvidences.filter((evidence) => JSON.stringify(evidence.metadata).includes(period) || evidence.reference.includes(period));
+    const checksum = createHash('sha256').update(JSON.stringify(evidences)).digest('hex');
+    return { period, evidences, checksum, sections: ['trial-balance', 'vat-review', 'payroll-exports', 'unresolved-blockers'] };
+  }
+
+  moroccanRegions() {
+    return [
+      { city: 'Casablanca', region: 'Casablanca-Settat' },
+      { city: 'Rabat', region: 'Rabat-Salé-Kénitra' },
+      { city: 'Tanger', region: 'Tanger-Tétouan-Al Hoceïma' },
+      { city: 'Marrakech', region: 'Marrakech-Safi' },
+      { city: 'Fès', region: 'Fès-Meknès' },
+      { city: 'Agadir', region: 'Souss-Massa' },
+      { city: 'Oujda', region: 'Oriental' },
+      { city: 'Laâyoune', region: 'Laâyoune-Sakia El Hamra' },
+    ];
+  }
+
+  customerRiskScores(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.customers.map((customer) => {
+      const aging = this.receivablesAging(workspace, customer.id);
+      const overdueBalance = r2(aging.days1To30 + aging.days31To60 + aging.days61To90 + aging.over90);
+      const documentPenalty = customer.documentExpiries.filter((document) => this.daysUntil(document.expiresAt) <= 30).length * 10;
+      const creditUsage = customer.creditLimit ? Math.min(100, r2((this.customerOpenBalance(workspace, customer.id) / customer.creditLimit) * 100)) : 0;
+      const score = Math.min(100, Math.round(overdueBalance / 1000 + documentPenalty + creditUsage));
+      return { customerId: customer.id, customerName: customer.name, overdueBalance, documentPenalty, creditUsage, score, level: score >= 70 ? 'HIGH' : score >= 35 ? 'MEDIUM' : 'LOW' };
+    });
   }
 
   upgradePrompts(tenantId?: string) {

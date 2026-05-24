@@ -2,6 +2,7 @@ import {
   getAccountingSnapshot,
   getDashboardSummary,
   getDocumentOperations,
+  getGovernanceReadiness,
   getInvoices,
   getIntegrationReadiness,
   getModuleData,
@@ -41,7 +42,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -55,6 +56,7 @@ export default async function DashboardPage() {
     getIntegrationReadiness(),
     getPlatformReadiness(),
     getMoroccoWorkflowReadiness(),
+    getGovernanceReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -345,6 +347,36 @@ export default async function DashboardPage() {
               'Comparaison fournisseurs: prix, délai, risque, préféré',
               'Relevés fournisseurs avec achats, paiements, soldes',
               'Emails devis/factures avec mentions légales',
+            ]} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Gouvernance et pilotage">
+          <PanelHeader title="Gouvernance et pilotage" action="Préparer dossier" />
+          <div className="reportGrid">
+            <Metric label="Anomalies comptables" value={governanceReadiness.anomalyChecks.status} />
+            <Metric label="Numérotation" value={governanceReadiness.numberingAudit.status} />
+            <Metric label="Onboarding" value={`${governanceReadiness.onboarding.progressPercent}%`} />
+            <Metric label="Régions Maroc" value={String(governanceReadiness.regions.length)} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Audit et preuves" rows={[
+              `Mouvements stock ${governanceReadiness.movementAudit.rows.length}`,
+              `Dossier export ${governanceReadiness.exportManifest.files.length} fichier(s)`,
+              `Binder comptable ${governanceReadiness.evidenceBinder.sections.join(' / ')}`,
+              `Centre exports filtres ${governanceReadiness.exportCenter.filters.join(', ')}`,
+            ]} empty="-" />
+            <MiniList title="Sécurité et intégrations" rows={[
+              `Invitations ${governanceReadiness.invitations.length}`,
+              `Rate limiting ${governanceReadiness.rateLimits.status}`,
+              `Retries webhooks ${governanceReadiness.webhookRetries.length}`,
+              'Révocation sessions admin prête',
+            ]} empty="-" />
+            <MiniList title="Pilotage risques" rows={[
+              `Alertes péremption ${governanceReadiness.expiryAlerts.length}`,
+              `File comptable ${governanceReadiness.accountantQueue.rows.length}`,
+              `KPI variance ${governanceReadiness.kpiVariance.length}`,
+              `Risque client ${governanceReadiness.customerRisk.map((risk) => `${risk.customerName}: ${risk.level}`).join(' / ') || 'bas'}`,
             ]} empty="-" />
           </div>
         </section>

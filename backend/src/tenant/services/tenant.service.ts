@@ -149,6 +149,23 @@ export class TenantService {
     return this.store.supportDiagnostics();
   }
 
+  dataExportManifest() { return this.store.tenantDataExportManifest(); }
+  invitations() { return this.store.listUserInvitations(); }
+  inviteUser(data: any) { return this.store.inviteUser(data); }
+  revokeSession(data: any) { return this.store.revokeSession(data.sessionId); }
+  rateLimits() { return this.store.apiRateLimitStatus(); }
+  webhookRetries() { return this.store.webhookRetryLogs(); }
+  retryWebhook(data: any) { return this.store.retryWebhook(data.webhookEventId); }
+  exportStatusCenter() { return this.store.exportStatusCenter(); }
+  onboardingProgress(companyType?: any) { return this.store.onboardingProgress(companyType); }
+  resetSampleModule(data: any) { return this.store.resetSampleModule(data); }
+  upsertKpiTarget(data: any) { return this.store.upsertKpiTarget(data); }
+  kpiVariance() { return this.store.kpiVariance(); }
+  executiveDigest() { return this.store.executiveDailyDigest(); }
+  evidenceBinder(data: any) { return this.store.accountantEvidenceBinder(data); }
+  moroccanRegions() { return this.store.moroccanRegions(); }
+  customerRiskScores() { return this.store.customerRiskScores(); }
+
   upgradePrompts() {
     return this.store.upgradePrompts();
   }

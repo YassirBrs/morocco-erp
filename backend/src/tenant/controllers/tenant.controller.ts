@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { TenantService } from '../services/tenant.service';
 
 @Controller('tenant')
@@ -40,6 +40,23 @@ export class TenantController {
   @Get('accountant-workspace') accountantWorkspace() { return this.tenantService.accountantWorkspace(); }
   @Get('super-admin-workspace') superAdminWorkspace() { return this.tenantService.superAdminWorkspace(); }
   @Get('support-diagnostics') supportDiagnostics() { return this.tenantService.supportDiagnostics(); }
+  @Get('data-export-manifest') dataExportManifest() { return this.tenantService.dataExportManifest(); }
+  @Get('invitations') invitations() { return this.tenantService.invitations(); }
+  @Post('invitations') inviteUser(@Body() body: any) { return this.tenantService.inviteUser(body); }
+  @Post('sessions/revoke') revokeSession(@Body() body: any) { return this.tenantService.revokeSession(body); }
+  @Get('operations/rate-limits') rateLimits() { return this.tenantService.rateLimits(); }
+  @Get('operations/webhook-retries') webhookRetries() { return this.tenantService.webhookRetries(); }
+  @Post('operations/webhook-retries') retryWebhook(@Body() body: any) { return this.tenantService.retryWebhook(body); }
+  @Get('operations/export-status-center') exportStatusCenter() { return this.tenantService.exportStatusCenter(); }
+  @Get('onboarding-progress') onboardingProgress(@Query('companyType') companyType?: any) { return this.tenantService.onboardingProgress(companyType); }
+  @Post('sample-data/reset-module') resetSampleModule(@Body() body: any) { return this.tenantService.resetSampleModule(body); }
+  @Get('kpi-targets/variance') kpiVariance() { return this.tenantService.kpiVariance(); }
+  @Post('kpi-targets') upsertKpiTarget(@Body() body: any) { return this.tenantService.upsertKpiTarget(body); }
+  @Get('executive-digest') executiveDigest() { return this.tenantService.executiveDigest(); }
+  @Get('evidence-binder') evidenceBinderGet() { return this.tenantService.evidenceBinder({}); }
+  @Post('evidence-binder') evidenceBinder(@Body() body: any) { return this.tenantService.evidenceBinder(body); }
+  @Get('moroccan-regions') moroccanRegions() { return this.tenantService.moroccanRegions(); }
+  @Get('customer-risk-scores') customerRiskScores() { return this.tenantService.customerRiskScores(); }
   @Get('upgrade-prompts') upgradePrompts() { return this.tenantService.upgradePrompts(); }
   @Post('performance/large-tenant') performanceScenario(@Body() body: any) { return this.tenantService.performanceScenario(body); }
   @Get('emails') emails() { return this.tenantService.emails(); }

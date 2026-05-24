@@ -162,6 +162,25 @@ export type MoroccoWorkflowReadiness = {
   purchaseRequests: unknown[];
 };
 
+export type GovernanceReadiness = {
+  expiryAlerts: unknown[];
+  movementAudit: { rows: unknown[] };
+  anomalyChecks: { status: string };
+  accountantQueue: { rows: unknown[] };
+  numberingAudit: { status: string; immutable: boolean };
+  exportManifest: { files: unknown[]; manifestChecksum: string };
+  invitations: unknown[];
+  rateLimits: { status: string };
+  webhookRetries: unknown[];
+  exportCenter: { filters: string[] };
+  onboarding: { progressPercent: number };
+  kpiVariance: unknown[];
+  executiveDigest: Record<string, number | string>;
+  evidenceBinder: { sections: string[] };
+  regions: Array<{ city: string; region: string }>;
+  customerRisk: Array<{ customerName: string; level: string; score: number }>;
+};
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -352,4 +371,26 @@ export async function getMoroccoWorkflowReadiness(): Promise<MoroccoWorkflowRead
     getJson('/inventory/purchase-requests', []),
   ]);
   return { reservations, deliveryRoutes, paymentMethods, cheques, depositBatches, cashboxTransfers, employeeDocuments, contractReminders, leaveCalendar, damancomPreflight, payrollExports, purchaseRequests };
+}
+
+export async function getGovernanceReadiness(): Promise<GovernanceReadiness> {
+  const [expiryAlerts, movementAudit, anomalyChecks, accountantQueue, numberingAudit, exportManifest, invitations, rateLimits, webhookRetries, exportCenter, onboarding, kpiVariance, executiveDigest, evidenceBinder, regions, customerRisk] = await Promise.all([
+    getJson('/inventory/expiry-alerts', []),
+    getJson('/inventory/movement-audit', { rows: [] }),
+    getJson('/ledger/anomaly-checks', { status: 'OK' }),
+    getJson('/ledger/accountant-review-queue', { rows: [] }),
+    getJson('/ledger/numbering-audit', { status: 'OK', immutable: true }),
+    getJson('/tenant/data-export-manifest', { files: [], manifestChecksum: '' }),
+    getJson('/tenant/invitations', []),
+    getJson('/tenant/operations/rate-limits', { status: 'ENFORCED' }),
+    getJson('/tenant/operations/webhook-retries', []),
+    getJson('/tenant/operations/export-status-center', { filters: [] }),
+    getJson('/tenant/onboarding-progress?companyType=trading', { progressPercent: 0 }),
+    getJson('/tenant/kpi-targets/variance', []),
+    getJson('/tenant/executive-digest', {}),
+    getJson('/tenant/evidence-binder', { sections: [] }),
+    getJson('/tenant/moroccan-regions', []),
+    getJson('/tenant/customer-risk-scores', []),
+  ]);
+  return { expiryAlerts, movementAudit, anomalyChecks, accountantQueue, numberingAudit, exportManifest, invitations, rateLimits, webhookRetries, exportCenter, onboarding, kpiVariance, executiveDigest, evidenceBinder, regions, customerRisk };
 }

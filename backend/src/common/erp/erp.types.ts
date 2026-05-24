@@ -821,6 +821,52 @@ export interface PayrollExportArchive {
   fileName: string;
 }
 
+export interface TraceabilityLot {
+  id: string;
+  tenantId: string;
+  productId: string;
+  lotNumber?: string;
+  serialNumber?: string;
+  quantity: number;
+  expiryDate?: string;
+  warehouseId: string;
+  status: 'ACTIVE' | 'QUARANTINED' | 'CONSUMED';
+  createdAt: string;
+}
+
+export interface UserInvitation {
+  id: string;
+  tenantId: string;
+  email: string;
+  role: UserRole;
+  invitedBy: string;
+  expiresAt: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REVOKED' | 'EXPIRED';
+  createdAt: string;
+}
+
+export interface KpiTarget {
+  id: string;
+  tenantId: string;
+  module: ErpModuleKey;
+  owner: string;
+  metric: string;
+  target: number;
+  actual: number;
+  period: string;
+}
+
+export interface WebhookRetryLog {
+  id: string;
+  tenantId: string;
+  webhookEventId: string;
+  attempt: number;
+  status: 'SCHEDULED' | 'DELIVERED' | 'FAILED';
+  nextRetryAt?: string;
+  signedPayloadPreview: string;
+  createdAt: string;
+}
+
 export interface StructuredLogEntry {
   id: string;
   tenantId: string;
@@ -1111,6 +1157,10 @@ export interface TenantWorkspace {
   purchaseRequests: PurchaseRequest[];
   supplierQuoteComparisons: SupplierQuoteComparison[];
   payrollExportArchives: PayrollExportArchive[];
+  traceabilityLots: TraceabilityLot[];
+  userInvitations: UserInvitation[];
+  kpiTargets: KpiTarget[];
+  webhookRetryLogs: WebhookRetryLog[];
   structuredLogs: StructuredLogEntry[];
   metricSamples: MetricSample[];
   backgroundJobs: BackgroundJob[];

@@ -374,3 +374,15 @@ test('Next primary workspace exposes advanced Morocco workflow readiness for log
     assert.ok(api.includes(endpoint), `${endpoint} workflow template route is represented`);
   }
 });
+
+test('Next primary workspace exposes governance, audit, export, onboarding, KPI, regional reference, and customer risk readiness', () => {
+  for (const text of ['Gouvernance et pilotage', 'Anomalies comptables', 'Numérotation', 'Onboarding', 'Régions Maroc', 'Audit et preuves', 'Sécurité et intégrations', 'Pilotage risques', 'Rate limiting', 'Risque client']) {
+    assert.ok(page.includes(text), `${text} governance label is present`);
+  }
+  for (const marker of ['getGovernanceReadiness', 'governanceReadiness.anomalyChecks', 'governanceReadiness.numberingAudit', 'governanceReadiness.exportManifest', 'governanceReadiness.customerRisk']) {
+    assert.ok(page.includes(marker), `${marker} governance helper is present`);
+  }
+  for (const endpoint of ['/inventory/expiry-alerts', '/inventory/movement-audit', '/ledger/anomaly-checks', '/ledger/accountant-review-queue', '/ledger/numbering-audit', '/tenant/data-export-manifest', '/tenant/invitations', '/tenant/operations/rate-limits', '/tenant/operations/webhook-retries', '/tenant/operations/export-status-center', '/tenant/onboarding-progress?companyType=trading', '/tenant/kpi-targets/variance', '/tenant/executive-digest', '/tenant/evidence-binder', '/tenant/moroccan-regions', '/tenant/customer-risk-scores']) {
+    assert.ok(api.includes(endpoint), `${endpoint} governance API route is wired`);
+  }
+});

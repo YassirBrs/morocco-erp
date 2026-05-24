@@ -39,6 +39,11 @@ export class InventoryService {
   barcodeLookup(code: string) { return this.store.barcodeLookup(code); }
   stockAlerts() { return this.store.stockAlerts(); }
   reservationVisibility() { return this.store.stockReservationVisibility(); }
+  landedCostAllocation(data: any) { return this.store.landedCostAllocation(data); }
+  listTraceabilityLots() { return this.store.listTraceabilityLots(); }
+  createTraceabilityLot(data: any) { return this.store.createTraceabilityLot(data); }
+  stockExpiryAlerts() { return this.store.stockExpiryAlerts(); }
+  movementAudit() { return this.store.inventoryMovementAudit(); }
   adjustStock(productId: string, qty: number, reason?: string) { return this.store.adjustStock(productId, qty, reason); }
   approveStockMove(id: string) { return this.store.approveStockMove(id); }
   listPurchaseRequests() { return this.store.listPurchaseRequests(); }

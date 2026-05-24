@@ -259,29 +259,29 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T168 P1 - Add probation period reminders and contract renewal reminders.
 - [x] T169 P1 - Add purchase request workflow before purchase order approval.
 - [x] T170 P1 - Add supplier quote comparison matrix by price, delay, risk, and preferred flag.
-- [ ] T171 P1 - Add landed cost allocation for import purchases and inventory valuation.
-- [ ] T172 P1 - Add serial and lot tracking for inventory items that require traceability.
-- [ ] T173 P1 - Add stock expiry date alerts for perishable or regulated goods.
-- [ ] T174 P1 - Add inventory movement audit view with before and after quantities.
-- [ ] T175 P1 - Add accounting anomaly checks for unbalanced journals and suspicious VAT rates.
-- [ ] T176 P1 - Add accountant review queue for draft invoices, credit notes, payments, and payroll entries.
-- [ ] T177 P1 - Add immutable numbering audit for invoices, credit notes, delivery notes, and receipts.
-- [ ] T178 P1 - Add tenant data export manifest with files, checksums, and generated evidence.
-- [ ] T179 P1 - Add user invitation workflow with role, tenant, expiry, and audit trail.
-- [ ] T180 P1 - Add session revocation from admin security settings.
-- [ ] T181 P1 - Add API rate limiting per tenant and per integration key.
-- [ ] T182 P1 - Add webhook retry log with delivery attempts and signed payload previews.
-- [ ] T183 P1 - Add background export status center for CSV, PDF, payroll, and declaration files.
-- [ ] T184 P1 - Add guided onboarding progress by company type: trading, services, retail, payroll-heavy.
-- [ ] T185 P1 - Add sample data reset options by module without deleting tenant legal configuration.
+- [x] T171 P1 - Add landed cost allocation for import purchases and inventory valuation.
+- [x] T172 P1 - Add serial and lot tracking for inventory items that require traceability.
+- [x] T173 P1 - Add stock expiry date alerts for perishable or regulated goods.
+- [x] T174 P1 - Add inventory movement audit view with before and after quantities.
+- [x] T175 P1 - Add accounting anomaly checks for unbalanced journals and suspicious VAT rates.
+- [x] T176 P1 - Add accountant review queue for draft invoices, credit notes, payments, and payroll entries.
+- [x] T177 P1 - Add immutable numbering audit for invoices, credit notes, delivery notes, and receipts.
+- [x] T178 P1 - Add tenant data export manifest with files, checksums, and generated evidence.
+- [x] T179 P1 - Add user invitation workflow with role, tenant, expiry, and audit trail.
+- [x] T180 P1 - Add session revocation from admin security settings.
+- [x] T181 P1 - Add API rate limiting per tenant and per integration key.
+- [x] T182 P1 - Add webhook retry log with delivery attempts and signed payload previews.
+- [x] T183 P1 - Add background export status center for CSV, PDF, payroll, and declaration files.
+- [x] T184 P1 - Add guided onboarding progress by company type: trading, services, retail, payroll-heavy.
+- [x] T185 P1 - Add sample data reset options by module without deleting tenant legal configuration.
 
 ## Competitive SaaS Depth
 
-- [ ] T186 P1 - Add tenant-specific KPI targets and variance tracking by module owner.
-- [ ] T187 P1 - Add executive daily digest for cash, overdue invoices, stock alerts, payroll, and approvals.
-- [ ] T188 P1 - Add accountant evidence binder generation per fiscal period.
-- [ ] T189 P1 - Add Moroccan city and region reference data for addresses, delivery, and reporting.
-- [ ] T190 P1 - Add customer risk scoring using overdue balance, document age, and credit-limit usage.
+- [x] T186 P1 - Add tenant-specific KPI targets and variance tracking by module owner.
+- [x] T187 P1 - Add executive daily digest for cash, overdue invoices, stock alerts, payroll, and approvals.
+- [x] T188 P1 - Add accountant evidence binder generation per fiscal period.
+- [x] T189 P1 - Add Moroccan city and region reference data for addresses, delivery, and reporting.
+- [x] T190 P1 - Add customer risk scoring using overdue balance, document age, and credit-limit usage.
 - [ ] T191 P1 - Add supplier reliability scoring using delivery delays, document status, and purchase volume.
 - [ ] T192 P1 - Add product lifecycle states for draft, active, blocked, discontinued, and archived.
 - [ ] T193 P1 - Add stock quarantine workflow for damaged, returned, or compliance-held goods.

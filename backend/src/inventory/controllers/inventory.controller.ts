@@ -40,6 +40,11 @@ export class InventoryController {
   @Get('barcode/:code') barcodeLookup(@Param('code') code: string) { return this.inventoryService.barcodeLookup(code); }
   @Get('stock-alerts') stockAlerts() { return this.inventoryService.stockAlerts(); }
   @Get('reservations') reservationVisibility() { return this.inventoryService.reservationVisibility(); }
+  @Post('landed-cost-allocation') landedCostAllocation(@Body() body: any) { return this.inventoryService.landedCostAllocation(body); }
+  @Get('traceability') traceabilityLots() { return this.inventoryService.listTraceabilityLots(); }
+  @Post('traceability') createTraceabilityLot(@Body() body: any) { return this.inventoryService.createTraceabilityLot(body); }
+  @Get('expiry-alerts') expiryAlerts() { return this.inventoryService.stockExpiryAlerts(); }
+  @Get('movement-audit') movementAudit() { return this.inventoryService.movementAudit(); }
   @Post('adjustments') adjust(@Body() body: { productId: string; quantity: number; reason?: string }) {
     return this.inventoryService.adjustStock(body.productId, body.quantity, body.reason);
   }
