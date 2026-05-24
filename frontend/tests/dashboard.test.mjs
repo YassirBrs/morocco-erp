@@ -50,6 +50,9 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/sales/payment-reminders'));
   assert.ok(staticPage.includes('/inventory/suppliers/payment-calendar'));
   assert.ok(staticPage.includes('/compliance/vat-declaration-checklist'));
+  assert.ok(staticPage.includes('/ledger/periods/close-checklist'));
+  assert.ok(staticPage.includes('/crm/customers/duplicates'));
+  assert.ok(staticPage.includes('/inventory/products/duplicates'));
   assert.ok(staticPage.includes('/ledger/audit'));
   assert.ok(staticPage.includes('/search?q='));
   assert.ok(staticPage.includes("method: 'PATCH'"));
@@ -94,10 +97,10 @@ test('static dashboard exposes operational filter cards', () => {
 });
 
 test('static dashboard exposes role widgets and compliance planning panels', () => {
-  for (const text of ['Widgets par rôle', 'Direction', 'Ventes', 'RH / Paie', 'Relances de paiement', 'Calendrier paiements', 'Checklist de revue', 'Déclaration TVA', 'Prochaine relance', 'Risque']) {
+  for (const text of ['Widgets par rôle', 'Direction', 'Ventes', 'RH / Paie', 'Relances de paiement', 'Calendrier paiements', 'Checklist de revue', 'Déclaration TVA', 'Complétude documents fiscaux', 'Clôture période', 'Prêt clôture', 'Prochaine relance', 'Risque']) {
     assert.ok(staticPage.includes(text), `${text} planning label is present`);
   }
-  for (const marker of ['renderRoleWidgets', 'renderPaymentReminders', 'renderSupplierCalendar', 'renderVatChecklist', 'data-role-widget', 'data-role-widget-view']) {
+  for (const marker of ['renderRoleWidgets', 'renderPaymentReminders', 'renderSupplierCalendar', 'renderVatChecklist', 'renderFiscalCloseChecklist', 'data-role-widget', 'data-role-widget-view']) {
     assert.ok(staticPage.includes(marker), `${marker} renderer or marker is present`);
   }
   assert.ok(staticCss.includes('.roleWidgetGrid'));
@@ -128,13 +131,15 @@ test('global styles expose the professional ERP palette', () => {
 });
 
 test('static dashboard exposes onboarding and master-data workflows', () => {
-  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'RIB marocain', 'Limites approbation', 'Limiter approbations démo', 'Approbation requise', 'Contrôle crédit clients', 'Blocage crédit', 'OK crédit', 'Document client', 'Expiration document client', 'Alertes documents clients', 'Garantie paiement', 'Alertes marge produits', 'Prix minimum TTC', 'Sous seuil', 'Fournisseur préféré', 'Notes risque', 'Expiration document', 'Alertes fournisseurs', 'Placeholder document', 'Dossier:', 'Expirés', 'À renouveler', 'Préférés', 'Créer devis', 'Convertir en devis', 'Exporter CSV prospects', 'Exporter CSV fournisseurs', 'Importer CSV démo', 'Analytics sources prospects', 'Avoir', 'Relevé client', 'Payer solde']) {
+  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'Code-barres', 'Téléphone', 'Doublons clients', 'Doublons articles', 'RIB marocain', 'Limites approbation', 'Limiter approbations démo', 'Approbation requise', 'Contrôle crédit clients', 'Blocage crédit', 'OK crédit', 'Document client', 'Expiration document client', 'Alertes documents clients', 'Garantie paiement', 'Alertes marge produits', 'Prix minimum TTC', 'Sous seuil', 'Fournisseur préféré', 'Notes risque', 'Expiration document', 'Alertes fournisseurs', 'Placeholder document', 'Dossier:', 'Expirés', 'À renouveler', 'Préférés', 'Créer devis', 'Convertir en devis', 'Exporter CSV prospects', 'Exporter CSV fournisseurs', 'Importer CSV démo', 'Analytics sources prospects', 'Avoir', 'Relevé client', 'Payer solde']) {
     assert.ok(staticPage.includes(text), `${text} workflow is present`);
   }
   for (const text of ['Comptabilisée', 'Payée', 'Facture', 'Paiement', 'Marchandise', 'Pipeline prospects', 'Fournisseurs', 'Profil entreprise', 'Réinitialiser démo', 'En attente revue', 'Approuver', 'alerte doublon', 'Banque normalisée', 'Import CSV prospects', 'Import CSV fournisseurs']) {
     assert.ok(staticPage.includes(text), `${text} French label is present`);
   }
   assert.ok(staticPage.includes('pattern="[0-9\\\\s-]{24,}"'));
+  assert.ok(staticPage.includes('renderCustomerDuplicates'));
+  assert.ok(staticPage.includes('renderProductDuplicates'));
   assert.ok(staticCss.includes('.compactForm'));
   assert.ok(staticCss.includes('.salesFlowActions'));
   assert.ok(staticCss.includes('.statementBox'));

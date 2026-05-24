@@ -233,9 +233,9 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T143 P1 - Add payment reminder scheduling for overdue Moroccan customer invoices.
 - [x] T144 P1 - Add supplier payment calendar by due date, preferred status, and risk flags.
 - [x] T145 P1 - Add VAT declaration review checklist with supporting invoice counts and exceptions.
-- [ ] T146 P1 - Add fiscal document completeness checks before period close.
-- [ ] T147 P1 - Add duplicate customer detection by ICE, IF, phone, and email.
-- [ ] T148 P1 - Add duplicate product detection by SKU, barcode, and normalized name.
+- [x] T146 P1 - Add fiscal document completeness checks before period close.
+- [x] T147 P1 - Add duplicate customer detection by ICE, IF, phone, and email.
+- [x] T148 P1 - Add duplicate product detection by SKU, barcode, and normalized name.
 - [ ] T149 P1 - Add customer and supplier timeline views for quotes, invoices, payments, notes, and documents.
 - [ ] T150 P1 - Add internal notes and task assignments on customers, suppliers, invoices, and payroll runs.
 - [ ] T151 P1 - Add bulk archive and restore flows for inactive customers, suppliers, and products.

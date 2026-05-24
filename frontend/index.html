@@ -155,6 +155,25 @@
           </div>
         </section>
 
+        <section class="panel fiscalClosePanel" data-view-section="dashboard accounting compliance">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Clôture période</p>
+              <h2>Complétude documents fiscaux</h2>
+            </div>
+            <span id="fiscalCloseBadge" class="badge">À contrôler</span>
+          </div>
+          <div class="vatReviewGrid">
+            <div id="fiscalCloseRows" class="setupList"></div>
+            <div class="tableWrap">
+              <table class="miniTable">
+                <thead><tr><th>Type</th><th>Exception</th><th>Niveau</th></tr></thead>
+                <tbody id="fiscalCloseExceptionRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <section class="panel setupPanel" data-view-section="dashboard compliance">
           <div class="panelHeader">
             <div>
@@ -296,7 +315,9 @@
             <form id="customerForm" class="compactForm">
               <label class="field"><span>Nom client</span><input name="name" required placeholder="Client SARL" /></label>
               <label class="field"><span>ICE</span><input name="ice" placeholder="001..." /></label>
+              <label class="field"><span>IF</span><input name="ifNumber" placeholder="Identifiant fiscal" /></label>
               <label class="field"><span>Email</span><input name="email" type="email" placeholder="finance@client.ma" /></label>
+              <label class="field"><span>Téléphone</span><input name="phone" placeholder="+212..." /></label>
               <label class="field"><span>Délai paiement</span><input name="paymentTermsDays" type="number" min="0" value="30" /></label>
               <label class="field"><span>Plafond crédit</span><input name="creditLimit" type="number" min="0" value="0" /></label>
               <label class="field"><span>Document client</span><select name="documentType"><option value="">Aucun</option><option value="ICE">ICE</option><option value="Registre de Commerce">RC</option><option value="Contrat cadre">Contrat</option><option value="Garantie de paiement">Garantie paiement</option></select></label>
@@ -333,6 +354,18 @@
                 </table>
               </div>
             </div>
+            <div class="analyticsBox">
+              <div class="statementHeader">
+                <span>Doublons clients</span>
+                <strong id="customerDuplicateCount">0 doublon</strong>
+              </div>
+              <div class="tableWrap">
+                <table class="miniTable">
+                  <thead><tr><th>Client</th><th>Identifiants</th><th>Alertes</th><th>Niveau</th></tr></thead>
+                  <tbody id="customerDuplicateRows"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           <div class="panel">
@@ -345,6 +378,7 @@
             </div>
             <form id="productForm" class="compactForm productForm">
               <label class="field"><span>SKU</span><input name="sku" required placeholder="SKU-DEMO" /></label>
+              <label class="field"><span>Code-barres</span><input name="barcode" placeholder="611..." /></label>
               <label class="field"><span>Article</span><input name="name" required placeholder="Produit ou service" /></label>
               <label class="field"><span>Type</span><select name="type"><option value="GOODS">Marchandise</option><option value="SERVICE">Service</option><option value="RAW_MATERIAL">Matière</option><option value="FINISHED_GOOD">Produit fini</option></select></label>
               <label class="field"><span>Unité</span><input name="unit" value="unité" /></label>
@@ -370,6 +404,18 @@
                 <table class="miniTable">
                   <thead><tr><th>Article</th><th>Prix vente</th><th>Prix minimum TTC</th><th>Écart</th></tr></thead>
                   <tbody id="productMarginAlertRows"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="analyticsBox">
+              <div class="statementHeader">
+                <span>Doublons articles</span>
+                <strong id="productDuplicateCount">0 doublon</strong>
+              </div>
+              <div class="tableWrap">
+                <table class="miniTable">
+                  <thead><tr><th>Article</th><th>Code-barres</th><th>Alertes</th><th>Niveau</th></tr></thead>
+                  <tbody id="productDuplicateRows"></tbody>
                 </table>
               </div>
             </div>
@@ -515,7 +561,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', paymentReminders: null, supplierCalendar: null, vatChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], productMarginAlerts: [], leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -623,14 +669,16 @@
       }
 
       async function load() {
-        const [summary, stock, customers, customerCreditControls, customerReminders, products, productMarginAlerts, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, roleWidgets, paymentReminders, supplierCalendar, vatChecklist, approvalReview, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, customerCreditControls, customerReminders, customerDuplicates, products, productMarginAlerts, productDuplicates, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, roleWidgets, paymentReminders, supplierCalendar, vatChecklist, fiscalCloseChecklist, approvalReview, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
           get('/crm/customers/credit-control'),
           get('/crm/customers/document-reminders'),
+          get('/crm/customers/duplicates'),
           get('/inventory/products'),
           get('/inventory/products/margin-alerts'),
+          get('/inventory/products/duplicates'),
           get('/crm/leads'),
           get('/crm/leads/analytics'),
           get('/inventory/suppliers'),
@@ -641,6 +689,7 @@
           get('/sales/payment-reminders'),
           get('/inventory/suppliers/payment-calendar'),
           get('/compliance/vat-declaration-checklist'),
+          get('/ledger/periods/close-checklist'),
           get('/tenant/approval-limits'),
           get('/tenant/company-profile'),
           get('/ledger/audit'),
@@ -659,7 +708,9 @@
         state.leads = leads;
         state.customerCreditControls = customerCreditControls;
         state.customerReminders = customerReminders;
+        state.customerDuplicates = customerDuplicates;
         state.productMarginAlerts = productMarginAlerts;
+        state.productDuplicates = productDuplicates;
         state.leadAnalytics = leadAnalytics;
         state.suppliers = suppliers;
         state.supplierReminders = supplierReminders;
@@ -669,6 +720,7 @@
         state.paymentReminders = paymentReminders;
         state.supplierCalendar = supplierCalendar;
         state.vatChecklist = vatChecklist;
+        state.fiscalCloseChecklist = fiscalCloseChecklist;
         state.approvalReview = approvalReview;
         state.profile = profile;
         state.audit = audit;
@@ -695,10 +747,13 @@
         renderPaymentReminders();
         renderSupplierCalendar();
         renderVatChecklist();
+        renderFiscalCloseChecklist();
         renderApprovalReview();
         renderCustomerCreditControls();
         renderCustomerReminders();
+        renderCustomerDuplicates();
         renderProductMarginAlerts();
+        renderProductDuplicates();
         renderSalesFlow();
         renderLeadAnalytics();
         renderSupplierReminders();
@@ -729,7 +784,7 @@
         qs('#productRows').innerHTML = products.length ? products.map((product) => `
           <tr class="${product.active ? '' : 'mutedRow'}">
             <td><strong>${product.sku}</strong></td>
-            <td>${product.name}</td>
+            <td>${product.name}<small>${product.barcode || 'Sans code-barres'}</small></td>
             <td>${translate('productTypes', product.type)}</td>
             <td>${mad(product.salePrice)}</td>
             <td>${pct(product.vatRate)}</td>
@@ -943,6 +998,26 @@
         `).join('') : emptyRow(`Aucune exception TVA pour ${review.period}`, 4);
       }
 
+      function renderFiscalCloseChecklist() {
+        const review = state.fiscalCloseChecklist;
+        if (!review) return;
+        qs('#fiscalCloseBadge').textContent = review.status === 'READY_TO_CLOSE' ? 'Prêt clôture' : 'À revoir';
+        qs('#fiscalCloseBadge').className = review.status === 'READY_TO_CLOSE' ? 'badge green' : 'badge warning';
+        qs('#fiscalCloseRows').innerHTML = review.checklist.map((check) => `
+          <div class="${check.complete ? 'complete' : ''}">
+            <span>${check.complete ? 'OK' : 'À revoir'}</span>
+            <strong>${check.label}</strong>
+          </div>
+        `).join('');
+        qs('#fiscalCloseExceptionRows').innerHTML = review.exceptions.length ? review.exceptions.slice(0, 6).map((item) => `
+          <tr>
+            <td><strong>${item.type}</strong></td>
+            <td>${item.message}</td>
+            <td><span class="statusPill warning">${item.severity}</span></td>
+          </tr>
+        `).join('') : emptyRow(`Aucune exception de clôture pour ${review.period}`, 3);
+      }
+
       function renderApprovalReview() {
         const review = state.approvalReview;
         if (!review) return;
@@ -995,6 +1070,19 @@
         }).join('') : emptyRow('Aucune alerte document client', 4);
       }
 
+      function renderCustomerDuplicates() {
+        const rows = state.customerDuplicates?.rows || [];
+        qs('#customerDuplicateCount').textContent = `${rows.length} doublon${rows.length > 1 ? 's' : ''}`;
+        qs('#customerDuplicateRows').innerHTML = rows.length ? rows.slice(0, 5).map((row) => `
+          <tr>
+            <td><strong>${row.customerName}</strong><small>${row.email || row.phone || '-'}</small></td>
+            <td>ICE ${row.ice || '-'}<small>IF ${row.ifNumber || '-'}</small></td>
+            <td>${row.duplicateWarnings.join(' · ')}</td>
+            <td><span class="statusPill warning">${row.severity}</span></td>
+          </tr>
+        `).join('') : emptyRow('Aucun doublon client détecté', 4);
+      }
+
       function renderCustomerCreditControls() {
         const holds = state.customerCreditControls.filter((row) => row.onHold);
         qs('#customerCreditHoldCount').textContent = `${holds.length} blocage${holds.length > 1 ? 's' : ''}`;
@@ -1018,6 +1106,19 @@
             <td><span class="warningText">${mad(row.marginGap)}</span></td>
           </tr>
         `).join('') : emptyRow('Aucune alerte marge produit', 4);
+      }
+
+      function renderProductDuplicates() {
+        const rows = state.productDuplicates?.rows || [];
+        qs('#productDuplicateCount').textContent = `${rows.length} doublon${rows.length > 1 ? 's' : ''}`;
+        qs('#productDuplicateRows').innerHTML = rows.length ? rows.slice(0, 5).map((row) => `
+          <tr>
+            <td><strong>${row.sku}</strong><small>${row.name}</small></td>
+            <td>${row.barcode || '-'}</td>
+            <td>${row.duplicateWarnings.join(' · ')}</td>
+            <td><span class="statusPill warning">${row.severity}</span></td>
+          </tr>
+        `).join('') : emptyRow('Aucun doublon article détecté', 4);
       }
 
       function renderSupplierReminders() {
@@ -1302,7 +1403,9 @@
           const customer = await post('/crm/customers', {
             name: form.get('name'),
             ice: form.get('ice'),
+            ifNumber: form.get('ifNumber'),
             email: form.get('email'),
+            phone: form.get('phone'),
             paymentTermsDays: formNumber(form, 'paymentTermsDays'),
             creditLimit: formNumber(form, 'creditLimit'),
             documentExpiries: documentType || documentExpiresAt ? [{ type: documentType, expiresAt: documentExpiresAt, reference: form.get('ice') }] : []
@@ -1432,6 +1535,7 @@
         try {
           const product = await post('/inventory/products', {
             sku: form.get('sku'),
+            barcode: form.get('barcode'),
             name: form.get('name'),
             type: form.get('type'),
             unit: form.get('unit'),
@@ -1443,6 +1547,7 @@
           });
           formEl.reset();
           formEl.type.value = 'GOODS';
+          formEl.barcode.value = '';
           formEl.unit.value = 'unité';
           formEl.salePrice.value = 0;
           formEl.purchaseCost.value = 0;

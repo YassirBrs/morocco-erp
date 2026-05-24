@@ -626,6 +626,53 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(store.auditLogs().filter((log) => log.entity === 'Supplier')).toHaveLength(3);
   });
 
+  it('reviews fiscal close completeness and flags duplicate customers and products', () => {
+    const duplicateCustomer = store.addCustomer({
+      name: 'Rabat Retail Copie',
+      ice: '001111222333444',
+      ifNumber: '778899',
+      email: 'finance@rabretail.ma',
+      phone: '+212522000000',
+    });
+    const duplicateProduct = store.addProduct({
+      sku: 'CHAIR-COPY',
+      barcode: '6111000000010',
+      name: 'Chaïse   Bureau',
+      salePrice: 900,
+      purchaseCost: 500,
+    });
+    const invoice = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    const year = Number(invoice.date.slice(0, 4));
+    const month = Number(invoice.date.slice(5, 7));
+
+    expect(duplicateCustomer.duplicateWarnings).toEqual(expect.arrayContaining([
+      'ICE déjà utilisé par Rabat Retail SARL',
+      'IF déjà utilisé par Rabat Retail SARL',
+      'Téléphone déjà utilisé par Rabat Retail SARL',
+      'Email déjà utilisé par Rabat Retail SARL',
+    ]));
+    expect(store.customerDuplicateReview().counts).toMatchObject({ customersWithDuplicates: 2, highRisk: 2 });
+    expect(duplicateProduct.duplicateWarnings).toEqual(expect.arrayContaining([
+      'Code-barres déjà utilisé par Chaise bureau',
+      'Nom normalisé déjà utilisé par SKU-CHAIR',
+    ]));
+    expect(store.productDuplicateReview().counts).toMatchObject({ productsWithDuplicates: 2, highRisk: 2 });
+    expect(() => store.addProduct({ sku: 'SKU-CHAIR', name: 'SKU protégé', salePrice: 10 })).toThrow(BadRequestException);
+
+    const blockedClose = store.fiscalDocumentCompletenessCheck(year, month);
+    expect(blockedClose.status).toBe('NEEDS_REVIEW');
+    expect(blockedClose.exceptions.map((exception) => exception.type)).toEqual(expect.arrayContaining(['CUSTOMER_DUPLICATE', 'PRODUCT_DUPLICATE']));
+    expect(blockedClose.supportingCounts).toMatchObject({ invoices: 1, customerDuplicates: 2, productDuplicates: 2 });
+    expect(() => store.lockFiscalPeriod(year, month)).toThrow('La période fiscale contient des exceptions de clôture à traiter');
+
+    store.archiveCustomer(duplicateCustomer.id);
+    store.archiveProduct(duplicateProduct.id);
+    const cleanClose = store.fiscalDocumentCompletenessCheck(year, month);
+    expect(cleanClose.status).toBe('READY_TO_CLOSE');
+    expect(cleanClose.checklist.every((check) => check.complete)).toBe(true);
+    expect(store.lockFiscalPeriod(year, month).locked).toBe(true);
+  });
+
   it('normalizes Moroccan supplier banks and validates 24 digit RIB values', () => {
     const supplier = store.addSupplier({
       name: 'Banque Test Supplier',

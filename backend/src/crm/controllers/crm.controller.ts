@@ -14,6 +14,7 @@ export class CrmController {
   @Get('customers') customers() { return this.crmService.listCustomers(); }
   @Get('customers/credit-control') customerCreditControls() { return this.crmService.customerCreditControls(); }
   @Get('customers/document-reminders') customerDocumentReminders() { return this.crmService.customerDocumentReminders(); }
+  @Get('customers/duplicates') customerDuplicateReview() { return this.crmService.customerDuplicateReview(); }
   @Get('customers/:id') customer(@Param('id') id: string) { return this.crmService.getCustomer(id); }
   @Post('customers') createCustomer(@Body() body: any) { return this.crmService.createCustomer(body); }
   @Patch('customers/:id') updateCustomer(@Param('id') id: string, @Body() body: any) { return this.crmService.updateCustomer(id, body); }

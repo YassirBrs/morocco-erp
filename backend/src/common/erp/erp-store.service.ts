@@ -200,6 +200,7 @@ export class ErpStoreService {
           id: 'prd-1',
           tenantId: tenant.id,
           sku: 'SKU-CHAIR',
+          barcode: '6111000000010',
           name: 'Chaise bureau',
           type: 'GOODS',
           unit: 'unité',
@@ -219,6 +220,7 @@ export class ErpStoreService {
           id: 'prd-2',
           tenantId: tenant.id,
           sku: 'SVC-INSTALL',
+          barcode: '6111000000027',
           name: 'Installation sur site',
           type: 'SERVICE',
           unit: 'forfait',
@@ -238,6 +240,7 @@ export class ErpStoreService {
           id: 'prd-raw',
           tenantId: tenant.id,
           sku: 'RAW-BOIS',
+          barcode: '6111000000034',
           name: 'Bois traité',
           type: 'RAW_MATERIAL',
           unit: 'm',
@@ -257,6 +260,7 @@ export class ErpStoreService {
           id: 'prd-fg',
           tenantId: tenant.id,
           sku: 'FG-TABLE',
+          barcode: '6111000000041',
           name: 'Table assemblée',
           type: 'FINISHED_GOOD',
           unit: 'unité',
@@ -886,6 +890,67 @@ export class ErpStoreService {
     };
   }
 
+  fiscalDocumentCompletenessCheck(year?: number, month?: number, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const current = today();
+    const closeYear = year ?? Number(current.slice(0, 4));
+    const closeMonth = month ?? Number(current.slice(5, 7));
+    this.month(closeMonth);
+    const period = `${closeYear}-${String(closeMonth).padStart(2, '0')}`;
+    const legal = workspace.tenant.legalEntity;
+    const missingLegal = [
+      legal.ice ? '' : 'ICE tenant manquant',
+      legal.ifNumber ? '' : 'IF tenant manquant',
+      legal.rc ? '' : 'RC tenant manquant',
+      legal.patente ? '' : 'Patente tenant manquante',
+      legal.cnssNumber ? '' : 'Numéro CNSS manquant',
+    ].filter(Boolean);
+    const invoices = workspace.invoices.filter((invoice) => invoice.date.startsWith(period));
+    const creditNotes = workspace.creditNotes.filter((creditNote) => creditNote.date.startsWith(period));
+    const journalEntries = workspace.journalEntries.filter((entry) => entry.date.startsWith(period));
+    const unbalancedJournals = journalEntries.filter((entry) => {
+      const debit = entry.lines.reduce((sum, line) => sum + line.debit, 0);
+      const credit = entry.lines.reduce((sum, line) => sum + line.credit, 0);
+      return r2(debit) !== r2(credit);
+    });
+    const customerDuplicates = this.customerDuplicateReview(workspace.tenant.id).rows;
+    const productDuplicates = this.productDuplicateReview(workspace.tenant.id).rows;
+    const vatReview = this.vatDeclarationReviewChecklist(workspace.tenant.id);
+    const periodInvoiceIds = new Set(invoices.map((invoice) => invoice.id));
+    const periodVatExceptions = vatReview.exceptions.filter((exception) => periodInvoiceIds.has(exception.invoiceId));
+    const approvalReview = this.approvalLimitReview(workspace.tenant.id);
+    const exceptions = [
+      ...missingLegal.map((message) => ({ type: 'LEGAL_IDENTITY', severity: 'HIGH', message })),
+      ...customerDuplicates.map((row) => ({ type: 'CUSTOMER_DUPLICATE', severity: row.severity, message: `${row.customerName}: ${row.duplicateWarnings.join(' · ')}` })),
+      ...productDuplicates.map((row) => ({ type: 'PRODUCT_DUPLICATE', severity: row.severity, message: `${row.sku}: ${row.duplicateWarnings.join(' · ')}` })),
+      ...periodVatExceptions.map((exception) => ({ type: 'VAT_EXCEPTION', severity: exception.severity, message: `${exception.invoiceNumber}: ${exception.message}` })),
+      ...approvalReview.rows.filter((row) => row.requiresApproval).map((row) => ({ type: 'APPROVAL_PENDING', severity: 'MEDIUM', message: `${row.reference}: approbation requise` })),
+      ...unbalancedJournals.map((entry) => ({ type: 'JOURNAL_IMBALANCE', severity: 'HIGH', message: `${entry.source}: écriture non équilibrée` })),
+    ];
+    const checklist = [
+      { id: 'legal-identity', label: 'Identifiants légaux complets', complete: missingLegal.length === 0 },
+      { id: 'customer-duplicates', label: 'Doublons clients revus', complete: customerDuplicates.length === 0 },
+      { id: 'product-duplicates', label: 'Doublons articles revus', complete: productDuplicates.length === 0 },
+      { id: 'vat-review', label: 'Checklist TVA sans exception bloquante', complete: periodVatExceptions.length === 0 },
+      { id: 'approvals', label: 'Approbations exceptionnelles traitées', complete: approvalReview.pending === 0 },
+      { id: 'balanced-journals', label: 'Écritures comptables équilibrées', complete: unbalancedJournals.length === 0 },
+    ];
+    return {
+      period,
+      status: checklist.every((check) => check.complete) ? 'READY_TO_CLOSE' : 'NEEDS_REVIEW',
+      checklist,
+      exceptions,
+      supportingCounts: {
+        invoices: invoices.length,
+        creditNotes: creditNotes.length,
+        journalEntries: journalEntries.length,
+        customerDuplicates: customerDuplicates.length,
+        productDuplicates: productDuplicates.length,
+        pendingApprovals: approvalReview.pending,
+      },
+    };
+  }
+
   companyProfile(tenantId?: string) {
     const workspace = this.workspace(tenantId);
     return {
@@ -1033,6 +1098,7 @@ export class ErpStoreService {
     };
     this.validateContacts(customer.contacts);
     this.validateAddresses(customer.addresses);
+    customer.duplicateWarnings = this.customerDuplicateWarnings(workspace, customer);
     workspace.customers.push(customer);
     this.audit(workspace, 'customer.created', 'Customer', customer.id, customer);
     return customer;
@@ -1075,6 +1141,7 @@ export class ErpStoreService {
     }
     if (input.documentExpiries !== undefined) customer.documentExpiries = this.validateCustomerDocumentExpiries(input.documentExpiries);
     if (input.active !== undefined) customer.active = input.active;
+    customer.duplicateWarnings = this.customerDuplicateWarnings(workspace, customer);
     customer.updatedAt = today();
     this.audit(workspace, 'customer.updated', 'Customer', customer.id, customer);
     return customer;
@@ -1115,6 +1182,35 @@ export class ErpStoreService {
       })
       .filter((row) => row.expiredDocuments.length || row.expiringDocuments.length)
       .sort((left, right) => (left.nextExpiryDays ?? 9999) - (right.nextExpiryDays ?? 9999) || left.customerName.localeCompare(right.customerName));
+  }
+
+  customerDuplicateReview(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.customers
+      .filter((customer) => customer.active)
+      .map((customer) => {
+        const duplicateWarnings = this.customerDuplicateWarnings(workspace, customer);
+        customer.duplicateWarnings = duplicateWarnings;
+        return {
+          customerId: customer.id,
+          customerName: customer.name,
+          ice: customer.ice,
+          ifNumber: customer.ifNumber,
+          phone: customer.phone,
+          email: customer.email,
+          duplicateWarnings,
+          severity: duplicateWarnings.length > 1 ? 'HIGH' : duplicateWarnings.length ? 'MEDIUM' : 'OK',
+        };
+      })
+      .filter((row) => row.duplicateWarnings.length)
+      .sort((left, right) => right.duplicateWarnings.length - left.duplicateWarnings.length || left.customerName.localeCompare(right.customerName));
+    return {
+      rows,
+      counts: {
+        customersWithDuplicates: rows.length,
+        highRisk: rows.filter((row) => row.severity === 'HIGH').length,
+      },
+    };
   }
 
   customerCreditControls(tenantId?: string) {
@@ -1455,6 +1551,7 @@ export class ErpStoreService {
       id: this.id('prd'),
       tenantId: workspace.tenant.id,
       sku,
+      barcode: this.clean(input.barcode),
       name: this.nonEmpty(input.name, 'Le nom de l’article est obligatoire'),
       type,
       unit: this.nonEmpty(input.unit ?? (type === 'SERVICE' ? 'forfait' : 'unité'), 'L’unité article est obligatoire'),
@@ -1470,6 +1567,7 @@ export class ErpStoreService {
       createdAt: today(),
       updatedAt: today(),
     };
+    product.duplicateWarnings = this.productDuplicateWarnings(workspace, product);
     workspace.products.push(product);
     this.audit(workspace, 'product.created', 'Product', product.id, product);
     return product;
@@ -1500,6 +1598,33 @@ export class ErpStoreService {
       .sort((left, right) => right.marginGap - left.marginGap || left.sku.localeCompare(right.sku));
   }
 
+  productDuplicateReview(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.products
+      .filter((product) => product.active)
+      .map((product) => {
+        const duplicateWarnings = this.productDuplicateWarnings(workspace, product);
+        product.duplicateWarnings = duplicateWarnings;
+        return {
+          productId: product.id,
+          sku: product.sku,
+          barcode: product.barcode,
+          name: product.name,
+          duplicateWarnings,
+          severity: duplicateWarnings.length > 1 ? 'HIGH' : duplicateWarnings.length ? 'MEDIUM' : 'OK',
+        };
+      })
+      .filter((row) => row.duplicateWarnings.length)
+      .sort((left, right) => right.duplicateWarnings.length - left.duplicateWarnings.length || left.sku.localeCompare(right.sku));
+    return {
+      rows,
+      counts: {
+        productsWithDuplicates: rows.length,
+        highRisk: rows.filter((row) => row.severity === 'HIGH').length,
+      },
+    };
+  }
+
   getProduct(productId: string, tenantId?: string): Product {
     return this.product(this.workspace(tenantId), productId);
   }
@@ -1514,6 +1639,7 @@ export class ErpStoreService {
       }
       product.sku = sku;
     }
+    if (input.barcode !== undefined) product.barcode = this.clean(input.barcode);
     if (input.name !== undefined) product.name = this.nonEmpty(input.name, 'Le nom de l’article est obligatoire');
     if (input.type !== undefined) product.type = input.type;
     if (input.unit !== undefined) product.unit = this.nonEmpty(input.unit, 'L’unité article est obligatoire');
@@ -1537,6 +1663,7 @@ export class ErpStoreService {
       product.weightedAverageCost = 0;
     }
     if (input.active !== undefined) product.active = input.active;
+    product.duplicateWarnings = this.productDuplicateWarnings(workspace, product);
     product.updatedAt = today();
     this.audit(workspace, 'product.updated', 'Product', product.id, product);
     return product;
@@ -2057,6 +2184,10 @@ export class ErpStoreService {
 
   lockFiscalPeriod(year: number, month: number, tenantId?: string): FiscalPeriod {
     const workspace = this.workspace(tenantId);
+    const closeCheck = this.fiscalDocumentCompletenessCheck(year, month, workspace.tenant.id);
+    if (closeCheck.status !== 'READY_TO_CLOSE') {
+      throw new BadRequestException('La période fiscale contient des exceptions de clôture à traiter');
+    }
     let period = workspace.fiscalPeriods.find((candidate) => candidate.year === year && candidate.month === month);
     if (!period) {
       period = { id: this.id('fp'), tenantId: workspace.tenant.id, year, month, locked: false };
@@ -2239,6 +2370,32 @@ export class ErpStoreService {
     return supplier;
   }
 
+  private customerDuplicateWarnings(workspace: TenantWorkspace, customer: Customer): string[] {
+    const warnings: string[] = [];
+    const ice = customer.ice?.trim();
+    const ifNumber = customer.ifNumber?.trim();
+    const phone = this.duplicateKey(customer.phone);
+    const email = customer.email?.trim().toLowerCase();
+    const duplicateIce = ice
+      ? workspace.customers.find((candidate) => candidate.id !== customer.id && candidate.active && candidate.ice?.trim() === ice)
+      : undefined;
+    const duplicateIf = ifNumber
+      ? workspace.customers.find((candidate) => candidate.id !== customer.id && candidate.active && candidate.ifNumber?.trim() === ifNumber)
+      : undefined;
+    const duplicatePhone = phone
+      ? workspace.customers.find((candidate) => candidate.id !== customer.id && candidate.active && this.duplicateKey(candidate.phone) === phone)
+      : undefined;
+    const duplicateEmail = email
+      ? workspace.customers.find((candidate) => candidate.id !== customer.id && candidate.active && candidate.email?.trim().toLowerCase() === email)
+      : undefined;
+
+    if (duplicateIce) warnings.push(`ICE déjà utilisé par ${duplicateIce.name}`);
+    if (duplicateIf) warnings.push(`IF déjà utilisé par ${duplicateIf.name}`);
+    if (duplicatePhone) warnings.push(`Téléphone déjà utilisé par ${duplicatePhone.name}`);
+    if (duplicateEmail) warnings.push(`Email déjà utilisé par ${duplicateEmail.name}`);
+    return warnings;
+  }
+
   private supplierDuplicateWarnings(workspace: TenantWorkspace, supplier: Supplier): string[] {
     const warnings: string[] = [];
     const ice = supplier.ice?.trim();
@@ -2252,6 +2409,27 @@ export class ErpStoreService {
 
     if (duplicateIce) warnings.push(`ICE déjà utilisé par ${duplicateIce.name}`);
     if (duplicateIf) warnings.push(`IF déjà utilisé par ${duplicateIf.name}`);
+    return warnings;
+  }
+
+  private productDuplicateWarnings(workspace: TenantWorkspace, product: Product): string[] {
+    const warnings: string[] = [];
+    const sku = product.sku.trim().toUpperCase();
+    const barcode = this.duplicateKey(product.barcode);
+    const name = this.normalizedName(product.name);
+    const duplicateSku = sku
+      ? workspace.products.find((candidate) => candidate.id !== product.id && candidate.active && candidate.sku.trim().toUpperCase() === sku)
+      : undefined;
+    const duplicateBarcode = barcode
+      ? workspace.products.find((candidate) => candidate.id !== product.id && candidate.active && this.duplicateKey(candidate.barcode) === barcode)
+      : undefined;
+    const duplicateName = name
+      ? workspace.products.find((candidate) => candidate.id !== product.id && candidate.active && this.normalizedName(candidate.name) === name)
+      : undefined;
+
+    if (duplicateSku) warnings.push(`SKU déjà utilisé par ${duplicateSku.name}`);
+    if (duplicateBarcode) warnings.push(`Code-barres déjà utilisé par ${duplicateBarcode.name}`);
+    if (duplicateName) warnings.push(`Nom normalisé déjà utilisé par ${duplicateName.sku}`);
     return warnings;
   }
 
@@ -2698,6 +2876,17 @@ export class ErpStoreService {
       cam: 'Crédit Agricole du Maroc',
     };
     return banks[normalized] ?? value.trim().replace(/\s+/g, ' ');
+  }
+
+  private duplicateKey(value: string | undefined): string | undefined {
+    const cleaned = this.clean(value);
+    if (!cleaned) return undefined;
+    return cleaned.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  private normalizedName(value: string | undefined): string | undefined {
+    const text = this.searchText(value);
+    return text ? text.replace(/[^a-z0-9]/g, '') : undefined;
   }
 
   private moroccanRib(value: string): string {

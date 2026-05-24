@@ -90,6 +90,7 @@ export interface Customer {
   contacts: Array<{ name: string; role?: string; email?: string; phone?: string }>;
   addresses: Array<{ label: string; line1: string; city: string }>;
   documentExpiries: Array<{ type: string; expiresAt: string; reference?: string }>;
+  duplicateWarnings?: string[];
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -146,6 +147,7 @@ export interface Product {
   id: string;
   tenantId: string;
   sku: string;
+  barcode?: string;
   name: string;
   type: 'GOODS' | 'SERVICE' | 'FINISHED_GOOD' | 'RAW_MATERIAL';
   unit: string;
@@ -157,6 +159,7 @@ export interface Product {
   stockOnHand: number;
   reservedStock: number;
   weightedAverageCost: number;
+  duplicateWarnings?: string[];
   active: boolean;
   createdAt: string;
   updatedAt: string;

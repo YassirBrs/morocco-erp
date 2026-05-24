@@ -15,6 +15,7 @@ export class CrmService {
   listCustomers() { return this.store.listCustomers(); }
   customerCreditControls() { return this.store.customerCreditControls(); }
   customerDocumentReminders() { return this.store.customerDocumentReminders(); }
+  customerDuplicateReview() { return this.store.customerDuplicateReview(); }
   getCustomer(id: string) { return this.store.getCustomer(id); }
   createCustomer(data: any) { return this.store.addCustomer(data); }
   updateCustomer(id: string, data: any) { return this.store.updateCustomer(id, data); }
