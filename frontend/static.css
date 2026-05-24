@@ -475,6 +475,10 @@ button:disabled {
   border-top: 1px solid var(--line);
 }
 
+.analyticsBox {
+  border-top: 1px solid var(--line);
+}
+
 .statementHeader {
   display: flex;
   align-items: center;

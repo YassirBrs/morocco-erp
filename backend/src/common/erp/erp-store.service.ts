@@ -986,6 +986,38 @@ export class ErpStoreService {
     return { created: created.length, failed: errors.length, errors, records: created };
   }
 
+  leadSourceAnalytics(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const buckets = new Map<string, {
+      source: string;
+      owner: string;
+      month: string;
+      leads: number;
+      expectedValue: number;
+      won: number;
+      lost: number;
+    }>();
+    for (const lead of workspace.leads) {
+      const source = lead.source || 'Non renseignée';
+      const owner = lead.owner || 'Non assigné';
+      const month = lead.createdAt.slice(0, 7);
+      const key = `${source}|${owner}|${month}`;
+      const bucket = buckets.get(key) ?? { source, owner, month, leads: 0, expectedValue: 0, won: 0, lost: 0 };
+      bucket.leads += 1;
+      bucket.expectedValue = r2(bucket.expectedValue + lead.expectedValue);
+      if (lead.stage === 'WON') bucket.won += 1;
+      if (lead.stage === 'LOST') bucket.lost += 1;
+      buckets.set(key, bucket);
+    }
+    return [...buckets.values()]
+      .map((bucket) => ({
+        ...bucket,
+        winRate: bucket.leads ? r2(bucket.won / bucket.leads) : 0,
+        lostRate: bucket.leads ? r2(bucket.lost / bucket.leads) : 0,
+      }))
+      .sort((left, right) => right.expectedValue - left.expectedValue || left.source.localeCompare(right.source));
+  }
+
   addProduct(input: Partial<Product> & { sku: string; name: string; salePrice: number }, tenantId?: string): Product {
     const workspace = this.workspace(tenantId);
     const sku = this.nonEmpty(input.sku, 'Le SKU est obligatoire').toUpperCase();

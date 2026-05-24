@@ -11,6 +11,7 @@ export class CrmService {
   convertLeadToQuote(id: string, data: any) { return this.store.convertLeadToQuote(id, data); }
   exportLeadsCsv() { return this.store.exportLeadsCsv(); }
   importLeadsCsv(data: { csv?: string }) { return this.store.importLeadsCsv(data.csv ?? ''); }
+  leadSourceAnalytics() { return this.store.leadSourceAnalytics(); }
   listCustomers() { return this.store.listCustomers(); }
   getCustomer(id: string) { return this.store.getCustomer(id); }
   createCustomer(data: any) { return this.store.addCustomer(data); }

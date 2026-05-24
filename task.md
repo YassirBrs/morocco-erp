@@ -186,7 +186,7 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T129 P1 - Add a unified business search across customers, prospects, suppliers, products, invoices, and orders.
 - [x] T130 P1 - Add dashboard filters for overdue next actions, unpaid customer balances, and supplier payment terms.
 - [x] T131 P1 - Add CSV import/export for leads and suppliers with validation summaries.
-- [ ] T132 P2 - Add lead source analytics by owner, expected value, won/lost rate, and month.
+- [x] T132 P2 - Add lead source analytics by owner, expected value, won/lost rate, and month.
 - [ ] T133 P2 - Add supplier risk notes, preferred supplier flags, and document expiry reminders.
 - [x] T134 P2 - Scan the codebase, locate the global style configuration file (e.g., tailwind.config.js, global.css, theme provider, or constants file), and        automatically update the colors to match this professional ERP palette.
 

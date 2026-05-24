@@ -284,6 +284,18 @@
                 <tbody id="leadRows"></tbody>
               </table>
             </div>
+            <div class="analyticsBox">
+              <div class="statementHeader">
+                <span>Analytics sources prospects</span>
+                <strong id="leadAnalyticsCount">0 segment</strong>
+              </div>
+              <div class="tableWrap">
+                <table class="miniTable">
+                  <thead><tr><th>Source</th><th>Commercial</th><th>Mois</th><th>Valeur</th><th>Gagné</th><th>Perdu</th></tr></thead>
+                  <tbody id="leadAnalyticsRows"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           <div class="panel">
@@ -358,7 +370,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, leadAnalytics: [], quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -459,12 +471,13 @@
       }
 
       async function load() {
-        const [summary, stock, customers, products, leads, suppliers, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, products, leads, leadAnalytics, suppliers, setup, dashboardFilters, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
           get('/inventory/products'),
           get('/crm/leads'),
+          get('/crm/leads/analytics'),
           get('/inventory/suppliers'),
           get('/tenant/setup-checklist'),
           get('/tenant/dashboard-filters'),
@@ -483,6 +496,7 @@
         state.invoices = invoices;
         state.creditNotes = creditNotes;
         state.leads = leads;
+        state.leadAnalytics = leadAnalytics;
         state.suppliers = suppliers;
         state.statement = statement;
         state.dashboardFilters = dashboardFilters;
@@ -508,6 +522,7 @@
         renderProfile();
         renderDashboardFilters();
         renderSalesFlow();
+        renderLeadAnalytics();
         renderStatement();
         switchModuleView(state.activeView);
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
@@ -665,6 +680,20 @@
         qs('#overdueActionSummary').textContent = overdue ? `${overdue.customerName} · ${overdue.nextActionDate}` : 'Aucune action CRM en retard';
         qs('#unpaidBalanceSummary').textContent = unpaid ? `${unpaid.customerName} · ${mad(unpaid.balance)}` : 'Aucune facture ouverte';
         qs('#supplierTermsSummary').textContent = supplier ? `${supplier.name} · ${supplier.paymentTermsDays} j` : 'Aucun fournisseur actif';
+      }
+
+      function renderLeadAnalytics() {
+        qs('#leadAnalyticsCount').textContent = `${state.leadAnalytics.length} segment${state.leadAnalytics.length > 1 ? 's' : ''}`;
+        qs('#leadAnalyticsRows').innerHTML = state.leadAnalytics.length ? state.leadAnalytics.slice(0, 5).map((row) => `
+          <tr>
+            <td><strong>${row.source}</strong></td>
+            <td>${row.owner}</td>
+            <td>${row.month}</td>
+            <td>${mad(row.expectedValue)}</td>
+            <td>${pct(row.winRate)}</td>
+            <td>${pct(row.lostRate)}</td>
+          </tr>
+        `).join('') : emptyRow('Aucune analytics prospect', 6);
       }
 
       async function runBusinessSearch(query) {

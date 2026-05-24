@@ -495,6 +495,35 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(csv).toContain('Hotel CSV,QUALIFIED,Nadia,Salon,2026-06-01,35000');
   });
 
+  it('groups lead source analytics by source, owner, expected value, won/lost rate, and month', () => {
+    store.addLead({ customerName: 'Lead Won', stage: 'WON', owner: 'Nadia', source: 'Salon', expectedValue: 10000 });
+    store.addLead({ customerName: 'Lead Lost', stage: 'LOST', owner: 'Nadia', source: 'Salon', expectedValue: 5000 });
+    store.addLead({ customerName: 'Lead Web', stage: 'QUALIFIED', owner: 'Omar', source: 'Web', expectedValue: 20000 });
+
+    const analytics = store.leadSourceAnalytics();
+
+    expect(analytics[0]).toMatchObject({
+      source: 'Web',
+      owner: 'Omar',
+      leads: 1,
+      expectedValue: 20000,
+      won: 0,
+      lost: 0,
+      winRate: 0,
+      lostRate: 0,
+    });
+    expect(analytics.find((row) => row.source === 'Salon')).toMatchObject({
+      owner: 'Nadia',
+      leads: 2,
+      expectedValue: 15000,
+      won: 1,
+      lost: 1,
+      winRate: 0.5,
+      lostRate: 0.5,
+    });
+    expect(analytics[0].month).toMatch(/^\d{4}-\d{2}$/);
+  });
+
   it('imports and exports supplier CSV with bank normalization and validation summaries', () => {
     const result = store.importSuppliersCsv([
       'name,ice,ifNumber,email,paymentTermsDays,bankName,rib',
