@@ -14,8 +14,10 @@ import {
   DocumentLine,
   DocumentLineInput,
   DocumentTotals,
+  Employee,
   ErpUser,
   FiscalPeriod,
+  ImportTemplateKind,
   InternalNote,
   InternalTask,
   InternalTaskStatus,
@@ -25,6 +27,7 @@ import {
   LegalEntity,
   Payment,
   PosTransaction,
+  PreferredLanguage,
   Product,
   ProductionOrder,
   PurchaseReceipt,
@@ -149,26 +152,38 @@ export class ErpStoreService {
           password: 'demo1234',
           active: true,
         },
+        {
+          id: 'usr-partner',
+          tenantId: tenant.id,
+          email: 'partner@atlas.ma',
+          name: 'Partenaire Intégration Maroc',
+          role: 'IMPLEMENTATION_PARTNER',
+          password: 'demo1234',
+          active: true,
+        },
       ],
       customers: [
         {
           id: 'cus-1',
           tenantId: tenant.id,
           name: 'Rabat Retail SARL',
+          arabicName: 'شركة الرباط للتجزئة',
           ice: '001111222333444',
           ifNumber: '778899',
           rc: 'RABAT-112233',
           email: 'finance@rabretail.ma',
           phone: '+212522000000',
           address: 'Avenue Mohammed V, Rabat',
+          arabicAddress: 'شارع محمد الخامس، الرباط',
+          preferredLanguage: 'FR',
           city: 'Rabat',
           paymentTermsDays: 30,
           creditLimit: 100000,
           contacts: [{ name: 'Youssef Amrani', role: 'Finance', email: 'finance@rabretail.ma', phone: '+212522000000' }],
           addresses: [{ label: 'Siège', line1: 'Avenue Mohammed V', city: 'Rabat' }],
           documentExpiries: [
-            { type: 'Garantie de paiement', expiresAt: '2026-06-20', reference: 'GP-2026-001' },
-            { type: 'Registre de Commerce', expiresAt: '2026-12-31', reference: 'RABAT-112233' },
+            { type: 'Garantie de paiement', arabicType: 'ضمان الأداء', expiresAt: '2026-06-20', reference: 'GP-2026-001' },
+            { type: 'Registre de Commerce', arabicType: 'السجل التجاري', expiresAt: '2026-12-31', reference: 'RABAT-112233' },
           ],
           active: true,
           createdAt: today(),
@@ -180,19 +195,47 @@ export class ErpStoreService {
           id: 'sup-1',
           tenantId: tenant.id,
           name: 'Casa Import SA',
+          arabicName: 'شركة كازا للاستيراد',
           ice: '009998887776665',
           ifNumber: '445566',
           rc: 'CASA-99001',
           email: 'sales@casa-import.ma',
           phone: '+212522111111',
           address: 'Zone industrielle Ain Sebaa',
+          arabicAddress: 'المنطقة الصناعية عين السبع',
+          preferredLanguage: 'FR',
           city: 'Casablanca',
           paymentTermsDays: 45,
           contacts: [{ name: 'Samir Achat', role: 'Commercial', email: 'sales@casa-import.ma', phone: '+212522111111' }],
           bankDetails: [{ bankName: 'Attijariwafa bank', rib: '007780000000000000000123' }],
           preferred: true,
           riskNotes: 'Contrat import à revoir avant renouvellement.',
-          documentExpiries: [{ type: 'Attestation fiscale', expiresAt: '2026-06-30', reference: 'AF-2026' }],
+          documentExpiries: [{ type: 'Attestation fiscale', arabicType: 'شهادة ضريبية', expiresAt: '2026-06-30', reference: 'AF-2026' }],
+          active: true,
+          createdAt: today(),
+          updatedAt: today(),
+        },
+      ],
+      employees: [
+        {
+          id: 'emp-1',
+          tenantId: tenant.id,
+          employeeNumber: 'EMP-001',
+          fullName: 'Ahmed Taleb',
+          arabicName: 'أحمد طالب',
+          cin: 'AB123456',
+          cnssNumber: '1234567890',
+          contractType: 'CDI',
+          hireDate: '2024-01-15',
+          baseSalary: 6000,
+          dependents: 2,
+          address: 'Hay Riad, Rabat',
+          arabicAddress: 'حي الرياض، الرباط',
+          preferredLanguage: 'FR',
+          documentExpiries: [
+            { type: 'CIN', arabicType: 'البطاقة الوطنية', expiresAt: '2030-01-15', reference: 'AB123456' },
+            { type: 'Contrat de travail', arabicType: 'عقد العمل', expiresAt: '2027-01-15', reference: 'CDI-EMP-001' },
+          ],
           active: true,
           createdAt: today(),
           updatedAt: today(),
@@ -206,6 +249,7 @@ export class ErpStoreService {
           sku: 'SKU-CHAIR',
           barcode: '6111000000010',
           name: 'Chaise bureau',
+          arabicDescription: 'كرسي مكتب',
           type: 'GOODS',
           unit: 'unité',
           trackStock: true,
@@ -226,6 +270,7 @@ export class ErpStoreService {
           sku: 'SVC-INSTALL',
           barcode: '6111000000027',
           name: 'Installation sur site',
+          arabicDescription: 'خدمة التركيب في الموقع',
           type: 'SERVICE',
           unit: 'forfait',
           trackStock: false,
@@ -246,6 +291,7 @@ export class ErpStoreService {
           sku: 'RAW-BOIS',
           barcode: '6111000000034',
           name: 'Bois traité',
+          arabicDescription: 'خشب معالج',
           type: 'RAW_MATERIAL',
           unit: 'm',
           trackStock: true,
@@ -266,6 +312,7 @@ export class ErpStoreService {
           sku: 'FG-TABLE',
           barcode: '6111000000041',
           name: 'Table assemblée',
+          arabicDescription: 'طاولة مركبة',
           type: 'FINISHED_GOOD',
           unit: 'unité',
           trackStock: true,
@@ -342,6 +389,7 @@ export class ErpStoreService {
       users: [],
       customers: [],
       suppliers: [],
+      employees: [],
       leads: [],
       products: [],
       warehouses: [{ id: this.id('wh'), tenantId, name: 'Dépôt principal', city: tenant.legalEntity.city }],
@@ -548,6 +596,199 @@ export class ErpStoreService {
       total: checks.length,
       ready: completed === checks.length,
       checks,
+    };
+  }
+
+  importTemplates(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const tenantName = workspace.tenant.legalEntity.tradeName || 'Votre société';
+    return {
+      generatedAt: today(),
+      tenantId: workspace.tenant.id,
+      templates: [
+        {
+          module: 'customers',
+          label: 'Clients',
+          fileName: 'modele-import-clients.csv',
+          requiredHeaders: ['name'],
+          headers: ['name', 'arabicName', 'ice', 'ifNumber', 'rc', 'email', 'phone', 'address', 'arabicAddress', 'city', 'preferredLanguage', 'paymentTermsDays', 'creditLimit', 'documentType', 'documentArabicType', 'documentExpiresAt'],
+          sampleRows: [{
+            name: 'Client Exemple SARL',
+            arabicName: 'شركة عميل نموذجية',
+            ice: '001111222333444',
+            ifNumber: '778899',
+            rc: 'RABAT-112233',
+            email: 'finance@client.ma',
+            phone: '+212522000000',
+            address: 'Avenue Mohammed V, Rabat',
+            arabicAddress: 'شارع محمد الخامس، الرباط',
+            city: 'Rabat',
+            preferredLanguage: 'FR',
+            paymentTermsDays: 30,
+            creditLimit: 50000,
+            documentType: 'Registre de Commerce',
+            documentArabicType: 'السجل التجاري',
+            documentExpiresAt: '2026-12-31',
+          }],
+        },
+        {
+          module: 'suppliers',
+          label: 'Fournisseurs',
+          fileName: 'modele-import-fournisseurs.csv',
+          requiredHeaders: ['name'],
+          headers: ['name', 'arabicName', 'ice', 'ifNumber', 'email', 'paymentTermsDays', 'bankName', 'rib', 'preferred', 'riskNotes', 'address', 'arabicAddress', 'preferredLanguage', 'documentType', 'documentArabicType', 'documentExpiresAt'],
+          sampleRows: [{
+            name: 'Fournisseur Exemple SA',
+            arabicName: 'شركة مورد نموذجية',
+            ice: '009998887776665',
+            ifNumber: '445566',
+            email: 'achat@fournisseur.ma',
+            paymentTermsDays: 45,
+            bankName: 'Attijariwafa bank',
+            rib: '007780000000000000000123',
+            preferred: true,
+            riskNotes: 'Attestation fiscale à renouveler',
+            address: 'Zone industrielle Ain Sebaa',
+            arabicAddress: 'المنطقة الصناعية عين السبع',
+            preferredLanguage: 'FR',
+            documentType: 'Attestation fiscale',
+            documentArabicType: 'شهادة ضريبية',
+            documentExpiresAt: '2026-06-30',
+          }],
+        },
+        {
+          module: 'products',
+          label: 'Articles',
+          fileName: 'modele-import-articles.csv',
+          requiredHeaders: ['sku', 'name', 'salePrice'],
+          headers: ['sku', 'barcode', 'name', 'arabicDescription', 'type', 'unit', 'salePrice', 'purchaseCost', 'vatRate', 'stockOnHand', 'trackStock'],
+          sampleRows: [{
+            sku: 'SKU-DEMO',
+            barcode: '6111000000096',
+            name: 'Article exemple',
+            arabicDescription: 'منتج نموذجي',
+            type: 'GOODS',
+            unit: 'unité',
+            salePrice: 1000,
+            purchaseCost: 650,
+            vatRate: 0.2,
+            stockOnHand: 10,
+            trackStock: true,
+          }],
+        },
+        {
+          module: 'employees',
+          label: 'Salariés',
+          fileName: 'modele-import-salaries.csv',
+          requiredHeaders: ['fullName', 'cin', 'hireDate', 'baseSalary'],
+          headers: ['employeeNumber', 'fullName', 'arabicName', 'cin', 'cnssNumber', 'contractType', 'hireDate', 'baseSalary', 'dependents', 'address', 'arabicAddress', 'preferredLanguage', 'documentType', 'documentArabicType', 'documentExpiresAt'],
+          sampleRows: [{
+            employeeNumber: 'EMP-001',
+            fullName: 'Ahmed Taleb',
+            arabicName: 'أحمد طالب',
+            cin: 'AB123456',
+            cnssNumber: '1234567890',
+            contractType: 'CDI',
+            hireDate: '2024-01-15',
+            baseSalary: 6000,
+            dependents: 2,
+            address: 'Hay Riad, Rabat',
+            arabicAddress: 'حي الرياض، الرباط',
+            preferredLanguage: 'FR',
+            documentType: 'CIN',
+            documentArabicType: 'البطاقة الوطنية',
+            documentExpiresAt: '2030-01-15',
+          }],
+        },
+        {
+          module: 'chart-of-accounts',
+          label: 'Plan comptable PCGE',
+          fileName: 'modele-import-pcge.csv',
+          requiredHeaders: ['account', 'labelFr'],
+          headers: ['account', 'labelFr', 'labelAr', 'class', 'vatDeductible', 'active'],
+          sampleRows: [{
+            account: '342100',
+            labelFr: `Clients - ${tenantName}`,
+            labelAr: 'حسابات الزبناء',
+            class: '3',
+            vatDeductible: false,
+            active: true,
+          }],
+        },
+      ],
+    };
+  }
+
+  importTemplateCsv(kind: ImportTemplateKind, tenantId?: string): string {
+    const template = this.importTemplates(tenantId).templates.find((candidate) => candidate.module === kind);
+    if (!template) throw new NotFoundException('Modèle d’import introuvable');
+    return this.toCsv(template.headers, template.sampleRows);
+  }
+
+  implementationPartnerWorkspace() {
+    const clients = [...this.workspaces.values()]
+      .map((workspace) => {
+        const setup = this.setupChecklist(workspace.tenant.id);
+        const blockers = setup.checks.filter((check) => !check.complete).map((check) => check.label);
+        return {
+          tenantId: workspace.tenant.id,
+          tradeName: workspace.tenant.legalEntity.tradeName,
+          city: workspace.tenant.legalEntity.city,
+          plan: workspace.tenant.plan,
+          status: workspace.tenant.status,
+          completed: setup.completed,
+          total: setup.total,
+          readinessScore: setup.total ? Math.round((setup.completed / setup.total) * 100) : 0,
+          ready: setup.ready,
+          blockers,
+          counts: {
+            customers: workspace.customers.filter((customer) => customer.active).length,
+            suppliers: workspace.suppliers.filter((supplier) => supplier.active).length,
+            employees: workspace.employees.filter((employee) => employee.active).length,
+            products: workspace.products.filter((product) => product.active).length,
+          },
+        };
+      })
+      .sort((left, right) => left.readinessScore - right.readinessScore || left.tradeName.localeCompare(right.tradeName));
+    return {
+      generatedAt: today(),
+      clients,
+      totals: {
+        tenants: clients.length,
+        ready: clients.filter((client) => client.ready).length,
+        blocked: clients.filter((client) => !client.ready).length,
+      },
+    };
+  }
+
+  createPartnerClientTenant(input: Partial<LegalEntity> & { tradeName: string; slug?: string; plan?: Tenant['plan']; partnerEmail?: string }) {
+    const tenant = this.createTenant(input);
+    const workspace = this.workspace(tenant.id);
+    this.audit(workspace, 'implementation.client-created', 'Tenant', tenant.id, {
+      partnerEmail: this.clean(input.partnerEmail) ?? 'partner@atlas.ma',
+      tenantId: tenant.id,
+    });
+    return {
+      tenant,
+      health: this.implementationPartnerWorkspace().clients.find((client) => client.tenantId === tenant.id),
+    };
+  }
+
+  updatePartnerClientOnboarding(tenantId: string, input: Partial<LegalEntity> & {
+    invoiceSeries?: string;
+    fiscalYearStartMonth?: number;
+    vatStatus?: 'ENABLED' | 'EXEMPT';
+  }) {
+    const result = this.completeTenantOnboarding(input, tenantId);
+    const workspace = this.workspace(tenantId);
+    this.audit(workspace, 'implementation.client-onboarding-updated', 'Tenant', tenantId, {
+      ready: result.ready,
+      completed: result.completed,
+      total: result.total,
+    });
+    return {
+      ...result,
+      health: this.implementationPartnerWorkspace().clients.find((client) => client.tenantId === tenantId),
     };
   }
 
@@ -1244,12 +1485,15 @@ export class ErpStoreService {
       id: this.id('cus'),
       tenantId: workspace.tenant.id,
       name: this.nonEmpty(input.name, 'Le nom du client est obligatoire'),
+      arabicName: this.clean(input.arabicName),
       ice: this.clean(input.ice),
       ifNumber: this.clean(input.ifNumber),
       rc: this.clean(input.rc),
       email: this.clean(input.email),
       phone: this.clean(input.phone),
       address: this.clean(input.address),
+      arabicAddress: this.clean(input.arabicAddress),
+      preferredLanguage: this.preferredLanguage(input.preferredLanguage),
       city: this.clean(input.city),
       paymentTermsDays: this.nonNegative(input.paymentTermsDays ?? 30, 'Le délai de paiement doit être nul ou positif'),
       creditLimit: this.nonNegative(input.creditLimit ?? 0, 'Le plafond de crédit doit être nul ou positif'),
@@ -1282,12 +1526,15 @@ export class ErpStoreService {
     if (input.name !== undefined) {
       customer.name = this.nonEmpty(input.name, 'Le nom du client est obligatoire');
     }
+    if (input.arabicName !== undefined) customer.arabicName = this.clean(input.arabicName);
     if (input.ice !== undefined) customer.ice = this.clean(input.ice);
     if (input.ifNumber !== undefined) customer.ifNumber = this.clean(input.ifNumber);
     if (input.rc !== undefined) customer.rc = this.clean(input.rc);
     if (input.email !== undefined) customer.email = this.clean(input.email);
     if (input.phone !== undefined) customer.phone = this.clean(input.phone);
     if (input.address !== undefined) customer.address = this.clean(input.address);
+    if (input.arabicAddress !== undefined) customer.arabicAddress = this.clean(input.arabicAddress);
+    if (input.preferredLanguage !== undefined) customer.preferredLanguage = this.preferredLanguage(input.preferredLanguage);
     if (input.city !== undefined) customer.city = this.clean(input.city);
     if (input.paymentTermsDays !== undefined) {
       customer.paymentTermsDays = this.nonNegative(input.paymentTermsDays, 'Le délai de paiement doit être nul ou positif');
@@ -1390,12 +1637,15 @@ export class ErpStoreService {
       id: this.id('sup'),
       tenantId: workspace.tenant.id,
       name: this.nonEmpty(input.name, 'Le nom du fournisseur est obligatoire'),
+      arabicName: this.clean(input.arabicName),
       ice: this.clean(input.ice),
       ifNumber: this.clean(input.ifNumber),
       rc: this.clean(input.rc),
       email: this.clean(input.email),
       phone: this.clean(input.phone),
       address: this.clean(input.address),
+      arabicAddress: this.clean(input.arabicAddress),
+      preferredLanguage: this.preferredLanguage(input.preferredLanguage),
       city: this.clean(input.city),
       paymentTermsDays: this.nonNegative(input.paymentTermsDays ?? 30, 'Le délai de paiement fournisseur doit être nul ou positif'),
       contacts: input.contacts ?? [],
@@ -1427,12 +1677,15 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const supplier = this.supplier(workspace, supplierId);
     if (input.name !== undefined) supplier.name = this.nonEmpty(input.name, 'Le nom du fournisseur est obligatoire');
+    if (input.arabicName !== undefined) supplier.arabicName = this.clean(input.arabicName);
     if (input.ice !== undefined) supplier.ice = this.clean(input.ice);
     if (input.ifNumber !== undefined) supplier.ifNumber = this.clean(input.ifNumber);
     if (input.rc !== undefined) supplier.rc = this.clean(input.rc);
     if (input.email !== undefined) supplier.email = this.clean(input.email);
     if (input.phone !== undefined) supplier.phone = this.clean(input.phone);
     if (input.address !== undefined) supplier.address = this.clean(input.address);
+    if (input.arabicAddress !== undefined) supplier.arabicAddress = this.clean(input.arabicAddress);
+    if (input.preferredLanguage !== undefined) supplier.preferredLanguage = this.preferredLanguage(input.preferredLanguage);
     if (input.city !== undefined) supplier.city = this.clean(input.city);
     if (input.paymentTermsDays !== undefined) {
       supplier.paymentTermsDays = this.nonNegative(input.paymentTermsDays, 'Le délai de paiement fournisseur doit être nul ou positif');
@@ -1501,6 +1754,41 @@ export class ErpStoreService {
       }
     });
     return { created: created.length, failed: errors.length, errors, records: created };
+  }
+
+  listEmployees(tenantId?: string): Employee[] {
+    return this.workspace(tenantId).employees;
+  }
+
+  addEmployee(input: Partial<Employee> & { fullName: string; cin: string; hireDate: string; baseSalary: number }, tenantId?: string): Employee {
+    const workspace = this.workspace(tenantId);
+    const employeeNumber = this.clean(input.employeeNumber) ?? `EMP-${String(workspace.employees.length + 1).padStart(3, '0')}`;
+    if (workspace.employees.some((candidate) => candidate.employeeNumber.toUpperCase() === employeeNumber.toUpperCase())) {
+      throw new BadRequestException('Le matricule employé existe déjà');
+    }
+    const employee: Employee = {
+      id: this.id('emp'),
+      tenantId: workspace.tenant.id,
+      employeeNumber,
+      fullName: this.nonEmpty(input.fullName, 'Le nom du salarié est obligatoire'),
+      arabicName: this.clean(input.arabicName),
+      cin: this.nonEmpty(input.cin, 'La CIN du salarié est obligatoire'),
+      cnssNumber: this.clean(input.cnssNumber),
+      contractType: input.contractType ?? 'CDI',
+      hireDate: this.isoDate(input.hireDate, 'La date d’embauche est obligatoire'),
+      baseSalary: this.nonNegative(input.baseSalary, 'Le salaire de base doit être nul ou positif'),
+      dependents: this.nonNegative(input.dependents ?? 0, 'Le nombre de personnes à charge doit être nul ou positif'),
+      address: this.clean(input.address),
+      arabicAddress: this.clean(input.arabicAddress),
+      preferredLanguage: this.preferredLanguage(input.preferredLanguage),
+      documentExpiries: this.validateEmployeeDocumentExpiries(input.documentExpiries ?? []),
+      active: input.active ?? true,
+      createdAt: today(),
+      updatedAt: today(),
+    };
+    workspace.employees.push(employee);
+    this.audit(workspace, 'employee.created', 'Employee', employee.id, employee);
+    return employee;
   }
 
   supplierRiskReminders(options: { filter?: string } = {}, tenantId?: string) {
@@ -1717,6 +2005,7 @@ export class ErpStoreService {
       sku,
       barcode: this.clean(input.barcode),
       name: this.nonEmpty(input.name, 'Le nom de l’article est obligatoire'),
+      arabicDescription: this.clean(input.arabicDescription),
       type,
       unit: this.nonEmpty(input.unit ?? (type === 'SERVICE' ? 'forfait' : 'unité'), 'L’unité article est obligatoire'),
       trackStock,
@@ -1805,6 +2094,7 @@ export class ErpStoreService {
     }
     if (input.barcode !== undefined) product.barcode = this.clean(input.barcode);
     if (input.name !== undefined) product.name = this.nonEmpty(input.name, 'Le nom de l’article est obligatoire');
+    if (input.arabicDescription !== undefined) product.arabicDescription = this.clean(input.arabicDescription);
     if (input.type !== undefined) product.type = input.type;
     if (input.unit !== undefined) product.unit = this.nonEmpty(input.unit, 'L’unité article est obligatoire');
     if (input.trackStock !== undefined) product.trackStock = input.trackStock;
@@ -2671,6 +2961,7 @@ export class ErpStoreService {
         productId: product.id,
         sku: product.sku,
         description: line.description ?? product.name,
+        descriptionAr: line.descriptionAr ?? product.arabicDescription,
         quantity,
         unitPrice,
         vatRate,
@@ -2703,6 +2994,7 @@ export class ErpStoreService {
         productId: product.id,
         sku: product.sku,
         description: line.description ?? invoiceLine.description,
+        descriptionAr: line.descriptionAr ?? invoiceLine.descriptionAr ?? product.arabicDescription,
         quantity,
         unitPrice,
         vatRate,
@@ -2985,6 +3277,14 @@ export class ErpStoreService {
     return stage;
   }
 
+  private preferredLanguage(value: PreferredLanguage | undefined): PreferredLanguage {
+    const language = value ?? 'FR';
+    if (!['FR', 'AR', 'BILINGUAL'].includes(language)) {
+      throw new BadRequestException('Langue préférée invalide');
+    }
+    return language;
+  }
+
   private validateContacts(contacts: Customer['contacts']): void {
     for (const contact of contacts) {
       this.nonEmpty(contact.name, 'Le nom du contact est obligatoire');
@@ -3003,6 +3303,8 @@ export class ErpStoreService {
       type: this.nonEmpty(document.type, 'Le type du document fournisseur est obligatoire'),
       expiresAt: this.isoDate(document.expiresAt, 'La date d’expiration du document fournisseur est obligatoire'),
       reference: this.clean(document.reference),
+      arabicType: this.clean(document.arabicType),
+      arabicReference: this.clean(document.arabicReference),
       fileName: this.clean(document.fileName),
       storageKey: this.clean(document.storageKey),
       uploadStatus: document.uploadStatus,
@@ -3015,6 +3317,18 @@ export class ErpStoreService {
       type: this.nonEmpty(document.type, 'Le type du document client est obligatoire'),
       expiresAt: this.isoDate(document.expiresAt, 'La date d’expiration du document client est obligatoire'),
       reference: this.clean(document.reference),
+      arabicType: this.clean(document.arabicType),
+      arabicReference: this.clean(document.arabicReference),
+    }));
+  }
+
+  private validateEmployeeDocumentExpiries(documents: Employee['documentExpiries']): Employee['documentExpiries'] {
+    return documents.map((document) => ({
+      type: this.nonEmpty(document.type, 'Le type du document salarié est obligatoire'),
+      expiresAt: this.isoDate(document.expiresAt, 'La date d’expiration du document salarié est obligatoire'),
+      reference: this.clean(document.reference),
+      arabicType: this.clean(document.arabicType),
+      arabicReference: this.clean(document.arabicReference),
     }));
   }
 

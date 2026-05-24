@@ -25,6 +25,22 @@ export class TenantService {
     return this.store.roleDashboardWidgets();
   }
 
+  importTemplates() {
+    return this.store.importTemplates();
+  }
+
+  implementationPartnerWorkspace() {
+    return this.store.implementationPartnerWorkspace();
+  }
+
+  createPartnerClient(data: any) {
+    return this.store.createPartnerClientTenant(data);
+  }
+
+  updatePartnerClientOnboarding(tenantId: string, data: any) {
+    return this.store.updatePartnerClientOnboarding(tenantId, data);
+  }
+
   collaborationBoard() {
     return this.store.collaborationBoard();
   }

@@ -1,6 +1,6 @@
 export type SubscriptionPlan = 'INTILAQ' | 'NUMOW' | 'ENTERPRISE';
 export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED';
-export type UserRole = 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'SALES' | 'WAREHOUSE' | 'PAYROLL' | 'CASHIER';
+export type UserRole = 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'SALES' | 'WAREHOUSE' | 'PAYROLL' | 'CASHIER' | 'IMPLEMENTATION_PARTNER';
 export type VatRate = 0 | 0.07 | 0.1 | 0.14 | 0.2;
 export type DocumentStatus = 'DRAFT' | 'POSTED' | 'PAID' | 'VOID';
 export type QuoteStatus = 'DRAFT' | 'APPROVED' | 'CONVERTED' | 'VOID';
@@ -11,6 +11,23 @@ export type BusinessSearchType = 'customers' | 'leads' | 'suppliers' | 'products
 export type ApprovalStatus = 'AUTO_APPROVED' | 'REQUIRED' | 'APPROVED';
 export type CollaborationEntityType = 'CUSTOMER' | 'SUPPLIER' | 'INVOICE' | 'PAYROLL_RUN';
 export type InternalTaskStatus = 'OPEN' | 'DONE';
+export type PreferredLanguage = 'FR' | 'AR' | 'BILINGUAL';
+export type ImportTemplateKind = 'customers' | 'suppliers' | 'products' | 'employees' | 'chart-of-accounts';
+
+export interface LocalizedFields {
+  arabicName?: string;
+  arabicAddress?: string;
+  arabicDescription?: string;
+  preferredLanguage?: PreferredLanguage;
+}
+
+export interface DocumentExpiry {
+  type: string;
+  expiresAt: string;
+  reference?: string;
+  arabicType?: string;
+  arabicReference?: string;
+}
 
 export interface BusinessSearchInput {
   q: string;
@@ -80,18 +97,21 @@ export interface Customer {
   id: string;
   tenantId: string;
   name: string;
+  arabicName?: string;
   ice?: string;
   ifNumber?: string;
   rc?: string;
   email?: string;
   phone?: string;
   address?: string;
+  arabicAddress?: string;
+  preferredLanguage: PreferredLanguage;
   city?: string;
   paymentTermsDays: number;
   creditLimit: number;
   contacts: Array<{ name: string; role?: string; email?: string; phone?: string }>;
   addresses: Array<{ label: string; line1: string; city: string }>;
-  documentExpiries: Array<{ type: string; expiresAt: string; reference?: string }>;
+  documentExpiries: DocumentExpiry[];
   duplicateWarnings?: string[];
   active: boolean;
   createdAt: string;
@@ -102,12 +122,15 @@ export interface Supplier {
   id: string;
   tenantId: string;
   name: string;
+  arabicName?: string;
   ice?: string;
   ifNumber?: string;
   rc?: string;
   email?: string;
   phone?: string;
   address?: string;
+  arabicAddress?: string;
+  preferredLanguage: PreferredLanguage;
   city?: string;
   paymentTermsDays: number;
   contacts: Array<{ name: string; role?: string; email?: string; phone?: string }>;
@@ -115,10 +138,7 @@ export interface Supplier {
   duplicateWarnings?: string[];
   preferred: boolean;
   riskNotes?: string;
-  documentExpiries: Array<{
-    type: string;
-    expiresAt: string;
-    reference?: string;
+  documentExpiries: Array<DocumentExpiry & {
     fileName?: string;
     storageKey?: string;
     uploadStatus?: 'PLACEHOLDER' | 'RECEIVED';
@@ -151,6 +171,7 @@ export interface Product {
   sku: string;
   barcode?: string;
   name: string;
+  arabicDescription?: string;
   type: 'GOODS' | 'SERVICE' | 'FINISHED_GOOD' | 'RAW_MATERIAL';
   unit: string;
   trackStock: boolean;
@@ -167,6 +188,27 @@ export interface Product {
   updatedAt: string;
 }
 
+export interface Employee {
+  id: string;
+  tenantId: string;
+  employeeNumber: string;
+  fullName: string;
+  arabicName?: string;
+  cin: string;
+  cnssNumber?: string;
+  contractType: 'CDI' | 'CDD' | 'STAGE' | 'ANAPEC';
+  hireDate: string;
+  baseSalary: number;
+  dependents: number;
+  address?: string;
+  arabicAddress?: string;
+  preferredLanguage: PreferredLanguage;
+  documentExpiries: DocumentExpiry[];
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Warehouse {
   id: string;
   tenantId: string;
@@ -177,6 +219,7 @@ export interface Warehouse {
 export interface DocumentLineInput {
   productId: string;
   description?: string;
+  descriptionAr?: string;
   quantity: number;
   unitPrice?: number;
   vatRate?: VatRate;
@@ -186,6 +229,7 @@ export interface DocumentLine {
   productId: string;
   sku: string;
   description: string;
+  descriptionAr?: string;
   quantity: number;
   unitPrice: number;
   vatRate: VatRate;
@@ -422,6 +466,7 @@ export interface TenantWorkspace {
   users: ErpUser[];
   customers: Customer[];
   suppliers: Supplier[];
+  employees: Employee[];
   leads: Lead[];
   products: Product[];
   warehouses: Warehouse[];

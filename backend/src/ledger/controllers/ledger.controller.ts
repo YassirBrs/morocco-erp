@@ -15,4 +15,5 @@ export class LedgerController {
   }
   @Post('periods/lock') lock(@Body() body: { year: number; month: number }) { return this.ledgerService.lockPeriod(body); }
   @Get('audit') audit() { return this.ledgerService.auditLogs(); }
+  @Get('chart-of-accounts/import-template.csv') chartOfAccountsImportTemplateCsv() { return this.ledgerService.chartOfAccountsImportTemplateCsv(); }
 }

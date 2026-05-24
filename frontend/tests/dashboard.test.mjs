@@ -28,13 +28,16 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/sales/customers/cus-1/statement'));
   assert.ok(staticPage.includes('/crm/customers/credit-control'));
   assert.ok(staticPage.includes('/crm/customers/document-reminders'));
+  assert.ok(staticPage.includes('/crm/customers/import-template.csv'));
   assert.ok(staticPage.includes('/crm/leads'));
   assert.ok(staticPage.includes('/crm/leads/analytics'));
   assert.ok(staticPage.includes('/crm/leads/export.csv'));
   assert.ok(staticPage.includes('/crm/leads/import'));
   assert.ok(staticPage.includes('/crm/leads/${lead.id}/quote'));
   assert.ok(staticPage.includes('/inventory/suppliers'));
+  assert.ok(staticPage.includes('/inventory/suppliers/import-template.csv'));
   assert.ok(staticPage.includes('/inventory/products/margin-alerts'));
+  assert.ok(staticPage.includes('/inventory/products/import-template.csv'));
   assert.ok(staticPage.includes('/inventory/suppliers/risk-reminders'));
   assert.ok(staticPage.includes('/inventory/suppliers/${supplier.id}/document-placeholders'));
   assert.ok(staticPage.includes('/inventory/suppliers/export.csv'));
@@ -43,6 +46,9 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/tenant/setup-checklist'));
   assert.ok(staticPage.includes('/tenant/dashboard-filters'));
   assert.ok(staticPage.includes('/tenant/role-widgets'));
+  assert.ok(staticPage.includes('/tenant/import-templates'));
+  assert.ok(staticPage.includes('/tenant/implementation-partner/workspace'));
+  assert.ok(staticPage.includes('/tenant/implementation-partner/clients'));
   assert.ok(staticPage.includes('/tenant/approval-limits'));
   assert.ok(staticPage.includes('/tenant/company-profile'));
   assert.ok(staticPage.includes('/tenant/company-profile/approve'));
@@ -54,14 +60,17 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/crm/customers/duplicates'));
   assert.ok(staticPage.includes('/inventory/products/duplicates'));
   assert.ok(staticPage.includes('/ledger/audit'));
+  assert.ok(staticPage.includes('/ledger/chart-of-accounts/import-template.csv'));
   assert.ok(staticPage.includes('/search?q='));
   assert.ok(staticPage.includes("method: 'PATCH'"));
   assert.ok(staticPage.includes('/crm/customers'));
   assert.ok(staticPage.includes('/inventory/products'));
+  assert.ok(staticPage.includes('/payroll/employees'));
+  assert.ok(staticPage.includes('/payroll/employees/import-template.csv'));
 });
 
 test('static dashboard uses sidebar module navigation instead of showing one compacted page', () => {
-  for (const view of ['dashboard', 'sales', 'crm', 'stock', 'accounting', 'payroll', 'compliance']) {
+  for (const view of ['dashboard', 'sales', 'crm', 'stock', 'accounting', 'payroll', 'compliance', 'implementation']) {
     assert.ok(staticPage.includes(`data-view="${view}"`), `${view} navigation item exists`);
   }
   for (const marker of ['data-view-section="dashboard"', 'data-view-section="sales stock"', 'data-view-section="crm stock"', 'data-view-section="sales accounting compliance"']) {
@@ -169,6 +178,21 @@ test('static dashboard exposes collaboration timelines, notes, tasks, and bulk a
     assert.ok(staticPage.includes(marker), `${marker} collaboration helper is present`);
   }
   for (const cssToken of ['.collabActions', '.timelineGrid', '.timelineTable', '.taskBoard']) {
+    assert.ok(staticCss.includes(cssToken), `${cssToken} style exists`);
+  }
+});
+
+test('static dashboard exposes Arabic-ready fields, CSV templates, employees, and partner onboarding', () => {
+  for (const text of ['Nom arabe', 'Adresse arabe', 'Langue document', 'Document arabe', 'Description arabe', 'Modèle CSV clients', 'Modèle CSV fournisseurs', 'Modèle CSV articles', 'Modèle CSV salariés', 'Modèles CSV avec champs Arabic-ready', 'Salariés', 'Portefeuille clients', 'Créer client démo', 'Accompagnement']) {
+    assert.ok(staticPage.includes(text), `${text} Arabic-ready/template/partner label is present`);
+  }
+  for (const marker of ['renderImportTemplates', 'renderPartnerWorkspace', 'renderEmployees', 'downloadTemplate', 'data-template-kind', 'employeeForm']) {
+    assert.ok(staticPage.includes(marker), `${marker} renderer or marker is present`);
+  }
+  for (const endpoint of ['/tenant/import-templates', '/tenant/implementation-partner/workspace', '/tenant/implementation-partner/clients', '/crm/customers/import-template.csv', '/inventory/suppliers/import-template.csv', '/inventory/products/import-template.csv', '/payroll/employees/import-template.csv', '/ledger/chart-of-accounts/import-template.csv']) {
+    assert.ok(staticPage.includes(endpoint), `${endpoint} endpoint is wired`);
+  }
+  for (const cssToken of ['.templateGrid', '.templateCard']) {
     assert.ok(staticCss.includes(cssToken), `${cssToken} style exists`);
   }
 });

@@ -8,6 +8,10 @@ export class PayrollController {
 
   @Get('payslips') list() { return this.payrollService.listPayslips(); }
 
+  @Get('employees') employees() { return this.payrollService.listEmployees(); }
+  @Get('employees/import-template.csv') employeeImportTemplateCsv() { return this.payrollService.employeeImportTemplateCsv(); }
+  @Post('employees') addEmployee(@Body() body: any) { return this.payrollService.addEmployee(body); }
+
   @Get('runs/:id/timeline') payrollRunTimeline(@Param('id') id: string) { return this.payrollService.payrollRunTimeline(id); }
   @Post('runs/:id/notes') addPayrollRunNote(@Param('id') id: string, @Body() body: any) { return this.payrollService.addPayrollRunNote(id, body); }
   @Post('runs/:id/tasks') addPayrollRunTask(@Param('id') id: string, @Body() body: any) { return this.payrollService.addPayrollRunTask(id, body); }

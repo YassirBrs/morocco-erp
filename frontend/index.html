@@ -25,6 +25,7 @@
           <button class="navItem" data-view="accounting" type="button"><span>Comptabilité</span><strong>PCGE</strong></button>
           <button class="navItem" data-view="payroll" type="button"><span>Paie</span><strong>CNSS</strong></button>
           <button class="navItem" data-view="compliance" type="button"><span>Conformité</span><strong>DGI</strong></button>
+          <button class="navItem" data-view="implementation" type="button"><span>Accompagnement</span><strong>Clients</strong></button>
         </nav>
 
         <div class="sidebarNote">
@@ -222,6 +223,36 @@
           </div>
         </section>
 
+        <section class="panel importTemplatesPanel" data-view-section="dashboard implementation crm stock payroll accounting">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Préparation import</p>
+              <h2>Modèles CSV avec champs Arabic-ready</h2>
+            </div>
+            <span id="templateBadge" class="badge">0 modèle</span>
+          </div>
+          <div id="templateRows" class="templateGrid"></div>
+        </section>
+
+        <section class="panel partnerPanel" data-view-section="dashboard implementation">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Partenaire intégrateur</p>
+              <h2>Portefeuille clients</h2>
+            </div>
+            <div class="headerActions">
+              <span id="partnerBadge" class="badge">0 client</span>
+              <button id="createPartnerClient" type="button">Créer client démo</button>
+            </div>
+          </div>
+          <div class="tableWrap">
+            <table class="miniTable partnerTable">
+              <thead><tr><th>Tenant</th><th>Ville</th><th>Avancement</th><th>Données</th><th>Blocages</th></tr></thead>
+              <tbody id="partnerRows"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="panel collaborationPanel" data-view-section="dashboard sales crm stock payroll">
           <div class="panelHeader">
             <div>
@@ -375,19 +406,24 @@
               </div>
               <div class="headerActions">
                 <span id="customerCount" class="badge">0</span>
+                <button id="downloadCustomerTemplate" type="button">Modèle CSV clients</button>
                 <button id="archiveCustomers" type="button">Archiver clients inactifs</button>
                 <button id="restoreCustomers" type="button">Restaurer clients</button>
               </div>
             </div>
             <form id="customerForm" class="compactForm">
               <label class="field"><span>Nom client</span><input name="name" required placeholder="Client SARL" /></label>
+              <label class="field"><span>Nom arabe</span><input name="arabicName" dir="rtl" placeholder="اسم العميل" /></label>
               <label class="field"><span>ICE</span><input name="ice" placeholder="001..." /></label>
               <label class="field"><span>IF</span><input name="ifNumber" placeholder="Identifiant fiscal" /></label>
               <label class="field"><span>Email</span><input name="email" type="email" placeholder="finance@client.ma" /></label>
               <label class="field"><span>Téléphone</span><input name="phone" placeholder="+212..." /></label>
+              <label class="field"><span>Adresse arabe</span><input name="arabicAddress" dir="rtl" placeholder="العنوان" /></label>
+              <label class="field"><span>Langue document</span><select name="preferredLanguage"><option value="FR">Français</option><option value="AR">Arabe</option><option value="BILINGUAL">Bilingue</option></select></label>
               <label class="field"><span>Délai paiement</span><input name="paymentTermsDays" type="number" min="0" value="30" /></label>
               <label class="field"><span>Plafond crédit</span><input name="creditLimit" type="number" min="0" value="0" /></label>
               <label class="field"><span>Document client</span><select name="documentType"><option value="">Aucun</option><option value="ICE">ICE</option><option value="Registre de Commerce">RC</option><option value="Contrat cadre">Contrat</option><option value="Garantie de paiement">Garantie paiement</option></select></label>
+              <label class="field"><span>Document arabe</span><input name="documentArabicType" dir="rtl" placeholder="نوع الوثيقة" /></label>
               <label class="field"><span>Expiration document client</span><input name="documentExpiresAt" type="date" /></label>
               <button type="submit">Ajouter client</button>
             </form>
@@ -443,6 +479,7 @@
               </div>
               <div class="headerActions">
                 <span id="productCount" class="badge">0</span>
+                <button id="downloadProductTemplate" type="button">Modèle CSV articles</button>
                 <button id="archiveProducts" type="button">Archiver articles</button>
                 <button id="restoreProducts" type="button">Restaurer articles</button>
               </div>
@@ -451,6 +488,7 @@
               <label class="field"><span>SKU</span><input name="sku" required placeholder="SKU-DEMO" /></label>
               <label class="field"><span>Code-barres</span><input name="barcode" placeholder="611..." /></label>
               <label class="field"><span>Article</span><input name="name" required placeholder="Produit ou service" /></label>
+              <label class="field"><span>Description arabe</span><input name="arabicDescription" dir="rtl" placeholder="وصف المنتج" /></label>
               <label class="field"><span>Type</span><select name="type"><option value="GOODS">Marchandise</option><option value="SERVICE">Service</option><option value="RAW_MATERIAL">Matière</option><option value="FINISHED_GOOD">Produit fini</option></select></label>
               <label class="field"><span>Unité</span><input name="unit" value="unité" /></label>
               <label class="field"><span>Prix vente</span><input name="salePrice" type="number" min="0" required value="0" /></label>
@@ -544,6 +582,7 @@
               </div>
               <div class="headerActions">
                 <span id="supplierCount" class="badge">0</span>
+                <button id="downloadSupplierTemplate" type="button">Modèle CSV fournisseurs</button>
                 <button id="exportSuppliersCsv" type="button">Exporter CSV fournisseurs</button>
                 <button id="importSuppliersCsv" type="button">Importer CSV démo</button>
                 <button id="addSupplierDocumentPlaceholder" type="button">Placeholder document</button>
@@ -553,15 +592,19 @@
             </div>
             <form id="supplierForm" class="compactForm">
               <label class="field"><span>Fournisseur</span><input name="name" required placeholder="Fournisseur SA" /></label>
+              <label class="field"><span>Nom arabe</span><input name="arabicName" dir="rtl" placeholder="اسم المورد" /></label>
               <label class="field"><span>ICE</span><input name="ice" placeholder="009..." /></label>
               <label class="field"><span>IF</span><input name="ifNumber" placeholder="Identifiant fiscal" /></label>
               <label class="field"><span>Email</span><input name="email" type="email" placeholder="achat@fournisseur.ma" /></label>
               <label class="field"><span>Délai paiement</span><input name="paymentTermsDays" type="number" min="0" value="30" /></label>
               <label class="field"><span>Banque</span><input name="bankName" placeholder="Banque" /></label>
+              <label class="field"><span>Adresse arabe</span><input name="arabicAddress" dir="rtl" placeholder="العنوان" /></label>
+              <label class="field"><span>Langue document</span><select name="preferredLanguage"><option value="FR">Français</option><option value="AR">Arabe</option><option value="BILINGUAL">Bilingue</option></select></label>
               <label class="field"><span>RIB marocain</span><input name="rib" inputmode="numeric" pattern="[0-9\\s-]{24,}" placeholder="24 chiffres" /></label>
               <label class="field checkboxField"><input name="preferred" type="checkbox" /> <span>Fournisseur préféré</span></label>
               <label class="field"><span>Notes risque</span><textarea name="riskNotes" rows="2" placeholder="Documents, litiges, vigilance achats"></textarea></label>
               <label class="field"><span>Document suivi</span><input name="documentType" placeholder="Attestation fiscale" /></label>
+              <label class="field"><span>Document arabe</span><input name="documentArabicType" dir="rtl" placeholder="نوع الوثيقة" /></label>
               <label class="field"><span>Expiration document</span><input name="documentExpiresAt" type="date" /></label>
               <button type="submit">Ajouter fournisseur</button>
             </form>
@@ -590,6 +633,39 @@
                 </table>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section class="panel employeePanel" data-view-section="payroll implementation">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Paie Arabic-ready</p>
+              <h2>Salariés</h2>
+            </div>
+            <div class="headerActions">
+              <span id="employeeCount" class="badge">0</span>
+              <button id="downloadEmployeeTemplate" type="button">Modèle CSV salariés</button>
+            </div>
+          </div>
+          <form id="employeeForm" class="compactForm">
+            <label class="field"><span>Matricule</span><input name="employeeNumber" placeholder="EMP-002" /></label>
+            <label class="field"><span>Nom salarié</span><input name="fullName" required placeholder="Nom complet" /></label>
+            <label class="field"><span>Nom arabe</span><input name="arabicName" dir="rtl" placeholder="اسم الأجير" /></label>
+            <label class="field"><span>CIN</span><input name="cin" required placeholder="AB123456" /></label>
+            <label class="field"><span>CNSS</span><input name="cnssNumber" placeholder="1234567890" /></label>
+            <label class="field"><span>Contrat</span><select name="contractType"><option value="CDI">CDI</option><option value="CDD">CDD</option><option value="STAGE">Stage</option><option value="ANAPEC">ANAPEC</option></select></label>
+            <label class="field"><span>Embauche</span><input name="hireDate" type="date" required /></label>
+            <label class="field"><span>Salaire base</span><input name="baseSalary" type="number" min="0" required value="0" /></label>
+            <label class="field"><span>Charges famille</span><input name="dependents" type="number" min="0" value="0" /></label>
+            <label class="field"><span>Adresse arabe</span><input name="arabicAddress" dir="rtl" placeholder="العنوان" /></label>
+            <label class="field"><span>Langue document</span><select name="preferredLanguage"><option value="FR">Français</option><option value="AR">Arabe</option><option value="BILINGUAL">Bilingue</option></select></label>
+            <button type="submit">Ajouter salarié</button>
+          </form>
+          <div class="tableWrap">
+            <table class="miniTable">
+              <thead><tr><th>Salarié</th><th>CIN/CNSS</th><th>Contrat</th><th>Salaire</th><th>Langue</th></tr></thead>
+              <tbody id="employeeRows"></tbody>
+            </table>
           </div>
         </section>
 
@@ -634,7 +710,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], customers: [], products: [], suppliers: [], statement: null, profile: null, audit: [], customerTimeline: null, supplierTimeline: null, invoiceTimeline: null, payrollTimeline: null, collaborationBoard: null };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], customers: [], products: [], suppliers: [], employees: [], importTemplates: null, partnerWorkspace: null, statement: null, profile: null, audit: [], customerTimeline: null, supplierTimeline: null, invoiceTimeline: null, payrollTimeline: null, collaborationBoard: null };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -752,7 +828,7 @@
       }
 
       async function load() {
-        const [summary, stock, customers, customerCreditControls, customerReminders, customerDuplicates, products, productMarginAlerts, productDuplicates, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, roleWidgets, paymentReminders, supplierCalendar, vatChecklist, fiscalCloseChecklist, approvalReview, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement, customerTimeline, supplierTimeline, payrollTimeline, collaborationBoard] = await Promise.all([
+        const [summary, stock, customers, customerCreditControls, customerReminders, customerDuplicates, products, productMarginAlerts, productDuplicates, leads, leadAnalytics, suppliers, supplierReminders, employees, importTemplates, partnerWorkspace, setup, dashboardFilters, roleWidgets, paymentReminders, supplierCalendar, vatChecklist, fiscalCloseChecklist, approvalReview, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement, customerTimeline, supplierTimeline, payrollTimeline, collaborationBoard] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
@@ -766,6 +842,9 @@
           get('/crm/leads/analytics'),
           get('/inventory/suppliers'),
           get('/inventory/suppliers/risk-reminders'),
+          get('/payroll/employees'),
+          get('/tenant/import-templates'),
+          get('/tenant/implementation-partner/workspace'),
           get('/tenant/setup-checklist'),
           get('/tenant/dashboard-filters'),
           get('/tenant/role-widgets'),
@@ -795,6 +874,9 @@
         state.leads = leads;
         state.customers = customers;
         state.products = products;
+        state.employees = employees;
+        state.importTemplates = importTemplates;
+        state.partnerWorkspace = partnerWorkspace;
         state.customerCreditControls = customerCreditControls;
         state.customerReminders = customerReminders;
         state.customerDuplicates = customerDuplicates;
@@ -853,6 +935,9 @@
         renderSupplierReminders();
         renderStatement();
         renderCollaboration();
+        renderImportTemplates();
+        renderPartnerWorkspace();
+        renderEmployees();
         switchModuleView(state.activeView);
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
         qs('#setupBadge').className = setup.ready ? 'badge green' : 'badge';
@@ -866,12 +951,12 @@
         const creditByCustomer = new Map(state.customerCreditControls.map((control) => [control.customerId, control]));
         qs('#customerRows').innerHTML = customers.length ? customers.map((customer) => `
           <tr class="${customer.active ? '' : 'mutedRow'}">
-            <td><strong>${customer.name}</strong></td>
+            <td><strong>${customer.name}</strong><small>${customer.arabicName || customer.preferredLanguage || 'FR'}</small></td>
             <td>${customer.ice || '-'}</td>
             <td>${customer.paymentTermsDays} j</td>
             <td>${mad(customer.creditLimit || 0)}</td>
             <td>${mad(creditByCustomer.get(customer.id)?.openBalance || 0)}<small>${creditByCustomer.get(customer.id)?.onHold ? 'Blocage crédit' : 'OK crédit'}</small></td>
-            <td>${customer.documentExpiries?.length || 0}<small>${customer.documentExpiries?.[0]?.type || 'Aucun suivi'}</small></td>
+            <td>${customer.documentExpiries?.length || 0}<small>${customer.documentExpiries?.[0]?.arabicType || customer.documentExpiries?.[0]?.type || 'Aucun suivi'}</small></td>
           </tr>
         `).join('') : emptyRow('Aucun client créé', 6);
         qs('#productCount').textContent = products.filter((product) => product.active).length;
@@ -879,7 +964,7 @@
         qs('#productRows').innerHTML = products.length ? products.map((product) => `
           <tr class="${product.active ? '' : 'mutedRow'}">
             <td><strong>${product.sku}</strong></td>
-            <td>${product.name}<small>${product.barcode || 'Sans code-barres'}</small></td>
+            <td>${product.name}<small>${product.arabicDescription || product.barcode || 'Sans code-barres'}</small></td>
             <td>${translate('productTypes', product.type)}</td>
             <td>${mad(product.salePrice)}</td>
             <td>${pct(product.vatRate)}</td>
@@ -898,7 +983,7 @@
         qs('#supplierCount').textContent = suppliers.filter((supplier) => supplier.active).length;
         qs('#supplierRows').innerHTML = suppliers.length ? suppliers.map((supplier) => `
           <tr class="${supplier.active ? '' : 'mutedRow'}">
-            <td><strong>${supplier.name}</strong><small>${supplier.ifNumber || '-'}</small>${supplier.duplicateWarnings?.length ? `<small class="warningText">${supplier.duplicateWarnings.join(' · ')}</small>` : ''}</td>
+            <td><strong>${supplier.name}</strong><small>${supplier.arabicName || supplier.ifNumber || '-'}</small>${supplier.duplicateWarnings?.length ? `<small class="warningText">${supplier.duplicateWarnings.join(' · ')}</small>` : ''}</td>
             <td>${supplier.ice || '-'}</td>
             <td>${supplier.paymentTermsDays} j</td>
             <td>${supplier.bankDetails?.[0]?.bankName || '-'}<small>${supplier.bankDetails?.[0]?.rib || ''}</small></td>
@@ -995,6 +1080,48 @@
             <td>${task.status === 'DONE' ? '<span class="statusPill success">Terminée</span>' : '<span class="statusPill warning">Ouverte</span>'}</td>
           </tr>
         `).join('') : emptyRow('Aucune tâche interne', 5);
+      }
+
+      function renderImportTemplates() {
+        const templates = state.importTemplates?.templates || [];
+        qs('#templateBadge').textContent = `${templates.length} modèle${templates.length > 1 ? 's' : ''}`;
+        qs('#templateRows').innerHTML = templates.map((template) => `
+          <button class="templateCard" type="button" data-template-kind="${template.module}">
+            <span>${template.label}</span>
+            <strong>${template.fileName}</strong>
+            <small>${template.headers.length} colonnes · ${template.headers.includes('arabicName') || template.headers.includes('labelAr') ? 'Champs Arabic-ready' : 'Standard'}</small>
+          </button>
+        `).join('');
+        document.querySelectorAll('[data-template-kind]').forEach((button) => {
+          button.addEventListener('click', () => downloadTemplate(button.dataset.templateKind));
+        });
+      }
+
+      function renderPartnerWorkspace() {
+        const workspace = state.partnerWorkspace || { clients: [], totals: { tenants: 0, ready: 0, blocked: 0 } };
+        qs('#partnerBadge').textContent = `${workspace.totals.tenants} client${workspace.totals.tenants > 1 ? 's' : ''}`;
+        qs('#partnerRows').innerHTML = workspace.clients.length ? workspace.clients.map((client) => `
+          <tr>
+            <td><strong>${client.tradeName}</strong><small>${client.tenantId} · ${client.plan}</small></td>
+            <td>${client.city || '-'}</td>
+            <td><span class="statusPill ${client.ready ? 'success' : 'warning'}">${client.readinessScore}%</span><small>${client.completed}/${client.total} checklist</small></td>
+            <td>${client.counts.customers} clients · ${client.counts.products} articles<small>${client.counts.employees} salarié(s)</small></td>
+            <td>${client.blockers.length ? client.blockers.slice(0, 2).join(' · ') : 'Prêt go-live'}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun tenant client assigné', 5);
+      }
+
+      function renderEmployees() {
+        qs('#employeeCount').textContent = state.employees.filter((employee) => employee.active).length;
+        qs('#employeeRows').innerHTML = state.employees.length ? state.employees.map((employee) => `
+          <tr class="${employee.active ? '' : 'mutedRow'}">
+            <td><strong>${employee.fullName}</strong><small>${employee.arabicName || employee.employeeNumber}</small></td>
+            <td>${employee.cin}<small>${employee.cnssNumber || 'CNSS manquant'}</small></td>
+            <td>${employee.contractType}<small>${employee.hireDate}</small></td>
+            <td>${mad(employee.baseSalary)}</td>
+            <td>${employee.preferredLanguage}<small>${employee.documentExpiries?.[0]?.arabicType || employee.documentExpiries?.[0]?.type || 'Aucun document'}</small></td>
+          </tr>
+        `).join('') : emptyRow('Aucun salarié créé', 5);
       }
 
       function renderProfile() {
@@ -1334,6 +1461,48 @@
         showMessage('success', `${successLabel}: ${result.touched.map((item) => item.name).join(', ')}.`);
       }
 
+      async function downloadTemplate(kind) {
+        const endpoints = {
+          customers: '/crm/customers/import-template.csv',
+          suppliers: '/inventory/suppliers/import-template.csv',
+          products: '/inventory/products/import-template.csv',
+          employees: '/payroll/employees/import-template.csv',
+          'chart-of-accounts': '/ledger/chart-of-accounts/import-template.csv'
+        };
+        const labels = {
+          customers: 'clients',
+          suppliers: 'fournisseurs',
+          products: 'articles',
+          employees: 'salariés',
+          'chart-of-accounts': 'plan comptable'
+        };
+        const csv = await getText(endpoints[kind]);
+        showMessage('success', `Modèle CSV ${labels[kind] || kind} prêt: ${csv.split('\\n')[0].split(',').length} colonnes.`);
+      }
+
+      qs('#downloadCustomerTemplate').addEventListener('click', () => downloadTemplate('customers'));
+      qs('#downloadSupplierTemplate').addEventListener('click', () => downloadTemplate('suppliers'));
+      qs('#downloadProductTemplate').addEventListener('click', () => downloadTemplate('products'));
+      qs('#downloadEmployeeTemplate').addEventListener('click', () => downloadTemplate('employees'));
+
+      qs('#createPartnerClient').addEventListener('click', async () => {
+        await runAction('#createPartnerClient', 'Création...', async () => {
+          const result = await post('/tenant/implementation-partner/clients', {
+            tradeName: `Client Go-live ${state.partnerWorkspace?.totals?.tenants || 1}`,
+            city: 'Marrakech',
+            ice: '001234567890123',
+            ifNumber: '998877',
+            rc: 'MARRAKECH-2026',
+            patente: 'PAT-2026',
+            cnssNumber: '7654321',
+            address: 'Avenue Mohammed VI, Marrakech',
+            partnerEmail: 'partner@atlas.ma'
+          });
+          const createdTradeName = result.tenant?.legalEntity?.tradeName || result.tenant?.tradeName || 'client';
+          showMessage('success', `Tenant client ${createdTradeName} créé pour le partenaire.`);
+        });
+      });
+
       qs('#addCustomerNote').addEventListener('click', async () => {
         await runAction('#addCustomerNote', 'Note...', async () => {
           await post('/crm/customers/cus-1/notes', { author: 'Service client', body: 'Appel de suivi client et vérification des pièces légales.' });
@@ -1633,18 +1802,22 @@
         try {
           const customer = await post('/crm/customers', {
             name: form.get('name'),
+            arabicName: form.get('arabicName'),
             ice: form.get('ice'),
             ifNumber: form.get('ifNumber'),
             email: form.get('email'),
             phone: form.get('phone'),
+            arabicAddress: form.get('arabicAddress'),
+            preferredLanguage: form.get('preferredLanguage'),
             paymentTermsDays: formNumber(form, 'paymentTermsDays'),
             creditLimit: formNumber(form, 'creditLimit'),
-            documentExpiries: documentType || documentExpiresAt ? [{ type: documentType, expiresAt: documentExpiresAt, reference: form.get('ice') }] : []
+            documentExpiries: documentType || documentExpiresAt ? [{ type: documentType, arabicType: form.get('documentArabicType'), expiresAt: documentExpiresAt, reference: form.get('ice') }] : []
           });
           formEl.reset();
           formEl.paymentTermsDays.value = 30;
           formEl.creditLimit.value = 0;
           formEl.documentType.value = '';
+          formEl.preferredLanguage.value = 'FR';
           showMessage('success', `Client ${customer.name} ajouté.`);
           await load();
         } catch (error) {
@@ -1696,17 +1869,21 @@
         try {
           const supplier = await post('/inventory/suppliers', {
             name: form.get('name'),
+            arabicName: form.get('arabicName'),
             ice: form.get('ice'),
             ifNumber: form.get('ifNumber'),
             email: form.get('email'),
             paymentTermsDays: formNumber(form, 'paymentTermsDays'),
             bankDetails: bankName || rib ? [{ bankName, rib }] : [],
+            arabicAddress: form.get('arabicAddress'),
+            preferredLanguage: form.get('preferredLanguage'),
             preferred: form.get('preferred') === 'on',
             riskNotes: form.get('riskNotes'),
-            documentExpiries: documentType || documentExpiresAt ? [{ type: documentType, expiresAt: documentExpiresAt }] : []
+            documentExpiries: documentType || documentExpiresAt ? [{ type: documentType, arabicType: form.get('documentArabicType'), expiresAt: documentExpiresAt }] : []
           });
           formEl.reset();
           formEl.paymentTermsDays.value = 30;
+          formEl.preferredLanguage.value = 'FR';
           showMessage(supplier.duplicateWarnings?.length ? 'warning' : 'success', supplier.duplicateWarnings?.length
             ? `Fournisseur ${supplier.name} ajouté avec alerte doublon: ${supplier.duplicateWarnings.join(' · ')}.`
             : `Fournisseur ${supplier.name} ajouté. Banque normalisée: ${supplier.bankDetails?.[0]?.bankName || 'non renseignée'}.`);
@@ -1768,6 +1945,7 @@
             sku: form.get('sku'),
             barcode: form.get('barcode'),
             name: form.get('name'),
+            arabicDescription: form.get('arabicDescription'),
             type: form.get('type'),
             unit: form.get('unit'),
             salePrice: formNumber(form, 'salePrice'),
@@ -1779,6 +1957,7 @@
           formEl.reset();
           formEl.type.value = 'GOODS';
           formEl.barcode.value = '';
+          formEl.arabicDescription.value = '';
           formEl.unit.value = 'unité';
           formEl.salePrice.value = 0;
           formEl.purchaseCost.value = 0;
@@ -1786,6 +1965,42 @@
           formEl.stockOnHand.value = 0;
           formEl.trackStock.checked = true;
           showMessage('success', `Article ${product.sku} ajouté au catalogue.`);
+          await load();
+        } catch (error) {
+          showMessage('error', error.message);
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      qs('#employeeForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formEl = event.currentTarget;
+        const form = new FormData(formEl);
+        const button = formEl.querySelector('button');
+        button.disabled = true;
+        clearMessage();
+        try {
+          const employee = await post('/payroll/employees', {
+            employeeNumber: form.get('employeeNumber'),
+            fullName: form.get('fullName'),
+            arabicName: form.get('arabicName'),
+            cin: form.get('cin'),
+            cnssNumber: form.get('cnssNumber'),
+            contractType: form.get('contractType'),
+            hireDate: form.get('hireDate'),
+            baseSalary: formNumber(form, 'baseSalary'),
+            dependents: formNumber(form, 'dependents'),
+            arabicAddress: form.get('arabicAddress'),
+            preferredLanguage: form.get('preferredLanguage'),
+            documentExpiries: [{ type: 'CIN', arabicType: 'البطاقة الوطنية', expiresAt: '2030-12-31', reference: form.get('cin') }]
+          });
+          formEl.reset();
+          formEl.contractType.value = 'CDI';
+          formEl.baseSalary.value = 0;
+          formEl.dependents.value = 0;
+          formEl.preferredLanguage.value = 'FR';
+          showMessage('success', `Salarié ${employee.fullName} ajouté avec champs Arabic-ready.`);
           await load();
         } catch (error) {
           showMessage('error', error.message);

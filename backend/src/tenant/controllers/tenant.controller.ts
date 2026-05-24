@@ -9,6 +9,12 @@ export class TenantController {
   @Get('setup-checklist') setupChecklist() { return this.tenantService.setupChecklist(); }
   @Get('dashboard-filters') dashboardFilters() { return this.tenantService.dashboardFilters(); }
   @Get('role-widgets') roleWidgets() { return this.tenantService.roleWidgets(); }
+  @Get('import-templates') importTemplates() { return this.tenantService.importTemplates(); }
+  @Get('implementation-partner/workspace') implementationPartnerWorkspace() { return this.tenantService.implementationPartnerWorkspace(); }
+  @Post('implementation-partner/clients') createPartnerClient(@Body() body: any) { return this.tenantService.createPartnerClient(body); }
+  @Patch('implementation-partner/clients/:tenantId/onboarding') updatePartnerClientOnboarding(@Param('tenantId') tenantId: string, @Body() body: any) {
+    return this.tenantService.updatePartnerClientOnboarding(tenantId, body);
+  }
   @Get('collaboration-board') collaborationBoard() { return this.tenantService.collaborationBoard(); }
   @Patch('tasks/:id') updateInternalTaskStatus(@Param('id') id: string, @Body() body: { status?: string }) {
     return this.tenantService.updateInternalTaskStatus(id, body?.status);

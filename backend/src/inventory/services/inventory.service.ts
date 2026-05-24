@@ -7,6 +7,7 @@ export class InventoryService {
 
   listStock() { return this.store.listStock(); }
   listProducts() { return this.store.listProducts(); }
+  productImportTemplateCsv() { return this.store.importTemplateCsv('products'); }
   productMarginAlerts() { return this.store.productMarginAlerts(); }
   productDuplicateReview() { return this.store.productDuplicateReview(); }
   getProduct(id: string) { return this.store.getProduct(id); }
@@ -15,6 +16,7 @@ export class InventoryService {
   archiveProduct(id: string) { return this.store.archiveProduct(id); }
   bulkProductStatus(data: any) { return this.store.bulkArchiveRestore({ entity: 'PRODUCT', ids: data.ids ?? [], action: data.action }); }
   listSuppliers() { return this.store.listSuppliers(); }
+  supplierImportTemplateCsv() { return this.store.importTemplateCsv('suppliers'); }
   getSupplier(id: string) { return this.store.getSupplier(id); }
   createSupplier(data: any) { return this.store.addSupplier(data); }
   updateSupplier(id: string, data: any) { return this.store.updateSupplier(id, data); }

@@ -1049,4 +1049,109 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(() => store.bulkArchiveRestore({ entity: 'CUSTOMER', ids: [], action: 'ARCHIVE' })).toThrow(BadRequestException);
     expect(() => store.bulkArchiveRestore({ entity: 'PRODUCT', ids: [product.id], action: 'BAD' as any })).toThrow(BadRequestException);
   });
+
+  it('keeps Arabic-ready customer, supplier, product, document, and employee fields without changing French-first workflows', () => {
+    const customer = store.addCustomer({
+      name: 'Client Arabic Ready',
+      arabicName: 'عميل جاهز للعربية',
+      arabicAddress: 'شارع الحسن الثاني',
+      preferredLanguage: 'BILINGUAL',
+      documentExpiries: [{ type: 'Contrat cadre', arabicType: 'عقد إطار', expiresAt: '2027-01-01' }],
+    });
+    const supplier = store.addSupplier({
+      name: 'Supplier Arabic Ready',
+      arabicName: 'مورد جاهز للعربية',
+      arabicAddress: 'المنطقة الصناعية',
+      preferredLanguage: 'AR',
+      documentExpiries: [{ type: 'Attestation fiscale', arabicType: 'شهادة ضريبية', expiresAt: '2027-02-01' }],
+    });
+    const product = store.addProduct({
+      sku: 'AR-SVC',
+      name: 'Service bilingue',
+      arabicDescription: 'خدمة ثنائية اللغة',
+      type: 'SERVICE',
+      salePrice: 900,
+    });
+    const employee = store.addEmployee({
+      fullName: 'Salma Idrissi',
+      arabicName: 'سلمى الإدريسي',
+      cin: 'CD123456',
+      hireDate: '2026-01-02',
+      baseSalary: 7000,
+      preferredLanguage: 'BILINGUAL',
+      documentExpiries: [{ type: 'CIN', arabicType: 'البطاقة الوطنية', expiresAt: '2031-01-02' }],
+    });
+    const quote = store.createQuote({
+      customerId: customer.id,
+      lines: [{ productId: product.id, description: 'Service bilingue', descriptionAr: 'خدمة ثنائية اللغة', quantity: 1 }],
+    });
+
+    expect(customer).toMatchObject({ arabicName: 'عميل جاهز للعربية', preferredLanguage: 'BILINGUAL' });
+    expect(customer.documentExpiries[0]).toMatchObject({ arabicType: 'عقد إطار' });
+    expect(supplier).toMatchObject({ arabicName: 'مورد جاهز للعربية', preferredLanguage: 'AR' });
+    expect(supplier.documentExpiries[0]).toMatchObject({ arabicType: 'شهادة ضريبية' });
+    expect(product.arabicDescription).toBe('خدمة ثنائية اللغة');
+    expect(employee).toMatchObject({ arabicName: 'سلمى الإدريسي', preferredLanguage: 'BILINGUAL' });
+    expect(quote.lines[0]).toMatchObject({ descriptionAr: 'خدمة ثنائية اللغة' });
+    expect(store.businessSearch({ q: 'Client Arabic Ready' })[0]).toMatchObject({ type: 'customers', title: 'Client Arabic Ready' });
+    expect(() => store.addCustomer({ name: 'Bad Language', preferredLanguage: 'ES' as any })).toThrow(BadRequestException);
+  });
+
+  it('publishes stable CSV import templates for master data and PCGE setup', () => {
+    const catalog = store.importTemplates();
+    const modules = catalog.templates.map((template) => template.module);
+
+    expect(modules).toEqual(['customers', 'suppliers', 'products', 'employees', 'chart-of-accounts']);
+    expect(catalog.templates.find((template) => template.module === 'customers')?.headers).toEqual(expect.arrayContaining(['arabicName', 'arabicAddress', 'preferredLanguage']));
+    expect(catalog.templates.find((template) => template.module === 'employees')?.headers).toEqual(expect.arrayContaining(['fullName', 'arabicName', 'cnssNumber']));
+    expect(catalog.templates.find((template) => template.module === 'chart-of-accounts')?.headers).toEqual(expect.arrayContaining(['account', 'labelFr', 'labelAr']));
+    expect(store.importTemplateCsv('customers')).toContain('name,arabicName,ice');
+    expect(store.importTemplateCsv('products')).toContain('sku,barcode,name,arabicDescription');
+    expect(store.importTemplateCsv('employees')).toContain('employeeNumber,fullName,arabicName');
+    expect(store.importTemplateCsv('chart-of-accounts')).toContain('342100');
+  });
+
+  it('summarizes implementation partner client tenants and onboarding readiness', () => {
+    const created = store.createPartnerClientTenant({
+      tradeName: 'Client Partenaire SARL',
+      city: 'Marrakech',
+      partnerEmail: 'partner@atlas.ma',
+    });
+    let workspace = store.implementationPartnerWorkspace();
+    const newClient = workspace.clients.find((client) => client.tenantId === created.tenant.id);
+
+    expect(workspace.totals.tenants).toBeGreaterThanOrEqual(2);
+    expect(newClient).toMatchObject({
+      tradeName: 'Client Partenaire SARL',
+      ready: false,
+      counts: { customers: 0, suppliers: 0, employees: 0, products: 0 },
+    });
+    expect(newClient?.blockers).toEqual(expect.arrayContaining(['Identité légale complète', 'Au moins un client créé']));
+
+    store.updatePartnerClientOnboarding(created.tenant.id, {
+      tradeName: 'Client Partenaire SARL',
+      ice: '009999888777666',
+      ifNumber: '555444',
+      rc: 'MARRAKECH-1001',
+      patente: 'PAT-1001',
+      cnssNumber: '7654321',
+      address: 'Avenue Mohammed VI',
+      city: 'Marrakech',
+      invoiceSeries: 'CP',
+      fiscalYearStartMonth: 1,
+      vatStatus: 'ENABLED',
+    });
+    store.addCustomer({ name: 'Client final' }, created.tenant.id);
+    store.addProduct({ sku: 'CP-SVC', name: 'Service client', type: 'SERVICE', salePrice: 1000 }, created.tenant.id);
+    workspace = store.implementationPartnerWorkspace();
+
+    expect(workspace.clients.find((client) => client.tenantId === created.tenant.id)).toMatchObject({
+      readinessScore: 100,
+      ready: true,
+    });
+    expect(store.auditLogs(created.tenant.id).map((entry) => entry.action)).toEqual(expect.arrayContaining([
+      'implementation.client-created',
+      'implementation.client-onboarding-updated',
+    ]));
+  });
 });

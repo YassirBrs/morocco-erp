@@ -6,6 +6,7 @@ export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
   @Get() list() { return this.inventoryService.listStock(); }
   @Get('products') products() { return this.inventoryService.listProducts(); }
+  @Get('products/import-template.csv') productImportTemplateCsv() { return this.inventoryService.productImportTemplateCsv(); }
   @Get('products/margin-alerts') productMarginAlerts() { return this.inventoryService.productMarginAlerts(); }
   @Get('products/duplicates') productDuplicateReview() { return this.inventoryService.productDuplicateReview(); }
   @Get('products/:id') product(@Param('id') id: string) { return this.inventoryService.getProduct(id); }
@@ -14,6 +15,7 @@ export class InventoryController {
   @Patch('products/:id') updateProduct(@Param('id') id: string, @Body() body: any) { return this.inventoryService.updateProduct(id, body); }
   @Delete('products/:id') archiveProduct(@Param('id') id: string) { return this.inventoryService.archiveProduct(id); }
   @Get('suppliers') suppliers() { return this.inventoryService.listSuppliers(); }
+  @Get('suppliers/import-template.csv') supplierImportTemplateCsv() { return this.inventoryService.supplierImportTemplateCsv(); }
   @Get('suppliers/export.csv') exportSuppliersCsv() { return this.inventoryService.exportSuppliersCsv(); }
   @Post('suppliers/import') importSuppliersCsv(@Body() body: { csv?: string }) { return this.inventoryService.importSuppliersCsv(body); }
   @Get('suppliers/risk-reminders') supplierRiskReminders(@Query('filter') filter?: string) { return this.inventoryService.supplierRiskReminders(filter); }

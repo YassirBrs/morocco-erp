@@ -11,4 +11,5 @@ export class LedgerService {
   closeChecklist(data: { year?: number; month?: number }) { return this.store.fiscalDocumentCompletenessCheck(data.year, data.month); }
   listPeriods() { return this.store.listFiscalPeriods(); }
   auditLogs() { return this.store.auditLogs(); }
+  chartOfAccountsImportTemplateCsv() { return this.store.importTemplateCsv('chart-of-accounts'); }
 }

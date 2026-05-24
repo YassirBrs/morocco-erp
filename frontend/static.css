@@ -604,6 +604,42 @@ button:disabled {
   background: var(--blue-soft);
 }
 
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.templateCard {
+  display: grid;
+  min-height: 118px;
+  gap: 6px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 15px 16px;
+  text-align: left;
+}
+
+.templateCard:last-child {
+  border-right: 0;
+}
+
+.templateCard span,
+.templateCard small {
+  color: var(--muted);
+}
+
+.templateCard strong {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.templateCard:hover {
+  background: var(--blue-soft);
+}
+
 .vatReviewGrid {
   display: grid;
   grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
@@ -989,6 +1025,7 @@ tbody tr:hover {
   .lowerGrid,
   .opsGrid,
   .roleWidgetGrid,
+  .templateGrid,
   .vatReviewGrid,
   .filterCards,
   .kpis {
@@ -1012,7 +1049,13 @@ tbody tr:hover {
     border-top: 1px solid var(--line);
   }
 
-  .roleWidgetCard:first-child {
+  .templateCard {
+    border-right: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .roleWidgetCard:first-child,
+  .templateCard:first-child {
     border-top: 0;
   }
 

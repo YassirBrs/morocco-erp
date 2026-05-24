@@ -119,6 +119,9 @@ export class PayrollService {
     return [];
   }
 
+  listEmployees() { return this.store.listEmployees(); }
+  addEmployee(data: any) { return this.store.addEmployee(data); }
+  employeeImportTemplateCsv() { return this.store.importTemplateCsv('employees'); }
   payrollRunTimeline(id: string) { return this.store.entityTimeline('PAYROLL_RUN', id); }
   addPayrollRunNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'PAYROLL_RUN', entityId: id, ...data }); }
   addPayrollRunTask(id: string, data: any) { return this.store.addInternalTask({ entityType: 'PAYROLL_RUN', entityId: id, ...data }); }

@@ -15,9 +15,9 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T003 P0 - Add a first-run demo data reset action for local and staging environments only.
 - [x] T004 P1 - Add company profile editing with full audit history and approval state.
 - [x] T005 P1 - Add French-first copy review across all screens and keep labels consistent with Moroccan business usage.
-- [ ] T006 P1 - Add Arabic-ready customer, supplier, employee, and document fields without forcing Arabic UI yet.
-- [ ] T007 P1 - Add import templates for customers, suppliers, products, employees, and chart of accounts.
-- [ ] T008 P2 - Add an implementation partner workspace to help onboard multiple client tenants.
+- [x] T006 P1 - Add Arabic-ready customer, supplier, employee, and document fields without forcing Arabic UI yet.
+- [x] T007 P1 - Add import templates for customers, suppliers, products, employees, and chart of accounts.
+- [x] T008 P2 - Add an implementation partner workspace to help onboard multiple client tenants.
 
 ## Auth, Tenanting, And Security
 
@@ -220,6 +220,7 @@ This backlog contains concrete tasks to improve the app from the current working
 
                 Modify the files directly. Once done, reply with a brief summary of the modified files and a diff of the changes.
 - [x] T135 P2 - don't campact every module in one page . use sidebar to navigate between modules
+- [ ] T1351 P2 - each module should have it's own page not everything in index.html
 
 ## Additional Morocco ERP Hardening
 

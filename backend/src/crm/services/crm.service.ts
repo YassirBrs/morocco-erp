@@ -13,6 +13,7 @@ export class CrmService {
   importLeadsCsv(data: { csv?: string }) { return this.store.importLeadsCsv(data.csv ?? ''); }
   leadSourceAnalytics() { return this.store.leadSourceAnalytics(); }
   listCustomers() { return this.store.listCustomers(); }
+  customerImportTemplateCsv() { return this.store.importTemplateCsv('customers'); }
   customerCreditControls() { return this.store.customerCreditControls(); }
   customerDocumentReminders() { return this.store.customerDocumentReminders(); }
   customerDuplicateReview() { return this.store.customerDuplicateReview(); }
