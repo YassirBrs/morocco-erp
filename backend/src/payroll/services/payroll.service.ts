@@ -166,6 +166,7 @@ export class PayrollService {
   createOvertimeApproval(data: any) { return this.store.createOvertimeApproval(data); }
   amendEmploymentContract(data: any) { return this.store.amendEmploymentContract(data); }
   payrollSocialDeclarationReconciliation() { return this.store.payrollSocialDeclarationReconciliation(); }
+  amoReconciliation() { return this.store.amoReconciliation(); }
   addHrAuditTrail(data: any) { return this.store.addHrAuditTrail(data); }
   hrAuditTrail(role?: any) { return this.store.hrAuditTrail(role); }
   employeeImportTemplateCsv() { return this.store.importTemplateCsv('employees'); }

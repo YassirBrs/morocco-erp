@@ -35,6 +35,7 @@ export class SalesController {
   @Get('invoices') invoices() { return this.salesService.listInvoices(); }
   @Post('invoices') createInvoice(@Body() body: any) { return this.salesService.createInvoice(body); }
   @Get('invoices/:id/email-preview') invoiceEmail(@Param('id') id: string) { return this.salesService.invoiceEmailPreview(id); }
+  @Get('invoices/:id/arabic-rendering-qa') invoiceArabicQa(@Param('id') id: string) { return this.salesService.invoiceArabicRenderingQa(id); }
   @Get('invoices/:id/pdf') invoicePdf(@Param('id') id: string) { return this.salesService.exportInvoicePdf(id); }
   @Get('invoices/:id/timeline') invoiceTimeline(@Param('id') id: string) { return this.salesService.invoiceTimeline(id); }
   @Post('invoices/:id/notes') addInvoiceNote(@Param('id') id: string, @Body() body: any) { return this.salesService.addInvoiceNote(id, body); }
@@ -45,6 +46,7 @@ export class SalesController {
   @Post('credit-notes/:id/approve') approveCreditNote(@Param('id') id: string) { return this.salesService.approveCreditNote(id); }
   @Get('customers/:id/statement') customerStatement(@Param('id') id: string) { return this.salesService.customerStatement(id); }
   @Get('customers/:id/statement.pdf') customerStatementPdf(@Param('id') id: string) { return this.salesService.customerStatementPdf(id); }
+  @Get('customers/:id/statement-bilingual.pdf') bilingualCustomerStatementPdf(@Param('id') id: string) { return this.salesService.bilingualCustomerStatementPdf(id); }
   @Get('commission-report') salesCommissionReport(@Query('period') period?: string) { return this.salesService.salesCommissionReport({ period }); }
   @Get('customer-contracts') customerContracts() { return this.salesService.listCustomerContracts(); }
   @Post('customer-contracts') createCustomerContract(@Body() body: any) { return this.salesService.createCustomerContract(body); }

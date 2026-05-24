@@ -36,8 +36,17 @@ export class LedgerService {
   listCheques() { return this.store.listCheques(); }
   createCheque(data: any) { return this.store.createCheque(data); }
   chequeLifecycleAudit() { return this.store.chequeLifecycleAudit(); }
+  chequePortfolio() { return this.store.chequePortfolioDashboard(); }
+  requestBankRibVerification(data: any) { return this.store.requestBankRibVerification(data); }
+  approveBankRibVerification(id: string, data: any) { return this.store.approveBankRibVerification(id, data); }
+  bankRibVerifications() { return this.store.bankRibVerifications(); }
   listDepositBatches() { return this.store.listDepositBatches(); }
   createDepositBatch(data: any) { return this.store.createDepositBatch(data); }
+  requestFiscalLockException(data: any) { return this.store.requestFiscalLockException(data); }
+  fiscalLockExceptions() { return this.store.fiscalLockExceptions(); }
+  trialBalance(data: { year?: number; month?: number }) { return this.store.trialBalanceReport(data); }
+  archiveImportDeclarationEvidence(data: any) { return this.store.archiveImportDeclarationEvidence(data); }
+  importDeclarationArchives() { return this.store.importDeclarationArchives(); }
   legalEvidence() { return this.store.listLegalEvidences(); }
   archiveEvidence(data: any) { return this.store.archiveLegalEvidence(data); }
   auditLogs() { return this.store.auditLogs(); }

@@ -14,6 +14,9 @@ export class PosService {
   addCashMovement(data: any) { return this.store.addCashDrawerMovement(data); }
   createCashboxTransfer(data: any) { return this.store.createCashboxTransfer(data); }
   listCashboxTransfers() { return this.store.listCashboxTransfers(); }
+  createCashboxDailyApproval(data: any) { return this.store.createCashboxDailyApproval(data); }
+  cashboxDailyApprovals() { return this.store.cashboxDailyApprovals(); }
+  receiptTemplates() { return this.store.posReceiptTemplateCatalog(); }
   zReport(date?: string) { return this.store.dailyZReport(date); }
   queueOffline(data: any) { return this.store.queueOfflinePosSale(data); }
   syncOffline() { return this.store.syncOfflinePosQueue(); }

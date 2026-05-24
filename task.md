@@ -388,26 +388,26 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T288 P1 - Add professional tax tracking by establishment, city, rental value, and due date.
 - [x] T289 P1 - Add tenant-level DGI declaration calendar with VAT, IS, IR salaries, and supporting evidence.
 - [x] T290 P1 - Add CNSS anomaly detector for missing affiliation, duplicate CNSS numbers, and invalid salary bases.
-- [ ] T291 P1 - Add AMO reconciliation between payroll slips, employer charges, and Damancom export totals.
-- [ ] T292 P1 - Add Moroccan public holiday calendar with payroll, leave, and delivery planning impact.
-- [ ] T293 P1 - Add Moroccan city and region reference data for customers, suppliers, deliveries, and analytics.
-- [ ] T294 P1 - Add Arabic invoice rendering QA with RTL fields, legal footer, and PDF snapshot tests.
-- [ ] T295 P1 - Add bilingual customer statement PDF with aging, payment promises, and legal identifiers.
-- [ ] T296 P1 - Add supplier statement reconciliation PDF with receipts, invoices, payments, and disputed lines.
-- [ ] T297 P1 - Add bank RIB ownership verification workflow with document evidence and approval history.
-- [ ] T298 P1 - Add cheque portfolio dashboard with deposit slips, due dates, bounced cheques, and alerts.
-- [ ] T299 P1 - Add cash box daily approval workflow with cashier, supervisor, variance, and accounting entry.
-- [ ] T300 P1 - Add POS receipt legal footer templates for Morocco with ICE, IF, RC, and VAT display.
-- [ ] T301 P1 - Add stock lot and expiry tracking for food, cosmetics, pharma-like goods, and traceability exports.
-- [ ] T302 P1 - Add serial number tracking for electronics, warranties, repairs, and after-sales cases.
-- [ ] T303 P1 - Add landed cost allocation for imports by customs duty, freight, transit, insurance, and CUMP impact.
-- [ ] T304 P1 - Add import declaration evidence archive with DUM reference, supplier, shipment, and customs documents.
-- [ ] T305 P1 - Add supplier risk score using expired documents, payment incidents, lead time variance, and disputes.
-- [ ] T306 P1 - Add customer credit score using aging, broken promises, disputes, returned cheques, and concentration risk.
-- [ ] T307 P1 - Add approval matrix simulator for Moroccan SME roles, amount thresholds, module, and branch.
-- [ ] T308 P1 - Add accountant workspace review mode with comments per journal, invoice, payroll run, and period.
-- [ ] T309 P1 - Add fiscal lock exception workflow with reason, approver, time limit, and reverse audit evidence.
-- [ ] T310 P1 - Add accounting trial balance report by PCGE class, period, debit, credit, and balance.
+- [x] T291 P1 - Add AMO reconciliation between payroll slips, employer charges, and Damancom export totals.
+- [x] T292 P1 - Add Moroccan public holiday calendar with payroll, leave, and delivery planning impact.
+- [x] T293 P1 - Add Moroccan city and region reference data for customers, suppliers, deliveries, and analytics.
+- [x] T294 P1 - Add Arabic invoice rendering QA with RTL fields, legal footer, and PDF snapshot tests.
+- [x] T295 P1 - Add bilingual customer statement PDF with aging, payment promises, and legal identifiers.
+- [x] T296 P1 - Add supplier statement reconciliation PDF with receipts, invoices, payments, and disputed lines.
+- [x] T297 P1 - Add bank RIB ownership verification workflow with document evidence and approval history.
+- [x] T298 P1 - Add cheque portfolio dashboard with deposit slips, due dates, bounced cheques, and alerts.
+- [x] T299 P1 - Add cash box daily approval workflow with cashier, supervisor, variance, and accounting entry.
+- [x] T300 P1 - Add POS receipt legal footer templates for Morocco with ICE, IF, RC, and VAT display.
+- [x] T301 P1 - Add stock lot and expiry tracking for food, cosmetics, pharma-like goods, and traceability exports.
+- [x] T302 P1 - Add serial number tracking for electronics, warranties, repairs, and after-sales cases.
+- [x] T303 P1 - Add landed cost allocation for imports by customs duty, freight, transit, insurance, and CUMP impact.
+- [x] T304 P1 - Add import declaration evidence archive with DUM reference, supplier, shipment, and customs documents.
+- [x] T305 P1 - Add supplier risk score using expired documents, payment incidents, lead time variance, and disputes.
+- [x] T306 P1 - Add customer credit score using aging, broken promises, disputes, returned cheques, and concentration risk.
+- [x] T307 P1 - Add approval matrix simulator for Moroccan SME roles, amount thresholds, module, and branch.
+- [x] T308 P1 - Add accountant workspace review mode with comments per journal, invoice, payroll run, and period.
+- [x] T309 P1 - Add fiscal lock exception workflow with reason, approver, time limit, and reverse audit evidence.
+- [x] T310 P1 - Add accounting trial balance report by PCGE class, period, debit, credit, and balance.
 - [ ] T311 P1 - Add general ledger report with account drilldown, source document links, and export checksum.
 - [ ] T312 P1 - Add auxiliary customer ledger with invoice, credit note, payment, and residual balance per customer.
 - [ ] T313 P1 - Add auxiliary supplier ledger with receipt, supplier invoice, payment, and residual balance per supplier.

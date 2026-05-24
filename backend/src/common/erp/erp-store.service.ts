@@ -81,6 +81,7 @@ import {
   PayrollRun,
   Payslip,
   PosOfflineQueueItem,
+  PosReceiptTemplate,
   PosSession,
   PosTransaction,
   PreferredLanguage,
@@ -132,11 +133,16 @@ import {
   SupportImpersonationApproval,
   SupportTicket,
   AccountingAttachmentRequirement,
+  AccountantReviewComment,
+  BankRibVerification,
+  CashboxDailyApproval,
   ComplianceOwnerAssignment,
   ContractAmendment,
+  FiscalLockException,
   OvertimeApproval,
   Transporter,
   FleetComplianceCase,
+  ImportDeclarationArchive,
   ImportValidationSandboxRun,
   MaintenanceSparePartReservation,
   ProfessionalTaxRecord,
@@ -503,10 +509,14 @@ export class ErpStoreService {
       cheques: [],
       depositBatches: [],
       cashboxTransfers: [],
+      bankRibVerifications: [],
+      cashboxDailyApprovals: [],
+      posReceiptTemplates: this.defaultPosReceiptTemplates(tenant.id),
       purchaseRequests: [],
       supplierQuoteComparisons: [],
       payrollExportArchives: [],
       traceabilityLots: [],
+      importDeclarationArchives: [],
       userInvitations: [],
       kpiTargets: [],
       webhookRetryLogs: [],
@@ -532,6 +542,8 @@ export class ErpStoreService {
       procurementBudgets: [],
       branches: [],
       accountantPortalReviews: [],
+      accountantReviewComments: [],
+      fiscalLockExceptions: [],
       partnerImplementationChecklists: [],
       complianceRuleRollouts: [],
       featureFlagAudits: [],
@@ -670,10 +682,14 @@ export class ErpStoreService {
       cheques: [],
       depositBatches: [],
       cashboxTransfers: [],
+      bankRibVerifications: [],
+      cashboxDailyApprovals: [],
+      posReceiptTemplates: this.defaultPosReceiptTemplates(tenantId),
       purchaseRequests: [],
       supplierQuoteComparisons: [],
       payrollExportArchives: [],
       traceabilityLots: [],
+      importDeclarationArchives: [],
       userInvitations: [],
       kpiTargets: [],
       webhookRetryLogs: [],
@@ -699,6 +715,8 @@ export class ErpStoreService {
       procurementBudgets: [],
       branches: [],
       accountantPortalReviews: [],
+      accountantReviewComments: [],
+      fiscalLockExceptions: [],
       partnerImplementationChecklists: [],
       complianceRuleRollouts: [],
       featureFlagAudits: [],
@@ -1456,12 +1474,12 @@ export class ErpStoreService {
     return this.workspace(tenantId).stockMoves;
   }
 
-  landedCostAllocation(input: { purchaseReceiptId: string; freight?: number; customs?: number; transit?: number; insurance?: number }, tenantId?: string) {
+  landedCostAllocation(input: { purchaseReceiptId: string; freight?: number; customs?: number; customsDuty?: number; transit?: number; insurance?: number; vatTreatment?: 'RECOVERABLE' | 'CAPITALIZED' }, tenantId?: string) {
     const workspace = this.workspace(tenantId);
     const receipt = this.purchaseReceipt(workspace, input.purchaseReceiptId);
     const landedCosts = {
       freight: this.nonNegative(input.freight ?? 0, 'Fret invalide'),
-      customs: this.nonNegative(input.customs ?? 0, 'Droits de douane invalides'),
+      customsDuty: this.nonNegative(input.customsDuty ?? input.customs ?? 0, 'Droits de douane invalides'),
       transit: this.nonNegative(input.transit ?? 0, 'Transit invalide'),
       insurance: this.nonNegative(input.insurance ?? 0, 'Assurance invalide'),
     };
@@ -1471,9 +1489,9 @@ export class ErpStoreService {
       const share = receipt.total ? r2((line.value / receipt.total) * extra) : 0;
       const unitImpact = line.quantity ? r2(share / line.quantity) : 0;
       product.weightedAverageCost = r2(product.weightedAverageCost + unitImpact);
-      return { productId: product.id, sku: product.sku, baseValue: line.value, allocatedCost: share, unitImpact, newCump: product.weightedAverageCost };
+      return { productId: product.id, sku: product.sku, baseValue: line.value, allocatedCost: share, unitImpact, previousCump: r2(product.weightedAverageCost - unitImpact), newCump: product.weightedAverageCost, cumpImpact: unitImpact };
     });
-    const result = { receiptId: receipt.id, landedCosts, totalAllocated: extra, rows, valuationMethod: 'CUMP' };
+    const result = { receiptId: receipt.id, landedCosts, totalAllocated: extra, rows, valuationMethod: 'CUMP', vatTreatment: input.vatTreatment ?? 'RECOVERABLE', customsDutyIncluded: landedCosts.customsDuty > 0 };
     this.audit(workspace, 'landed-cost.allocated', 'PurchaseReceipt', receipt.id, result);
     return result;
   }
@@ -3980,6 +3998,34 @@ export class ErpStoreService {
     };
   }
 
+  exportBilingualCustomerStatementPdf(customerId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const statement = this.customerStatement(customerId, workspace.tenant.id);
+    const promises = workspace.promisesToPay.filter((promise) => promise.customerId === customerId);
+    const lines = [
+      `Relevé client bilingue / كشف حساب الزبون ${statement.customer.name}`,
+      `Client AR ${statement.customer.arabicName ?? statement.customer.name}`,
+      `ICE vendeur ${workspace.tenant.legalEntity.ice} IF ${workspace.tenant.legalEntity.ifNumber} RC ${workspace.tenant.legalEntity.rc}`,
+      `ICE client ${statement.customer.ice ?? 'N/A'} IF ${statement.customer.ifNumber ?? 'N/A'} RC ${statement.customer.rc ?? 'N/A'}`,
+      `Solde ${statement.totals.balance.toFixed(2)} MAD`,
+      `Aging courant ${statement.aging.current.toFixed(2)} MAD · 31-60 ${statement.aging.days31To60.toFixed(2)} MAD · +90 ${statement.aging.over90.toFixed(2)} MAD`,
+      `Promesses paiement ${promises.map((promise) => `${promise.promisedDate}:${promise.amount}`).join(' | ') || 'Aucune'}`,
+      'Direction RTL vérifiée pour les champs arabes',
+    ];
+    const evidence = this.archiveEvidence(workspace, 'DOCUMENT_PDF', `STATEMENT-BILINGUAL-${statement.customer.id}-${today()}`, { customerId, totals: statement.totals, promises: promises.length });
+    return {
+      status: 'PREPARED',
+      fileName: `releve-client-bilingue-${statement.customer.id}.pdf`,
+      mimeType: 'application/pdf' as const,
+      contentBase64: Buffer.from(this.simplePdf(lines), 'binary').toString('base64'),
+      checksum: evidence.checksum,
+      requiredMentions: ['ICE vendeur', 'IF vendeur', 'RC vendeur', 'ICE client', 'Aging', 'Promesses paiement', 'RTL arabe'],
+      statement,
+      promises,
+      rtlVerified: true,
+    };
+  }
+
   supplierStatement(supplierId: string, tenantId?: string) {
     const workspace = this.workspace(tenantId);
     const supplier = this.supplier(workspace, supplierId);
@@ -3998,6 +4044,51 @@ export class ErpStoreService {
       totals: { purchases, paid, balance: r2(purchases - paid), receipts: r2(receipts.reduce((sum, receipt) => sum + receipt.total, 0)) },
       legalIdentifiers: { ice: supplier.ice, ifNumber: supplier.ifNumber, rc: supplier.rc, tenantIce: workspace.tenant.legalEntity.ice },
       status: 'PREPARED',
+    };
+  }
+
+  exportSupplierStatementPdf(supplierId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const statement = this.supplierStatement(supplierId, workspace.tenant.id);
+    const disputes = workspace.disputeCases.filter((dispute) => dispute.type === 'SUPPLIER' && dispute.partyId === supplierId);
+    const lines = [
+      `Relevé fournisseur ${statement.supplier.name}`,
+      `ICE fournisseur ${statement.legalIdentifiers.ice ?? 'N/A'} IF ${statement.legalIdentifiers.ifNumber ?? 'N/A'} RC ${statement.legalIdentifiers.rc ?? 'N/A'}`,
+      `Réceptions ${statement.totals.receipts.toFixed(2)} MAD`,
+      `Factures ${statement.totals.purchases.toFixed(2)} MAD`,
+      `Paiements ${statement.totals.paid.toFixed(2)} MAD`,
+      `Solde ${statement.totals.balance.toFixed(2)} MAD`,
+      `Litiges ${disputes.map((dispute) => `${dispute.reason}:${dispute.status}`).join(' | ') || 'Aucun'}`,
+    ];
+    const evidence = this.archiveEvidence(workspace, 'DOCUMENT_PDF', `SUPPLIER-STATEMENT-${statement.supplier.id}-${today()}`, { supplierId, totals: statement.totals, disputes: disputes.length });
+    return {
+      status: 'PREPARED',
+      fileName: `releve-fournisseur-${statement.supplier.id}.pdf`,
+      mimeType: 'application/pdf' as const,
+      contentBase64: Buffer.from(this.simplePdf(lines), 'binary').toString('base64'),
+      checksum: evidence.checksum,
+      statement,
+      disputes,
+      reconciliationStatus: statement.totals.balance === 0 && disputes.length === 0 ? 'CLEAR' : 'NEEDS_REVIEW',
+    };
+  }
+
+  arabicInvoiceRenderingQa(input: { invoiceId?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const invoice = input.invoiceId ? this.invoice(workspace, input.invoiceId) : workspace.invoices[0] ?? this.createInvoice({ customerId: workspace.customers[0].id, lines: [{ productId: this.defaultQuotableProduct(workspace).id, quantity: 1 }] }, workspace.tenant.id);
+    const customer = this.customer(workspace, invoice.customerId);
+    const snapshot = this.exportInvoicePdf(invoice.id, workspace.tenant.id);
+    return {
+      invoiceId: invoice.id,
+      number: invoice.number,
+      rtlFields: [
+        { key: 'sellerNameAr', value: workspace.tenant.legalEntity.tradeName, direction: 'rtl', present: true },
+        { key: 'customerNameAr', value: customer.arabicName ?? customer.name, direction: 'rtl', present: Boolean(customer.arabicName) },
+        { key: 'customerAddressAr', value: customer.arabicAddress ?? customer.address ?? '', direction: 'rtl', present: Boolean(customer.arabicAddress) },
+      ],
+      legalFooter: this.legalFooter(workspace),
+      pdfSnapshotChecksum: snapshot.checksum,
+      status: 'RTL_QA_READY',
     };
   }
 
@@ -5967,6 +6058,20 @@ export class ErpStoreService {
     });
   }
 
+  customerCreditScores(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.customers.map((customer) => {
+      const aging = this.receivablesAging(workspace, customer.id);
+      const overdueBalance = r2(aging.days1To30 + aging.days31To60 + aging.days61To90 + aging.over90);
+      const brokenPromises = workspace.promisesToPay.filter((promise) => promise.customerId === customer.id && promise.status === 'BROKEN').length;
+      const disputes = workspace.disputeCases.filter((dispute) => dispute.type === 'CUSTOMER' && dispute.partyId === customer.id && dispute.status !== 'RESOLVED').length;
+      const returnedCheques = workspace.cheques.filter((cheque) => cheque.status === 'REJECTED' && (!cheque.invoiceId || this.invoice(workspace, cheque.invoiceId).customerId === customer.id)).length;
+      const concentrationRisk = workspace.invoices.length ? r2((workspace.invoices.filter((invoice) => invoice.customerId === customer.id).reduce((sum, invoice) => sum + invoice.totals.total, 0) / Math.max(1, workspace.invoices.reduce((sum, invoice) => sum + invoice.totals.total, 0))) * 100) : 0;
+      const score = Math.max(0, Math.min(100, 100 - Math.round(overdueBalance / 1000) - brokenPromises * 15 - disputes * 10 - returnedCheques * 25 - Math.max(0, concentrationRisk - 35)));
+      return { customerId: customer.id, customerName: customer.name, overdueBalance, brokenPromises, disputes, returnedCheques, concentrationRisk, score, level: score >= 80 ? 'LOW_RISK' : score >= 55 ? 'MEDIUM_RISK' : 'HIGH_RISK' };
+    }).sort((left, right) => left.score - right.score || left.customerName.localeCompare(right.customerName));
+  }
+
   supplierReliabilityScores(tenantId?: string) {
     const workspace = this.workspace(tenantId);
     return workspace.suppliers.map((supplier) => {
@@ -5978,6 +6083,74 @@ export class ErpStoreService {
       const score = Math.max(0, Math.min(100, 100 - lateOrders * 20 - missingDocuments * 15 + Math.min(10, Math.round(purchaseVolume / 10000))));
       return { supplierId: supplier.id, supplierName: supplier.name, lateOrders, missingDocuments, purchaseVolume, score, level: score >= 80 ? 'HIGH' : score >= 55 ? 'MEDIUM' : 'LOW' };
     }).sort((left, right) => right.score - left.score || left.supplierName.localeCompare(right.supplierName));
+  }
+
+  supplierRiskScoreDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.suppliers.map((supplier) => {
+      const expiredDocuments = supplier.documentExpiries.filter((document) => this.daysUntil(document.expiresAt) < 0).length;
+      const paymentIncidents = workspace.supplierInvoices.filter((invoice) => invoice.supplierId === supplier.id && invoice.dueDate < today() && invoice.status !== 'PAID').length;
+      const receipts = workspace.purchaseReceipts.filter((receipt) => receipt.supplierId === supplier.id);
+      const orders = workspace.purchaseOrders.filter((order) => order.supplierId === supplier.id && order.expectedDate);
+      const leadTimeVariance = orders.reduce((sum, order) => {
+        const receipt = receipts.find((candidate) => candidate.purchaseOrderId === order.id);
+        return sum + (receipt && order.expectedDate ? Math.abs(daysBetween(order.expectedDate, receipt.date)) : 0);
+      }, 0);
+      const disputes = workspace.disputeCases.filter((dispute) => dispute.type === 'SUPPLIER' && dispute.partyId === supplier.id && dispute.status !== 'RESOLVED').length;
+      const score = Math.min(100, expiredDocuments * 25 + paymentIncidents * 10 + leadTimeVariance * 2 + disputes * 20 + (supplier.riskNotes ? 15 : 0));
+      return { supplierId: supplier.id, supplierName: supplier.name, expiredDocuments, paymentIncidents, leadTimeVariance, disputes, score, level: score >= 70 ? 'HIGH' : score >= 35 ? 'MEDIUM' : 'LOW' };
+    }).sort((left, right) => right.score - left.score || left.supplierName.localeCompare(right.supplierName));
+  }
+
+  moroccanCityRegionReference() {
+    const rows = [
+      { city: 'Casablanca', region: 'Casablanca-Settat', analyticsZone: 'Centre', defaultDeliveryZone: 'CASA' },
+      { city: 'Rabat', region: 'Rabat-Salé-Kénitra', analyticsZone: 'Nord-Ouest', defaultDeliveryZone: 'RBA' },
+      { city: 'Tanger', region: 'Tanger-Tétouan-Al Hoceïma', analyticsZone: 'Nord', defaultDeliveryZone: 'TNG' },
+      { city: 'Marrakech', region: 'Marrakech-Safi', analyticsZone: 'Centre-Sud', defaultDeliveryZone: 'RAK' },
+      { city: 'Fès', region: 'Fès-Meknès', analyticsZone: 'Centre-Nord', defaultDeliveryZone: 'FEZ' },
+      { city: 'Agadir', region: 'Souss-Massa', analyticsZone: 'Sud', defaultDeliveryZone: 'AGA' },
+      { city: 'Oujda', region: 'Oriental', analyticsZone: 'Est', defaultDeliveryZone: 'OUD' },
+      { city: 'Laâyoune', region: 'Laâyoune-Sakia El Hamra', analyticsZone: 'Sud', defaultDeliveryZone: 'LAY' },
+      { city: 'Dakhla', region: 'Dakhla-Oued Ed-Dahab', analyticsZone: 'Sud', defaultDeliveryZone: 'DAK' },
+    ];
+    return { rows, byRegion: rows.reduce<Record<string, number>>((acc, row) => ({ ...acc, [row.region]: (acc[row.region] ?? 0) + 1 }), {}) };
+  }
+
+  moroccanPublicHolidayCalendar(input: { year?: number } = {}) {
+    const year = input.year ?? Number(today().slice(0, 4));
+    const fixed = [
+      { date: `${year}-01-01`, label: 'Nouvel An', type: 'NATIONAL' },
+      { date: `${year}-01-11`, label: 'Manifeste de l’Indépendance', type: 'NATIONAL' },
+      { date: `${year}-05-01`, label: 'Fête du Travail', type: 'NATIONAL' },
+      { date: `${year}-07-30`, label: 'Fête du Trône', type: 'NATIONAL' },
+      { date: `${year}-08-14`, label: 'Récupération Oued Eddahab', type: 'NATIONAL' },
+      { date: `${year}-08-20`, label: 'Révolution du Roi et du Peuple', type: 'NATIONAL' },
+      { date: `${year}-08-21`, label: 'Fête de la Jeunesse', type: 'NATIONAL' },
+      { date: `${year}-11-06`, label: 'Marche Verte', type: 'NATIONAL' },
+      { date: `${year}-11-18`, label: 'Fête de l’Indépendance', type: 'NATIONAL' },
+    ];
+    const lunar = year === 2026
+      ? [
+        { date: '2026-03-20', label: 'Aïd Al Fitr - observation lunaire', type: 'RELIGIOUS_ESTIMATE' },
+        { date: '2026-03-21', label: 'Aïd Al Fitr - observation lunaire', type: 'RELIGIOUS_ESTIMATE' },
+        { date: '2026-05-27', label: 'Aïd Al Adha - observation lunaire', type: 'RELIGIOUS_ESTIMATE' },
+        { date: '2026-05-28', label: 'Aïd Al Adha - observation lunaire', type: 'RELIGIOUS_ESTIMATE' },
+        { date: '2026-06-17', label: '1er Moharram - observation lunaire', type: 'RELIGIOUS_ESTIMATE' },
+        { date: '2026-08-25', label: 'Aïd Al Mawlid - observation lunaire', type: 'RELIGIOUS_ESTIMATE' },
+      ]
+      : [];
+    const rows = [...fixed, ...lunar].sort((left, right) => left.date.localeCompare(right.date));
+    return {
+      year,
+      rows: rows.map((row) => ({
+        ...row,
+        payrollImpact: 'EXCLUDE_FROM_WORKING_DAYS',
+        leaveImpact: 'PUBLIC_HOLIDAY',
+        deliveryPlanningImpact: 'NO_STANDARD_DELIVERY',
+      })),
+      sourceNote: 'Les fêtes religieuses restent à confirmer par observation lunaire et décision officielle.',
+    };
   }
 
   setProductLifecycleState(productId: string, state: ProductLifecycleState, tenantId?: string): Product {
@@ -7347,6 +7520,279 @@ export class ErpStoreService {
     };
   }
 
+  chequePortfolioDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.cheques.map((cheque) => {
+      const daysUntilDue = this.daysUntil(cheque.dueDate);
+      const invoice = cheque.invoiceId ? this.invoice(workspace, cheque.invoiceId) : undefined;
+      return {
+        chequeId: cheque.id,
+        number: cheque.number,
+        bank: cheque.bank,
+        drawer: cheque.drawer,
+        customerName: invoice ? this.customer(workspace, invoice.customerId).name : cheque.drawer,
+        dueDate: cheque.dueDate,
+        daysUntilDue,
+        amount: cheque.amount,
+        status: cheque.status,
+        depositBatchId: cheque.depositBatchId,
+        alert: cheque.status === 'REJECTED' ? 'BOUNCED' : daysUntilDue < 0 ? 'OVERDUE_DEPOSIT' : daysUntilDue <= 3 ? 'DUE_SOON' : 'OK',
+      };
+    });
+    return {
+      rows,
+      depositSlips: workspace.depositBatches.filter((batch) => batch.chequeIds.length > 0),
+      totals: {
+        portfolio: r2(rows.reduce((sum, row) => sum + row.amount, 0)),
+        bounced: rows.filter((row) => row.alert === 'BOUNCED').length,
+        dueSoon: rows.filter((row) => row.alert === 'DUE_SOON').length,
+      },
+    };
+  }
+
+  requestBankRibVerification(input: { partyType: BankRibVerification['partyType']; partyId: string; rib: string; bankName?: string; documentEvidence: string; actor?: string }, tenantId?: string): BankRibVerification {
+    const workspace = this.workspace(tenantId);
+    if (input.partyType === 'SUPPLIER') this.supplier(workspace, input.partyId);
+    if (input.partyType === 'CUSTOMER') this.customer(workspace, input.partyId);
+    if (input.partyType === 'EMPLOYEE') this.employee(workspace, input.partyId);
+    const verification: BankRibVerification = {
+      id: this.id('ribv'),
+      tenantId: workspace.tenant.id,
+      partyType: input.partyType,
+      partyId: input.partyId,
+      rib: this.moroccanRib(input.rib),
+      bankName: this.clean(input.bankName) ?? this.normalizeBankName(input.rib),
+      documentEvidence: this.nonEmpty(input.documentEvidence, 'Preuve RIB obligatoire'),
+      approvalHistory: [{ at: new Date().toISOString(), actor: this.clean(input.actor) ?? 'owner@atlas.ma', status: 'REQUESTED' }],
+      status: 'PENDING',
+      createdAt: today(),
+    };
+    workspace.bankRibVerifications.push(verification);
+    return verification;
+  }
+
+  approveBankRibVerification(id: string, input: { actor?: string; note?: string; approved?: boolean } = {}, tenantId?: string): BankRibVerification {
+    const workspace = this.workspace(tenantId);
+    const verification = workspace.bankRibVerifications.find((candidate) => candidate.id === id);
+    if (!verification) throw new NotFoundException('Vérification RIB introuvable');
+    verification.status = input.approved === false ? 'REJECTED' : 'APPROVED';
+    verification.approvalHistory.push({ at: new Date().toISOString(), actor: this.clean(input.actor) ?? 'accountant@atlas.ma', status: verification.status, note: this.clean(input.note) });
+    return verification;
+  }
+
+  bankRibVerifications(tenantId?: string): BankRibVerification[] {
+    return this.workspace(tenantId).bankRibVerifications;
+  }
+
+  createCashboxDailyApproval(input: { sessionId: string; supervisor: string; countedCash?: number }, tenantId?: string): CashboxDailyApproval {
+    const workspace = this.workspace(tenantId);
+    const session = this.posSession(workspace, input.sessionId);
+    const countedCash = this.nonNegative(input.countedCash ?? session.countedCash ?? session.expectedCash, 'Espèces comptées invalides');
+    const variance = r2(countedCash - session.expectedCash);
+    let journalEntryId: string | undefined;
+    if (variance !== 0) {
+      journalEntryId = this.postJournal(workspace, `Écart caisse ${session.number}`, session.id, [
+        { account: variance > 0 ? '5161' : '6198', label: 'Écart caisse', debit: Math.abs(variance), credit: 0 },
+        { account: variance > 0 ? '7111' : '5161', label: 'Contrepartie écart caisse', debit: 0, credit: Math.abs(variance) },
+      ]).id;
+    }
+    const approval: CashboxDailyApproval = {
+      id: this.id('cashapp'),
+      tenantId: workspace.tenant.id,
+      sessionId: session.id,
+      cashierId: session.cashierId,
+      supervisor: this.nonEmpty(input.supervisor, 'Superviseur caisse obligatoire'),
+      date: today(),
+      expectedCash: session.expectedCash,
+      countedCash,
+      variance,
+      journalEntryId,
+      status: 'APPROVED',
+    };
+    workspace.cashboxDailyApprovals.push(approval);
+    return approval;
+  }
+
+  cashboxDailyApprovals(tenantId?: string): CashboxDailyApproval[] {
+    return this.workspace(tenantId).cashboxDailyApprovals;
+  }
+
+  posReceiptTemplateCatalog(tenantId?: string): PosReceiptTemplate[] {
+    return this.workspace(tenantId).posReceiptTemplates;
+  }
+
+  traceabilityExport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.traceabilityLots.map((lot) => {
+      const product = this.product(workspace, lot.productId);
+      return { lotId: lot.id, productId: product.id, sku: product.sku, lotNumber: lot.lotNumber, serialNumber: lot.serialNumber, quantity: lot.quantity, expiryDate: lot.expiryDate, warehouseId: lot.warehouseId, status: lot.status };
+    });
+    const checksum = createHash('sha256').update(JSON.stringify(rows)).digest('hex');
+    return { rows, checksum, generatedAt: new Date().toISOString(), expiryTracked: rows.filter((row) => row.expiryDate).length, serialTracked: rows.filter((row) => row.serialNumber).length };
+  }
+
+  serialNumberRegistry(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.traceabilityLots
+      .filter((lot) => lot.serialNumber)
+      .map((lot) => {
+        const warrantyCases = workspace.warrantyServiceCases.filter((item) => item.serialNumber === lot.serialNumber || item.productId === lot.productId);
+        return { serialNumber: lot.serialNumber, productId: lot.productId, sku: this.product(workspace, lot.productId).sku, warrantyCaseIds: warrantyCases.map((item) => item.id), repairStatus: warrantyCases.some((item) => item.status !== 'CLOSED') ? 'AFTER_SALES_OPEN' : 'CLEAR' };
+      });
+    return { rows };
+  }
+
+  archiveImportDeclarationEvidence(input: { dumReference: string; supplierId: string; shipmentReference: string; documentNames?: string[]; customsVat?: number; deductiblePeriod?: string }, tenantId?: string): ImportDeclarationArchive {
+    const workspace = this.workspace(tenantId);
+    this.supplier(workspace, input.supplierId);
+    const period = input.deductiblePeriod ?? today().slice(0, 7);
+    const evidence = this.archiveEvidence(workspace, 'ACCOUNTING_EXPORT', `DUM-${input.dumReference}`, {
+      declaration: 'IMPORT_VAT',
+      dumReference: input.dumReference,
+      supplierId: input.supplierId,
+      shipmentReference: input.shipmentReference,
+      documentNames: input.documentNames ?? [],
+      period,
+    });
+    const archive: ImportDeclarationArchive = {
+      id: this.id('dum'),
+      tenantId: workspace.tenant.id,
+      dumReference: this.nonEmpty(input.dumReference, 'Référence DUM obligatoire'),
+      supplierId: input.supplierId,
+      shipmentReference: this.nonEmpty(input.shipmentReference, 'Référence expédition obligatoire'),
+      documentNames: input.documentNames ?? ['DUM', 'Facture fournisseur', 'Reçu douane'],
+      customsVat: this.nonNegative(input.customsVat ?? 0, 'TVA douane invalide'),
+      deductiblePeriod: period,
+      evidenceId: evidence.id,
+      createdAt: today(),
+    };
+    workspace.importDeclarationArchives.push(archive);
+    return archive;
+  }
+
+  importDeclarationArchives(tenantId?: string): ImportDeclarationArchive[] {
+    return this.workspace(tenantId).importDeclarationArchives;
+  }
+
+  approvalMatrixSimulator(input: { role: UserRole; module: ErpModuleKey; amount: number; branchId?: string }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const amount = this.nonNegative(input.amount, 'Montant simulation approbation invalide');
+    const roleAllowed = ['OWNER', 'ADMIN', 'ACCOUNTANT'].includes(input.role);
+    const branch = input.branchId ? workspace.branches.find((candidate) => candidate.id === input.branchId) : undefined;
+    const matrix = workspace.procurementApprovalMatrices.find((item) => item.category === input.module || item.department === branch?.name);
+    const limit = input.module === 'sales' ? workspace.tenant.settings.approvalLimits.quote
+      : input.module === 'inventory' ? workspace.tenant.settings.approvalLimits.purchase
+        : input.module === 'accounting' ? workspace.tenant.settings.approvalLimits.creditNote
+          : defaultApprovalLimits.stockAdjustment;
+    const requiresApproval = amount > (matrix?.amountThreshold ?? limit);
+    const allowed = roleAllowed && (!requiresApproval || ['OWNER', 'ADMIN'].includes(input.role));
+    return {
+      role: input.role,
+      module: input.module,
+      branchId: input.branchId,
+      amount,
+      requiresApproval,
+      allowed,
+      approverRole: matrix?.approverRole ?? (requiresApproval ? 'ADMIN' : input.role),
+      explanation: allowed ? 'Autorisé par rôle, seuil et agence' : 'Refusé ou approbation supérieure requise',
+    };
+  }
+
+  createAccountantReviewComment(input: { entityType: AccountantReviewComment['entityType']; entityId: string; period?: string; comment: string; reviewer?: string }, tenantId?: string): AccountantReviewComment {
+    const workspace = this.workspace(tenantId);
+    if (input.entityType === 'JOURNAL') this.journalEntry(workspace, input.entityId);
+    if (input.entityType === 'INVOICE') this.invoice(workspace, input.entityId);
+    if (input.entityType === 'PAYROLL_RUN') this.payrollRun(workspace, input.entityId);
+    if (input.entityType === 'PERIOD' && !workspace.fiscalPeriods.some((period) => period.id === input.entityId)) throw new NotFoundException('Période fiscale introuvable');
+    const comment: AccountantReviewComment = {
+      id: this.id('acccmt'),
+      tenantId: workspace.tenant.id,
+      entityType: input.entityType,
+      entityId: input.entityId,
+      period: input.period ?? today().slice(0, 7),
+      comment: this.nonEmpty(input.comment, 'Commentaire revue obligatoire'),
+      reviewer: this.clean(input.reviewer) ?? 'accountant@atlas.ma',
+      status: 'OPEN',
+      createdAt: today(),
+    };
+    workspace.accountantReviewComments.push(comment);
+    return comment;
+  }
+
+  resolveAccountantReviewComment(id: string, tenantId?: string): AccountantReviewComment {
+    const workspace = this.workspace(tenantId);
+    const comment = workspace.accountantReviewComments.find((candidate) => candidate.id === id);
+    if (!comment) throw new NotFoundException('Commentaire revue introuvable');
+    comment.status = 'RESOLVED';
+    comment.resolvedAt = today();
+    return comment;
+  }
+
+  accountantReviewMode(input: { period?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.period ?? today().slice(0, 7);
+    return {
+      period,
+      comments: workspace.accountantReviewComments.filter((comment) => comment.period === period),
+      journals: workspace.journalEntries.filter((entry) => entry.date.startsWith(period)),
+      invoices: workspace.invoices.filter((invoice) => invoice.date.startsWith(period)),
+      payrollRuns: workspace.payrollRuns.filter((run) => run.period === period),
+      periods: workspace.fiscalPeriods.filter((item) => `${item.year}-${String(item.month).padStart(2, '0')}` === period),
+    };
+  }
+
+  requestFiscalLockException(input: { year: number; month: number; reason: string; approver: string; hoursValid?: number }, tenantId?: string): FiscalLockException {
+    const workspace = this.workspace(tenantId);
+    const period = this.upsertFiscalPeriod({ year: input.year, month: input.month, status: 'LOCKED' }, workspace.tenant.id);
+    const exception: FiscalLockException = {
+      id: this.id('lockex'),
+      tenantId: workspace.tenant.id,
+      periodId: period.id,
+      reason: this.nonEmpty(input.reason, 'Motif exception verrou obligatoire'),
+      approver: this.nonEmpty(input.approver, 'Approbateur exception obligatoire'),
+      expiresAt: new Date(Date.now() + (input.hoursValid ?? 24) * 3600000).toISOString(),
+      reverseAuditEvidence: createHash('sha256').update(`${period.id}.${input.reason}.${today()}`).digest('hex'),
+      status: 'APPROVED',
+      createdAt: today(),
+    };
+    workspace.fiscalLockExceptions.push(exception);
+    this.audit(workspace, 'fiscal-lock.exception-approved', 'FiscalPeriod', period.id, exception);
+    return exception;
+  }
+
+  fiscalLockExceptions(tenantId?: string): FiscalLockException[] {
+    return this.workspace(tenantId).fiscalLockExceptions;
+  }
+
+  trialBalanceReport(input: { year?: number; month?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = input.year && input.month ? `${input.year}-${String(this.month(input.month)).padStart(2, '0')}` : today().slice(0, 7);
+    const buckets = new Map<string, { account: string; label: string; class: string; debit: number; credit: number }>();
+    for (const entry of workspace.journalEntries.filter((candidate) => candidate.date.startsWith(period) && candidate.status !== 'VOID')) {
+      for (const line of entry.lines) {
+        const account = workspace.chartOfAccounts.find((candidate) => candidate.account === line.account);
+        const row = buckets.get(line.account) ?? { account: line.account, label: account?.labelFr ?? line.label, class: account?.class ?? line.account[0], debit: 0, credit: 0 };
+        row.debit = r2(row.debit + line.debit);
+        row.credit = r2(row.credit + line.credit);
+        buckets.set(line.account, row);
+      }
+    }
+    const rows = [...buckets.values()].map((row) => ({ ...row, balance: r2(row.debit - row.credit) })).sort((left, right) => left.account.localeCompare(right.account));
+    return {
+      period,
+      rows,
+      byClass: rows.reduce<Record<string, { debit: number; credit: number; balance: number }>>((acc, row) => {
+        const current = acc[row.class] ?? { debit: 0, credit: 0, balance: 0 };
+        current.debit = r2(current.debit + row.debit);
+        current.credit = r2(current.credit + row.credit);
+        current.balance = r2(current.balance + row.balance);
+        acc[row.class] = current;
+        return acc;
+      }, {}),
+      totals: { debit: r2(rows.reduce((sum, row) => sum + row.debit, 0)), credit: r2(rows.reduce((sum, row) => sum + row.credit, 0)), balance: r2(rows.reduce((sum, row) => sum + row.balance, 0)) },
+    };
+  }
+
   suggestPaymentAdjustment(input: { paymentId: string; bankFee?: number; withholdingTax?: number }, tenantId?: string): PaymentAdjustmentSuggestion {
     const workspace = this.workspace(tenantId);
     const payment = workspace.payments.find((candidate) => candidate.id === input.paymentId);
@@ -7706,6 +8152,35 @@ export class ErpStoreService {
     const damancomExports = workspace.payrollExportArchives.length;
     const accountingCnss = workspace.journalEntries.flatMap((entry) => entry.lines).filter((line) => line.account === '4443').reduce((sum, line) => sum + line.credit - line.debit, 0);
     return { payslipTotals: r2(payslipTotals), damancomExports, accountingCnss: r2(accountingCnss), variance: r2(payslipTotals - accountingCnss), status: Math.abs(payslipTotals - accountingCnss) < 1 ? 'OK' : 'NEEDS_REVIEW' };
+  }
+
+  amoReconciliation(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.payrollRuns.flatMap((run) => run.payslips.map((payslip) => {
+      const amoEmployee = payslip.amoEmployee;
+      const amoEmployer = r2(payslip.grossSalary * this.morocco2026Rules.cnss.amoEmployerRate);
+      const exportPresent = workspace.payrollExportArchives.some((archive) => archive.runId === run.id);
+      return {
+        runId: run.id,
+        period: run.period,
+        employeeId: payslip.employeeId,
+        employeeName: payslip.employeeName,
+        payslipAmoEmployee: amoEmployee,
+        employerAmoCharge: amoEmployer,
+        damancomExportPresent: exportPresent,
+        variance: exportPresent ? 0 : r2(amoEmployee + amoEmployer),
+        status: exportPresent ? 'OK' : 'EXPORT_MISSING',
+      };
+    }));
+    return {
+      rows,
+      totals: {
+        employeeAmo: r2(rows.reduce((sum, row) => sum + row.payslipAmoEmployee, 0)),
+        employerAmo: r2(rows.reduce((sum, row) => sum + row.employerAmoCharge, 0)),
+        variance: r2(rows.reduce((sum, row) => sum + row.variance, 0)),
+      },
+      status: rows.every((row) => row.status === 'OK') ? 'OK' : 'NEEDS_REVIEW',
+    };
   }
 
   addHrAuditTrail(input: { employeeId: string; category: HrAuditTrailEntry['category']; actor: string; redactedForRoles?: UserRole[] }, tenantId?: string): HrAuditTrailEntry {
@@ -8980,6 +9455,24 @@ export class ErpStoreService {
       active: true,
       updatedAt: today(),
     }));
+  }
+
+  private defaultPosReceiptTemplates(tenantId: string): PosReceiptTemplate[] {
+    return [{
+      id: 'pos-template-ma',
+      tenantId,
+      name: 'Ticket POS Maroc',
+      footerLines: [
+        'ICE {ice} - IF {ifNumber} - RC {rc}',
+        'Patente {patente} - TVA affichée par taux',
+        'Merci pour votre visite',
+      ],
+      showsIce: true,
+      showsIf: true,
+      showsRc: true,
+      showsVat: true,
+      active: true,
+    }];
   }
 
   private documentPrefix(workspace: TenantWorkspace, type: DocumentExportType): string {

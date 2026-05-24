@@ -36,6 +36,7 @@ export class SalesService {
   listInvoices() { return this.store.listInvoices(); }
   createInvoice(data: any) { return this.store.createInvoice(data); }
   invoiceEmailPreview(id: string) { return this.store.invoiceEmailPreview(id); }
+  invoiceArabicRenderingQa(id: string) { return this.store.arabicInvoiceRenderingQa({ invoiceId: id }); }
   invoiceTimeline(id: string) { return this.store.entityTimeline('INVOICE', id); }
   addInvoiceNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'INVOICE', entityId: id, ...data }); }
   addInvoiceTask(id: string, data: any) { return this.store.addInternalTask({ entityType: 'INVOICE', entityId: id, ...data }); }
@@ -44,6 +45,7 @@ export class SalesService {
   approveCreditNote(id: string) { return this.store.approveCreditNote(id); }
   customerStatement(customerId: string) { return this.store.customerStatement(customerId); }
   customerStatementPdf(customerId: string) { return this.store.exportCustomerStatementPdf(customerId); }
+  bilingualCustomerStatementPdf(customerId: string) { return this.store.exportBilingualCustomerStatementPdf(customerId); }
   salesCommissionReport(data: any) { return this.store.salesCommissionReport(data); }
   listCustomerContracts() { return this.store.listCustomerContracts(); }
   createCustomerContract(data: any) { return this.store.createCustomerContract(data); }

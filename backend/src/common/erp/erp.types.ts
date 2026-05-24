@@ -793,6 +793,45 @@ export interface CashboxTransfer {
   createdAt: string;
 }
 
+export interface BankRibVerification {
+  id: string;
+  tenantId: string;
+  partyType: 'CUSTOMER' | 'SUPPLIER' | 'EMPLOYEE';
+  partyId: string;
+  rib: string;
+  bankName: string;
+  documentEvidence: string;
+  approvalHistory: Array<{ at: string; actor: string; status: 'REQUESTED' | 'APPROVED' | 'REJECTED'; note?: string }>;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+}
+
+export interface CashboxDailyApproval {
+  id: string;
+  tenantId: string;
+  sessionId: string;
+  cashierId: string;
+  supervisor: string;
+  date: string;
+  expectedCash: number;
+  countedCash: number;
+  variance: number;
+  journalEntryId?: string;
+  status: 'PENDING' | 'APPROVED';
+}
+
+export interface PosReceiptTemplate {
+  id: string;
+  tenantId: string;
+  name: string;
+  footerLines: string[];
+  showsIce: boolean;
+  showsIf: boolean;
+  showsRc: boolean;
+  showsVat: boolean;
+  active: boolean;
+}
+
 export interface PurchaseRequest {
   id: string;
   tenantId: string;
@@ -842,6 +881,19 @@ export interface TraceabilityLot {
   expiryDate?: string;
   warehouseId: string;
   status: 'ACTIVE' | 'QUARANTINED' | 'CONSUMED';
+  createdAt: string;
+}
+
+export interface ImportDeclarationArchive {
+  id: string;
+  tenantId: string;
+  dumReference: string;
+  supplierId: string;
+  shipmentReference: string;
+  documentNames: string[];
+  customsVat: number;
+  deductiblePeriod: string;
+  evidenceId: string;
   createdAt: string;
 }
 
@@ -1139,6 +1191,31 @@ export interface AccountantPortalReview {
   comment: string;
   checklist: Array<{ key: string; label: string; approved: boolean }>;
   status: 'OPEN' | 'APPROVED';
+  createdAt: string;
+}
+
+export interface AccountantReviewComment {
+  id: string;
+  tenantId: string;
+  entityType: 'JOURNAL' | 'INVOICE' | 'PAYROLL_RUN' | 'PERIOD';
+  entityId: string;
+  period: string;
+  comment: string;
+  reviewer: string;
+  status: 'OPEN' | 'RESOLVED';
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export interface FiscalLockException {
+  id: string;
+  tenantId: string;
+  periodId: string;
+  reason: string;
+  approver: string;
+  expiresAt: string;
+  reverseAuditEvidence: string;
+  status: 'REQUESTED' | 'APPROVED' | 'EXPIRED';
   createdAt: string;
 }
 
@@ -1771,10 +1848,14 @@ export interface TenantWorkspace {
   cheques: ChequeTracking[];
   depositBatches: DepositBatch[];
   cashboxTransfers: CashboxTransfer[];
+  bankRibVerifications: BankRibVerification[];
+  cashboxDailyApprovals: CashboxDailyApproval[];
+  posReceiptTemplates: PosReceiptTemplate[];
   purchaseRequests: PurchaseRequest[];
   supplierQuoteComparisons: SupplierQuoteComparison[];
   payrollExportArchives: PayrollExportArchive[];
   traceabilityLots: TraceabilityLot[];
+  importDeclarationArchives: ImportDeclarationArchive[];
   userInvitations: UserInvitation[];
   kpiTargets: KpiTarget[];
   webhookRetryLogs: WebhookRetryLog[];
@@ -1800,6 +1881,8 @@ export interface TenantWorkspace {
   procurementBudgets: ProcurementBudgetControl[];
   branches: Branch[];
   accountantPortalReviews: AccountantPortalReview[];
+  accountantReviewComments: AccountantReviewComment[];
+  fiscalLockExceptions: FiscalLockException[];
   partnerImplementationChecklists: PartnerImplementationChecklist[];
   complianceRuleRollouts: ComplianceRuleRollout[];
   featureFlagAudits: FeatureFlagAudit[];

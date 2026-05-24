@@ -29,6 +29,7 @@ export class PayrollController {
   @Post('overtime-approvals') createOvertimeApproval(@Body() body: any) { return this.payrollService.createOvertimeApproval(body); }
   @Post('contract-amendments') amendEmploymentContract(@Body() body: any) { return this.payrollService.amendEmploymentContract(body); }
   @Get('social-declaration-reconciliation') socialDeclarationReconciliation() { return this.payrollService.payrollSocialDeclarationReconciliation(); }
+  @Get('amo-reconciliation') amoReconciliation() { return this.payrollService.amoReconciliation(); }
   @Get('hr-audit-trail') hrAuditTrail(@Query('role') role?: any) { return this.payrollService.hrAuditTrail(role); }
   @Post('hr-audit-trail') addHrAuditTrail(@Body() body: any) { return this.payrollService.addHrAuditTrail(body); }
   @Get('employees/:id') employee(@Param('id') id: string) { return this.payrollService.getEmployee(id); }

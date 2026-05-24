@@ -293,6 +293,29 @@ export type RegulatedServiceReadiness = {
   cnssAnomalies: { count: number; summary: Record<string, number> };
 };
 
+export type AccountingRiskReadiness = {
+  amoReconciliation: { status: string; rows: unknown[]; totals: Record<string, number> };
+  holidays: { rows: unknown[]; sourceNote: string };
+  cityRegions: { rows: unknown[]; byRegion: Record<string, number> };
+  arabicInvoiceQa: { status: string; rtlFields: unknown[] };
+  bilingualStatement: { status: string; rtlVerified: boolean };
+  supplierStatementPdf: { status: string; reconciliationStatus: string };
+  ribVerification: { status: string; bankName: string };
+  chequePortfolio: { rows: unknown[]; totals: { portfolio: number; bounced: number; dueSoon: number } };
+  cashboxApproval: { status: string; variance: number };
+  receiptTemplates: unknown[];
+  traceability: { rows: unknown[]; expiryTracked: number; serialTracked: number };
+  serialNumbers: { rows: unknown[] };
+  landedCost: { totalAllocated: number; rows: unknown[]; customsDutyIncluded?: boolean };
+  importArchive: { dumReference: string; evidenceId: string };
+  supplierRisk: unknown[];
+  customerCredit: unknown[];
+  approvalSimulation: { allowed: boolean; requiresApproval: boolean; approverRole: string };
+  accountantReview: { period: string; comments: unknown[] };
+  fiscalException: { status: string; reverseAuditEvidence: string };
+  trialBalance: { rows: unknown[]; totals: { debit: number; credit: number; balance: number } };
+};
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -673,5 +696,68 @@ export async function getRegulatedServiceReadiness(): Promise<RegulatedServiceRe
     professionalTax: professionalTax.length ? professionalTax : [professionalTaxRecord],
     dgiCalendar,
     cnssAnomalies,
+  };
+}
+
+export async function getAccountingRiskReadiness(): Promise<AccountingRiskReadiness> {
+  const invoice = await postJson('/sales/invoices', { customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] }, { id: 'fallback-invoice' });
+  const receipt = await postJson('/inventory/purchase-receipts', { supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 1, unitCost: 100 }] }, { id: 'fallback-receipt' });
+  const posSession = await postJson('/pos/sessions', { cashierId: 'cashier-risk', openingCash: 300 }, { id: 'fallback-session' });
+  const reviewComment = await postJson('/tenant/accountant-review-comments', { entityType: 'INVOICE', entityId: invoice.id, period: '2026-05', comment: 'Contrôle TVA et mentions arabes' }, { id: 'fallback-comment' });
+
+  const [amoReconciliation, holidays, cityRegions, arabicInvoiceQa, bilingualStatement, supplierStatementPdf, ribVerification, cheque, receiptTemplates, lot, serialLot, landedCost, importArchive, supplierRisk, customerCredit, approvalSimulation, accountantReview, fiscalException, trialBalance] = await Promise.all([
+    getJson('/payroll/amo-reconciliation', { status: 'OK', rows: [], totals: {} }),
+    getJson('/tenant/moroccan-public-holidays?year=2026', { rows: [], sourceNote: '' }),
+    getJson('/tenant/moroccan-city-regions', { rows: [], byRegion: {} }),
+    getJson(`/sales/invoices/${invoice.id}/arabic-rendering-qa`, { status: 'RTL_QA_READY', rtlFields: [] }),
+    getJson('/sales/customers/cus-1/statement-bilingual.pdf', { status: 'PREPARED', rtlVerified: true }),
+    getJson('/inventory/suppliers/sup-1/statement.pdf', { status: 'PREPARED', reconciliationStatus: 'NEEDS_REVIEW' }),
+    postJson('/ledger/rib-verifications', { partyType: 'SUPPLIER', partyId: 'sup-1', rib: '007780000000000000000123', bankName: 'Attijariwafa bank', documentEvidence: 'rib-sup-1.pdf' }, { id: 'fallback-rib', status: 'PENDING', bankName: 'Attijariwafa bank' }),
+    postJson('/ledger/cheques', { invoiceId: invoice.id, number: 'CHQ-RISK-001', bank: 'Bank of Africa', drawer: 'Rabat Retail SARL', dueDate: '2026-06-20', amount: 150 }, { id: 'fallback-cheque' }),
+    getJson('/pos/receipt-templates', []),
+    postJson('/inventory/traceability', { productId: 'prd-raw', lotNumber: 'LOT-DASH-001', quantity: 1, expiryDate: '2026-12-31' }, { id: 'fallback-lot' }),
+    postJson('/inventory/traceability', { productId: 'prd-1', serialNumber: 'SN-DASH-001', quantity: 1 }, { id: 'fallback-serial' }),
+    postJson('/inventory/landed-cost-allocation', { purchaseReceiptId: receipt.id, freight: 50, customs: 30, customsDuty: 20, transit: 10, insurance: 5, vatTreatment: 'RECOVERABLE' }, { totalAllocated: 0, rows: [] }),
+    postJson('/ledger/import-declarations', { dumReference: 'DUM-2026-DASH', supplierId: 'sup-1', shipmentReference: 'SHIP-DASH-001', customsVat: 1200, documentNames: ['DUM', 'Facture fournisseur'] }, { dumReference: 'DUM-2026-DASH', evidenceId: '' }),
+    getJson('/inventory/suppliers/risk-score-dashboard', []),
+    getJson('/tenant/customer-credit-scores', []),
+    postJson('/tenant/approval-matrix-simulator', { role: 'ADMIN', module: 'inventory', amount: 30000 }, { allowed: true, requiresApproval: true, approverRole: 'ADMIN' }),
+    getJson('/tenant/accountant-review-mode?period=2026-05', { period: '2026-05', comments: [] }),
+    postJson('/ledger/fiscal-lock-exceptions', { year: 2026, month: 5, reason: 'Correction contrôlée après revue comptable', approver: 'accountant@atlas.ma' }, { status: 'APPROVED', reverseAuditEvidence: '' }),
+    getJson('/ledger/trial-balance?year=2026&month=5', { rows: [], totals: { debit: 0, credit: 0, balance: 0 } }),
+  ]);
+
+  await postJson(`/tenant/accountant-review-comments/${reviewComment.id}/resolve`, {}, { status: 'RESOLVED' });
+  await postJson(`/ledger/rib-verifications/${ribVerification.id ?? 'fallback-rib'}/approve`, { actor: 'accountant@atlas.ma', note: 'RIB rapproché avec attestation bancaire' }, { status: 'APPROVED' });
+  await postJson('/pos/cashbox-daily-approvals', { sessionId: posSession.id, supervisor: 'Nadia Benali', countedCash: 300 }, { status: 'APPROVED', variance: 0 });
+
+  const [chequePortfolio, cashboxApprovals, traceability, serialNumbers] = await Promise.all([
+    getJson('/ledger/cheques/portfolio', { rows: [], totals: { portfolio: 0, bounced: 0, dueSoon: 0 } }),
+    getJson('/pos/cashbox-daily-approvals', []),
+    getJson('/inventory/traceability/export', { rows: [], expiryTracked: lot && serialLot ? 0 : 0, serialTracked: serialLot ? 0 : 0 }),
+    getJson('/inventory/serial-numbers', { rows: [] }),
+  ]);
+
+  return {
+    amoReconciliation,
+    holidays,
+    cityRegions,
+    arabicInvoiceQa,
+    bilingualStatement,
+    supplierStatementPdf,
+    ribVerification,
+    chequePortfolio,
+    cashboxApproval: cashboxApprovals[0] ?? { status: 'APPROVED', variance: 0 },
+    receiptTemplates,
+    traceability,
+    serialNumbers,
+    landedCost,
+    importArchive,
+    supplierRisk,
+    customerCredit,
+    approvalSimulation,
+    accountantReview,
+    fiscalException,
+    trialBalance,
   };
 }

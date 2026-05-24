@@ -22,11 +22,13 @@ export class InventoryController {
   @Get('suppliers/risk-reminders') supplierRiskReminders(@Query('filter') filter?: string) { return this.inventoryService.supplierRiskReminders(filter); }
   @Get('suppliers/payment-calendar') supplierPaymentCalendar() { return this.inventoryService.supplierPaymentCalendar(); }
   @Get('suppliers/reliability-scores') supplierReliabilityScores() { return this.inventoryService.supplierReliabilityScores(); }
+  @Get('suppliers/risk-score-dashboard') supplierRiskScoreDashboard() { return this.inventoryService.supplierRiskScoreDashboard(); }
   @Get('supplier-disputes') supplierDisputes() { return this.inventoryService.supplierDisputes(); }
   @Post('supplier-disputes') createSupplierDispute(@Body() body: any) { return this.inventoryService.createSupplierDispute(body); }
   @Get('supplier-contracts') supplierContracts() { return this.inventoryService.listSupplierContracts(); }
   @Post('supplier-contracts') createSupplierContract(@Body() body: any) { return this.inventoryService.createSupplierContract(body); }
   @Get('suppliers/:id/statement') supplierStatement(@Param('id') id: string) { return this.inventoryService.supplierStatement(id); }
+  @Get('suppliers/:id/statement.pdf') supplierStatementPdf(@Param('id') id: string) { return this.inventoryService.supplierStatementPdf(id); }
   @Get('suppliers/:id/kys-checklist') supplierKysChecklist(@Param('id') id: string) { return this.inventoryService.supplierKysChecklist(id); }
   @Post('suppliers/bulk-status') bulkSupplierStatus(@Body() body: any) { return this.inventoryService.bulkSupplierStatus(body); }
   @Post('suppliers/:id/document-placeholders') addSupplierDocumentPlaceholder(@Param('id') id: string, @Body() body: any) {
@@ -50,6 +52,8 @@ export class InventoryController {
   @Post('landed-cost-allocation') landedCostAllocation(@Body() body: any) { return this.inventoryService.landedCostAllocation(body); }
   @Get('traceability') traceabilityLots() { return this.inventoryService.listTraceabilityLots(); }
   @Post('traceability') createTraceabilityLot(@Body() body: any) { return this.inventoryService.createTraceabilityLot(body); }
+  @Get('traceability/export') traceabilityExport() { return this.inventoryService.traceabilityExport(); }
+  @Get('serial-numbers') serialNumberRegistry() { return this.inventoryService.serialNumberRegistry(); }
   @Get('expiry-alerts') expiryAlerts() { return this.inventoryService.stockExpiryAlerts(); }
   @Get('movement-audit') movementAudit() { return this.inventoryService.movementAudit(); }
   @Get('product-lifecycle-board') lifecycleBoard() { return this.inventoryService.lifecycleBoard(); }

@@ -13,6 +13,9 @@ export class PosController {
   @Post('cash-movements') cashMovement(@Body() body: any) { return this.posService.addCashMovement(body); }
   @Get('cashbox-transfers') cashboxTransfers() { return this.posService.listCashboxTransfers(); }
   @Post('cashbox-transfers') createCashboxTransfer(@Body() body: any) { return this.posService.createCashboxTransfer(body); }
+  @Get('cashbox-daily-approvals') cashboxDailyApprovals() { return this.posService.cashboxDailyApprovals(); }
+  @Post('cashbox-daily-approvals') createCashboxDailyApproval(@Body() body: any) { return this.posService.createCashboxDailyApproval(body); }
+  @Get('receipt-templates') receiptTemplates() { return this.posService.receiptTemplates(); }
   @Get('z-report') zReport(@Query('date') date?: string) { return this.posService.zReport(date); }
   @Get('offline-queue') offlineQueue() { return this.posService.offlineQueue(); }
   @Post('offline-queue') queueOffline(@Body() body: any) { return this.posService.queueOffline(body); }

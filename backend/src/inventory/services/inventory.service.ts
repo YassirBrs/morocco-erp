@@ -31,7 +31,9 @@ export class InventoryService {
   supplierRiskReminders(filter?: string) { return this.store.supplierRiskReminders({ filter }); }
   supplierPaymentCalendar() { return this.store.supplierPaymentCalendar(); }
   supplierStatement(id: string) { return this.store.supplierStatement(id); }
+  supplierStatementPdf(id: string) { return this.store.exportSupplierStatementPdf(id); }
   supplierReliabilityScores() { return this.store.supplierReliabilityScores(); }
+  supplierRiskScoreDashboard() { return this.store.supplierRiskScoreDashboard(); }
   supplierKysChecklist(id: string) { return this.store.supplierKysChecklist(id); }
   createSupplierDispute(data: any) { return this.store.createDisputeCase({ ...data, type: 'SUPPLIER' }); }
   supplierDisputes() { return this.store.listDisputeCases('SUPPLIER'); }
@@ -49,6 +51,8 @@ export class InventoryService {
   landedCostAllocation(data: any) { return this.store.landedCostAllocation(data); }
   listTraceabilityLots() { return this.store.listTraceabilityLots(); }
   createTraceabilityLot(data: any) { return this.store.createTraceabilityLot(data); }
+  traceabilityExport() { return this.store.traceabilityExport(); }
+  serialNumberRegistry() { return this.store.serialNumberRegistry(); }
   stockExpiryAlerts() { return this.store.stockExpiryAlerts(); }
   movementAudit() { return this.store.inventoryMovementAudit(); }
   lifecycleBoard() { return this.store.productLifecycleBoard(); }

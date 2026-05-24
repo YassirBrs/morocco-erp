@@ -178,6 +178,13 @@ export class TenantService {
   approvalDelegations() { return this.store.approvalDelegations(); }
   importValidationSandbox(data: any) { return this.store.importValidationSandbox(data); }
   importValidationRuns() { return this.store.importValidationRuns(); }
+  moroccanPublicHolidays(year?: number) { return this.store.moroccanPublicHolidayCalendar({ year }); }
+  moroccanCityRegions() { return this.store.moroccanCityRegionReference(); }
+  customerCreditScores() { return this.store.customerCreditScores(); }
+  approvalMatrixSimulator(data: any) { return this.store.approvalMatrixSimulator(data); }
+  createAccountantReviewComment(data: any) { return this.store.createAccountantReviewComment(data); }
+  resolveAccountantReviewComment(id: string) { return this.store.resolveAccountantReviewComment(id); }
+  accountantReviewMode(period?: string) { return this.store.accountantReviewMode({ period }); }
   tenantDataQualityScore() { return this.store.tenantDataQualityScore(); }
   guidedAccountantHandoffPack(period?: string) { return this.store.guidedAccountantHandoffPack({ period }); }
   implementationPartnerMarginWorkloadDashboard() { return this.store.implementationPartnerMarginWorkloadDashboard(); }

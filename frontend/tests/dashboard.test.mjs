@@ -446,3 +446,15 @@ test('Next primary workspace exposes regulated service, admin, tax, support, and
   assert.ok(api.includes("moduleScopes: ['inventory']"));
   assert.ok(api.includes("kind: 'customers'"));
 });
+
+test('Next primary workspace exposes Morocco accounting risk, bilingual documents, references, treasury, stock traceability, and fiscal lock batch', () => {
+  for (const text of ['Audit fiscal, risques et références Maroc', 'AMO', 'Jours fériés', 'Villes / régions', 'Documents bilingues', 'Trésorerie et caisse', 'Stock importé', 'Scores et approbations', 'Verrous fiscaux', 'Référentiel Maroc', 'Contrôles alignés PME marocaines']) {
+    assert.ok(page.includes(text), `${text} accounting risk label is present`);
+  }
+  for (const marker of ['getAccountingRiskReadiness', 'accountingRisk.amoReconciliation', 'accountingRisk.arabicInvoiceQa', 'accountingRisk.chequePortfolio', 'accountingRisk.trialBalance']) {
+    assert.ok(page.includes(marker), `${marker} accounting risk helper is present`);
+  }
+  for (const endpoint of ['/payroll/amo-reconciliation', '/tenant/moroccan-public-holidays?year=2026', '/tenant/moroccan-city-regions', '/sales/invoices/${invoice.id}/arabic-rendering-qa', '/sales/customers/cus-1/statement-bilingual.pdf', '/inventory/suppliers/sup-1/statement.pdf', '/ledger/rib-verifications', '/ledger/rib-verifications/${ribVerification.id', '/ledger/cheques/portfolio', '/pos/cashbox-daily-approvals', '/pos/receipt-templates', '/inventory/traceability/export', '/inventory/serial-numbers', '/inventory/landed-cost-allocation', '/ledger/import-declarations', '/inventory/suppliers/risk-score-dashboard', '/tenant/customer-credit-scores', '/tenant/approval-matrix-simulator', '/tenant/accountant-review-mode?period=2026-05', '/tenant/accountant-review-comments', '/ledger/fiscal-lock-exceptions', '/ledger/trial-balance?year=2026&month=5']) {
+    assert.ok(api.includes(endpoint), `${endpoint} accounting risk endpoint is wired`);
+  }
+});

@@ -86,6 +86,13 @@ export class TenantController {
   @Post('evidence-binder') evidenceBinder(@Body() body: any) { return this.tenantService.evidenceBinder(body); }
   @Get('moroccan-regions') moroccanRegions() { return this.tenantService.moroccanRegions(); }
   @Get('customer-risk-scores') customerRiskScores() { return this.tenantService.customerRiskScores(); }
+  @Get('moroccan-public-holidays') moroccanPublicHolidays(@Query('year') year?: string) { return this.tenantService.moroccanPublicHolidays(year ? Number(year) : undefined); }
+  @Get('moroccan-city-regions') moroccanCityRegions() { return this.tenantService.moroccanCityRegions(); }
+  @Get('customer-credit-scores') customerCreditScores() { return this.tenantService.customerCreditScores(); }
+  @Post('approval-matrix-simulator') approvalMatrixSimulator(@Body() body: any) { return this.tenantService.approvalMatrixSimulator(body); }
+  @Get('accountant-review-mode') accountantReviewMode(@Query('period') period?: string) { return this.tenantService.accountantReviewMode(period); }
+  @Post('accountant-review-comments') createAccountantReviewComment(@Body() body: any) { return this.tenantService.createAccountantReviewComment(body); }
+  @Post('accountant-review-comments/:id/resolve') resolveAccountantReviewComment(@Param('id') id: string) { return this.tenantService.resolveAccountantReviewComment(id); }
   @Get('branches') branchDashboard() { return this.tenantService.branchDashboard(); }
   @Post('branches') createBranch(@Body() body: any) { return this.tenantService.createBranch(body); }
   @Get('localization-settings') localizationSettings() { return this.tenantService.localizationSettings(); }

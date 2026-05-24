@@ -1,5 +1,6 @@
 import {
   getAccountingSnapshot,
+  getAccountingRiskReadiness,
   getDashboardSummary,
   getDocumentOperations,
   getEnterpriseControlReadiness,
@@ -47,7 +48,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -67,6 +68,7 @@ export default async function DashboardPage() {
     getGrowthControlReadiness(),
     getLogisticsCloseReadiness(),
     getRegulatedServiceReadiness(),
+    getAccountingRiskReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -558,6 +560,57 @@ export default async function DashboardPage() {
               `Taxe professionnelle ${regulatedServices.professionalTax.length}`,
               `Calendrier DGI preuves manquantes ${regulatedServices.dgiCalendar.missingEvidence}`,
               `CNSS affiliation manquante ${regulatedServices.cnssAnomalies.summary.missingAffiliation ?? 0}`,
+            ]} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Audit fiscal risques et références Maroc">
+          <PanelHeader title="Audit fiscal, risques et références Maroc" action="Lancer revue" />
+          <div className="reportGrid">
+            <Metric label="AMO" value={accountingRisk.amoReconciliation.status} />
+            <Metric label="Jours fériés" value={String(accountingRisk.holidays.rows.length)} />
+            <Metric label="Villes / régions" value={String(accountingRisk.cityRegions.rows.length)} />
+            <Metric label="Balance" value={formatMad(accountingRisk.trialBalance.totals.debit)} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Documents bilingues" rows={[
+              `Facture arabe ${accountingRisk.arabicInvoiceQa.status}`,
+              `Relevé client bilingue ${accountingRisk.bilingualStatement.rtlVerified ? 'RTL vérifié' : 'à vérifier'}`,
+              `Relevé fournisseur ${accountingRisk.supplierStatementPdf.reconciliationStatus}`,
+              `Ticket POS modèles ${accountingRisk.receiptTemplates.length}`,
+            ]} empty="-" />
+            <MiniList title="Trésorerie et caisse" rows={[
+              `RIB ${accountingRisk.ribVerification.status} · ${accountingRisk.ribVerification.bankName}`,
+              `Portefeuille chèques ${formatMad(accountingRisk.chequePortfolio.totals.portfolio)}`,
+              `Chèques rejetés ${accountingRisk.chequePortfolio.totals.bounced}`,
+              `Caisse jour ${accountingRisk.cashboxApproval.status} · écart ${formatMad(accountingRisk.cashboxApproval.variance)}`,
+            ]} empty="-" />
+            <MiniList title="Stock importé" rows={[
+              `Lots expirables ${accountingRisk.traceability.expiryTracked}`,
+              `Séries ${accountingRisk.traceability.serialTracked}`,
+              `Registre séries ${accountingRisk.serialNumbers.rows.length}`,
+              `Landed cost ${formatMad(accountingRisk.landedCost.totalAllocated)}`,
+              `DUM ${accountingRisk.importArchive.dumReference}`,
+            ]} empty="-" />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Scores et approbations" rows={[
+              `Risque fournisseur ${accountingRisk.supplierRisk.length}`,
+              `Score crédit client ${accountingRisk.customerCredit.length}`,
+              `Simulation approbation ${accountingRisk.approvalSimulation.allowed ? 'autorisée' : 'à escalader'} · ${accountingRisk.approvalSimulation.approverRole}`,
+              `Revue comptable ${accountingRisk.accountantReview.comments.length} commentaire(s)`,
+            ]} empty="-" />
+            <MiniList title="Verrous fiscaux" rows={[
+              `Exception verrou ${accountingRisk.fiscalException.status}`,
+              `Preuve inverse ${accountingRisk.fiscalException.reverseAuditEvidence.slice(0, 12) || 'archivée'}`,
+              `Débit balance ${formatMad(accountingRisk.trialBalance.totals.debit)}`,
+              `Crédit balance ${formatMad(accountingRisk.trialBalance.totals.credit)}`,
+            ]} empty="-" />
+            <MiniList title="Référentiel Maroc" rows={[
+              accountingRisk.holidays.sourceNote,
+              'Jours fériés reliés à paie, congés et livraison',
+              'Villes/régions pour ventes, agences et analytics',
+              'Contrôles alignés PME marocaines',
             ]} empty="-" />
           </div>
         </section>

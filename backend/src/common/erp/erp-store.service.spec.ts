@@ -2175,4 +2175,82 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(dgiCalendar.rows.map((row) => row.declaration)).toEqual(expect.arrayContaining(['VAT', 'IR', 'IS']));
     expect(cnssAnomalies.summary).toHaveProperty('missingAffiliation');
   });
+
+  it('covers AMO, Moroccan references, bilingual documents, risk scoring, fiscal exceptions, and trial balance controls', () => {
+    const payrollRun = store.createPayrollRun({ year: 2026, month: 5 });
+    store.calculatePayrollRun(payrollRun.id);
+    const amo = store.amoReconciliation();
+    const holidays = store.moroccanPublicHolidayCalendar({ year: 2026 });
+    const cityRegions = store.moroccanCityRegionReference();
+
+    const invoice = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    const arabicQa = store.arabicInvoiceRenderingQa({ invoiceId: invoice.id });
+    const bilingualStatement = store.exportBilingualCustomerStatementPdf('cus-1');
+    const customerCredit = store.customerCreditScores();
+
+    const receipt = store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 3, unitCost: 100 }] });
+    store.createSupplierInvoice({ purchaseReceiptId: receipt.id });
+    const supplierStatement = store.exportSupplierStatementPdf('sup-1');
+    const landed = store.landedCostAllocation({ purchaseReceiptId: receipt.id, freight: 60, customs: 30, customsDuty: 20, transit: 10, insurance: 5, vatTreatment: 'RECOVERABLE' });
+    const importArchive = store.archiveImportDeclarationEvidence({ dumReference: 'DUM-2026-001', supplierId: 'sup-1', shipmentReference: 'SHIP-001', customsVat: 1200, documentNames: ['DUM', 'Facture fournisseur'] });
+    const supplierRisk = store.supplierRiskScoreDashboard();
+
+    const rib = store.requestBankRibVerification({ partyType: 'SUPPLIER', partyId: 'sup-1', rib: '007 780 000000000000000123', bankName: 'Attijariwafa bank', documentEvidence: 'rib.pdf' });
+    const approvedRib = store.approveBankRibVerification(rib.id, { actor: 'accountant@atlas.ma', note: 'RIB conforme' });
+
+    const cheque = store.createCheque({ invoiceId: invoice.id, number: 'CHQ-PORT-001', bank: 'Bank of Africa', drawer: 'Rabat Retail SARL', dueDate: '2026-06-20', amount: 200 });
+    cheque.status = 'REJECTED';
+    const chequePortfolio = store.chequePortfolioDashboard();
+
+    const pos = store.openPosSession({ cashierId: 'cashier-1', openingCash: 500 });
+    const cashbox = store.createCashboxDailyApproval({ sessionId: pos.id, supervisor: 'Nadia Benali', countedCash: 510 });
+    const receiptTemplates = store.posReceiptTemplateCatalog();
+
+    const lot = store.createTraceabilityLot({ productId: 'prd-raw', lotNumber: 'LOT-EXP-001', quantity: 2, expiryDate: '2026-12-31' });
+    const serial = store.createTraceabilityLot({ productId: 'prd-1', serialNumber: 'SN-ERP-2026', quantity: 1 });
+    const traceability = store.traceabilityExport();
+    const serials = store.serialNumberRegistry();
+
+    const approvalSimulation = store.approvalMatrixSimulator({ role: 'ADMIN', module: 'inventory', amount: 30000 });
+    const comment = store.createAccountantReviewComment({ entityType: 'INVOICE', entityId: invoice.id, period: '2026-05', comment: 'Contrôle facture arabe et TVA' });
+    const resolved = store.resolveAccountantReviewComment(comment.id);
+    const reviewMode = store.accountantReviewMode({ period: '2026-05' });
+    const fiscalException = store.requestFiscalLockException({ year: 2026, month: 5, reason: 'Correction contrôlée post-clôture', approver: 'Cabinet Fiduciaire Casa' });
+    const trialBalance = store.trialBalanceReport({ year: 2026, month: 5 });
+
+    expect(amo.rows[0]).toHaveProperty('payslipAmoEmployee');
+    expect(amo.status).toBe('NEEDS_REVIEW');
+    expect(holidays.rows.map((row) => row.label)).toEqual(expect.arrayContaining(['Fête du Travail', 'Aïd Al Adha - observation lunaire']));
+    expect(holidays.sourceNote).toContain('observation lunaire');
+    expect(cityRegions.rows.map((row) => row.city)).toEqual(expect.arrayContaining(['Casablanca', 'Dakhla']));
+    expect(arabicQa).toMatchObject({ status: 'RTL_QA_READY', invoiceId: invoice.id });
+    expect(arabicQa.rtlFields.map((field) => field.direction)).toContain('rtl');
+    expect(bilingualStatement).toMatchObject({ status: 'PREPARED', rtlVerified: true });
+    expect(bilingualStatement.requiredMentions).toEqual(expect.arrayContaining(['RTL arabe', 'Promesses paiement']));
+    expect(supplierStatement).toMatchObject({ status: 'PREPARED' });
+    expect(supplierStatement.reconciliationStatus).toBe('NEEDS_REVIEW');
+    expect(approvedRib).toMatchObject({ status: 'APPROVED', bankName: 'Attijariwafa bank' });
+    expect(store.bankRibVerifications()).toHaveLength(1);
+    expect(chequePortfolio.totals.bounced).toBe(1);
+    expect(cashbox).toMatchObject({ status: 'APPROVED', variance: 10 });
+    expect(cashbox.journalEntryId).toBeDefined();
+    expect(receiptTemplates[0]).toMatchObject({ showsIce: true, showsVat: true });
+    expect(traceability.rows.map((row) => row.lotId)).toEqual(expect.arrayContaining([lot.id, serial.id]));
+    expect(traceability).toMatchObject({ expiryTracked: 1, serialTracked: 1 });
+    expect(serials.rows[0]).toMatchObject({ serialNumber: 'SN-ERP-2026' });
+    expect(landed).toMatchObject({ totalAllocated: 95, customsDutyIncluded: true });
+    expect(landed.rows[0]).toHaveProperty('previousCump');
+    expect(importArchive).toMatchObject({ dumReference: 'DUM-2026-001', supplierId: 'sup-1' });
+    expect(store.importDeclarationArchives()).toHaveLength(1);
+    expect(supplierRisk[0]).toHaveProperty('score');
+    expect(customerCredit[0]).toHaveProperty('concentrationRisk');
+    expect(approvalSimulation).toMatchObject({ requiresApproval: true, allowed: true, approverRole: 'ADMIN' });
+    expect(resolved).toMatchObject({ status: 'RESOLVED' });
+    expect(reviewMode.comments.map((item) => item.id)).toContain(comment.id);
+    expect(fiscalException).toMatchObject({ status: 'APPROVED', approver: 'Cabinet Fiduciaire Casa' });
+    expect(fiscalException.reverseAuditEvidence).toHaveLength(64);
+    expect(store.fiscalLockExceptions()).toHaveLength(1);
+    expect(trialBalance.totals.debit).toBeCloseTo(trialBalance.totals.credit, 2);
+    expect(trialBalance.rows.length).toBeGreaterThan(0);
+  });
 });

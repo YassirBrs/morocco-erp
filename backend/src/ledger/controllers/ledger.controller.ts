@@ -50,8 +50,21 @@ export class LedgerController {
   @Get('cheques') cheques() { return this.ledgerService.listCheques(); }
   @Post('cheques') createCheque(@Body() body: any) { return this.ledgerService.createCheque(body); }
   @Get('cheques/lifecycle-audit') chequeLifecycleAudit() { return this.ledgerService.chequeLifecycleAudit(); }
+  @Get('cheques/portfolio') chequePortfolio() { return this.ledgerService.chequePortfolio(); }
+  @Get('rib-verifications') bankRibVerifications() { return this.ledgerService.bankRibVerifications(); }
+  @Post('rib-verifications') requestBankRibVerification(@Body() body: any) { return this.ledgerService.requestBankRibVerification(body); }
+  @Post('rib-verifications/:id/approve') approveBankRibVerification(@Param('id') id: string, @Body() body: any) {
+    return this.ledgerService.approveBankRibVerification(id, body);
+  }
   @Get('deposit-batches') depositBatches() { return this.ledgerService.listDepositBatches(); }
   @Post('deposit-batches') createDepositBatch(@Body() body: any) { return this.ledgerService.createDepositBatch(body); }
+  @Get('fiscal-lock-exceptions') fiscalLockExceptions() { return this.ledgerService.fiscalLockExceptions(); }
+  @Post('fiscal-lock-exceptions') requestFiscalLockException(@Body() body: any) { return this.ledgerService.requestFiscalLockException(body); }
+  @Get('trial-balance') trialBalance(@Query('year') year?: string, @Query('month') month?: string) {
+    return this.ledgerService.trialBalance({ year: year ? Number(year) : undefined, month: month ? Number(month) : undefined });
+  }
+  @Get('import-declarations') importDeclarationArchives() { return this.ledgerService.importDeclarationArchives(); }
+  @Post('import-declarations') archiveImportDeclarationEvidence(@Body() body: any) { return this.ledgerService.archiveImportDeclarationEvidence(body); }
   @Get('evidence') legalEvidence() { return this.ledgerService.legalEvidence(); }
   @Post('evidence') archiveEvidence(@Body() body: any) { return this.ledgerService.archiveEvidence(body); }
   @Get('audit') audit() { return this.ledgerService.auditLogs(); }
