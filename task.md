@@ -739,3 +739,249 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T633 P1 - Add release rollback rehearsal checklist with module, backup status, smoke suite, rollback owner, and readiness.
 - [x] T634 P1 - Add tenant configuration drift monitor with setting, expected value, current value, drift severity, and fix owner.
 - [x] T635 P1 - Add executive assurance digest with risk count, control coverage, overdue evidence, release readiness, and next action.
+- [x] T636 P1 - Add business continuity command center with process, RTO, RPO, dependency, owner, and drill status.
+- [x] T637 P1 - Add incident escalation board with incident type, severity, detection source, escalation owner, and SLA timer.
+- [x] T638 P1 - Add disaster recovery evidence pack with backup set, restore test, checksum, evidence owner, and readiness.
+- [x] T639 P1 - Add legal hold case register with case, affected dataset, hold reason, reviewer, and release status.
+- [x] T640 P1 - Add customer data subject request queue with requester, channel, due date, dataset scope, and action status.
+- [x] T641 P1 - Add vendor sanctions screening with supplier, ICE, country, screening result, and review owner.
+- [x] T642 P1 - Add procurement contract compliance board with contract, clause, renewal obligation, spend exposure, and blocker.
+- [x] T643 P1 - Add purchase price approval exceptions with item, supplier, variance, threshold, and approver.
+- [x] T644 P1 - Add stock write-off authorization queue with SKU, warehouse, reason, value, and approval path.
+- [x] T645 P1 - Add inventory insurance exposure report with warehouse, stock value, coverage cap, gap, and action.
+- [x] T646 P1 - Add expiry and cold-chain risk board with product, lot, expiry date, temperature status, and disposition.
+- [x] T647 P1 - Add e-invoice rollout readiness controls with tenant, invoice series, legal mentions, adapter mode, and blockers.
+- [x] T648 P1 - Add customer dispute reserve forecast with customer, disputed amount, probability, reserve, and next review.
+- [x] T649 P1 - Add bad debt provision review with customer, aging bucket, exposure, provision rate, and journal preview.
+- [x] T650 P1 - Add cash concentration transfer planner with source account, target account, available balance, threshold, and proposal.
+- [x] T651 P1 - Add bank fee anomaly review with bank, fee type, expected fee, charged fee, and resolution.
+- [x] T652 P1 - Add payroll leave accrual provisioning with employee, balance, daily rate, provision, and accounting period.
+- [x] T653 P1 - Add employee document privacy access audit with employee, document, role, access reason, and redaction status.
+- [x] T654 P1 - Add health and safety incident tracker with site, incident, severity, corrective action, and evidence.
+- [x] T655 P1 - Add workforce capacity rota planner with team, planned hours, available hours, gap, and mitigation.
+- [x] T656 P1 - Add POS refund authorization matrix with cashier, refund amount, reason, role required, and approval result.
+- [x] T657 P1 - Add ecommerce payout reconciliation evidence with marketplace, payout, orders matched, variance, and archive.
+- [x] T658 P1 - Add branch opening compliance checklist with city, lease, tax registration, staffing, and launch blocker.
+- [x] T659 P1 - Add fleet fuel fraud controls with vehicle, driver, fuel spend, mileage, anomaly score, and action.
+- [x] T660 P1 - Add maintenance downtime SLA dashboard with asset, work order, downtime, SLA breach, and owner.
+- [x] T661 P1 - Add production batch costing audit with production order, materials, labor, overhead, variance, and reviewer.
+- [x] T662 P1 - Add quality certificate evidence vault with supplier, certificate, expiry, linked lots, and approval status.
+- [x] T663 P1 - Add project contract deliverable acceptance with project, deliverable, client sign-off, billing impact, and risk.
+- [x] T664 P1 - Add service contract escalation penalties with contract, SLA breach, penalty estimate, owner, and recovery plan.
+- [x] T665 P1 - Add customer portal access review with customer, users, last login, permission risk, and revocation plan.
+- [x] T666 P1 - Add supplier portal security review with supplier, users, document access, stale accounts, and remediation.
+- [x] T667 P1 - Add API consent ledger with client, scope, legal basis, expiry, and renewal owner.
+- [x] T668 P1 - Add webhook dead-letter queue with event, target, attempts, last error, and replay decision.
+- [x] T669 P1 - Add data warehouse export approval with dataset, fields, legal basis, approver, and export status.
+- [x] T670 P1 - Add BI KPI definition catalog with KPI, formula, owner, source dataset, and validation status.
+- [x] T671 P1 - Add AI suggestion governance queue with suggestion type, source module, confidence, reviewer, and decision.
+- [x] T672 P1 - Add accountant evidence request SLA with client, request, age, due date, escalation, and evidence status.
+- [x] T673 P1 - Add tax audit readiness binder with section, required evidence, checksum, reviewer, and gap.
+- [x] T674 P1 - Add board pack financial controls with report, period, preparer, reviewer, and sign-off status.
+- [x] T675 P1 - Add executive resilience scorecard with continuity score, open incidents, evidence gaps, compliance blockers, and next action.
+
+## UX Organization And Odoo/Sage-Grade Usability
+
+- [ ] T676 P0 - Redesign the primary shell around five clear workspaces: Ventes, Achats/Stock, Comptabilite, Paie/RH, and Admin/Conformite.
+- [ ] T677 P0 - Add a persistent left app launcher with module icons, French labels, pinned modules, and role-aware visibility.
+- [ ] T678 P0 - Add workspace home pages that show only the most important actions, KPIs, alerts, and recent documents for each role.
+- [ ] T679 P0 - Replace long dashboard scrolling with workspace tabs, saved filters, and contextual shortcuts.
+- [ ] T680 P0 - Add a universal command palette for creating documents, searching records, switching modules, and opening recent items.
+- [ ] T681 P0 - Add global breadcrumbs that show workspace, module, record type, and current document number.
+- [ ] T682 P0 - Standardize all list pages with search, filters, sort, pagination, column visibility, export, and bulk actions.
+- [ ] T683 P0 - Standardize all record detail pages with header status, primary action button, secondary actions, activity timeline, and audit drawer.
+- [ ] T684 P0 - Standardize create/edit forms with grouped sections, inline validation, save/cancel behavior, dirty-state warning, and keyboard submission.
+- [ ] T685 P0 - Add a reusable status pipeline component for devis, commandes, BL, factures, paiements, achats, paie, and tickets.
+- [ ] T686 P0 - Add contextual next-step actions after every major document transition such as approve, deliver, invoice, pay, export, and send.
+- [ ] T687 P0 - Add record preview side panels so users can inspect customers, suppliers, invoices, and products without leaving lists.
+- [ ] T688 P0 - Add quick-create modals for customer, supplier, product, employee, warehouse, and journal account from related forms.
+- [ ] T689 P0 - Add empty states with useful primary actions for every module instead of generic blank tables.
+- [ ] T690 P0 - Add loading skeletons for every workspace, list, form, KPI panel, and document preview.
+- [ ] T691 P0 - Add error states that translate backend validation into clear French business messages and recovery actions.
+- [ ] T692 P0 - Add success toasts with document number, next step, and undo/open actions where safe.
+- [ ] T693 P0 - Add role-specific navigation presets for Direction, Commercial, Comptable, Magasinier, RH, Caissier, and Admin.
+- [ ] T694 P0 - Add a first-run guided tour for Moroccan SME users that explains the core flow without marketing copy.
+- [ ] T695 P0 - Add a setup progress center that links missing ICE, IF, RC, Patente, CNSS, VAT, fiscal period, numbering, and bank settings to exact screens.
+- [ ] T696 P0 - Add a clean tenant/account switcher for accountant and implementation-partner users with client health indicators.
+- [ ] T697 P0 - Add a notification center for approvals, overdue payments, stock alerts, payroll blockers, tax dates, and import errors.
+- [ ] T698 P0 - Add saved views per module with owner, shared/private state, default view, and role restrictions.
+- [ ] T699 P0 - Add consistent keyboard shortcuts for search, save, new document, command palette, and module switching.
+- [ ] T700 P0 - Add accessibility labels, focus states, tab order, and screen-reader names for all primary ERP controls.
+- [ ] T701 P1 - Build a dedicated Sales workspace with kanban pipeline, quote list, order list, delivery list, invoice list, and payment follow-up.
+- [ ] T702 P1 - Build a Sales document detail screen that shows quote/order/invoice lines, totals, VAT, customer credit, timeline, and legal mentions.
+- [ ] T703 P1 - Add one-click quote to order to delivery to invoice workflow with visible progress and disabled invalid actions.
+- [ ] T704 P1 - Add customer 360 page with identity, ICE, balances, documents, timeline, quotes, invoices, payments, disputes, and credit risk.
+- [ ] T705 P1 - Add sales follow-up board for unpaid invoices with aging buckets, reminder stage, promised payment, and next action.
+- [ ] T706 P1 - Add invoice preview panel with French/Moroccan legal mentions, VAT breakdown, numbering series, and PDF export status.
+- [ ] T707 P1 - Add credit note workflow screen with reason, line selection, approval requirement, VAT reversal, and accounting impact preview.
+- [ ] T708 P1 - Build a dedicated Purchases workspace with supplier list, purchase requests, purchase orders, receipts, supplier invoices, and payments.
+- [ ] T709 P1 - Add supplier 360 page with ICE, IF, RIB, KYS documents, purchases, disputes, payment calendar, and reliability score.
+- [ ] T710 P1 - Add purchase order detail screen with approval path, supplier terms, expected receipt, landed cost, and budget impact.
+- [ ] T711 P1 - Add receipt screen optimized for warehouse users with barcode lookup, quantity received, variance, CUMP impact, and photo evidence.
+- [ ] T712 P1 - Add supplier invoice matching screen that compares order, receipt, invoice, VAT, due date, and exceptions.
+- [ ] T713 P1 - Build a dedicated Inventory workspace with stock overview, warehouses, stock moves, reservations, transfers, adjustments, and counts.
+- [ ] T714 P1 - Add product 360 page with SKU, barcode, VAT, prices, CUMP, warehouse stock, reservations, sales history, and purchase history.
+- [ ] T715 P1 - Add warehouse map/list page with available, reserved, blocked, quarantine, valuation, and reorder alerts.
+- [ ] T716 P1 - Add stock reservation board showing source document, customer, product, reserved quantity, age, and release action.
+- [ ] T717 P1 - Add stock adjustment wizard with reason codes, approval threshold, valuation effect, and accounting preview.
+- [ ] T718 P1 - Add inventory count workflow with sheet creation, mobile-friendly count entry, variance approval, and posting summary.
+- [ ] T719 P1 - Build a dedicated Accounting workspace with PCGE accounts, journals, VAT, periods, bank reconciliation, exports, and evidence.
+- [ ] T720 P1 - Add journal entry detail screen with balanced debit/credit indicator, source document link, attachments, and posting controls.
+- [ ] T721 P1 - Add VAT cockpit with collected/deductible VAT by rate, invoice drilldown, exceptions, declaration calendar, and export pack.
+- [ ] T722 P1 - Add fiscal period close center with blockers, pending drafts, missing evidence, lock status, and accountant sign-off.
+- [ ] T723 P1 - Add bank reconciliation workspace with bank import preview, matching suggestions, unmatched items, and payment allocation.
+- [ ] T724 P1 - Add PCGE account selector with search by number/label, favorite accounts, and validation against Moroccan chart rules.
+- [ ] T725 P1 - Add accountant review mode with comments, requested evidence, status, owner, and due date on every accounting document.
+- [ ] T726 P1 - Build a dedicated Payroll/RH workspace with employees, contracts, payroll runs, payslips, leave, CNSS/AMO/IR, and Damancom.
+- [ ] T727 P1 - Add employee 360 page with CIN, CNSS, contract, salary, dependents, documents, payslips, leave, loans, and audit access.
+- [ ] T728 P1 - Add payroll run wizard with employee preflight, gross-to-net preview, exceptions, approval, posting, payslip PDFs, and Damancom export.
+- [ ] T729 P1 - Add payroll calculation explanation panel for CNSS cap, AMO, IR bracket, dependents, employer charges, and net pay.
+- [ ] T730 P1 - Add Damancom validation workspace with row length, missing identifiers, contribution totals, checksum, and archive evidence.
+- [ ] T731 P1 - Add leave calendar with monthly view, team conflicts, remaining balances, approval flow, and payroll impact.
+- [ ] T732 P1 - Add HR document center for CIN, CNSS, contracts, medical visits, expiries, restricted access, and redaction.
+- [ ] T733 P1 - Build a dedicated POS workspace with cashier sessions, tickets, refunds, Z report, offline queue, and cash movements.
+- [ ] T734 P1 - Add cashier-friendly POS screen with product search, barcode input, cart, VAT totals, payment capture, and receipt preview.
+- [ ] T735 P1 - Add POS session close wizard with expected cash, counted cash, variance reason, manager approval, and journal posting.
+- [ ] T736 P1 - Add refund workflow with original ticket lookup, line selection, reason, authorization, stock return, and accounting reversal.
+- [ ] T737 P1 - Add offline POS sync review with queue items, conflicts, duplicate detection, replay, and audit trail.
+- [ ] T738 P1 - Build a dedicated Admin/Conformite workspace with tenant settings, users, roles, numbering, documents, adapters, and audit.
+- [ ] T739 P1 - Add user and role management screen with module permissions, segregation-of-duties warnings, invitations, and revocation.
+- [ ] T740 P1 - Add document numbering settings screen with series by type, next number preview, lock rules, and change audit.
+- [ ] T741 P1 - Add compliance rule pack screen with active Morocco rules, version history, effective dates, and impacted modules.
+- [ ] T742 P1 - Add adapter status center for DGI, CNSS, banks, email, webhooks, object storage, and credentials readiness.
+- [ ] T743 P1 - Add legal archive screen with evidence type, source document, checksum, retention, export bundle, and tamper status.
+- [ ] T744 P1 - Add audit explorer with filters by user, module, entity, action, date, IP, and export.
+- [ ] T745 P1 - Add subscription and feature gate screen with plan, usage, write lock state, allowed modules, and upgrade prompts.
+- [ ] T746 P1 - Add support/admin diagnostics screen with API health, job queues, errors, backups, and recent user activity.
+- [ ] T747 P1 - Add responsive desktop layout rules so ERP tables remain dense and readable on laptop screens.
+- [ ] T748 P1 - Add responsive tablet/mobile rules for cashier, warehouse receipt, stock count, and manager approval flows.
+- [ ] T749 P1 - Add a design token system for spacing, typography, colors, borders, focus, status pills, and table density.
+- [ ] T750 P1 - Add a component library for buttons, icon buttons, inputs, selects, date pickers, tables, tabs, drawers, modals, and timelines.
+- [ ] T751 P1 - Add icon system with consistent lucide icons for modules, actions, statuses, file types, and alerts.
+- [ ] T752 P1 - Add French terminology glossary for all modules so labels stay consistent across UI, PDFs, emails, and tests.
+- [ ] T753 P1 - Add Arabic-ready display rules for names, addresses, PDFs, and bilingual document previews.
+- [ ] T754 P1 - Add contextual help drawer per workspace with short operational explanations, not marketing text.
+- [ ] T755 P1 - Add onboarding sample journeys for trading company, services company, retail/POS, and payroll-heavy SME.
+- [ ] T756 P1 - Add import assistant with CSV upload, field mapping, validation preview, duplicate detection, and import report.
+- [ ] T757 P1 - Add export center with saved export templates, permissions, filters, file history, and checksums.
+- [ ] T758 P1 - Add PDF preview UX for invoices, delivery notes, credit notes, purchase orders, payslips, and statements.
+- [ ] T759 P1 - Add email/send workflow with recipient preview, template selection, attachments, delivery status, and audit.
+- [ ] T760 P1 - Add attachment upload UX with drag-drop, file type validation, evidence classification, checksum, and retention tag.
+- [ ] T761 P1 - Add activity timeline component for notes, tasks, status changes, emails, payments, journals, and document exports.
+- [ ] T762 P1 - Add task management drawer with assigned user, due date, priority, entity link, completion, and reminders.
+- [ ] T763 P1 - Add approval inbox for quotes, discounts, purchases, stock write-offs, payroll, refunds, and fiscal exceptions.
+- [ ] T764 P1 - Add manager approval detail view with requested change, financial impact, policy rule, comments, approve, and reject.
+- [ ] T765 P1 - Add cross-module related-record links so users can jump from invoice to customer, delivery note, journal, payment, and PDF.
+- [ ] T766 P1 - Add optimistic UI refresh pattern after create/update/post actions with clear rollback on backend validation failure.
+- [ ] T767 P1 - Add unsaved changes guard for all forms, including browser navigation and workspace switching.
+- [ ] T768 P1 - Add multi-step wizard pattern for onboarding, payroll run, VAT declaration, inventory count, and bank import.
+- [ ] T769 P1 - Add page-level performance budgets for dashboard, list pages, record pages, and search.
+- [ ] T770 P1 - Add frontend telemetry events for module open, create action, validation error, export, and completed workflow.
+- [ ] T771 P2 - Add customizable dashboard widgets per role with drag ordering, visibility toggles, saved layout, and reset to default.
+- [ ] T772 P2 - Add Kanban board for CRM leads, support tickets, project tasks, and internal tasks with drag/drop status changes.
+- [ ] T773 P2 - Add calendar views for deliveries, tax deadlines, payroll dates, employee leave, maintenance, and contract renewals.
+- [ ] T774 P2 - Add spreadsheet-like editable grids for quote lines, invoice lines, purchase lines, stock count lines, and journal lines.
+- [ ] T775 P2 - Add AI-assisted navigation suggestions that recommend the next best action while preserving auditability and human approval.
+
+## Competitive UX Execution And Productization
+
+- [ ] T776 P0 - Define the Odoo/Sage comparison scorecard with navigation, workflow speed, data density, document quality, and accounting confidence criteria.
+- [ ] T777 P0 - Add a UX baseline audit test that screenshots each major workspace and flags missing headings, primary actions, and empty states.
+- [ ] T778 P0 - Create a user journey map for Moroccan trading SMEs from onboarding to first invoice to first VAT report.
+- [ ] T779 P0 - Create a user journey map for Moroccan service companies from contract to recurring invoice to accountant handoff.
+- [ ] T780 P0 - Create a user journey map for Moroccan retailers from POS session to stock deduction to Z report.
+- [ ] T781 P0 - Create a user journey map for payroll-heavy SMEs from employee onboarding to CNSS/Damancom export.
+- [ ] T782 P0 - Add workspace information architecture docs that define menus, submenus, record types, and primary user goals.
+- [ ] T783 P0 - Add navigation acceptance tests that verify every role sees only relevant workspaces and actions.
+- [ ] T784 P0 - Add a home dashboard decision tree that routes users to Sales, Stock, Accounting, Payroll, POS, or Compliance based on urgent work.
+- [ ] T785 P0 - Add backend endpoints for recent records per tenant, grouped by module and user role.
+- [ ] T786 P0 - Add backend endpoints for user favorites including records, reports, dashboards, and saved views.
+- [ ] T787 P0 - Add backend endpoints for per-user pinned modules and default landing workspace.
+- [ ] T788 P0 - Add backend endpoints for notification counts by severity, module, due date, and assigned user.
+- [ ] T789 P0 - Add backend endpoints for command palette search with actions, records, reports, and shortcuts in one response.
+- [ ] T790 P0 - Add backend endpoints for contextual next actions on quotes, orders, deliveries, invoices, payments, payroll runs, and stock moves.
+- [ ] T791 P0 - Add backend endpoints for record relationship graphs across customer, supplier, invoice, journal, payment, stock, and payroll entities.
+- [ ] T792 P0 - Add backend endpoints for activity timelines with consistent event types, actors, timestamps, and linked evidence.
+- [ ] T793 P0 - Add backend endpoints for user task counts and overdue task summaries by workspace.
+- [ ] T794 P0 - Add backend endpoints for workspace health cards with blockers, pending approvals, exceptions, and next deadline.
+- [ ] T795 P0 - Add backend DTO validation for all UX-support endpoints with tenant isolation tests.
+- [ ] T796 P1 - Add list-view API contracts with filtering, sorting, pagination, search, column metadata, and totals.
+- [ ] T797 P1 - Add detail-view API contracts that return header fields, status, allowed actions, tabs, timeline, and audit summary.
+- [ ] T798 P1 - Add form-schema API contracts for dynamic required fields, Moroccan validation rules, defaults, and help text.
+- [ ] T799 P1 - Add action-result API contracts with success message, next suggested action, affected records, and audit reference.
+- [ ] T800 P1 - Add validation-error API contracts with field path, French message, severity, and suggested correction.
+- [ ] T801 P1 - Add saved-filter persistence with owner, shared roles, query definition, and default state.
+- [ ] T802 P1 - Add saved-column persistence with visible columns, order, widths, density, and role defaults.
+- [ ] T803 P1 - Add export job status API with queued, running, done, failed, checksum, file name, and retention date.
+- [ ] T804 P1 - Add import job status API with mapping, preview errors, duplicate warnings, created rows, and failed rows.
+- [ ] T805 P1 - Add document send-status API for email, customer portal, supplier portal, and manual download.
+- [ ] T806 P1 - Add PDF render-status API with template version, language, checksum, storage key, and legal mention coverage.
+- [ ] T807 P1 - Add approval-policy API that returns required role, threshold, reason, current reviewer, and SLA.
+- [ ] T808 P1 - Add permission matrix API for frontend route guarding and disabled action explanations.
+- [ ] T809 P1 - Add UI state store for current tenant, role, workspace, pinned modules, notifications, and recent records.
+- [ ] T810 P1 - Add workspace route structure using descriptive paths for sales, purchases, inventory, accounting, payroll, pos, and admin.
+- [ ] T811 P1 - Add route-level loading and error boundaries for every workspace.
+- [ ] T812 P1 - Add shared layout component with app launcher, topbar, breadcrumbs, notification center, tenant switcher, and command palette.
+- [ ] T813 P1 - Add reusable workspace header component with title, subtitle, KPIs, primary action, and secondary menu.
+- [ ] T814 P1 - Add reusable list page component with toolbar, filters, table, pagination, empty state, and bulk action bar.
+- [ ] T815 P1 - Add reusable record page component with header, status pipeline, tabs, side drawer, and activity timeline.
+- [ ] T816 P1 - Add reusable form page component with section cards, sticky footer, validation summary, and save/cancel controls.
+- [ ] T817 P1 - Add reusable approval banner component for records requiring manager, accountant, or admin review.
+- [ ] T818 P1 - Add reusable financial totals component for subtotal, VAT by rate, total TTC, paid, balance, and currency.
+- [ ] T819 P1 - Add reusable legal identity component for ICE, IF, RC, Patente, CNSS, address, and VAT status.
+- [ ] T820 P1 - Add reusable document evidence component for files, PDFs, checksums, retention, and archive status.
+- [ ] T821 P1 - Add reusable Moroccan validation component for ICE, IF, RC, Patente, CNSS, CIN, RIB, VAT rate, and fiscal period.
+- [ ] T822 P1 - Add reusable audit drawer component with filters, changed fields, actor, timestamp, and source IP.
+- [ ] T823 P1 - Add reusable timeline composer for notes, tasks, comments, document sends, and evidence requests.
+- [ ] T824 P1 - Add reusable quick action menu with role-gated actions and disabled-state reasons.
+- [ ] T825 P1 - Add reusable import preview table with row status, field errors, duplicates, and correction hints.
+- [ ] T826 P1 - Add reusable PDF preview drawer with zoom, download, send, archive, and bilingual metadata.
+- [ ] T827 P1 - Add reusable keyboard shortcut registry with visible cheat sheet and conflict tests.
+- [ ] T828 P1 - Add reusable notification item component with severity, due date, entity link, action button, and snooze.
+- [ ] T829 P1 - Add reusable KPI card component with trend, target, tooltip, drilldown link, and loading state.
+- [ ] T830 P1 - Add reusable status pill system with consistent colors for draft, approved, posted, paid, blocked, overdue, and failed states.
+- [ ] T831 P1 - Add Sales workspace smoke tests for create customer, create quote, approve quote, convert order, deliver, invoice, and partial payment.
+- [ ] T832 P1 - Add Purchases workspace smoke tests for supplier, purchase order, receipt, supplier invoice, and payment calendar.
+- [ ] T833 P1 - Add Inventory workspace smoke tests for product, warehouse stock, reservation, transfer, adjustment, and count.
+- [ ] T834 P1 - Add Accounting workspace smoke tests for journal, VAT report, period lock, bank reconciliation, and legal evidence.
+- [ ] T835 P1 - Add Payroll workspace smoke tests for employee, contract, payroll run, payslip, Damancom, and CNSS preflight.
+- [ ] T836 P1 - Add POS workspace smoke tests for opening session, selling ticket, refund, offline sync, and Z close.
+- [ ] T837 P1 - Add Admin workspace smoke tests for users, roles, numbering, adapters, rule packs, and audit explorer.
+- [ ] T838 P1 - Add Playwright visual regression snapshots for all major workspaces at desktop and tablet widths.
+- [ ] T839 P1 - Add Playwright accessibility checks for navigation, forms, modals, tables, command palette, and notification center.
+- [ ] T840 P1 - Add Playwright keyboard-only workflow test for quote creation, invoice payment, and payroll run calculation.
+- [ ] T841 P1 - Add Playwright role-switch tests for owner, sales, warehouse, accountant, payroll, cashier, and read-only users.
+- [ ] T842 P1 - Add Playwright localization tests to ensure French remains primary and Arabic-ready fields render correctly.
+- [ ] T843 P1 - Add Playwright unsaved-changes tests for customer, invoice, journal, and payroll forms.
+- [ ] T844 P1 - Add Playwright import/export tests for CSV templates, import preview, PDF download, and evidence archive.
+- [ ] T845 P1 - Add backend contract tests for list metadata, detail metadata, allowed actions, and validation-error payloads.
+- [ ] T846 P1 - Add frontend unit tests for shared layout, workspace header, list page, record page, form page, and status pipeline.
+- [ ] T847 P1 - Add frontend unit tests for Moroccan identifier validators and French validation messages.
+- [ ] T848 P1 - Add frontend unit tests for command palette ranking, keyboard shortcuts, saved views, and pinned modules.
+- [ ] T849 P1 - Add frontend unit tests for notification center grouping, counts, snooze, and entity links.
+- [ ] T850 P1 - Add frontend unit tests for PDF preview, legal identity, document evidence, and audit drawer components.
+- [ ] T851 P2 - Add guided implementation checklist that tracks user readiness against Odoo/Sage replacement criteria.
+- [ ] T852 P2 - Add data migration wizard from Sage 100 exports for customers, suppliers, accounts, products, journals, and balances.
+- [ ] T853 P2 - Add data migration wizard from Odoo exports for partners, products, invoices, stock moves, journals, and employees.
+- [ ] T854 P2 - Add migration reconciliation report comparing imported opening balances, stock valuation, receivables, and payables.
+- [ ] T855 P2 - Add competitor-style module app grid with favorites, search, categories, recently used modules, and admin-controlled visibility.
+- [ ] T856 P2 - Add natural-language help search over local documentation, module help, glossary, and Moroccan compliance notes.
+- [ ] T857 P2 - Add guided accounting setup wizard for PCGE chart, opening balances, fiscal periods, VAT status, and bank accounts.
+- [ ] T858 P2 - Add guided inventory setup wizard for warehouses, products, stock opening, CUMP values, and reorder rules.
+- [ ] T859 P2 - Add guided payroll setup wizard for employer CNSS, employees, contracts, salary rules, dependents, and leave balances.
+- [ ] T860 P2 - Add guided POS setup wizard for stores, cashiers, products, receipt template, payment methods, and cash controls.
+- [ ] T861 P2 - Add customer portal UX polish with invoice list, payment promises, statement download, messages, and access controls.
+- [ ] T862 P2 - Add supplier portal UX polish with document upload, RFQ response, statement view, disputes, and security review.
+- [ ] T863 P2 - Add accountant portal UX polish with client list, evidence requests, review comments, period close, and tax deadlines.
+- [ ] T864 P2 - Add implementation partner portal UX polish with tenant progress, blockers, go-live checklist, and migration status.
+- [ ] T865 P2 - Add executive mobile summary with cash, sales, stock alerts, approvals, payroll blockers, and tax deadlines.
+- [ ] T866 P2 - Add warehouse mobile scan flow for receiving, picking, transfer, inventory count, and stock lookup.
+- [ ] T867 P2 - Add cashier tablet mode with large touch targets, quick products, payment buttons, receipt preview, and offline banner.
+- [ ] T868 P2 - Add accountant dense mode with compact tables, keyboard shortcuts, batch posting, and export-focused actions.
+- [ ] T869 P2 - Add manager approval mobile flow with financial summary, risk reason, comment, approve, reject, and audit.
+- [ ] T870 P2 - Add advanced search syntax for invoice numbers, ICE, SKU, amount ranges, dates, statuses, and module filters.
+- [ ] T871 P2 - Add duplicate resolution workbench for customers, suppliers, products, invoices, payments, and employees.
+- [ ] T872 P2 - Add data quality dashboard with missing identifiers, invalid VAT rates, stale records, duplicates, and owner assignments.
+- [ ] T873 P2 - Add monthly product usability review checklist with screenshots, task-completion metrics, bugs, and user feedback.
+- [ ] T874 P2 - Add in-app feedback capture linked to workspace, record, screenshot, user role, and browser metadata.
+- [ ] T875 P2 - Add release readiness UX gate that blocks release until core journeys, accessibility, visual checks, and E2E tests pass.
