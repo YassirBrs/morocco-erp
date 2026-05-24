@@ -44,12 +44,12 @@ export class ErpStoreService {
     effectiveFrom: '2026-01-01',
     vatRates: [0, 0.07, 0.1, 0.14, 0.2],
     invoiceMentions: [
-      'Identifiant Commun de l Entreprise (ICE)',
+      'Identifiant Commun de l’Entreprise (ICE)',
       'Identifiant Fiscal (IF)',
       'Registre de Commerce (RC)',
       'Taxe Professionnelle / Patente',
-      'Numero sequentiel de facture',
-      'Taux et montant de TVA ou mention exoneree',
+      'Numéro séquentiel de facture',
+      'Taux et montant de TVA ou mention exonérée',
     ],
     irBrackets: [
       { upperBound: 3333.33, rate: 0, deduction: 0 },
@@ -138,7 +138,7 @@ export class ErpStoreService {
           paymentTermsDays: 30,
           creditLimit: 100000,
           contacts: [{ name: 'Youssef Amrani', role: 'Finance', email: 'finance@rabretail.ma', phone: '+212522000000' }],
-          addresses: [{ label: 'Siege', line1: 'Avenue Mohammed V', city: 'Rabat' }],
+          addresses: [{ label: 'Siège', line1: 'Avenue Mohammed V', city: 'Rabat' }],
           active: true,
           createdAt: today(),
           updatedAt: today(),
@@ -164,7 +164,7 @@ export class ErpStoreService {
           sku: 'SKU-CHAIR',
           name: 'Chaise bureau',
           type: 'GOODS',
-          unit: 'unite',
+          unit: 'unité',
           trackStock: true,
           reorderPoint: 10,
           salePrice: 850,
@@ -200,7 +200,7 @@ export class ErpStoreService {
           id: 'prd-raw',
           tenantId: tenant.id,
           sku: 'RAW-BOIS',
-          name: 'Bois traite',
+          name: 'Bois traité',
           type: 'RAW_MATERIAL',
           unit: 'm',
           trackStock: true,
@@ -219,9 +219,9 @@ export class ErpStoreService {
           id: 'prd-fg',
           tenantId: tenant.id,
           sku: 'FG-TABLE',
-          name: 'Table assemblee',
+          name: 'Table assemblée',
           type: 'FINISHED_GOOD',
-          unit: 'unite',
+          unit: 'unité',
           trackStock: true,
           reorderPoint: 4,
           salePrice: 1400,
@@ -235,7 +235,7 @@ export class ErpStoreService {
           updatedAt: today(),
         },
       ],
-      warehouses: [{ id: 'wh-1', tenantId: tenant.id, name: 'Depot Casablanca', city: 'Casablanca' }],
+      warehouses: [{ id: 'wh-1', tenantId: tenant.id, name: 'Dépôt Casablanca', city: 'Casablanca' }],
       quotes: [],
       salesOrders: [],
       deliveryNotes: [],
@@ -293,7 +293,7 @@ export class ErpStoreService {
       suppliers: [],
       leads: [],
       products: [],
-      warehouses: [{ id: this.id('wh'), tenantId, name: 'Depot principal', city: tenant.legalEntity.city }],
+      warehouses: [{ id: this.id('wh'), tenantId, name: 'Dépôt principal', city: tenant.legalEntity.city }],
       quotes: [],
       salesOrders: [],
       deliveryNotes: [],
@@ -321,7 +321,7 @@ export class ErpStoreService {
         return { ...safeUser, tenant: workspace.tenant };
       }
     }
-    throw new ForbiddenException('Invalid credentials');
+    throw new ForbiddenException('Identifiants invalides');
   }
 
   summary(tenantId?: string) {
@@ -352,32 +352,32 @@ export class ErpStoreService {
     const checks = [
       {
         id: 'legal-identity',
-        label: 'Identite legale complete',
+        label: 'Identité légale complète',
         complete: Boolean(entity.tradeName && entity.ice && entity.ifNumber && entity.rc && entity.patente && entity.address && entity.city),
       },
       {
         id: 'tax-settings',
-        label: 'TVA et serie de facturation configurees',
+        label: 'TVA et série de facturation configurées',
         complete: Boolean(settings.invoiceSeries && settings.fiscalYearStartMonth >= 1 && settings.fiscalYearStartMonth <= 12 && settings.vatStatus),
       },
       {
         id: 'payroll-identity',
-        label: 'Numero CNSS employeur renseigne',
+        label: 'Numéro CNSS employeur renseigné',
         complete: Boolean(entity.cnssNumber),
       },
       {
         id: 'customers',
-        label: 'Au moins un client cree',
+        label: 'Au moins un client créé',
         complete: workspace.customers.some((customer) => customer.active),
       },
       {
         id: 'catalog',
-        label: 'Catalogue articles/services pret',
+        label: 'Catalogue articles/services prêt',
         complete: workspace.products.some((product) => product.active),
       },
       {
         id: 'warehouse',
-        label: 'Depot principal configure',
+        label: 'Dépôt principal configuré',
         complete: workspace.warehouses.length > 0,
       },
     ];
@@ -406,21 +406,21 @@ export class ErpStoreService {
 
     workspace.tenant.legalEntity = {
       ...entity,
-      tradeName: this.nonEmpty(input.tradeName ?? entity.tradeName, 'Trade name is required'),
-      ice: this.nonEmpty(input.ice ?? entity.ice, 'ICE is required'),
-      ifNumber: this.nonEmpty(input.ifNumber ?? entity.ifNumber, 'IF is required'),
-      rc: this.nonEmpty(input.rc ?? entity.rc, 'RC is required'),
-      patente: this.nonEmpty(input.patente ?? entity.patente, 'Patente is required'),
-      cnssNumber: this.nonEmpty(input.cnssNumber ?? entity.cnssNumber, 'CNSS number is required'),
-      address: this.nonEmpty(input.address ?? entity.address, 'Legal address is required'),
-      city: this.nonEmpty(input.city ?? entity.city, 'Fiscal city is required'),
+      tradeName: this.nonEmpty(input.tradeName ?? entity.tradeName, 'La raison sociale est obligatoire'),
+      ice: this.nonEmpty(input.ice ?? entity.ice, 'L’ICE est obligatoire'),
+      ifNumber: this.nonEmpty(input.ifNumber ?? entity.ifNumber, 'L’IF est obligatoire'),
+      rc: this.nonEmpty(input.rc ?? entity.rc, 'Le RC est obligatoire'),
+      patente: this.nonEmpty(input.patente ?? entity.patente, 'La patente est obligatoire'),
+      cnssNumber: this.nonEmpty(input.cnssNumber ?? entity.cnssNumber, 'Le numéro CNSS est obligatoire'),
+      address: this.nonEmpty(input.address ?? entity.address, 'L’adresse légale est obligatoire'),
+      city: this.nonEmpty(input.city ?? entity.city, 'La ville fiscale est obligatoire'),
       country: 'MA',
       vatEnabled: input.vatEnabled ?? entity.vatEnabled,
     };
 
     workspace.tenant.settings = {
       ...workspace.tenant.settings,
-      invoiceSeries: this.nonEmpty(input.invoiceSeries ?? workspace.tenant.settings.invoiceSeries, 'Invoice series is required').toUpperCase(),
+      invoiceSeries: this.nonEmpty(input.invoiceSeries ?? workspace.tenant.settings.invoiceSeries, 'La série de facturation est obligatoire').toUpperCase(),
       fiscalYearStartMonth: this.month(input.fiscalYearStartMonth ?? workspace.tenant.settings.fiscalYearStartMonth),
       vatStatus: input.vatStatus ?? (workspace.tenant.legalEntity.vatEnabled ? 'ENABLED' : 'EXEMPT'),
     };
@@ -442,7 +442,7 @@ export class ErpStoreService {
     const customer: Customer = {
       id: this.id('cus'),
       tenantId: workspace.tenant.id,
-      name: this.nonEmpty(input.name, 'Customer name is required'),
+      name: this.nonEmpty(input.name, 'Le nom du client est obligatoire'),
       ice: this.clean(input.ice),
       ifNumber: this.clean(input.ifNumber),
       rc: this.clean(input.rc),
@@ -450,8 +450,8 @@ export class ErpStoreService {
       phone: this.clean(input.phone),
       address: this.clean(input.address),
       city: this.clean(input.city),
-      paymentTermsDays: this.nonNegative(input.paymentTermsDays ?? 30, 'Payment terms must be zero or positive'),
-      creditLimit: this.nonNegative(input.creditLimit ?? 0, 'Credit limit must be zero or positive'),
+      paymentTermsDays: this.nonNegative(input.paymentTermsDays ?? 30, 'Le délai de paiement doit être nul ou positif'),
+      creditLimit: this.nonNegative(input.creditLimit ?? 0, 'Le plafond de crédit doit être nul ou positif'),
       contacts: input.contacts ?? [],
       addresses: input.addresses ?? [],
       active: input.active ?? true,
@@ -477,7 +477,7 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const customer = this.customer(workspace, customerId);
     if (input.name !== undefined) {
-      customer.name = this.nonEmpty(input.name, 'Customer name is required');
+      customer.name = this.nonEmpty(input.name, 'Le nom du client est obligatoire');
     }
     if (input.ice !== undefined) customer.ice = this.clean(input.ice);
     if (input.ifNumber !== undefined) customer.ifNumber = this.clean(input.ifNumber);
@@ -487,10 +487,10 @@ export class ErpStoreService {
     if (input.address !== undefined) customer.address = this.clean(input.address);
     if (input.city !== undefined) customer.city = this.clean(input.city);
     if (input.paymentTermsDays !== undefined) {
-      customer.paymentTermsDays = this.nonNegative(input.paymentTermsDays, 'Payment terms must be zero or positive');
+      customer.paymentTermsDays = this.nonNegative(input.paymentTermsDays, 'Le délai de paiement doit être nul ou positif');
     }
     if (input.creditLimit !== undefined) {
-      customer.creditLimit = this.nonNegative(input.creditLimit, 'Credit limit must be zero or positive');
+      customer.creditLimit = this.nonNegative(input.creditLimit, 'Le plafond de crédit doit être nul ou positif');
     }
     if (input.contacts !== undefined) {
       this.validateContacts(input.contacts);
@@ -558,29 +558,29 @@ export class ErpStoreService {
 
   addProduct(input: Partial<Product> & { sku: string; name: string; salePrice: number }, tenantId?: string): Product {
     const workspace = this.workspace(tenantId);
-    const sku = this.nonEmpty(input.sku, 'SKU is required').toUpperCase();
+    const sku = this.nonEmpty(input.sku, 'Le SKU est obligatoire').toUpperCase();
     if (workspace.products.some((candidate) => candidate.sku.toUpperCase() === sku)) {
-      throw new BadRequestException('Product SKU already exists');
+      throw new BadRequestException('Le SKU article existe déjà');
     }
-    const cost = this.nonNegative(input.purchaseCost ?? 0, 'Purchase cost must be zero or positive');
+    const cost = this.nonNegative(input.purchaseCost ?? 0, 'Le coût d’achat doit être nul ou positif');
     const type = input.type ?? 'GOODS';
     const trackStock = type === 'SERVICE' ? false : input.trackStock ?? true;
-    const stockOnHand = trackStock ? this.nonNegative(input.stockOnHand ?? 0, 'Stock on hand must be zero or positive') : 0;
+    const stockOnHand = trackStock ? this.nonNegative(input.stockOnHand ?? 0, 'Le stock disponible doit être nul ou positif') : 0;
     const product: Product = {
       id: this.id('prd'),
       tenantId: workspace.tenant.id,
       sku,
-      name: this.nonEmpty(input.name, 'Product name is required'),
+      name: this.nonEmpty(input.name, 'Le nom de l’article est obligatoire'),
       type,
-      unit: this.nonEmpty(input.unit ?? (type === 'SERVICE' ? 'forfait' : 'unite'), 'Product unit is required'),
+      unit: this.nonEmpty(input.unit ?? (type === 'SERVICE' ? 'forfait' : 'unité'), 'L’unité article est obligatoire'),
       trackStock,
-      reorderPoint: this.nonNegative(input.reorderPoint ?? 0, 'Reorder point must be zero or positive'),
-      salePrice: this.nonNegative(input.salePrice, 'Sale price must be zero or positive'),
+      reorderPoint: this.nonNegative(input.reorderPoint ?? 0, 'Le seuil de réapprovisionnement doit être nul ou positif'),
+      salePrice: this.nonNegative(input.salePrice, 'Le prix de vente doit être nul ou positif'),
       purchaseCost: cost,
       vatRate: this.vatRate(input.vatRate ?? 0.2),
       stockOnHand,
       reservedStock: 0,
-      weightedAverageCost: trackStock ? this.nonNegative(input.weightedAverageCost ?? cost, 'CUMP must be zero or positive') : 0,
+      weightedAverageCost: trackStock ? this.nonNegative(input.weightedAverageCost ?? cost, 'Le CUMP doit être nul ou positif') : 0,
       active: input.active ?? true,
       createdAt: today(),
       updatedAt: today(),
@@ -602,28 +602,28 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const product = this.product(workspace, productId);
     if (input.sku !== undefined) {
-      const sku = this.nonEmpty(input.sku, 'SKU is required').toUpperCase();
+      const sku = this.nonEmpty(input.sku, 'Le SKU est obligatoire').toUpperCase();
       if (workspace.products.some((candidate) => candidate.id !== product.id && candidate.sku.toUpperCase() === sku)) {
-        throw new BadRequestException('Product SKU already exists');
+        throw new BadRequestException('Le SKU article existe déjà');
       }
       product.sku = sku;
     }
-    if (input.name !== undefined) product.name = this.nonEmpty(input.name, 'Product name is required');
+    if (input.name !== undefined) product.name = this.nonEmpty(input.name, 'Le nom de l’article est obligatoire');
     if (input.type !== undefined) product.type = input.type;
-    if (input.unit !== undefined) product.unit = this.nonEmpty(input.unit, 'Product unit is required');
+    if (input.unit !== undefined) product.unit = this.nonEmpty(input.unit, 'L’unité article est obligatoire');
     if (input.trackStock !== undefined) product.trackStock = input.trackStock;
-    if (input.reorderPoint !== undefined) product.reorderPoint = this.nonNegative(input.reorderPoint, 'Reorder point must be zero or positive');
-    if (input.salePrice !== undefined) product.salePrice = this.nonNegative(input.salePrice, 'Sale price must be zero or positive');
-    if (input.purchaseCost !== undefined) product.purchaseCost = this.nonNegative(input.purchaseCost, 'Purchase cost must be zero or positive');
+    if (input.reorderPoint !== undefined) product.reorderPoint = this.nonNegative(input.reorderPoint, 'Le seuil de réapprovisionnement doit être nul ou positif');
+    if (input.salePrice !== undefined) product.salePrice = this.nonNegative(input.salePrice, 'Le prix de vente doit être nul ou positif');
+    if (input.purchaseCost !== undefined) product.purchaseCost = this.nonNegative(input.purchaseCost, 'Le coût d’achat doit être nul ou positif');
     if (input.vatRate !== undefined) product.vatRate = this.vatRate(input.vatRate);
     if (input.stockOnHand !== undefined) {
-      product.stockOnHand = product.trackStock ? this.nonNegative(input.stockOnHand, 'Stock on hand must be zero or positive') : 0;
+      product.stockOnHand = product.trackStock ? this.nonNegative(input.stockOnHand, 'Le stock disponible doit être nul ou positif') : 0;
       if (product.reservedStock > product.stockOnHand) {
-        throw new BadRequestException('Stock on hand cannot be below reserved stock');
+        throw new BadRequestException('Le stock disponible ne peut pas être inférieur au stock réservé');
       }
     }
     if (input.weightedAverageCost !== undefined) {
-      product.weightedAverageCost = product.trackStock ? this.nonNegative(input.weightedAverageCost, 'CUMP must be zero or positive') : 0;
+      product.weightedAverageCost = product.trackStock ? this.nonNegative(input.weightedAverageCost, 'Le CUMP doit être nul ou positif') : 0;
     }
     if (!product.trackStock || product.type === 'SERVICE') {
       product.stockOnHand = 0;
@@ -665,15 +665,15 @@ export class ErpStoreService {
     }));
   }
 
-  adjustStock(productId: string, quantity: number, reason = 'Manual adjustment', tenantId?: string): StockMove {
+  adjustStock(productId: string, quantity: number, reason = 'Ajustement manuel', tenantId?: string): StockMove {
     const workspace = this.workspace(tenantId);
     const product = this.product(workspace, productId);
     if (!product.trackStock) {
-      throw new BadRequestException('Product does not track stock');
+      throw new BadRequestException('Cet article n’est pas suivi en stock');
     }
     product.stockOnHand = r2(product.stockOnHand + quantity);
     if (product.stockOnHand < 0) {
-      throw new BadRequestException('Stock cannot become negative');
+      throw new BadRequestException('Le stock ne peut pas devenir négatif');
     }
     const move = this.stockMove(workspace, product, quantity, product.weightedAverageCost, 'ADJUSTMENT', reason);
     this.audit(workspace, 'stock.adjusted', 'StockMove', move.id, move);
@@ -687,11 +687,11 @@ export class ErpStoreService {
     let total = 0;
     const lines = input.lines.map((line) => {
       if (line.quantity <= 0 || line.unitCost < 0) {
-        throw new BadRequestException('Invalid purchase receipt line');
+        throw new BadRequestException('Ligne de réception achat invalide');
       }
       const product = this.product(workspace, line.productId);
       if (!product.trackStock) {
-        throw new BadRequestException('Purchase receipt requires a stock-tracked product');
+        throw new BadRequestException('La réception achat exige un article suivi en stock');
       }
       const oldValue = product.stockOnHand * product.weightedAverageCost;
       const newValue = line.quantity * line.unitCost;
@@ -712,7 +712,7 @@ export class ErpStoreService {
       total: r2(total),
     };
     workspace.purchaseReceipts.push(receipt);
-    this.postJournal(workspace, `Purchase receipt ${number}`, number, [
+    this.postJournal(workspace, `Réception achat ${number}`, number, [
       { account: '3111', label: 'Marchandises au magasin', debit: receipt.total, credit: 0 },
       { account: '4411', label: 'Fournisseurs', debit: 0, credit: receipt.total },
     ]);
@@ -753,7 +753,7 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const quote = this.quote(workspace, quoteId);
     if (quote.status === 'CONVERTED' || quote.status === 'VOID') {
-      throw new BadRequestException('Converted or void quotes cannot be revised');
+      throw new BadRequestException('Les devis convertis ou annulés ne peuvent pas être révisés');
     }
     if (input.lines) {
       quote.lines = this.documentLines(workspace, input.lines);
@@ -773,7 +773,7 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const quote = this.quote(workspace, quoteId);
     if (quote.status === 'CONVERTED' || quote.status === 'VOID') {
-      throw new BadRequestException('Quote cannot be approved');
+      throw new BadRequestException('Le devis ne peut pas être approuvé');
     }
     quote.status = 'APPROVED';
     quote.approvedAt = today();
@@ -786,8 +786,8 @@ export class ErpStoreService {
     const quote = this.quote(workspace, quoteId);
     const customer = this.customer(workspace, quote.customerId);
     const lines = [
-      `Devis ${quote.number} revision ${quote.revision}`,
-      `Tenant ${workspace.tenant.legalEntity.tradeName}`,
+      `Devis ${quote.number} révision ${quote.revision}`,
+      `Entreprise ${workspace.tenant.legalEntity.tradeName}`,
       `Client ${customer.name}`,
       `Total HT ${quote.totals.subtotal.toFixed(2)} MAD`,
       `TVA ${quote.totals.vatTotal.toFixed(2)} MAD`,
@@ -810,7 +810,7 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const quote = this.quote(workspace, quoteId);
     if (quote.status !== 'APPROVED') {
-      throw new BadRequestException('Quote must be approved before order conversion');
+      throw new BadRequestException('Le devis doit être approuvé avant conversion en commande');
     }
     const order = this.createSalesOrder({
       customerId: quote.customerId,
@@ -826,7 +826,7 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const quote = this.quote(workspace, quoteId);
     if (quote.status === 'VOID') {
-      throw new BadRequestException('Void quotes cannot be invoiced');
+      throw new BadRequestException('Les devis annulés ne peuvent pas être facturés');
     }
     quote.status = 'CONVERTED';
     return this.createInvoice({ customerId: quote.customerId, lines: quote.lines, sourceQuoteId: quote.id }, workspace.tenant.id);
@@ -837,7 +837,7 @@ export class ErpStoreService {
     this.assertCanWrite(workspace);
     this.customer(workspace, input.customerId);
     const lines = this.documentLines(workspace, input.lines);
-    this.reserveStockForOrder(workspace, lines, 'Order reservation');
+    this.reserveStockForOrder(workspace, lines, 'Réservation commande');
     const order: SalesOrder = {
       id: this.id('so'),
       tenantId: workspace.tenant.id,
@@ -862,10 +862,10 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const order = this.salesOrder(workspace, orderId);
     if (order.status === 'CANCELLED') {
-      throw new BadRequestException('Cancelled orders cannot be delivered');
+      throw new BadRequestException('Les commandes annulées ne peuvent pas être livrées');
     }
     if (order.status === 'DELIVERED' || order.status === 'INVOICED') {
-      throw new BadRequestException('Order is already delivered');
+      throw new BadRequestException('La commande est déjà livrée');
     }
     for (const line of order.lines) {
       const product = this.product(workspace, line.productId);
@@ -873,7 +873,7 @@ export class ErpStoreService {
         continue;
       }
       if (product.reservedStock < line.quantity) {
-        throw new BadRequestException(`Insufficient reserved stock for ${product.sku}`);
+        throw new BadRequestException(`Stock réservé insuffisant pour ${product.sku}`);
       }
       product.reservedStock = r2(product.reservedStock - line.quantity);
       product.stockOnHand = r2(product.stockOnHand - line.quantity);
@@ -908,7 +908,7 @@ export class ErpStoreService {
     }
     const order = this.salesOrder(workspace, deliveryNote.sourceOrderId);
     if (order.status === 'INVOICED') {
-      throw new BadRequestException('Invoiced delivery notes cannot be cancelled');
+      throw new BadRequestException('Les bons de livraison facturés ne peuvent pas être annulés');
     }
     for (const line of deliveryNote.lines) {
       const product = this.product(workspace, line.productId);
@@ -928,11 +928,11 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const order = this.salesOrder(workspace, orderId);
     if (order.status !== 'DELIVERED') {
-      throw new BadRequestException('Order must be delivered before invoicing');
+      throw new BadRequestException('La commande doit être livrée avant facturation');
     }
     const deliveryNote = workspace.deliveryNotes.find((candidate) => candidate.sourceOrderId === order.id && candidate.status === 'POSTED');
     if (!deliveryNote) {
-      throw new BadRequestException('A posted delivery note is required before invoicing');
+      throw new BadRequestException('Un bon de livraison comptabilisé est requis avant facturation');
     }
     const invoice = this.createInvoice({
       customerId: order.customerId,
@@ -985,10 +985,10 @@ export class ErpStoreService {
     if (!input.stockAlreadyDelivered) {
       this.consumeStockForSales(workspace, invoice.number, lines);
     }
-    this.postJournal(workspace, `Customer invoice ${invoice.number}`, invoice.number, [
+    this.postJournal(workspace, `Facture client ${invoice.number}`, invoice.number, [
       { account: '3421', label: 'Clients', debit: invoice.totals.total, credit: 0 },
       { account: '7111', label: 'Ventes de marchandises', debit: 0, credit: invoice.totals.subtotal },
-      { account: '4455', label: 'TVA facturee', debit: 0, credit: invoice.totals.vatTotal },
+      { account: '4455', label: 'TVA facturée', debit: 0, credit: invoice.totals.vatTotal },
     ]);
     this.audit(workspace, 'invoice.posted', 'Invoice', invoice.id, invoice);
     return invoice;
@@ -1004,17 +1004,17 @@ export class ErpStoreService {
     this.assertPeriodOpen(workspace, today());
     const invoice = this.invoice(workspace, input.invoiceId);
     if (invoice.status === 'VOID') {
-      throw new BadRequestException('Void invoices cannot receive credit notes');
+      throw new BadRequestException('Les factures annulées ne peuvent pas recevoir d’avoir');
     }
     const alreadyCredited = this.invoiceCreditTotal(workspace, invoice.id);
     const remainingCredit = r2(invoice.totals.total - alreadyCredited);
     if (remainingCredit <= 0) {
-      throw new BadRequestException('Invoice is already fully credited');
+      throw new BadRequestException('La facture est déjà totalement créditée');
     }
     const lines = this.creditNoteLines(workspace, invoice, input.lines);
     const totals = this.totals(lines);
     if (totals.total > remainingCredit) {
-      throw new BadRequestException('Credit note exceeds remaining invoice amount');
+      throw new BadRequestException('L’avoir dépasse le solde restant de la facture');
     }
     const creditNote: CreditNote = {
       id: this.id('cn'),
@@ -1024,14 +1024,14 @@ export class ErpStoreService {
       customerId: invoice.customerId,
       status: 'POSTED',
       date: today(),
-      reason: this.nonEmpty(input.reason ?? 'Avoir client', 'Credit note reason is required'),
+      reason: this.nonEmpty(input.reason ?? 'Avoir client', 'Le motif de l’avoir est obligatoire'),
       lines,
       totals,
     };
     workspace.creditNotes.push(creditNote);
-    this.postJournal(workspace, `Credit note ${creditNote.number}`, creditNote.number, [
+    this.postJournal(workspace, `Avoir ${creditNote.number}`, creditNote.number, [
       { account: '7111', label: 'Annulation ventes', debit: creditNote.totals.subtotal, credit: 0 },
-      { account: '4455', label: 'Annulation TVA facturee', debit: creditNote.totals.vatTotal, credit: 0 },
+      { account: '4455', label: 'Annulation TVA facturée', debit: creditNote.totals.vatTotal, credit: 0 },
       { account: '3421', label: 'Clients', debit: 0, credit: creditNote.totals.total },
     ]);
     if (r2(invoice.paidAmount + this.invoiceCreditTotal(workspace, invoice.id)) >= invoice.totals.total) {
@@ -1103,11 +1103,11 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const invoice = this.invoice(workspace, input.invoiceId);
     if (input.amount <= 0) {
-      throw new BadRequestException('Payment amount must be positive');
+      throw new BadRequestException('Le montant du paiement doit être positif');
     }
     const remaining = r2(invoice.totals.total - invoice.paidAmount - this.invoiceCreditTotal(workspace, invoice.id));
     if (input.amount > remaining) {
-      throw new BadRequestException('Payment exceeds remaining invoice balance');
+      throw new BadRequestException('Le paiement dépasse le solde restant de la facture');
     }
     invoice.paidAmount = r2(invoice.paidAmount + input.amount);
     if (r2(invoice.paidAmount + this.invoiceCreditTotal(workspace, invoice.id)) >= invoice.totals.total) {
@@ -1122,7 +1122,7 @@ export class ErpStoreService {
       date: today(),
     };
     workspace.payments.push(payment);
-    this.postJournal(workspace, `Payment ${invoice.number}`, payment.id, [
+    this.postJournal(workspace, `Paiement ${invoice.number}`, payment.id, [
       { account: input.method === 'CASH' ? '5161' : '5141', label: input.method ?? 'BANK', debit: input.amount, credit: 0 },
       { account: '3421', label: 'Clients', debit: 0, credit: input.amount },
     ]);
@@ -1169,10 +1169,10 @@ export class ErpStoreService {
     };
     workspace.posTransactions.push(transaction);
     this.consumeStockForSales(workspace, transaction.number, lines, 'POS_SALE');
-    this.postJournal(workspace, `POS ticket ${transaction.number}`, transaction.number, [
+    this.postJournal(workspace, `Ticket POS ${transaction.number}`, transaction.number, [
       { account: transaction.paymentMethod === 'CARD' ? '5141' : '5161', label: 'Encaisse POS', debit: transaction.totals.total, credit: 0 },
       { account: '7111', label: 'Ventes POS', debit: 0, credit: transaction.totals.subtotal },
-      { account: '4455', label: 'TVA facturee', debit: 0, credit: transaction.totals.vatTotal },
+      { account: '4455', label: 'TVA facturée', debit: 0, credit: transaction.totals.vatTotal },
     ]);
     this.audit(workspace, 'pos.sale', 'PosTransaction', transaction.id, transaction);
     return transaction;
@@ -1186,14 +1186,14 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const finished = this.product(workspace, input.finishedProductId);
     if (input.quantity <= 0) {
-      throw new BadRequestException('Production quantity must be positive');
+      throw new BadRequestException('La quantité de production doit être positive');
     }
     let consumedValue = 0;
     for (const component of input.components ?? [{ productId: 'prd-raw', quantity: input.quantity * 2 }]) {
       const raw = this.product(workspace, component.productId);
       const qty = component.quantity;
       if (raw.stockOnHand < qty) {
-        throw new BadRequestException(`Insufficient stock for ${raw.sku}`);
+        throw new BadRequestException(`Stock insuffisant pour ${raw.sku}`);
       }
       raw.stockOnHand = r2(raw.stockOnHand - qty);
       consumedValue += qty * raw.weightedAverageCost;
@@ -1243,7 +1243,7 @@ export class ErpStoreService {
     const workspace = this.workspace(tenantId);
     const invoice = workspace.invoices.find((candidate) => candidate.id === invoiceId);
     if (!invoice) {
-      throw new NotFoundException('Invoice not found');
+      throw new NotFoundException('Facture introuvable');
     }
     return {
       adapter: 'DGI_E_INVOICE',
@@ -1265,7 +1265,7 @@ export class ErpStoreService {
   private workspace(tenantId?: string): TenantWorkspace {
     const id = tenantId ?? this.cls.get<string>('tenantId');
     if (!id) {
-      throw new BadRequestException('Tenant context is required');
+      throw new BadRequestException('Le contexte tenant est obligatoire');
     }
     const workspace = this.workspaces.get(id);
     if (!workspace) {
@@ -1277,7 +1277,7 @@ export class ErpStoreService {
   private customer(workspace: TenantWorkspace, customerId: string): Customer {
     const customer = workspace.customers.find((candidate) => candidate.id === customerId);
     if (!customer) {
-      throw new NotFoundException('Customer not found');
+      throw new NotFoundException('Client introuvable');
     }
     return customer;
   }
@@ -1285,7 +1285,7 @@ export class ErpStoreService {
   private quote(workspace: TenantWorkspace, quoteId: string): Quote {
     const quote = workspace.quotes.find((candidate) => candidate.id === quoteId || candidate.number === quoteId);
     if (!quote) {
-      throw new NotFoundException('Quote not found');
+      throw new NotFoundException('Devis introuvable');
     }
     return quote;
   }
@@ -1293,7 +1293,7 @@ export class ErpStoreService {
   private salesOrder(workspace: TenantWorkspace, orderId: string): SalesOrder {
     const order = workspace.salesOrders.find((candidate) => candidate.id === orderId || candidate.number === orderId);
     if (!order) {
-      throw new NotFoundException('Sales order not found');
+      throw new NotFoundException('Commande client introuvable');
     }
     return order;
   }
@@ -1301,7 +1301,7 @@ export class ErpStoreService {
   private deliveryNote(workspace: TenantWorkspace, deliveryNoteId: string): DeliveryNote {
     const deliveryNote = workspace.deliveryNotes.find((candidate) => candidate.id === deliveryNoteId || candidate.number === deliveryNoteId);
     if (!deliveryNote) {
-      throw new NotFoundException('Delivery note not found');
+      throw new NotFoundException('Bon de livraison introuvable');
     }
     return deliveryNote;
   }
@@ -1309,7 +1309,7 @@ export class ErpStoreService {
   private invoice(workspace: TenantWorkspace, invoiceId: string): Invoice {
     const invoice = workspace.invoices.find((candidate) => candidate.id === invoiceId || candidate.number === invoiceId);
     if (!invoice) {
-      throw new NotFoundException('Invoice not found');
+      throw new NotFoundException('Facture introuvable');
     }
     return invoice;
   }
@@ -1317,7 +1317,7 @@ export class ErpStoreService {
   private supplier(workspace: TenantWorkspace, supplierId: string): Supplier {
     const supplier = workspace.suppliers.find((candidate) => candidate.id === supplierId);
     if (!supplier) {
-      throw new NotFoundException('Supplier not found');
+      throw new NotFoundException('Fournisseur introuvable');
     }
     return supplier;
   }
@@ -1325,23 +1325,23 @@ export class ErpStoreService {
   private product(workspace: TenantWorkspace, productId: string): Product {
     const product = workspace.products.find((candidate) => candidate.id === productId || candidate.sku === productId);
     if (!product) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException('Article introuvable');
     }
     return product;
   }
 
   private documentLines(workspace: TenantWorkspace, inputLines: DocumentLineInput[] | DocumentLine[]): DocumentLine[] {
     if (!inputLines.length) {
-      throw new BadRequestException('At least one line is required');
+      throw new BadRequestException('Au moins une ligne est obligatoire');
     }
     return inputLines.map((line) => {
       const product = this.product(workspace, line.productId);
       if (!product.active) {
-        throw new BadRequestException(`Product ${product.sku} is archived`);
+        throw new BadRequestException(`L’article ${product.sku} est archivé`);
       }
       const quantity = Number(line.quantity);
       if (quantity <= 0) {
-        throw new BadRequestException('Line quantity must be positive');
+        throw new BadRequestException('La quantité de ligne doit être positive');
       }
       const unitPrice = line.unitPrice ?? product.salePrice;
       const vatRate = line.vatRate ?? product.vatRate;
@@ -1368,11 +1368,11 @@ export class ErpStoreService {
     return inputLines.map((line) => {
       const invoiceLine = invoice.lines.find((candidate) => candidate.productId === line.productId);
       if (!invoiceLine) {
-        throw new BadRequestException('Credit note line must reference an invoice product');
+        throw new BadRequestException('La ligne d’avoir doit référencer un article de la facture');
       }
       const quantity = Number(line.quantity);
       if (quantity <= 0 || quantity > invoiceLine.quantity) {
-        throw new BadRequestException('Credit note quantity is invalid for the invoice line');
+        throw new BadRequestException('La quantité d’avoir est invalide pour la ligne de facture');
       }
       const product = this.product(workspace, invoiceLine.productId);
       const unitPrice = line.unitPrice ?? invoiceLine.unitPrice;
@@ -1413,7 +1413,7 @@ export class ErpStoreService {
         continue;
       }
       if (this.availableStock(product) < line.quantity) {
-        throw new BadRequestException(`Insufficient stock for ${product.sku}`);
+        throw new BadRequestException(`Stock insuffisant pour ${product.sku}`);
       }
       product.stockOnHand = r2(product.stockOnHand - line.quantity);
       this.stockMove(workspace, product, -line.quantity, product.weightedAverageCost, type, reference);
@@ -1427,7 +1427,7 @@ export class ErpStoreService {
         continue;
       }
       if (this.availableStock(product) < line.quantity) {
-        throw new BadRequestException(`Insufficient available stock for ${product.sku}`);
+        throw new BadRequestException(`Stock disponible insuffisant pour ${product.sku}`);
       }
       product.reservedStock = r2(product.reservedStock + line.quantity);
       this.stockMove(workspace, product, line.quantity, product.weightedAverageCost, 'RESERVATION', reference);
@@ -1490,7 +1490,7 @@ export class ErpStoreService {
     const debit = r2(lines.reduce((sum, line) => sum + line.debit, 0));
     const credit = r2(lines.reduce((sum, line) => sum + line.credit, 0));
     if (debit !== credit) {
-      throw new BadRequestException(`Unbalanced journal entry ${description}`);
+      throw new BadRequestException(`Écriture comptable déséquilibrée ${description}`);
     }
     const entry: JournalEntry = {
       id: this.id('je'),
@@ -1508,7 +1508,7 @@ export class ErpStoreService {
   private assertInvoiceLegalIdentity(entity: LegalEntity): void {
     const required = [entity.tradeName, entity.ice, entity.ifNumber, entity.rc, entity.patente, entity.address];
     if (required.some((value) => !value)) {
-      throw new BadRequestException('Tenant legal identity is incomplete for Moroccan invoicing');
+      throw new BadRequestException('L’identité légale du tenant est incomplète pour la facturation marocaine');
     }
   }
 
@@ -1517,13 +1517,13 @@ export class ErpStoreService {
     const month = Number(date.slice(5, 7));
     const period = workspace.fiscalPeriods.find((candidate) => candidate.year === year && candidate.month === month);
     if (period?.locked) {
-      throw new ForbiddenException('Fiscal period is locked');
+      throw new ForbiddenException('La période fiscale est verrouillée');
     }
   }
 
   private assertCanWrite(workspace: TenantWorkspace): void {
     if (workspace.tenant.status !== 'ACTIVE') {
-      throw new ForbiddenException('Subscription is read-only');
+      throw new ForbiddenException('L’abonnement est en lecture seule');
     }
   }
 
@@ -1605,7 +1605,7 @@ export class ErpStoreService {
   private month(value: number): number {
     const numeric = Number(value);
     if (!Number.isInteger(numeric) || numeric < 1 || numeric > 12) {
-      throw new BadRequestException('Fiscal year start month must be between 1 and 12');
+      throw new BadRequestException('Le mois de début d’exercice doit être compris entre 1 et 12');
     }
     return numeric;
   }
@@ -1614,22 +1614,22 @@ export class ErpStoreService {
     const numeric = Number(value);
     const rate = allowedVatRates.find((candidate) => candidate === numeric);
     if (rate === undefined) {
-      throw new BadRequestException('VAT rate is not supported by the Morocco rule pack');
+      throw new BadRequestException('Le taux de TVA n’est pas pris en charge par les règles Maroc');
     }
     return rate;
   }
 
   private validateContacts(contacts: Customer['contacts']): void {
     for (const contact of contacts) {
-      this.nonEmpty(contact.name, 'Contact name is required');
+      this.nonEmpty(contact.name, 'Le nom du contact est obligatoire');
     }
   }
 
   private validateAddresses(addresses: Customer['addresses']): void {
     for (const address of addresses) {
-      this.nonEmpty(address.label, 'Address label is required');
-      this.nonEmpty(address.line1, 'Address line is required');
-      this.nonEmpty(address.city, 'Address city is required');
+      this.nonEmpty(address.label, 'Le libellé d’adresse est obligatoire');
+      this.nonEmpty(address.line1, 'La ligne d’adresse est obligatoire');
+      this.nonEmpty(address.city, 'La ville de l’adresse est obligatoire');
     }
   }
 

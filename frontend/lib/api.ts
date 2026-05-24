@@ -73,14 +73,14 @@ const fallbackSummary: DashboardSummary = {
   compliance: {
     id: 'MA-2026',
     vatRates: [0, 0.07, 0.1, 0.14, 0.2],
-    invoiceMentions: ['ICE', 'IF', 'RC', 'Patente', 'Numero sequentiel', 'TVA'],
+    invoiceMentions: ['ICE', 'IF', 'RC', 'Patente', 'Numéro séquentiel', 'TVA'],
   },
 };
 
 const fallbackStock: StockLine[] = [
   { productId: 'prd-1', sku: 'SKU-CHAIR', name: 'Chaise bureau', stockOnHand: 50, weightedAverageCost: 520, stockValue: 26000 },
-  { productId: 'prd-raw', sku: 'RAW-BOIS', name: 'Bois traite', stockOnHand: 200, weightedAverageCost: 90, stockValue: 18000 },
-  { productId: 'prd-fg', sku: 'FG-TABLE', name: 'Table assemblee', stockOnHand: 8, weightedAverageCost: 300, stockValue: 2400 },
+  { productId: 'prd-raw', sku: 'RAW-BOIS', name: 'Bois traité', stockOnHand: 200, weightedAverageCost: 90, stockValue: 18000 },
+  { productId: 'prd-fg', sku: 'FG-TABLE', name: 'Table assemblée', stockOnHand: 8, weightedAverageCost: 300, stockValue: 2400 },
 ];
 
 async function getJson<T>(path: string, fallback: T): Promise<T> {

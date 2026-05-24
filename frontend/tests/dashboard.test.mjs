@@ -9,7 +9,7 @@ const staticCss = readFileSync(new URL('../static.css', import.meta.url), 'utf8'
 const api = readFileSync(new URL('../lib/api.ts', import.meta.url), 'utf8');
 
 test('dashboard renders Morocco ERP workspace sections', () => {
-  for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilite', 'Paie', 'Conformite Maroc']) {
+  for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
     assert.ok(page.includes(text), `${text} section is present`);
   }
 });
@@ -37,8 +37,11 @@ test('layout uses dense ERP panels instead of a marketing hero', () => {
 });
 
 test('static dashboard exposes onboarding and master-data workflows', () => {
-  for (const text of ['Checklist de mise en service', 'Ajouter client', 'Ajouter article', 'Nom client', 'Prix vente', 'Creer devis', 'Avoir', 'Releve client', 'Payer solde']) {
+  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Nom client', 'Prix vente', 'Créer devis', 'Avoir', 'Relevé client', 'Payer solde']) {
     assert.ok(staticPage.includes(text), `${text} workflow is present`);
+  }
+  for (const text of ['Comptabilisée', 'Payée', 'Facture', 'Paiement', 'Marchandise']) {
+    assert.ok(staticPage.includes(text), `${text} French label is present`);
   }
   assert.ok(staticCss.includes('.compactForm'));
   assert.ok(staticCss.includes('.salesFlowActions'));

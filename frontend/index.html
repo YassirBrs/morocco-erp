@@ -13,21 +13,21 @@
           <span class="brandMark">ME</span>
           <div>
             <strong>Morocco ERP</strong>
-            <small>ERP SaaS Maroc</small>
+            <small>ERP SaaS marocain</small>
           </div>
         </div>
 
         <nav aria-label="Navigation principale">
-          <a class="active"><span>Tableau de bord</span><strong>Vue live</strong></a>
+          <a class="active"><span>Tableau de bord</span><strong>Vue en direct</strong></a>
           <a><span>Ventes</span><strong>Factures</strong></a>
           <a><span>Stock</span><strong>CUMP</strong></a>
-          <a><span>Comptabilite</span><strong>PCGE</strong></a>
+          <a><span>Comptabilité</span><strong>PCGE</strong></a>
           <a><span>Paie</span><strong>CNSS</strong></a>
-          <a><span>Conformite</span><strong>DGI</strong></a>
+          <a><span>Conformité</span><strong>DGI</strong></a>
         </nav>
 
         <div class="sidebarNote">
-          <span>Tenant demo</span>
+          <span>Espace démo</span>
           <strong>tenant-demo</strong>
         </div>
       </aside>
@@ -35,7 +35,7 @@
       <section class="workspace">
         <header class="topbar">
           <div class="titleBlock">
-            <p class="eyebrow">Workspace actif</p>
+            <p class="eyebrow">Espace actif</p>
             <h1 id="tradeName">Chargement...</h1>
             <div id="identity" class="identity"></div>
           </div>
@@ -44,24 +44,24 @@
               <span id="plan"></span>
               <strong id="status"></strong>
             </div>
-            <button id="createInvoice">Creer une facture test</button>
+            <button id="createInvoice">Créer une facture test</button>
           </div>
         </header>
 
         <div id="message" class="message" hidden></div>
 
         <section class="kpis" aria-label="Indicateurs">
-          <div><span>Chiffre facture</span><strong id="revenue">0 MAD</strong><small>Factures postees</small></div>
-          <div><span>A encaisser</span><strong id="receivables">0 MAD</strong><small>Solde client ouvert</small></div>
+          <div><span>Chiffre facturé</span><strong id="revenue">0 MAD</strong><small>Factures comptabilisées</small></div>
+          <div><span>À encaisser</span><strong id="receivables">0 MAD</strong><small>Solde client ouvert</small></div>
           <div><span>Valeur stock</span><strong id="stockValue">0 MAD</strong><small>CUMP multi-articles</small></div>
-          <div><span>Factures</span><strong id="invoices">0</strong><small>Numerotation continue</small></div>
+          <div><span>Factures</span><strong id="invoices">0</strong><small>Numérotation continue</small></div>
         </section>
 
         <section class="panel setupPanel">
           <div class="panelHeader">
             <div>
-              <p class="eyebrow">Onboarding entreprise</p>
-              <h2>Checklist de mise en service</h2>
+              <p class="eyebrow">Paramétrage entreprise</p>
+              <h2>Liste de mise en service</h2>
             </div>
             <span id="setupBadge" class="badge">0/0</span>
           </div>
@@ -78,7 +78,7 @@
               <span class="badge">Automatique</span>
             </div>
             <div class="workflow">
-              <span class="done">Lead</span>
+              <span class="done">Prospect</span>
               <span class="done">Devis</span>
               <span>Commande</span>
               <span>BL</span>
@@ -87,28 +87,28 @@
               <span>Journal</span>
             </div>
             <div class="salesFlowActions" aria-label="Actions commerciales">
-              <button id="createQuote">Creer devis</button>
+              <button id="createQuote">Créer devis</button>
               <button id="approveQuote">Approuver</button>
               <button id="convertQuoteToOrder">Commande</button>
               <button id="createDelivery">BL</button>
               <button id="invoiceOrder">Facturer</button>
               <button id="createCreditNote">Avoir</button>
               <button id="payInvoice">Payer solde</button>
-              <button id="refreshStatement">Releve client</button>
+              <button id="refreshStatement">Relevé client</button>
             </div>
             <div id="salesFlowState" class="flowState"></div>
             <div class="resultLine">
-              <span>Derniere operation</span>
-              <strong id="invoiceResult">Aucune facture creee dans cette session</strong>
+              <span>Dernière opération</span>
+              <strong id="invoiceResult">Aucune facture créée dans cette session</strong>
             </div>
             <div class="statementBox">
               <div class="statementHeader">
-                <span>Releve Rabat Retail SARL</span>
+                <span>Relevé Rabat Retail SARL</span>
                 <strong id="statementBalance">0 MAD</strong>
               </div>
               <div class="tableWrap">
                 <table class="miniTable statementTable">
-                  <thead><tr><th>Type</th><th>Piece</th><th>Debit</th><th>Credit</th><th>Solde</th></tr></thead>
+                  <thead><tr><th>Type</th><th>Pièce</th><th>Débit</th><th>Crédit</th><th>Solde</th></tr></thead>
                   <tbody id="statementRows"></tbody>
                 </table>
               </div>
@@ -118,13 +118,13 @@
           <div class="panel compliancePanel">
             <div class="panelHeader">
               <div>
-                <p class="eyebrow">Regles versionnees</p>
-                <h2>Conformite Maroc</h2>
+                <p class="eyebrow">Règles versionnées</p>
+                <h2>Conformité Maroc</h2>
               </div>
-              <span class="badge green">Pret export</span>
+              <span class="badge green">Prêt export</span>
             </div>
             <dl class="complianceFacts">
-              <div><dt>Rule pack</dt><dd id="rules">MA-2026</dd></div>
+              <div><dt>Règles Maroc</dt><dd id="rules">MA-2026</dd></div>
               <div><dt>Ville fiscale</dt><dd id="city">-</dd></div>
             </dl>
             <ul id="mentions" class="checks"></ul>
@@ -135,7 +135,7 @@
           <div class="panel">
             <div class="panelHeader">
               <div>
-                <p class="eyebrow">Donnees de base</p>
+                <p class="eyebrow">Données de base</p>
                 <h2>Clients</h2>
               </div>
               <span id="customerCount" class="badge">0</span>
@@ -144,13 +144,13 @@
               <label class="field"><span>Nom client</span><input name="name" required placeholder="Client SARL" /></label>
               <label class="field"><span>ICE</span><input name="ice" placeholder="001..." /></label>
               <label class="field"><span>Email</span><input name="email" type="email" placeholder="finance@client.ma" /></label>
-              <label class="field"><span>Delai paiement</span><input name="paymentTermsDays" type="number" min="0" value="30" /></label>
-              <label class="field"><span>Plafond credit</span><input name="creditLimit" type="number" min="0" value="0" /></label>
+              <label class="field"><span>Délai paiement</span><input name="paymentTermsDays" type="number" min="0" value="30" /></label>
+              <label class="field"><span>Plafond crédit</span><input name="creditLimit" type="number" min="0" value="0" /></label>
               <button type="submit">Ajouter client</button>
             </form>
             <div class="tableWrap">
               <table class="miniTable">
-                <thead><tr><th>Client</th><th>ICE</th><th>Delai</th><th>Credit</th></tr></thead>
+                <thead><tr><th>Client</th><th>ICE</th><th>Délai</th><th>Crédit</th></tr></thead>
                 <tbody id="customerRows"></tbody>
               </table>
             </div>
@@ -167,10 +167,10 @@
             <form id="productForm" class="compactForm productForm">
               <label class="field"><span>SKU</span><input name="sku" required placeholder="SKU-DEMO" /></label>
               <label class="field"><span>Article</span><input name="name" required placeholder="Produit ou service" /></label>
-              <label class="field"><span>Type</span><select name="type"><option value="GOODS">Marchandise</option><option value="SERVICE">Service</option><option value="RAW_MATERIAL">Matiere</option><option value="FINISHED_GOOD">Produit fini</option></select></label>
-              <label class="field"><span>Unite</span><input name="unit" value="unite" /></label>
+              <label class="field"><span>Type</span><select name="type"><option value="GOODS">Marchandise</option><option value="SERVICE">Service</option><option value="RAW_MATERIAL">Matière</option><option value="FINISHED_GOOD">Produit fini</option></select></label>
+              <label class="field"><span>Unité</span><input name="unit" value="unité" /></label>
               <label class="field"><span>Prix vente</span><input name="salePrice" type="number" min="0" required value="0" /></label>
-              <label class="field"><span>Cout achat</span><input name="purchaseCost" type="number" min="0" value="0" /></label>
+              <label class="field"><span>Coût achat</span><input name="purchaseCost" type="number" min="0" value="0" /></label>
               <label class="field"><span>TVA</span><select name="vatRate"><option value="0.2">20%</option><option value="0.14">14%</option><option value="0.1">10%</option><option value="0.07">7%</option><option value="0">0%</option></select></label>
               <label class="field"><span>Stock initial</span><input name="stockOnHand" type="number" min="0" value="0" /></label>
               <label class="checkField"><input name="trackStock" type="checkbox" checked /> Suivi stock</label>
@@ -192,10 +192,10 @@
                 <p class="eyebrow">Inventaire</p>
                 <h2>Stock et CUMP</h2>
               </div>
-              <span class="badge">Temps reel</span>
+              <span class="badge">Temps réel</span>
             </div>
             <table>
-              <thead><tr><th>SKU</th><th>Article</th><th>Qte</th><th>CUMP</th><th>Valeur</th></tr></thead>
+              <thead><tr><th>SKU</th><th>Article</th><th>Qté</th><th>CUMP</th><th>Valeur</th></tr></thead>
               <tbody id="stockRows"></tbody>
             </table>
           </div>
@@ -209,8 +209,8 @@
             </div>
             <div class="moduleList">
               <div><strong>Ventes</strong><span>Devis, BL, factures, paiements</span></div>
-              <div><strong>Achats</strong><span>Receptions, fournisseurs, stock</span></div>
-              <div><strong>Comptabilite</strong><span>Journaux PCGE, periodes, audit</span></div>
+              <div><strong>Achats</strong><span>Réceptions, fournisseurs, stock</span></div>
+              <div><strong>Comptabilité</strong><span>Journaux PCGE, périodes, audit</span></div>
               <div><strong>Paie</strong><span>IR, CNSS, AMO, Damancom</span></div>
               <div><strong>POS</strong><span>Caisse, tickets, mouvements stock</span></div>
               <div><strong>Production</strong><span>OF, composants, valorisation</span></div>
@@ -227,6 +227,42 @@
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
       const state = { quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], statement: null };
+      const labels = {
+        plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
+        statuses: {
+          ACTIVE: 'Actif',
+          SUSPENDED: 'Suspendu',
+          DRAFT: 'Brouillon',
+          REVISED: 'Révisé',
+          APPROVED: 'Approuvé',
+          CONVERTED: 'Converti',
+          CONFIRMED: 'Confirmée',
+          DELIVERED: 'Livrée',
+          INVOICED: 'Facturée',
+          POSTED: 'Comptabilisée',
+          PAID: 'Payée',
+          CANCELLED: 'Annulée',
+          VOID: 'Annulée',
+          PREPARED: 'Préparé'
+        },
+        productTypes: {
+          GOODS: 'Marchandise',
+          SERVICE: 'Service',
+          RAW_MATERIAL: 'Matière première',
+          FINISHED_GOOD: 'Produit fini'
+        },
+        statementTypes: {
+          INVOICE: 'Facture',
+          CREDIT_NOTE: 'Avoir',
+          PAYMENT: 'Paiement'
+        },
+        paymentMethods: {
+          BANK: 'Banque',
+          CASH: 'Espèces',
+          CARD: 'Carte'
+        }
+      };
+      const translate = (group, value) => labels[group][value] || value;
 
       async function get(path) {
         const response = await fetch(API + path, { headers });
@@ -290,8 +326,8 @@
           ['Patente', entity.patente]
         ].map(([label, value]) => `<span><b>${label}</b>${value}</span>`).join('');
         qs('#city').textContent = entity.city;
-        qs('#plan').textContent = summary.tenant.plan;
-        qs('#status').textContent = summary.tenant.status;
+        qs('#plan').textContent = translate('plans', summary.tenant.plan);
+        qs('#status').textContent = translate('statuses', summary.tenant.status);
         qs('#revenue').textContent = mad(summary.metrics.revenue);
         qs('#receivables').textContent = mad(summary.metrics.receivables);
         qs('#stockValue').textContent = mad(summary.metrics.stockValue);
@@ -304,7 +340,7 @@
         qs('#setupBadge').className = setup.ready ? 'badge green' : 'badge';
         qs('#setupList').innerHTML = setup.checks.map((check) => `
           <div class="${check.complete ? 'complete' : ''}">
-            <span>${check.complete ? 'OK' : 'A faire'}</span>
+            <span>${check.complete ? 'OK' : 'À faire'}</span>
             <strong>${check.label}</strong>
           </div>
         `).join('');
@@ -316,17 +352,17 @@
             <td>${customer.paymentTermsDays} j</td>
             <td>${mad(customer.creditLimit || 0)}</td>
           </tr>
-        `).join('') : emptyRow('Aucun client cree', 4);
+        `).join('') : emptyRow('Aucun client créé', 4);
         qs('#productCount').textContent = products.filter((product) => product.active).length;
         qs('#productRows').innerHTML = products.length ? products.map((product) => `
           <tr class="${product.active ? '' : 'mutedRow'}">
             <td><strong>${product.sku}</strong></td>
             <td>${product.name}</td>
-            <td>${product.type}</td>
+            <td>${translate('productTypes', product.type)}</td>
             <td>${mad(product.salePrice)}</td>
             <td>${pct(product.vatRate)}</td>
           </tr>
-        `).join('') : emptyRow('Aucun article cree', 5);
+        `).join('') : emptyRow('Aucun article créé', 5);
         qs('#stockRows').innerHTML = stock.map((line) => `
           <tr>
             <td><strong>${line.sku}</strong></td>
@@ -363,10 +399,10 @@
         const invoice = latest(state.invoices);
         const creditNote = latest(state.creditNotes);
         qs('#salesFlowState').innerHTML = [
-          ['Devis', quote ? `${quote.number} R${quote.revision} ${quote.status}` : '-'],
-          ['Commande', order ? `${order.number} ${order.status}` : '-'],
-          ['BL', delivery ? `${delivery.number} ${delivery.status}` : '-'],
-          ['Facture', invoice ? `${invoice.number} ${invoice.status}` : '-'],
+          ['Devis', quote ? `${quote.number} R${quote.revision} ${translate('statuses', quote.status)}` : '-'],
+          ['Commande', order ? `${order.number} ${translate('statuses', order.status)}` : '-'],
+          ['BL', delivery ? `${delivery.number} ${translate('statuses', delivery.status)}` : '-'],
+          ['Facture', invoice ? `${invoice.number} ${translate('statuses', invoice.status)}` : '-'],
           ['Avoir', creditNote ? `${creditNote.number} ${mad(creditNote.totals.total)}` : '-']
         ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join('');
       }
@@ -376,13 +412,13 @@
         qs('#statementBalance').textContent = mad(state.statement.totals.balance);
         qs('#statementRows').innerHTML = state.statement.entries.length ? state.statement.entries.slice(-5).map((entry) => `
           <tr>
-            <td>${entry.type}</td>
+            <td>${translate('statementTypes', entry.type)}</td>
             <td><strong>${entry.number}</strong></td>
             <td>${entry.debit ? mad(entry.debit) : '-'}</td>
             <td>${entry.credit ? mad(entry.credit) : '-'}</td>
             <td>${mad(entry.balance)}</td>
           </tr>
-        `).join('') : emptyRow('Aucune ecriture client', 5);
+        `).join('') : emptyRow('Aucune écriture client', 5);
       }
 
       async function runAction(buttonSelector, loadingText, action) {
@@ -407,77 +443,77 @@
       qs('#createInvoice').addEventListener('click', async () => {
         const button = qs('#createInvoice');
         button.disabled = true;
-        button.textContent = 'Creation...';
+        button.textContent = 'Création...';
         clearMessage();
         try {
           const invoice = await post('/sales/invoices', { customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
-          qs('#invoiceResult').textContent = `${invoice.number} · ${mad(invoice.totals.total)} · ${invoice.status}`;
-          showMessage('success', `Facture ${invoice.number} creee et comptabilisee.`);
+          qs('#invoiceResult').textContent = `${invoice.number} · ${mad(invoice.totals.total)} · ${translate('statuses', invoice.status)}`;
+          showMessage('success', `Facture ${invoice.number} créée et comptabilisée.`);
           await load();
         } catch (error) {
           showMessage('error', error.message);
         } finally {
           button.disabled = false;
-          button.textContent = 'Creer une facture test';
+          button.textContent = 'Créer une facture test';
         }
       });
 
       qs('#createQuote').addEventListener('click', async () => {
-        await runAction('#createQuote', 'Creation...', async () => {
+        await runAction('#createQuote', 'Création...', async () => {
           const quote = await post('/sales/quotes', { customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
-          qs('#invoiceResult').textContent = `${quote.number} · ${mad(quote.totals.total)} · ${quote.status}`;
-          showMessage('success', `Devis ${quote.number} cree.`);
+          qs('#invoiceResult').textContent = `${quote.number} · ${mad(quote.totals.total)} · ${translate('statuses', quote.status)}`;
+          showMessage('success', `Devis ${quote.number} créé.`);
         });
       });
 
       qs('#approveQuote').addEventListener('click', async () => {
         await runAction('#approveQuote', 'Approbation...', async () => {
           const quote = latest(state.quotes);
-          if (!quote) throw new Error('Aucun devis a approuver');
+          if (!quote) throw new Error('Aucun devis à approuver');
           const approved = await post(`/sales/quotes/${quote.id}/approve`, {});
-          qs('#invoiceResult').textContent = `${approved.number} · revision ${approved.revision} · ${approved.status}`;
-          showMessage('success', `Devis ${approved.number} approuve.`);
+          qs('#invoiceResult').textContent = `${approved.number} · révision ${approved.revision} · ${translate('statuses', approved.status)}`;
+          showMessage('success', `Devis ${approved.number} approuvé.`);
         });
       });
 
       qs('#convertQuoteToOrder').addEventListener('click', async () => {
         await runAction('#convertQuoteToOrder', 'Conversion...', async () => {
           const quote = [...state.quotes].reverse().find((candidate) => candidate.status === 'APPROVED');
-          if (!quote) throw new Error('Aucun devis approuve a convertir');
+          if (!quote) throw new Error('Aucun devis approuvé à convertir');
           const order = await post(`/sales/quotes/${quote.id}/convert-to-order`, {});
-          qs('#invoiceResult').textContent = `${order.number} · ${mad(order.totals.total)} · ${order.status}`;
-          showMessage('success', `Commande ${order.number} creee avec reservation stock.`);
+          qs('#invoiceResult').textContent = `${order.number} · ${mad(order.totals.total)} · ${translate('statuses', order.status)}`;
+          showMessage('success', `Commande ${order.number} créée avec réservation stock.`);
         });
       });
 
       qs('#createDelivery').addEventListener('click', async () => {
         await runAction('#createDelivery', 'BL...', async () => {
           const order = [...state.orders].reverse().find((candidate) => candidate.status === 'CONFIRMED');
-          if (!order) throw new Error('Aucune commande confirmee a livrer');
+          if (!order) throw new Error('Aucune commande confirmée à livrer');
           const delivery = await post(`/sales/orders/${order.id}/delivery-notes`, {});
-          qs('#invoiceResult').textContent = `${delivery.number} · ${mad(delivery.totals.total)} · ${delivery.status}`;
-          showMessage('success', `Bon de livraison ${delivery.number} poste.`);
+          qs('#invoiceResult').textContent = `${delivery.number} · ${mad(delivery.totals.total)} · ${translate('statuses', delivery.status)}`;
+          showMessage('success', `Bon de livraison ${delivery.number} comptabilisé.`);
         });
       });
 
       qs('#invoiceOrder').addEventListener('click', async () => {
         await runAction('#invoiceOrder', 'Facturation...', async () => {
           const order = [...state.orders].reverse().find((candidate) => candidate.status === 'DELIVERED');
-          if (!order) throw new Error('Aucune commande livree a facturer');
+          if (!order) throw new Error('Aucune commande livrée à facturer');
           const invoice = await post(`/sales/orders/${order.id}/invoice`, {});
-          qs('#invoiceResult').textContent = `${invoice.number} · ${mad(invoice.totals.total)} · ${invoice.status}`;
-          showMessage('success', `Facture ${invoice.number} creee depuis commande.`);
+          qs('#invoiceResult').textContent = `${invoice.number} · ${mad(invoice.totals.total)} · ${translate('statuses', invoice.status)}`;
+          showMessage('success', `Facture ${invoice.number} créée depuis commande.`);
         });
       });
 
       qs('#payInvoice').addEventListener('click', async () => {
         await runAction('#payInvoice', 'Paiement...', async () => {
           const invoice = latestInvoiceWithBalance();
-          if (!invoice) throw new Error('Aucune facture ouverte a payer');
+          if (!invoice) throw new Error('Aucune facture ouverte à payer');
           const amount = Number((invoice.totals.total - invoice.paidAmount - invoiceCreditTotal(invoice.id)).toFixed(2));
           const payment = await post('/sales/payments', { invoiceId: invoice.id, amount, method: 'BANK' });
-          qs('#invoiceResult').textContent = `${invoice.number} · paiement ${mad(payment.amount)} · BANK`;
-          showMessage('success', `Paiement de ${mad(payment.amount)} enregistre.`);
+          qs('#invoiceResult').textContent = `${invoice.number} · paiement ${mad(payment.amount)} · ${translate('paymentMethods', payment.method)}`;
+          showMessage('success', `Paiement de ${mad(payment.amount)} enregistré.`);
         });
       });
 
@@ -492,16 +528,16 @@
             reason: 'Avoir commercial',
             lines: [{ productId: firstLine.productId, quantity }]
           });
-          qs('#invoiceResult').textContent = `${creditNote.number} · ${mad(creditNote.totals.total)} · ${creditNote.status}`;
-          showMessage('success', `Avoir ${creditNote.number} comptabilise.`);
+          qs('#invoiceResult').textContent = `${creditNote.number} · ${mad(creditNote.totals.total)} · ${translate('statuses', creditNote.status)}`;
+          showMessage('success', `Avoir ${creditNote.number} comptabilisé.`);
         });
       });
 
       qs('#refreshStatement').addEventListener('click', async () => {
-        await runAction('#refreshStatement', 'Releve...', async () => {
+        await runAction('#refreshStatement', 'Relevé...', async () => {
           state.statement = await get('/sales/customers/cus-1/statement');
           renderStatement();
-          showMessage('success', `Releve client prepare avec solde ${mad(state.statement.totals.balance)}.`);
+          showMessage('success', `Relevé client préparé avec solde ${mad(state.statement.totals.balance)}.`);
         });
       });
 
@@ -523,7 +559,7 @@
           formEl.reset();
           formEl.paymentTermsDays.value = 30;
           formEl.creditLimit.value = 0;
-          showMessage('success', `Client ${customer.name} ajoute.`);
+          showMessage('success', `Client ${customer.name} ajouté.`);
           await load();
         } catch (error) {
           showMessage('error', error.message);
@@ -553,13 +589,13 @@
           });
           formEl.reset();
           formEl.type.value = 'GOODS';
-          formEl.unit.value = 'unite';
+          formEl.unit.value = 'unité';
           formEl.salePrice.value = 0;
           formEl.purchaseCost.value = 0;
           formEl.vatRate.value = 0.2;
           formEl.stockOnHand.value = 0;
           formEl.trackStock.checked = true;
-          showMessage('success', `Article ${product.sku} ajoute au catalogue.`);
+          showMessage('success', `Article ${product.sku} ajouté au catalogue.`);
           await load();
         } catch (error) {
           showMessage('error', error.message);

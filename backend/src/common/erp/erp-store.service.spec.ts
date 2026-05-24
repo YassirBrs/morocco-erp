@@ -88,7 +88,7 @@ describe('ErpStoreService working ERP workflows', () => {
 
     expect(payment.amount).toBe(invoice.totals.total);
     expect(store.listInvoices()[0].status).toBe('PAID');
-    expect(store.listJournalEntries().some((entry) => entry.description.includes('Payment'))).toBe(true);
+    expect(store.listJournalEntries().some((entry) => entry.description.includes('Paiement'))).toBe(true);
   });
 
   it('rejects overpayments and keeps customer receivables accurate for partial payments', () => {
@@ -209,7 +209,7 @@ describe('ErpStoreService working ERP workflows', () => {
 
     expect(tx.number).toMatch(/^POS-/);
     expect(store.listStock().find((line) => line.productId === 'prd-1')?.stockOnHand).toBe(49);
-    expect(store.listJournalEntries()[0].description).toContain('POS ticket');
+    expect(store.listJournalEntries()[0].description).toContain('Ticket POS');
   });
 
   it('completes production by consuming raw material and receiving finished goods', () => {
