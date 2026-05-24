@@ -99,32 +99,42 @@ nav {
   gap: 7px;
 }
 
-nav a {
+.navItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-height: auto;
+  border: 0;
   border-radius: 8px;
+  background: transparent;
   color: var(--ink);
   cursor: default;
+  font: inherit;
   padding: 10px 12px;
   text-decoration: none;
+  text-align: left;
 }
 
-nav a strong {
+.navItem strong {
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
 }
 
-nav a.active {
+.navItem.active {
   background: var(--blue-soft);
   color: var(--primary);
   font-weight: 700;
 }
 
-nav a.active strong {
+.navItem.active strong {
+  color: var(--primary);
+}
+
+.navItem:hover {
+  background: var(--blue-soft);
   color: var(--primary);
 }
 
@@ -141,6 +151,10 @@ nav a.active strong {
   gap: 18px;
   align-content: start;
   padding: 24px;
+}
+
+.viewHidden {
+  display: none !important;
 }
 
 .topbar {
@@ -704,7 +718,7 @@ tbody tr:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  nav a {
+  .navItem {
     align-items: flex-start;
     flex-direction: column;
     gap: 5px;

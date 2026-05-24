@@ -37,6 +37,19 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('/inventory/products'));
 });
 
+test('static dashboard uses sidebar module navigation instead of showing one compacted page', () => {
+  for (const view of ['dashboard', 'sales', 'crm', 'stock', 'accounting', 'payroll', 'compliance']) {
+    assert.ok(staticPage.includes(`data-view="${view}"`), `${view} navigation item exists`);
+  }
+  for (const marker of ['data-view-section="dashboard"', 'data-view-section="sales stock"', 'data-view-section="crm stock"', 'data-view-section="sales accounting compliance"']) {
+    assert.ok(staticPage.includes(marker), `${marker} section marker exists`);
+  }
+  assert.ok(staticPage.includes('switchModuleView(state.activeView)'));
+  assert.ok(staticPage.includes("section.classList.toggle('viewHidden'"));
+  assert.ok(staticCss.includes('.viewHidden'));
+  assert.ok(staticCss.includes('.navItem.active'));
+});
+
 test('layout uses dense ERP panels instead of a marketing hero', () => {
   assert.ok(css.includes('.shell'));
   assert.ok(css.includes('.gridTwo'));

@@ -219,4 +219,4 @@ This backlog contains concrete tasks to improve the app from the current working
                 Map these colors using clean, semantic names so they cascade correctly across the application (especially on tables, sidebar navigation, buttons, and form inputs).
 
                 Modify the files directly. Once done, reply with a brief summary of the modified files and a diff of the changes.
-- [ ] T135 P2 - don't campact every module in one page . use sidebar to navigate between modules
+- [x] T135 P2 - don't campact every module in one page . use sidebar to navigate between modules

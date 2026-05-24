@@ -18,12 +18,13 @@
         </div>
 
         <nav aria-label="Navigation principale">
-          <a class="active"><span>Tableau de bord</span><strong>Vue en direct</strong></a>
-          <a><span>Ventes</span><strong>Factures</strong></a>
-          <a><span>Stock</span><strong>CUMP</strong></a>
-          <a><span>Comptabilité</span><strong>PCGE</strong></a>
-          <a><span>Paie</span><strong>CNSS</strong></a>
-          <a><span>Conformité</span><strong>DGI</strong></a>
+          <button class="navItem active" data-view="dashboard" type="button"><span>Tableau de bord</span><strong>Vue en direct</strong></button>
+          <button class="navItem" data-view="sales" type="button"><span>Ventes</span><strong>Factures</strong></button>
+          <button class="navItem" data-view="crm" type="button"><span>CRM</span><strong>Prospects</strong></button>
+          <button class="navItem" data-view="stock" type="button"><span>Stock</span><strong>CUMP</strong></button>
+          <button class="navItem" data-view="accounting" type="button"><span>Comptabilité</span><strong>PCGE</strong></button>
+          <button class="navItem" data-view="payroll" type="button"><span>Paie</span><strong>CNSS</strong></button>
+          <button class="navItem" data-view="compliance" type="button"><span>Conformité</span><strong>DGI</strong></button>
         </nav>
 
         <div class="sidebarNote">
@@ -50,14 +51,14 @@
 
         <div id="message" class="message" hidden></div>
 
-        <section class="kpis" aria-label="Indicateurs">
+        <section class="kpis" aria-label="Indicateurs" data-view-section="dashboard">
           <div><span>Chiffre facturé</span><strong id="revenue">0 MAD</strong><small>Factures comptabilisées</small></div>
           <div><span>À encaisser</span><strong id="receivables">0 MAD</strong><small>Solde client ouvert</small></div>
           <div><span>Valeur stock</span><strong id="stockValue">0 MAD</strong><small>CUMP multi-articles</small></div>
           <div><span>Factures</span><strong id="invoices">0</strong><small>Numérotation continue</small></div>
         </section>
 
-        <section class="panel setupPanel">
+        <section class="panel setupPanel" data-view-section="dashboard compliance">
           <div class="panelHeader">
             <div>
               <p class="eyebrow">Paramétrage entreprise</p>
@@ -68,7 +69,7 @@
           <div id="setupList" class="setupList"></div>
         </section>
 
-        <section class="panel profilePanel">
+        <section class="panel profilePanel" data-view-section="dashboard accounting compliance">
           <div class="panelHeader">
             <div>
               <p class="eyebrow">Gouvernance tenant</p>
@@ -105,7 +106,7 @@
           </div>
         </section>
 
-        <section class="operations">
+        <section class="operations" data-view-section="sales accounting compliance">
           <div class="panel commercialPanel">
             <div class="panelHeader">
               <div>
@@ -168,7 +169,7 @@
           </div>
         </section>
 
-        <section class="masterGrid">
+        <section class="masterGrid" data-view-section="sales stock">
           <div class="panel">
             <div class="panelHeader">
               <div>
@@ -222,7 +223,7 @@
           </div>
         </section>
 
-        <section class="masterGrid">
+        <section class="masterGrid" data-view-section="crm stock">
           <div class="panel">
             <div class="panelHeader">
               <div>
@@ -275,7 +276,7 @@
           </div>
         </section>
 
-        <section class="lowerGrid">
+        <section class="lowerGrid" data-view-section="dashboard stock payroll accounting">
           <div class="panel stockPanel">
             <div class="panelHeader">
               <div>
@@ -316,7 +317,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -450,6 +451,7 @@
         renderProfile();
         renderSalesFlow();
         renderStatement();
+        switchModuleView(state.activeView);
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
         qs('#setupBadge').className = setup.ready ? 'badge green' : 'badge';
         qs('#setupList').innerHTML = setup.checks.map((check) => `
@@ -570,6 +572,17 @@
         qs('#auditSummary').textContent = `${profileAuditCount} événement${profileAuditCount > 1 ? 's' : ''}`;
       }
 
+      function switchModuleView(view) {
+        state.activeView = view;
+        document.querySelectorAll('[data-view]').forEach((item) => {
+          item.classList.toggle('active', item.dataset.view === view);
+        });
+        document.querySelectorAll('[data-view-section]').forEach((section) => {
+          const views = section.dataset.viewSection.split(' ');
+          section.classList.toggle('viewHidden', !views.includes(view));
+        });
+      }
+
       async function runAction(buttonSelector, loadingText, action) {
         const button = qs(buttonSelector);
         const original = button.textContent;
@@ -605,6 +618,10 @@
           button.disabled = false;
           button.textContent = 'Créer une facture test';
         }
+      });
+
+      document.querySelectorAll('[data-view]').forEach((item) => {
+        item.addEventListener('click', () => switchModuleView(item.dataset.view));
       });
 
       qs('#createQuote').addEventListener('click', async () => {
