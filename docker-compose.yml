@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:16
     container_name: morocco-erp-postgres
+    profiles: ["dev", "test", "local-prod"]
     environment:
       POSTGRES_DB: morocco_erp
       POSTGRES_USER: morocco_erp
@@ -10,6 +11,61 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morocco_erp -d morocco_erp"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  postgres_test:
+    image: postgres:16
+    container_name: morocco-erp-postgres-test
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: morocco_erp_test
+      POSTGRES_USER: morocco_erp
+      POSTGRES_PASSWORD: morocco_erp
+    ports:
+      - "55432:5432"
+
+  backend:
+    image: node:22-alpine
+    container_name: morocco-erp-backend
+    profiles: ["local-prod"]
+    working_dir: /app
+    command: sh -c "npm --prefix backend ci && npm --prefix backend run build && PORT=3100 node backend/dist/main.js"
+    environment:
+      NODE_ENV: production
+      PORT: "3100"
+      DATABASE_URL: postgresql://morocco_erp:morocco_erp@postgres:5432/morocco_erp
+      JWT_SECRET: local-prod-jwt-change-me
+      AUTH_SECRET: local-prod-auth-change-me
+      STORAGE_PROVIDER: LOCAL_DEV
+      ALLOWED_ORIGINS: http://localhost:3001
+      NEXT_PUBLIC_API_URL: http://localhost:3100
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3100:3100"
+    volumes:
+      - .:/app
+
+  frontend:
+    image: node:22-alpine
+    container_name: morocco-erp-frontend
+    profiles: ["local-prod"]
+    working_dir: /app
+    command: sh -c "npm --prefix frontend ci && npm --prefix frontend run build && npm --prefix frontend run start"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3100
+      NEXT_PUBLIC_TENANT_ID: tenant-demo
+    depends_on:
+      - backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
 
 volumes:
   postgres_data:

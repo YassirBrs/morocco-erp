@@ -5,6 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prisma:generate": "npx --yes prisma@5.22.0 generate --schema prisma/schema.prisma",
+    "prisma:migrate:dev": "npx --yes prisma@5.22.0 migrate dev --schema prisma/schema.prisma",
+    "prisma:migrate:deploy": "npx --yes prisma@5.22.0 migrate deploy --schema prisma/schema.prisma",
+    "prisma:seed": "psql \"$DATABASE_URL\" -f prisma/seed.sql",
     "test": "jest --config jest.config.js",
     "test:watch": "jest --config jest.config.js --watch",
     "test:cov": "jest --config jest.config.js --coverage"

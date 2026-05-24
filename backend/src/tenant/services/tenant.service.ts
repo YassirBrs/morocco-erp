@@ -77,6 +77,86 @@ export class TenantService {
     return this.store.acceptanceScenarios();
   }
 
+  productionPersistence() {
+    return this.store.productionPersistenceConfig();
+  }
+
+  environmentCheck() {
+    return this.store.environmentCheck();
+  }
+
+  structuredLogs() {
+    return this.store.structuredLogEntries();
+  }
+
+  metrics() {
+    return this.store.metricsSnapshot();
+  }
+
+  backupPlan() {
+    return this.store.backupPlan();
+  }
+
+  requestBackup() {
+    return this.store.requestBackup();
+  }
+
+  restoreRehearsal(data: any) {
+    return this.store.restoreRehearsal(data);
+  }
+
+  stagingDeployment() {
+    return this.store.stagingDeployment();
+  }
+
+  jobs() {
+    return this.store.listBackgroundJobs();
+  }
+
+  enqueueJob(data: any) {
+    return this.store.enqueueBackgroundJob(data);
+  }
+
+  runNextJob() {
+    return this.store.runNextBackgroundJob();
+  }
+
+  featureFlags() {
+    return this.store.listFeatureFlags();
+  }
+
+  updateFeatureFlag(data: any) {
+    return this.store.updateFeatureFlag(data);
+  }
+
+  pricingPlans() {
+    return this.store.pricingPlans();
+  }
+
+  billingStatus() {
+    return this.store.tenantBillingStatus();
+  }
+
+  accountantWorkspace() {
+    return this.store.accountantWorkspace();
+  }
+
+  superAdminWorkspace() {
+    return this.store.superAdminWorkspace();
+  }
+
+  supportDiagnostics() {
+    return this.store.supportDiagnostics();
+  }
+
+  upgradePrompts() {
+    return this.store.upgradePrompts();
+  }
+
+  performanceScenario(data: any) {
+    return this.store.largeTenantPerformanceScenario(data ?? {});
+  }
+
   emails() {
     return this.store.listEmailDeliveries();
   }

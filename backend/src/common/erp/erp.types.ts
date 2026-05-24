@@ -28,6 +28,8 @@ export type PermissionAction = 'READ' | 'WRITE' | 'ADMIN';
 export type ErpModuleKey = 'tenant' | 'auth' | 'crm' | 'sales' | 'inventory' | 'accounting' | 'payroll' | 'pos' | 'production' | 'compliance';
 export type DocumentExportType = 'QUOTE' | 'ORDER' | 'DELIVERY_NOTE' | 'INVOICE' | 'CREDIT_NOTE' | 'PURCHASE_ORDER' | 'PURCHASE_RECEIPT' | 'PAYSLIP';
 export type AdapterKind = 'DGI' | 'CNSS';
+export type BackgroundJobKind = 'PDF' | 'EXPORT' | 'EMAIL' | 'DECLARATION' | 'IMPORT';
+export type BackgroundJobStatus = 'QUEUED' | 'RUNNING' | 'DONE' | 'FAILED';
 
 export interface LocalizedFields {
   arabicName?: string;
@@ -728,6 +730,55 @@ export interface AdapterSubmission {
   createdAt: string;
 }
 
+export interface StructuredLogEntry {
+  id: string;
+  tenantId: string;
+  requestId: string;
+  userId?: string;
+  module: string;
+  action: string;
+  level: 'INFO' | 'WARN' | 'ERROR';
+  message: string;
+  at: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface MetricSample {
+  id: string;
+  tenantId: string;
+  name: 'api_latency_ms' | 'api_error_total' | 'job_failure_total' | 'queue_depth';
+  value: number;
+  module: string;
+  labels: Record<string, string>;
+  capturedAt: string;
+}
+
+export interface BackgroundJob {
+  id: string;
+  tenantId: string;
+  kind: BackgroundJobKind;
+  queue: string;
+  reference: string;
+  status: BackgroundJobStatus;
+  attempts: number;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+  error?: string;
+}
+
+export interface FeatureFlag {
+  id: string;
+  tenantId: string;
+  key: ErpModuleKey;
+  enabled: boolean;
+  rollout: 'OFF' | 'TENANT' | 'GLOBAL';
+  reason: string;
+  updatedAt: string;
+  updatedBy: string;
+}
+
 export interface PosTransaction {
   id: string;
   tenantId: string;
@@ -963,6 +1014,10 @@ export interface TenantWorkspace {
   webhookEvents: WebhookEvent[];
   emailDeliveries: EmailDelivery[];
   adapterSubmissions: AdapterSubmission[];
+  structuredLogs: StructuredLogEntry[];
+  metricSamples: MetricSample[];
+  backgroundJobs: BackgroundJob[];
+  featureFlags: FeatureFlag[];
   posSessions: PosSession[];
   cashDrawerMovements: CashDrawerMovement[];
   posOfflineQueue: PosOfflineQueueItem[];

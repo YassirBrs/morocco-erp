@@ -22,6 +22,26 @@ export class TenantController {
   @Get('file-storage') fileStorage() { return this.tenantService.fileStorage(); }
   @Get('cohort-metrics') cohortMetrics() { return this.tenantService.cohortMetrics(); }
   @Get('acceptance-scenarios') acceptanceScenarios() { return this.tenantService.acceptanceScenarios(); }
+  @Get('production-persistence') productionPersistence() { return this.tenantService.productionPersistence(); }
+  @Get('environment-check') environmentCheck() { return this.tenantService.environmentCheck(); }
+  @Get('operations/logs') structuredLogs() { return this.tenantService.structuredLogs(); }
+  @Get('operations/metrics') metrics() { return this.tenantService.metrics(); }
+  @Get('operations/backup') backupPlan() { return this.tenantService.backupPlan(); }
+  @Post('operations/backup') requestBackup() { return this.tenantService.requestBackup(); }
+  @Post('operations/restore-rehearsal') restoreRehearsal(@Body() body: any) { return this.tenantService.restoreRehearsal(body); }
+  @Get('staging-deployment') stagingDeployment() { return this.tenantService.stagingDeployment(); }
+  @Get('operations/jobs') jobs() { return this.tenantService.jobs(); }
+  @Post('operations/jobs') enqueueJob(@Body() body: any) { return this.tenantService.enqueueJob(body); }
+  @Post('operations/jobs/run-next') runNextJob() { return this.tenantService.runNextJob(); }
+  @Get('feature-flags') featureFlags() { return this.tenantService.featureFlags(); }
+  @Patch('feature-flags') updateFeatureFlag(@Body() body: any) { return this.tenantService.updateFeatureFlag(body); }
+  @Get('pricing-plans') pricingPlans() { return this.tenantService.pricingPlans(); }
+  @Get('billing-status') billingStatus() { return this.tenantService.billingStatus(); }
+  @Get('accountant-workspace') accountantWorkspace() { return this.tenantService.accountantWorkspace(); }
+  @Get('super-admin-workspace') superAdminWorkspace() { return this.tenantService.superAdminWorkspace(); }
+  @Get('support-diagnostics') supportDiagnostics() { return this.tenantService.supportDiagnostics(); }
+  @Get('upgrade-prompts') upgradePrompts() { return this.tenantService.upgradePrompts(); }
+  @Post('performance/large-tenant') performanceScenario(@Body() body: any) { return this.tenantService.performanceScenario(body); }
   @Get('emails') emails() { return this.tenantService.emails(); }
   @Post('emails') queueEmail(@Body() body: any) { return this.tenantService.queueEmail(body); }
   @Get('webhooks') webhooks() { return this.tenantService.webhooks(); }

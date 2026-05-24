@@ -6,6 +6,7 @@ import {
   getIntegrationReadiness,
   getModuleData,
   getOperationalReports,
+  getPlatformReadiness,
   getPayrollSnapshot,
   getSalesDashboard,
   getStock,
@@ -39,7 +40,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -51,6 +52,7 @@ export default async function DashboardPage() {
     searchBusiness('atlas'),
     getOperationalReports(),
     getIntegrationReadiness(),
+    getPlatformReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -242,7 +244,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section className="panel">
+        <section className="panel" aria-label="Rapports et intégrations">
           <PanelHeader title="Rapports et intégrations" action="Préparer exports" />
           <div className="reportGrid">
             <Metric label="Valorisation CUMP" value={formatMad(operationalReports.valuation.totals.value)} />
@@ -268,6 +270,40 @@ export default async function DashboardPage() {
               `Webhooks/API keys: ${integrationReadiness.webhooks.length}/${integrationReadiness.apiKeys.length}`,
               'Rollback: ventes, stock, paie, périodes verrouillées',
             ]} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Opérations SaaS et commercialisation">
+          <PanelHeader title="Opérations SaaS et commercialisation" action="Gérer abonnement" />
+          <div className="reportGrid">
+            <Metric label="PostgreSQL" value={platformReadiness.persistence.provider} />
+            <Metric label="Env production" value={platformReadiness.environment.status} />
+            <Metric label="File jobs" value={String(platformReadiness.metrics.queueDepth)} />
+            <Metric label="Facturation" value={platformReadiness.billing.writeLocked ? 'Verrouillée' : 'Active'} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Migrations Prisma" rows={platformReadiness.persistence.migrationWorkflow} empty="Workflow absent" />
+            <MiniList title="Observabilité" rows={[
+              `Logs structurés ${platformReadiness.logs.length}`,
+              `Erreurs API ${platformReadiness.metrics.apiErrorRatePercent}%`,
+              `Échecs jobs ${platformReadiness.metrics.jobFailures}`,
+              `Backup ${platformReadiness.backup.status}`,
+            ]} empty="-" />
+            <MiniList title="Staging et CI" rows={[
+              `Staging ${platformReadiness.staging.status}`,
+              `Admin protégé ${platformReadiness.staging.protectedAdminAccess ? 'oui' : 'non'}`,
+              `Health checks ${platformReadiness.staging.healthChecks.join(' / ')}`,
+            ]} empty="-" />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Plans tarifaires" rows={platformReadiness.pricing.map((plan) => `${plan.name} · ${formatMad(plan.monthlyMad)} · ${plan.modules.length} modules`)} empty="Aucun plan" />
+            <MiniList title="Feature flags" rows={platformReadiness.flags.slice(0, 6).map((flag) => `${flag.key}: ${flag.enabled ? 'actif' : 'désactivé'} · ${flag.reason}`)} empty="Aucun flag" />
+            <MiniList title="Upgrade prompts" rows={(platformReadiness.upgrades.prompts.length ? platformReadiness.upgrades.prompts : [{ module: 'tenant', reason: platformReadiness.upgrades.status, targetPlan: summary.tenant.plan }]).map((prompt) => `${prompt.module} · ${prompt.reason} · ${prompt.targetPlan}`)} empty="Aucun prompt" />
+          </div>
+          <div className="workspaceGrid" role="list" aria-label="Espaces de travail back-office">
+            <WorkspaceTile title="Espace comptable" detail={`${platformReadiness.accountant.clients.length} client(s), revue TVA/paie/clôture`} />
+            <WorkspaceTile title="Super-admin" detail={`${platformReadiness.superAdmin.tenants.length} tenant(s), règles ${platformReadiness.superAdmin.complianceRuleManagement.activeRulePack}`} />
+            <WorkspaceTile title="Support diagnostics" detail={`${platformReadiness.support.recentAuditLogs.length} audits, ${platformReadiness.support.moduleUsage.length} modules suivis`} />
           </div>
         </section>
 
@@ -344,6 +380,15 @@ function ModuleWorkflow({ title, records }: { title: string; records: string[] }
       </div>
       <MiniList title={title} rows={records} empty="Aucun enregistrement, action de création disponible" />
     </>
+  );
+}
+
+function WorkspaceTile({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="workspaceTile" role="listitem">
+      <strong>{title}</strong>
+      <span>{detail}</span>
+    </div>
   );
 }
 

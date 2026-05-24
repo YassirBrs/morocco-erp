@@ -301,3 +301,40 @@ test('Next primary workspace exposes reporting, adapter, API key, webhook, bank 
     assert.ok(api.includes(endpoint), `${endpoint} reporting/integration API route is wired`);
   }
 });
+
+test('Next primary workspace has component coverage for forms, tables, navigation, actions, and error states', () => {
+  for (const marker of ['function PanelHeader', 'function Metric', 'function DataTable', 'function MiniList', 'function ModuleWorkflow', 'function KeyboardLines', 'function WorkspaceTile']) {
+    assert.ok(page.includes(marker), `${marker} component exists`);
+  }
+  for (const text of ['Navigation principale', 'Commande globale', 'Validation backend', 'Le client est obligatoire', 'La période fiscale est verrouillée', 'Aucune donnée disponible', 'Gérer abonnement']) {
+    assert.ok(page.includes(text), `${text} form/table/navigation/error label is present`);
+  }
+  assert.ok(page.includes('<table>'));
+  assert.ok(page.includes('<thead>'));
+  assert.ok(page.includes('<tbody>'));
+  assert.ok(page.includes('button type="button"'));
+});
+
+test('Next primary workspace includes accessibility checks for navigation, dialogs, forms, tables, and keyboard flows', () => {
+  for (const text of ['aria-label="Navigation principale"', 'aria-label="Recherche globale"', 'aria-describedby="commandHelp"', 'aria-label="Saisie clavier lignes"', 'tabIndex={index + 1}', 'role="list"', 'role="listitem"', 'htmlFor="globalCommand"']) {
+    assert.ok(page.includes(text), `${text} accessibility marker is present`);
+  }
+  for (const cssToken of ['letter-spacing: 0', 'white-space: nowrap', '@media (max-width: 980px)', 'min-height: 38px']) {
+    assert.ok(css.includes(cssToken), `${cssToken} responsive/accessibility style exists`);
+  }
+});
+
+test('Next primary workspace exposes production ops, pricing, billing, accountant, super-admin, support, and upgrade readiness', () => {
+  for (const text of ['Opérations SaaS et commercialisation', 'Migrations Prisma', 'Observabilité', 'Staging et CI', 'Plans tarifaires', 'Feature flags', 'Upgrade prompts', 'Espace comptable', 'Super-admin', 'Support diagnostics']) {
+    assert.ok(page.includes(text), `${text} platform readiness label is present`);
+  }
+  for (const marker of ['getPlatformReadiness', 'platformReadiness.persistence', 'platformReadiness.billing', 'platformReadiness.accountant', 'platformReadiness.superAdmin', 'platformReadiness.support', 'platformReadiness.upgrades']) {
+    assert.ok(page.includes(marker), `${marker} platform helper is present`);
+  }
+  for (const endpoint of ['/tenant/production-persistence', '/tenant/environment-check', '/tenant/operations/logs', '/tenant/operations/metrics', '/tenant/operations/backup', '/tenant/staging-deployment', '/tenant/operations/jobs', '/tenant/feature-flags', '/tenant/pricing-plans', '/tenant/billing-status', '/tenant/accountant-workspace', '/tenant/super-admin-workspace', '/tenant/support-diagnostics', '/tenant/upgrade-prompts']) {
+    assert.ok(api.includes(endpoint), `${endpoint} platform API route is wired`);
+  }
+  for (const cssToken of ['.opsReadiness', '.workspaceGrid', '.workspaceTile']) {
+    assert.ok(css.includes(cssToken), `${cssToken} platform style exists`);
+  }
+});

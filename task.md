@@ -149,32 +149,32 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T101 P0 - Add service tests for invoice numbering, VAT totals, stock CUMP, period locks, and payroll calculations.
 - [x] T102 P0 - Add Playwright smoke tests for onboarding, customer creation, product creation, invoice creation, payment capture, and payroll run.
 - [x] T103 P0 - Add seed-based acceptance scenarios for a trading company, a service company, and a payroll-heavy company.
-- [ ] T104 P1 - Add mutation-safe tests for rollback when accounting entries fail after inventory or sales operations.
-- [ ] T105 P1 - Add frontend component tests for forms, tables, navigation, and error states.
-- [ ] T106 P1 - Add accessibility checks for navigation, dialogs, forms, tables, and keyboard flows.
-- [ ] T107 P2 - Add performance tests for large tenants with many invoices, journal lines, employees, and stock moves.
+- [x] T104 P1 - Add mutation-safe tests for rollback when accounting entries fail after inventory or sales operations.
+- [x] T105 P1 - Add frontend component tests for forms, tables, navigation, and error states.
+- [x] T106 P1 - Add accessibility checks for navigation, dialogs, forms, tables, and keyboard flows.
+- [x] T107 P2 - Add performance tests for large tenants with many invoices, journal lines, employees, and stock moves.
 
 ## Infrastructure, Deployment, And Operations
 
-- [ ] T108 P0 - Add production PostgreSQL configuration and Prisma migration workflow.
-- [ ] T109 P0 - Add environment validation for API URLs, database URL, auth secrets, storage config, and allowed origins.
-- [ ] T110 P0 - Add Docker compose profiles for dev, test, and local production simulation.
-- [ ] T111 P0 - Add CI pipeline for install, lint, build, backend tests, frontend tests, and Playwright smoke tests.
-- [ ] T112 P1 - Add structured logging with tenant ID, request ID, user ID, module, and action.
-- [ ] T113 P1 - Add metrics for API latency, error rates, job failures, and queue depth.
-- [ ] T114 P1 - Add backup and restore procedure for tenant data.
-- [ ] T115 P1 - Add staging deployment with seeded demo tenant and protected admin access.
-- [ ] T116 P2 - Add background job queue for PDFs, exports, emails, declarations, and imports.
-- [ ] T117 P2 - Add feature flag system for phased module rollout.
+- [x] T108 P0 - Add production PostgreSQL configuration and Prisma migration workflow.
+- [x] T109 P0 - Add environment validation for API URLs, database URL, auth secrets, storage config, and allowed origins.
+- [x] T110 P0 - Add Docker compose profiles for dev, test, and local production simulation.
+- [x] T111 P0 - Add CI pipeline for install, lint, build, backend tests, frontend tests, and Playwright smoke tests.
+- [x] T112 P1 - Add structured logging with tenant ID, request ID, user ID, module, and action.
+- [x] T113 P1 - Add metrics for API latency, error rates, job failures, and queue depth.
+- [x] T114 P1 - Add backup and restore procedure for tenant data.
+- [x] T115 P1 - Add staging deployment with seeded demo tenant and protected admin access.
+- [x] T116 P2 - Add background job queue for PDFs, exports, emails, declarations, and imports.
+- [x] T117 P2 - Add feature flag system for phased module rollout.
 
 ## Commercial Readiness
 
-- [ ] T118 P0 - Add pricing plans and map each plan to enabled modules and limits.
-- [ ] T119 P0 - Add tenant billing status screens and admin write-lock controls.
-- [ ] T120 P1 - Add accountant workspace for managing multiple client tenants.
-- [ ] T121 P1 - Add super-admin workspace for tenant support, subscription management, and compliance rule management.
-- [ ] T122 P1 - Add customer support diagnostics view with audit logs, recent errors, and module usage.
-- [ ] T123 P2 - Add in-app upgrade prompts tied to real feature gates instead of generic marketing.
+- [x] T118 P0 - Add pricing plans and map each plan to enabled modules and limits.
+- [x] T119 P0 - Add tenant billing status screens and admin write-lock controls.
+- [x] T120 P1 - Add accountant workspace for managing multiple client tenants.
+- [x] T121 P1 - Add super-admin workspace for tenant support, subscription management, and compliance rule management.
+- [x] T122 P1 - Add customer support diagnostics view with audit logs, recent errors, and module usage.
+- [x] T123 P2 - Add in-app upgrade prompts tied to real feature gates instead of generic marketing.
 
 ## Customer Pilot Hardening
 

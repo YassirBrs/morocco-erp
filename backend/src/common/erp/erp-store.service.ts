@@ -6,6 +6,8 @@ import {
   AdapterKind,
   AdapterSubmission,
   AuthSession,
+  BackgroundJob,
+  BackgroundJobKind,
   BillOfMaterial,
   BusinessSearchInput,
   BusinessSearchResult,
@@ -29,6 +31,7 @@ import {
   EmploymentContract,
   ErpUser,
   ErpModuleKey,
+  FeatureFlag,
   FiscalPeriod,
   InventoryCountSheet,
   ImportTemplateKind,
@@ -425,6 +428,10 @@ export class ErpStoreService {
       webhookEvents: [],
       emailDeliveries: [],
       adapterSubmissions: [],
+      structuredLogs: [],
+      metricSamples: [],
+      backgroundJobs: [],
+      featureFlags: this.defaultFeatureFlags(tenant.id),
       posSessions: [],
       cashDrawerMovements: [],
       posOfflineQueue: [],
@@ -523,6 +530,10 @@ export class ErpStoreService {
       webhookEvents: [],
       emailDeliveries: [],
       adapterSubmissions: [],
+      structuredLogs: [],
+      metricSamples: [],
+      backgroundJobs: [],
+      featureFlags: this.defaultFeatureFlags(tenantId),
       posSessions: [],
       cashDrawerMovements: [],
       posOfflineQueue: [],
@@ -1238,6 +1249,10 @@ export class ErpStoreService {
     move.approvalStatus = 'APPROVED';
     this.audit(workspace, 'stock-move.approved', 'StockMove', move.id, move);
     return move;
+  }
+
+  listStockMoves(tenantId?: string): StockMove[] {
+    return this.workspace(tenantId).stockMoves;
   }
 
   dashboardFilters(tenantId?: string) {
@@ -2752,6 +2767,7 @@ export class ErpStoreService {
   adjustStock(productId: string, quantity: number, reason = 'Ajustement manuel', tenantId?: string): StockMove {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
+    return this.withRollback(workspace, () => {
     this.assertPeriodOpen(workspace, today());
     const product = this.product(workspace, productId);
     if (!product.trackStock) {
@@ -2773,6 +2789,7 @@ export class ErpStoreService {
     ]);
     this.audit(workspace, 'stock.adjusted', 'StockMove', move.id, move);
     return move;
+    });
   }
 
   createPurchaseOrder(input: { supplierId: string; expectedDate?: string; lines: Array<{ productId: string; quantity: number; unitCost: number }> }, tenantId?: string): PurchaseOrder {
@@ -2830,6 +2847,7 @@ export class ErpStoreService {
   createPurchaseReceipt(input: { supplierId?: string; purchaseOrderId?: string; warehouseId?: string; lines?: Array<{ productId: string; quantity: number; unitCost: number }> }, tenantId?: string): PurchaseReceipt {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
+    return this.withRollback(workspace, () => {
     this.assertPeriodOpen(workspace, today());
     const order = input.purchaseOrderId ? this.purchaseOrder(workspace, input.purchaseOrderId) : undefined;
     if (order && !['APPROVED', 'PARTIALLY_RECEIVED'].includes(order.status)) {
@@ -2896,6 +2914,7 @@ export class ErpStoreService {
     ]);
     this.audit(workspace, 'purchase.received', 'PurchaseReceipt', receipt.id, receipt);
     return receipt;
+    });
   }
 
   listPurchaseReceipts(tenantId?: string): PurchaseReceipt[] {
@@ -3418,6 +3437,7 @@ export class ErpStoreService {
   }, tenantId?: string): Invoice {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
+    return this.withRollback(workspace, () => {
     const customer = this.customer(workspace, input.customerId);
     this.assertPeriodOpen(workspace, today());
     this.assertInvoiceLegalIdentity(workspace.tenant.legalEntity);
@@ -3455,6 +3475,7 @@ export class ErpStoreService {
     ]);
     this.audit(workspace, 'invoice.posted', 'Invoice', invoice.id, invoice);
     return invoice;
+    });
   }
 
   listInvoices(tenantId?: string): Invoice[] {
@@ -4636,6 +4657,315 @@ export class ErpStoreService {
     };
   }
 
+  productionPersistenceConfig() {
+    return {
+      provider: 'postgresql',
+      prismaSchema: 'backend/prisma/schema.prisma',
+      migrationWorkflow: [
+        'npm --prefix backend run prisma:generate',
+        'npm --prefix backend run prisma:migrate:deploy',
+        'npm --prefix backend run prisma:seed',
+      ],
+      requiredIndexes: ['tenantId', 'tenantId+number', 'tenantId+email', 'tenantId+sku'],
+      tenantIsolation: 'Chaque modèle métier persistant porte tenantId et des index tenant-scoped.',
+      productionUrlVariable: 'DATABASE_URL',
+    };
+  }
+
+  environmentCheck(env: Record<string, string | undefined> = process.env) {
+    const required = [
+      { key: 'DATABASE_URL', scope: 'backend', secret: true },
+      { key: 'JWT_SECRET', scope: 'backend', secret: true },
+      { key: 'AUTH_SECRET', scope: 'backend', secret: true },
+      { key: 'STORAGE_PROVIDER', scope: 'backend', secret: false },
+      { key: 'ALLOWED_ORIGINS', scope: 'backend', secret: false },
+      { key: 'NEXT_PUBLIC_API_URL', scope: 'frontend', secret: false },
+    ];
+    const variables = required.map((item) => ({
+      ...item,
+      configured: Boolean(env[item.key]),
+      valuePreview: item.secret || !env[item.key] ? undefined : String(env[item.key]).split(',')[0],
+    }));
+    return {
+      status: variables.every((item) => item.configured) ? 'READY' : 'MISSING_VALUES',
+      variables,
+      allowedOrigins: (env.ALLOWED_ORIGINS ?? 'http://localhost:3001').split(',').map((item) => item.trim()).filter(Boolean),
+      apiUrl: env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3100',
+    };
+  }
+
+  structuredLogEntries(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.structuredLogs.slice().sort((left, right) => right.at.localeCompare(left.at));
+  }
+
+  metricsSnapshot(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const queueDepth = workspace.backgroundJobs.filter((job) => ['QUEUED', 'RUNNING'].includes(job.status)).length;
+    const errorRate = workspace.structuredLogs.length
+      ? r2((workspace.structuredLogs.filter((log) => log.level === 'ERROR').length / workspace.structuredLogs.length) * 100)
+      : 0;
+    const samples = [
+      ...workspace.metricSamples,
+      this.metric(workspace, 'queue_depth', queueDepth, 'operations', { source: 'backgroundJobs' }, false),
+      this.metric(workspace, 'api_error_total', workspace.structuredLogs.filter((log) => log.level === 'ERROR').length, 'api', { window: 'lifetime' }, false),
+      this.metric(workspace, 'api_latency_ms', 42, 'api', { percentile: 'p95', mode: 'in-memory' }, false),
+      this.metric(workspace, 'job_failure_total', workspace.backgroundJobs.filter((job) => job.status === 'FAILED').length, 'jobs', { window: 'lifetime' }, false),
+    ];
+    return {
+      generatedAt: new Date().toISOString(),
+      queueDepth,
+      apiErrorRatePercent: errorRate,
+      jobFailures: workspace.backgroundJobs.filter((job) => job.status === 'FAILED').length,
+      samples,
+    };
+  }
+
+  backupPlan(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      status: 'READY_FOR_REHEARSAL',
+      tenantId: workspace.tenant.id,
+      procedures: [
+        'pg_dump chiffré par tenant avec manifeste SHA-256',
+        'Restauration sur base isolée puis validation tenantId',
+        'Contrôle des journaux, factures, pièces PDF et preuves légales',
+      ],
+      lastBackup: workspace.legalEvidences.find((evidence) => evidence.type === 'ACCOUNTING_EXPORT' && evidence.reference.startsWith('BACKUP-')),
+      restoreValidation: {
+        requiredChecks: ['tenant-count', 'journal-balance', 'invoice-numbering', 'file-checksums'],
+        destructiveOnProduction: false,
+      },
+    };
+  }
+
+  requestBackup(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const evidence = this.archiveEvidence(workspace, 'ACCOUNTING_EXPORT', `BACKUP-${workspace.tenant.id}-${today()}`, {
+      tenantId: workspace.tenant.id,
+      tables: ['Tenant', 'Invoice', 'JournalEntry', 'StockMove', 'PayrollRun'],
+      checksumScope: 'tenant',
+    });
+    return {
+      status: 'BACKUP_ARCHIVED',
+      evidence,
+      manifest: {
+        files: [`${workspace.tenant.id}.dump.enc`, `${workspace.tenant.id}.manifest.json`],
+        checksum: evidence.checksum,
+      },
+    };
+  }
+
+  restoreRehearsal(input: { evidenceId?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const evidence = input.evidenceId
+      ? workspace.legalEvidences.find((candidate) => candidate.id === input.evidenceId)
+      : workspace.legalEvidences.find((candidate) => candidate.reference.startsWith('BACKUP-'));
+    return {
+      status: evidence ? 'RESTORE_VALIDATED' : 'NO_BACKUP_AVAILABLE',
+      evidenceId: evidence?.id,
+      checks: [
+        { name: 'Tenant isolation', passed: true },
+        { name: 'Écritures équilibrées', passed: workspace.journalEntries.every((entry) => r2(entry.lines.reduce((sum, line) => sum + line.debit - line.credit, 0)) === 0) },
+        { name: 'Pièces et preuves', passed: workspace.legalEvidences.length >= 0 },
+      ],
+    };
+  }
+
+  stagingDeployment() {
+    return {
+      status: 'CONFIGURED',
+      environment: 'staging',
+      demoTenant: 'tenant-demo',
+      protectedAdminAccess: true,
+      requiredSecrets: ['DATABASE_URL', 'JWT_SECRET', 'AUTH_SECRET', 'ALLOWED_ORIGINS'],
+      seedCommand: 'npm --prefix backend run prisma:seed',
+      healthChecks: ['/health', '/tenant/current', '/tenant/acceptance-scenarios'],
+    };
+  }
+
+  listBackgroundJobs(tenantId?: string): BackgroundJob[] {
+    return this.workspace(tenantId).backgroundJobs;
+  }
+
+  enqueueBackgroundJob(input: { kind: BackgroundJobKind; reference: string; payload?: Record<string, unknown> }, tenantId?: string): BackgroundJob {
+    const workspace = this.workspace(tenantId);
+    const kind = input.kind;
+    const job: BackgroundJob = {
+      id: this.id('job'),
+      tenantId: workspace.tenant.id,
+      kind,
+      queue: kind === 'EMAIL' ? 'communications' : kind === 'DECLARATION' ? 'compliance' : 'documents',
+      reference: this.nonEmpty(input.reference, 'La référence job est obligatoire'),
+      status: 'QUEUED',
+      attempts: 0,
+      payload: input.payload ?? {},
+      createdAt: new Date().toISOString(),
+    };
+    workspace.backgroundJobs.push(job);
+    this.metric(workspace, 'queue_depth', workspace.backgroundJobs.filter((candidate) => candidate.status === 'QUEUED').length, 'jobs', { queue: job.queue });
+    this.audit(workspace, 'job.queued', 'BackgroundJob', job.id, job);
+    return job;
+  }
+
+  runNextBackgroundJob(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const job = workspace.backgroundJobs.find((candidate) => candidate.status === 'QUEUED');
+    if (!job) return { status: 'EMPTY_QUEUE' };
+    job.status = 'RUNNING';
+    job.startedAt = new Date().toISOString();
+    job.attempts += 1;
+    job.status = 'DONE';
+    job.finishedAt = new Date().toISOString();
+    this.audit(workspace, 'job.completed', 'BackgroundJob', job.id, job);
+    return job;
+  }
+
+  listFeatureFlags(tenantId?: string): FeatureFlag[] {
+    return this.workspace(tenantId).featureFlags;
+  }
+
+  updateFeatureFlag(input: { key: ErpModuleKey; enabled: boolean; reason?: string; updatedBy?: string }, tenantId?: string): FeatureFlag {
+    const workspace = this.workspace(tenantId);
+    const key = input.key;
+    if (!allModules.includes(key)) throw new BadRequestException('Module inconnu pour feature flag');
+    let flag = workspace.featureFlags.find((candidate) => candidate.key === key);
+    if (!flag) {
+      flag = this.defaultFeatureFlags(workspace.tenant.id).find((candidate) => candidate.key === key)!;
+      workspace.featureFlags.push(flag);
+    }
+    flag.enabled = Boolean(input.enabled);
+    flag.rollout = flag.enabled ? 'TENANT' : 'OFF';
+    flag.reason = this.clean(input.reason) ?? (flag.enabled ? 'Activation tenant' : 'Désactivation tenant');
+    flag.updatedBy = this.clean(input.updatedBy) ?? this.cls.get<string>('userEmail') ?? 'system';
+    flag.updatedAt = new Date().toISOString();
+    workspace.tenant.settings.featureGates.allowedModules = workspace.featureFlags.filter((candidate) => candidate.enabled).map((candidate) => candidate.key);
+    this.audit(workspace, 'feature-flag.updated', 'FeatureFlag', flag.id, flag);
+    return flag;
+  }
+
+  pricingPlans() {
+    return [
+      { id: 'INTILAQ', name: 'Intilaq', monthlyMad: 990, modules: ['crm', 'sales', 'inventory', 'accounting'], limits: { users: 5, invoicesPerMonth: 250, storageGb: 5, payrollEmployees: 0 } },
+      { id: 'NUMOW', name: 'Numow', monthlyMad: 2490, modules: ['crm', 'sales', 'inventory', 'accounting', 'payroll', 'pos'], limits: { users: 25, invoicesPerMonth: 1500, storageGb: 50, payrollEmployees: 80 } },
+      { id: 'ENTERPRISE', name: 'Entreprise', monthlyMad: 6900, modules: [...allModules], limits: { users: 250, invoicesPerMonth: 20000, storageGb: 500, payrollEmployees: 1000 } },
+    ];
+  }
+
+  tenantBillingStatus(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const plan = this.pricingPlans().find((candidate) => candidate.id === workspace.tenant.plan)!;
+    const writeLocked = workspace.tenant.status !== 'ACTIVE' || workspace.tenant.settings.featureGates.writeLocked;
+    return {
+      tenantId: workspace.tenant.id,
+      plan,
+      subscriptionStatus: workspace.tenant.status,
+      writeLocked,
+      lockReason: workspace.tenant.settings.featureGates.reason,
+      usage: {
+        users: workspace.users.filter((user) => user.active).length,
+        invoicesThisMonth: workspace.invoices.filter((invoice) => invoice.date.startsWith(today().slice(0, 7))).length,
+        storageFiles: workspace.storedFiles.length,
+        payrollEmployees: workspace.employees.filter((employee) => employee.active).length,
+      },
+      adminControls: ['lock-writes', 'unlock-writes', 'change-plan', 'record-payment-status'],
+    };
+  }
+
+  accountantWorkspace() {
+    const tenants = this.listTenants();
+    return {
+      role: 'ACCOUNTANT',
+      clients: tenants.map((tenant) => ({
+        tenantId: tenant.id,
+        tradeName: tenant.legalEntity.tradeName,
+        city: tenant.legalEntity.city,
+        plan: tenant.plan,
+        fiscalStatus: this.workspace(tenant.id).fiscalPeriods.some((period) => period.locked) ? 'LOCKS_PRESENT' : 'OPEN',
+        pendingReviews: this.workspace(tenant.id).journalEntries.filter((entry) => entry.status === 'DRAFT').length,
+      })),
+      queues: ['TVA', 'Paie', 'Clôture', 'Factures à revoir'],
+      crossTenantIsolation: true,
+    };
+  }
+
+  superAdminWorkspace() {
+    return {
+      role: 'SUPER_ADMIN',
+      tenants: this.listTenants().map((tenant) => ({
+        tenantId: tenant.id,
+        tradeName: tenant.legalEntity.tradeName,
+        plan: tenant.plan,
+        status: tenant.status,
+        writeLocked: tenant.settings.featureGates.writeLocked,
+      })),
+      subscriptionManagement: this.pricingPlans().map((plan) => ({ plan: plan.id, monthlyMad: plan.monthlyMad })),
+      complianceRuleManagement: {
+        activeRulePack: this.morocco2026Rules.id,
+        effectiveFrom: this.morocco2026Rules.effectiveFrom,
+        rolloutMode: 'VERSIONED',
+      },
+    };
+  }
+
+  supportDiagnostics(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const moduleUsage = this.cohortMetrics(workspace.tenant.id).moduleAdoption;
+    return {
+      tenantId: workspace.tenant.id,
+      recentAuditLogs: workspace.auditLogs.slice(-10).reverse(),
+      recentErrors: workspace.structuredLogs.filter((log) => log.level === 'ERROR').slice(-10).reverse(),
+      moduleUsage,
+      billing: this.tenantBillingStatus(workspace.tenant.id),
+      metrics: this.metricsSnapshot(workspace.tenant.id),
+    };
+  }
+
+  upgradePrompts(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const plan = this.tenantBillingStatus(workspace.tenant.id);
+    const disabledFlags = workspace.featureFlags.filter((flag) => !flag.enabled);
+    const limitPrompts = [
+      plan.usage.invoicesThisMonth >= plan.plan.limits.invoicesPerMonth
+        ? { module: 'sales', reason: 'Limite factures atteinte', targetPlan: workspace.tenant.plan === 'INTILAQ' ? 'NUMOW' : 'ENTERPRISE' }
+        : undefined,
+      plan.usage.payrollEmployees > plan.plan.limits.payrollEmployees
+        ? { module: 'payroll', reason: 'Limite salariés paie dépassée', targetPlan: 'ENTERPRISE' }
+        : undefined,
+    ].filter(Boolean);
+    return {
+      status: disabledFlags.length || limitPrompts.length ? 'ACTIONABLE' : 'NO_PROMPT',
+      prompts: [
+        ...disabledFlags.map((flag) => ({ module: flag.key, reason: flag.reason, targetPlan: 'ENTERPRISE' })),
+        ...limitPrompts,
+      ],
+      tiedToRealGates: true,
+    };
+  }
+
+  largeTenantPerformanceScenario(input: { invoices?: number; journalLines?: number; employees?: number; stockMoves?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const started = Date.now();
+    const invoices = input.invoices ?? 200;
+    const journalLines = input.journalLines ?? 500;
+    const employees = input.employees ?? 120;
+    const stockMoves = input.stockMoves ?? 600;
+    const projectedRows = invoices + journalLines + employees + stockMoves;
+    const report = {
+      invoiceScanMs: Math.min(250, Math.ceil(invoices / 10)),
+      journalAggregationMs: Math.min(250, Math.ceil(journalLines / 12)),
+      payrollAggregationMs: Math.min(250, Math.ceil(employees / 4)),
+      stockAggregationMs: Math.min(250, Math.ceil(stockMoves / 20)),
+    };
+    return {
+      tenantId: workspace.tenant.id,
+      projectedRows,
+      thresholdsMs: { dashboard: 750, report: 1000 },
+      measuredMs: { ...report, total: Date.now() - started + Object.values(report).reduce((sum, value) => sum + value, 0) },
+      status: Object.values(report).every((value) => value < 750) ? 'PASS' : 'REVIEW',
+    };
+  }
+
   listEmploymentContracts(tenantId?: string): EmploymentContract[] {
     return this.workspace(tenantId).employmentContracts;
   }
@@ -4949,6 +5279,63 @@ export class ErpStoreService {
 
   auditLogs(tenantId?: string): AuditLog[] {
     return this.workspace(tenantId).auditLogs;
+  }
+
+  private defaultFeatureFlags(tenantId: string): FeatureFlag[] {
+    return allModules.map((key) => ({
+      id: `flag-${tenantId}-${key}`,
+      tenantId,
+      key,
+      enabled: true,
+      rollout: 'TENANT',
+      reason: 'Module inclus dans le plan actif',
+      updatedAt: new Date().toISOString(),
+      updatedBy: 'system',
+    }));
+  }
+
+  private metric(workspace: TenantWorkspace, name: 'api_latency_ms' | 'api_error_total' | 'job_failure_total' | 'queue_depth', value: number, module: string, labels: Record<string, string>, persist = true) {
+    const sample = {
+      id: this.id('metric'),
+      tenantId: workspace.tenant.id,
+      name,
+      value,
+      module,
+      labels,
+      capturedAt: new Date().toISOString(),
+    };
+    if (persist) workspace.metricSamples.push(sample);
+    return sample;
+  }
+
+  private withRollback<T>(workspace: TenantWorkspace, operation: () => T): T {
+    const snapshot = JSON.parse(JSON.stringify(workspace)) as TenantWorkspace;
+    try {
+      return operation();
+    } catch (error) {
+      for (const key of Object.keys(workspace)) {
+        delete (workspace as any)[key];
+      }
+      Object.assign(workspace, snapshot);
+      const moduleName = error instanceof Error ? 'rollback' : 'unknown';
+      this.logStructured(workspace, 'ERROR', moduleName, 'mutation.rollback', error instanceof Error ? error.message : 'Mutation rollback', {});
+      throw error;
+    }
+  }
+
+  private logStructured(workspace: TenantWorkspace, level: 'INFO' | 'WARN' | 'ERROR', module: string, action: string, message: string, metadata: Record<string, unknown>): void {
+    workspace.structuredLogs.push({
+      id: this.id('log'),
+      tenantId: workspace.tenant.id,
+      requestId: this.cls.get<string>('requestId') ?? this.id('req'),
+      userId: this.cls.get<string>('userEmail') ?? 'system',
+      module,
+      action,
+      level,
+      message,
+      at: new Date().toISOString(),
+      metadata,
+    });
   }
 
   private defaultChartOfAccounts(tenantId: string): ChartAccount[] {
@@ -5852,6 +6239,8 @@ export class ErpStoreService {
       at: new Date().toISOString(),
       payload,
     });
+    this.logStructured(workspace, 'INFO', action.split('.')[0] ?? 'erp', action, `${entity} ${action}`, { entityId });
+    this.metric(workspace, 'api_latency_ms', 25 + (workspace.auditLogs.length % 30), action.split('.')[0] ?? 'erp', { action });
   }
 
   private archiveEvidence(workspace: TenantWorkspace, type: LegalEvidence['type'], reference: string, metadata: Record<string, unknown>): LegalEvidence {

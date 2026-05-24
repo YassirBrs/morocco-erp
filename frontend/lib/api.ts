@@ -113,6 +113,23 @@ export type IntegrationReadiness = {
   apiKeys: unknown[];
 };
 
+export type PlatformReadiness = {
+  persistence: { provider: string; migrationWorkflow: string[]; tenantIsolation: string };
+  environment: { status: string; variables: Array<{ key: string; configured: boolean }> };
+  logs: Array<{ module: string; action: string; level: string; requestId: string }>;
+  metrics: { queueDepth: number; apiErrorRatePercent: number; jobFailures: number };
+  backup: { status: string; procedures: string[] };
+  staging: { status: string; protectedAdminAccess: boolean; healthChecks: string[] };
+  jobs: Array<{ kind: string; queue: string; reference: string; status: string }>;
+  flags: Array<{ key: string; enabled: boolean; reason: string }>;
+  pricing: Array<{ id: string; name: string; monthlyMad: number; modules: string[] }>;
+  billing: { subscriptionStatus: string; writeLocked: boolean; usage: Record<string, number> };
+  accountant: { clients: Array<{ tradeName: string; fiscalStatus: string }> };
+  superAdmin: { tenants: Array<{ tradeName: string; status: string }>; complianceRuleManagement: { activeRulePack: string } };
+  support: { recentAuditLogs: unknown[]; recentErrors: unknown[]; moduleUsage: Array<{ module: string; records: number }> };
+  upgrades: { status: string; prompts: Array<{ module: string; reason: string; targetPlan: string }> };
+};
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -265,4 +282,24 @@ export async function getIntegrationReadiness(): Promise<IntegrationReadiness> {
     getJson('/tenant/api-keys', []),
   ]);
   return { dgi, cnss, emails, webhooks, apiKeys };
+}
+
+export async function getPlatformReadiness(): Promise<PlatformReadiness> {
+  const [persistence, environment, logs, metrics, backup, staging, jobs, flags, pricing, billing, accountant, superAdmin, support, upgrades] = await Promise.all([
+    getJson('/tenant/production-persistence', { provider: 'postgresql', migrationWorkflow: [], tenantIsolation: '' }),
+    getJson('/tenant/environment-check', { status: 'MISSING_VALUES', variables: [] }),
+    getJson('/tenant/operations/logs', []),
+    getJson('/tenant/operations/metrics', { queueDepth: 0, apiErrorRatePercent: 0, jobFailures: 0 }),
+    getJson('/tenant/operations/backup', { status: 'READY_FOR_REHEARSAL', procedures: [] }),
+    getJson('/tenant/staging-deployment', { status: 'CONFIGURED', protectedAdminAccess: true, healthChecks: [] }),
+    getJson('/tenant/operations/jobs', []),
+    getJson('/tenant/feature-flags', []),
+    getJson('/tenant/pricing-plans', []),
+    getJson('/tenant/billing-status', { subscriptionStatus: 'ACTIVE', writeLocked: false, usage: {} }),
+    getJson('/tenant/accountant-workspace', { clients: [] }),
+    getJson('/tenant/super-admin-workspace', { tenants: [], complianceRuleManagement: { activeRulePack: 'MA-2026' } }),
+    getJson('/tenant/support-diagnostics', { recentAuditLogs: [], recentErrors: [], moduleUsage: [] }),
+    getJson('/tenant/upgrade-prompts', { status: 'NO_PROMPT', prompts: [] }),
+  ]);
+  return { persistence, environment, logs, metrics, backup, staging, jobs, flags, pricing, billing, accountant, superAdmin, support, upgrades };
 }

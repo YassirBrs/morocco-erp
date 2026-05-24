@@ -1646,4 +1646,80 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(scenarios.status).toBe('READY');
     expect(scenarios.smokeFlows).toEqual(expect.arrayContaining(['onboard tenant', 'create customer', 'create product', 'issue invoice', 'record payment', 'run payroll']));
   });
+
+  it('rolls back sales, inventory receipts, and stock adjustments when accounting posting fails', () => {
+    const workspace = (store as any).workspace('tenant-demo');
+    const deactivateAccount = (account: string) => {
+      workspace.chartOfAccounts.find((candidate: any) => candidate.account === account).active = false;
+    };
+    const activateAccount = (account: string) => {
+      workspace.chartOfAccounts.find((candidate: any) => candidate.account === account).active = true;
+    };
+
+    const stockBeforeInvoice = store.getProduct('prd-1').stockOnHand;
+    deactivateAccount('7111');
+    expect(() => store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] })).toThrow('Compte PCGE introuvable');
+    expect(store.listInvoices()).toHaveLength(0);
+    expect(store.listJournalEntries()).toHaveLength(0);
+    expect(store.listStock().find((line) => line.productId === 'prd-1')?.stockOnHand).toBe(stockBeforeInvoice);
+    expect(store.listStockMoves()).toHaveLength(0);
+    activateAccount('7111');
+    expect(store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] }).number).toMatch(/^FAC-\d{4}-00001$/);
+
+    const stockBeforeReceipt = store.getProduct('prd-raw').stockOnHand;
+    const costBeforeReceipt = store.getProduct('prd-raw').weightedAverageCost;
+    deactivateAccount('4411');
+    expect(() => store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 10, unitCost: 200 }] })).toThrow('Compte PCGE introuvable');
+    expect(store.listPurchaseReceipts()).toHaveLength(0);
+    expect(store.getProduct('prd-raw').stockOnHand).toBe(stockBeforeReceipt);
+    expect(store.getProduct('prd-raw').weightedAverageCost).toBe(costBeforeReceipt);
+    activateAccount('4411');
+
+    const stockBeforeAdjustment = store.getProduct('prd-1').stockOnHand;
+    deactivateAccount('6198');
+    expect(() => store.adjustStock('prd-1', -1, 'Rollback test')).toThrow('Compte PCGE introuvable');
+    expect(store.getProduct('prd-1').stockOnHand).toBe(stockBeforeAdjustment);
+    expect(store.listStockMoves().filter((move) => move.reference === 'Rollback test')).toHaveLength(0);
+  });
+
+  it('exposes production operations, feature gates, billing, support workspaces, and large-tenant performance checks', () => {
+    store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    const persistence = store.productionPersistenceConfig();
+    const environment = store.environmentCheck({
+      DATABASE_URL: 'postgresql://demo',
+      JWT_SECRET: 'jwt',
+      AUTH_SECRET: 'auth',
+      STORAGE_PROVIDER: 'LOCAL_DEV',
+      ALLOWED_ORIGINS: 'http://localhost:3001',
+      NEXT_PUBLIC_API_URL: 'http://localhost:3100',
+    });
+    const backup = store.requestBackup();
+    const restore = store.restoreRehearsal({ evidenceId: backup.evidence.id });
+    const job = store.enqueueBackgroundJob({ kind: 'PDF', reference: 'FAC-DEMO', payload: { documentType: 'INVOICE' } });
+    expect(job).toMatchObject({ queue: 'documents', status: 'QUEUED' });
+    const processed = store.runNextBackgroundJob();
+    const disabledPayroll = store.updateFeatureFlag({ key: 'payroll', enabled: false, reason: 'Plan Intilaq sans paie', updatedBy: 'admin@atlas.ma' });
+    const billing = store.tenantBillingStatus();
+    const prompts = store.upgradePrompts();
+    const performance = store.largeTenantPerformanceScenario({ invoices: 1000, journalLines: 2000, employees: 400, stockMoves: 3000 });
+
+    expect(persistence.provider).toBe('postgresql');
+    expect(persistence.migrationWorkflow).toEqual(expect.arrayContaining(['npm --prefix backend run prisma:migrate:deploy']));
+    expect(environment.status).toBe('READY');
+    expect(store.structuredLogEntries()[0]).toMatchObject({ tenantId: 'tenant-demo', level: 'INFO' });
+    expect(store.metricsSnapshot()).toMatchObject({ jobFailures: 0 });
+    expect(backup.status).toBe('BACKUP_ARCHIVED');
+    expect(restore.status).toBe('RESTORE_VALIDATED');
+    expect(store.stagingDeployment()).toMatchObject({ status: 'CONFIGURED', protectedAdminAccess: true });
+    expect(processed).toMatchObject({ status: 'DONE' });
+    expect(disabledPayroll).toMatchObject({ key: 'payroll', enabled: false });
+    expect(store.pricingPlans().map((plan) => plan.id)).toEqual(['INTILAQ', 'NUMOW', 'ENTERPRISE']);
+    expect(billing.adminControls).toEqual(expect.arrayContaining(['lock-writes', 'unlock-writes']));
+    expect(store.accountantWorkspace().clients[0]).toHaveProperty('fiscalStatus');
+    expect(store.superAdminWorkspace().complianceRuleManagement.activeRulePack).toBe('MA-2026');
+    expect(store.supportDiagnostics().moduleUsage.length).toBeGreaterThan(0);
+    expect(prompts).toMatchObject({ tiedToRealGates: true, status: 'ACTIONABLE' });
+    expect(performance.status).toBe('PASS');
+    expect(performance.projectedRows).toBe(6400);
+  });
 });
