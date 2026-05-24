@@ -230,7 +230,10 @@
                 <p class="eyebrow">CRM</p>
                 <h2>Pipeline prospects</h2>
               </div>
-              <span id="leadCount" class="badge">0</span>
+              <div class="headerActions">
+                <span id="leadCount" class="badge">0</span>
+                <button id="convertLeadToQuote" type="button">Convertir en devis</button>
+              </div>
             </div>
             <form id="leadForm" class="compactForm">
               <label class="field"><span>Prospect</span><input name="customerName" required placeholder="Société prospect" /></label>
@@ -704,6 +707,17 @@
           state.statement = await get('/sales/customers/cus-1/statement');
           renderStatement();
           showMessage('success', `Relevé client préparé avec solde ${mad(state.statement.totals.balance)}.`);
+        });
+      });
+
+      qs('#convertLeadToQuote').addEventListener('click', async () => {
+        await runAction('#convertLeadToQuote', 'Conversion...', async () => {
+          const lead = [...state.leads].reverse().find((candidate) => candidate.stage !== 'WON' && candidate.stage !== 'LOST');
+          if (!lead) throw new Error('Aucun prospect à convertir');
+          const result = await post(`/crm/leads/${lead.id}/quote`, { productId: 'prd-1', quantity: 1 });
+          qs('#invoiceResult').textContent = `${result.quote.number} · ${result.customer.name} · ${mad(result.quote.totals.total)}`;
+          showMessage('success', `Prospect ${result.lead.customerName} converti en devis ${result.quote.number}.`);
+          switchModuleView('sales');
         });
       });
 

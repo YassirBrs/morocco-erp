@@ -730,6 +730,38 @@ export class ErpStoreService {
     return lead;
   }
 
+  convertLeadToQuote(leadId: string, input: {
+    customerId?: string;
+    productId?: string;
+    quantity?: number;
+    lines?: DocumentLineInput[];
+  } = {}, tenantId?: string): { lead: Lead; customer: Customer; quote: Quote } {
+    const workspace = this.workspace(tenantId);
+    const lead = this.lead(workspace, leadId);
+    const customer = input.customerId
+      ? this.customer(workspace, input.customerId)
+      : this.customerForLead(workspace, lead);
+    const lines = input.lines ?? [{
+      productId: input.productId ?? this.defaultQuotableProduct(workspace).id,
+      quantity: input.quantity ?? 1,
+    }];
+    const quote = this.createQuote({ customerId: customer.id, lines }, workspace.tenant.id);
+
+    lead.stage = 'PROPOSAL';
+    lead.convertedCustomerId = customer.id;
+    lead.convertedQuoteId = quote.id;
+    lead.convertedAt = today();
+    lead.updatedAt = today();
+    this.audit(workspace, 'lead.converted-to-quote', 'Lead', lead.id, {
+      leadId: lead.id,
+      customerId: customer.id,
+      quoteId: quote.id,
+      quoteNumber: quote.number,
+    });
+
+    return { lead, customer, quote };
+  }
+
   addProduct(input: Partial<Product> & { sku: string; name: string; salePrice: number }, tenantId?: string): Product {
     const workspace = this.workspace(tenantId);
     const sku = this.nonEmpty(input.sku, 'Le SKU est obligatoire').toUpperCase();
@@ -1502,6 +1534,23 @@ export class ErpStoreService {
       throw new NotFoundException('Prospect introuvable');
     }
     return lead;
+  }
+
+  private customerForLead(workspace: TenantWorkspace, lead: Lead): Customer {
+    const normalized = lead.customerName.trim().toLowerCase();
+    const existing = workspace.customers.find((customer) => customer.active && customer.name.trim().toLowerCase() === normalized);
+    if (existing) {
+      return existing;
+    }
+    return this.addCustomer({ name: lead.customerName }, workspace.tenant.id);
+  }
+
+  private defaultQuotableProduct(workspace: TenantWorkspace): Product {
+    const product = workspace.products.find((candidate) => candidate.active && candidate.salePrice > 0);
+    if (!product) {
+      throw new BadRequestException('Aucun article actif disponible pour créer un devis');
+    }
+    return product;
   }
 
   private product(workspace: TenantWorkspace, productId: string): Product {

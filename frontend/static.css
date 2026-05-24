@@ -272,6 +272,16 @@ h2 {
   padding: 15px 16px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerActions button {
+  min-height: 34px;
+}
+
 .badge {
   border-radius: 999px;
   background: var(--blue-soft);

@@ -96,6 +96,9 @@ export interface Lead {
   owner?: string;
   source?: string;
   nextActionDate?: string;
+  convertedCustomerId?: string;
+  convertedQuoteId?: string;
+  convertedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

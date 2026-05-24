@@ -8,6 +8,7 @@ export class CrmService {
   listLeads() { return this.store.listLeads(); }
   createLead(data: any) { return this.store.addLead(data); }
   updateLead(id: string, data: any) { return this.store.updateLead(id, data); }
+  convertLeadToQuote(id: string, data: any) { return this.store.convertLeadToQuote(id, data); }
   listCustomers() { return this.store.listCustomers(); }
   getCustomer(id: string) { return this.store.getCustomer(id); }
   createCustomer(data: any) { return this.store.addCustomer(data); }

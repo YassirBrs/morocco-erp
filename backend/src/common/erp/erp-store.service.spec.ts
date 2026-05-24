@@ -382,6 +382,33 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(() => store.updateLead(lead.id, { stage: 'INVALID' as any })).toThrow(BadRequestException);
   });
 
+  it('converts a lead to a draft quote by creating or linking the customer', () => {
+    const lead = store.addLead({
+      customerName: 'Hotel Atlas Marrakech',
+      stage: 'QUALIFIED',
+      expectedValue: 48000,
+      owner: 'Nadia',
+    });
+
+    const created = store.convertLeadToQuote(lead.id, { productId: 'prd-1', quantity: 2 });
+
+    expect(created.customer.name).toBe('Hotel Atlas Marrakech');
+    expect(created.quote.customerId).toBe(created.customer.id);
+    expect(created.quote.status).toBe('DRAFT');
+    expect(created.quote.totals.total).toBe(2040);
+    expect(created.lead.stage).toBe('PROPOSAL');
+    expect(created.lead.convertedCustomerId).toBe(created.customer.id);
+    expect(created.lead.convertedQuoteId).toBe(created.quote.id);
+    expect(store.auditLogs().some((log) => log.action === 'lead.converted-to-quote')).toBe(true);
+
+    const secondLead = store.addLead({ customerName: 'Rabat Retail SARL', expectedValue: 12000 });
+    const linked = store.convertLeadToQuote(secondLead.id, { customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+
+    expect(linked.customer.id).toBe('cus-1');
+    expect(linked.quote.totals.total).toBe(1440);
+    expect(store.listCustomers().filter((customer) => customer.name === 'Rabat Retail SARL')).toHaveLength(1);
+  });
+
   it('supports supplier CRUD fields with payment terms, contacts, bank details, and archive workflow', () => {
     const supplier = store.addSupplier({
       name: 'Fournitures Rabat SA',
