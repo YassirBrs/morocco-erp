@@ -1,3 +1,4 @@
+import { inventoryWorkflows } from './erp-operations-fixtures';
 import { purchasesInventoryWorkspace, statusPipelines } from './erp-workspace-fixtures';
 import {
   DenseDataTable,
@@ -178,6 +179,47 @@ export function PurchasesInventoryWorkspacePage() {
       </div>
 
       <StatusPipeline title="Inventaire physique et validation écart" steps={statusPipelines.inventory} />
+
+      <div className="uxWorkspaceGrid">
+        <DenseDataTable
+          title="Réservations stock à libérer"
+          columns={[
+            { label: 'Source', sortable: true },
+            { label: 'Client', sortable: true },
+            { label: 'Article', sortable: true },
+            { label: 'Réservé', sortable: true, numeric: true },
+            { label: 'Âge', sortable: true },
+            { label: 'Action', sortable: true },
+          ]}
+          rows={inventoryWorkflows.reservations.map((cells) => ({ cells, status: cells[5].includes('proposée') ? 'warning' : 'ok' }))}
+          emptyAction="Créer réservation"
+        />
+        <DenseDataTable
+          title="Assistant ajustement stock"
+          columns={[
+            { label: 'Motif', sortable: true },
+            { label: 'Approbation', sortable: true },
+            { label: 'Valorisation', sortable: true },
+            { label: 'Comptabilité', sortable: true },
+          ]}
+          rows={inventoryWorkflows.adjustmentReasons.map((cells) => ({ cells, status: cells[1].includes('comptable') ? 'warning' : 'info' }))}
+          emptyAction="Créer ajustement"
+        />
+      </div>
+
+      <DenseDataTable
+        title="Workflow inventaire mobile"
+        columns={[
+          { label: 'Feuille', sortable: true },
+          { label: 'Dépôt', sortable: true },
+          { label: 'Lignes', sortable: true },
+          { label: 'Écarts', sortable: true },
+          { label: 'Statut', sortable: true },
+          { label: 'Résumé posting', sortable: true },
+        ]}
+        rows={inventoryWorkflows.counts.map((cells) => ({ cells, status: cells[4].includes('requise') ? 'warning' : 'ok' }))}
+        emptyAction="Créer feuille inventaire"
+      />
     </main>
   );
 }

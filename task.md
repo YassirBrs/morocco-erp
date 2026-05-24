@@ -822,46 +822,46 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T713 P1 - Build a dedicated Inventory workspace with stock overview, warehouses, stock moves, reservations, transfers, adjustments, and counts.
 - [x] T714 P1 - Add product 360 page with SKU, barcode, VAT, prices, CUMP, warehouse stock, reservations, sales history, and purchase history.
 - [x] T715 P1 - Add warehouse map/list page with available, reserved, blocked, quarantine, valuation, and reorder alerts.
-- [ ] T716 P1 - Add stock reservation board showing source document, customer, product, reserved quantity, age, and release action.
-- [ ] T717 P1 - Add stock adjustment wizard with reason codes, approval threshold, valuation effect, and accounting preview.
-- [ ] T718 P1 - Add inventory count workflow with sheet creation, mobile-friendly count entry, variance approval, and posting summary.
-- [ ] T719 P1 - Build a dedicated Accounting workspace with PCGE accounts, journals, VAT, periods, bank reconciliation, exports, and evidence.
-- [ ] T720 P1 - Add journal entry detail screen with balanced debit/credit indicator, source document link, attachments, and posting controls.
-- [ ] T721 P1 - Add VAT cockpit with collected/deductible VAT by rate, invoice drilldown, exceptions, declaration calendar, and export pack.
-- [ ] T722 P1 - Add fiscal period close center with blockers, pending drafts, missing evidence, lock status, and accountant sign-off.
-- [ ] T723 P1 - Add bank reconciliation workspace with bank import preview, matching suggestions, unmatched items, and payment allocation.
-- [ ] T724 P1 - Add PCGE account selector with search by number/label, favorite accounts, and validation against Moroccan chart rules.
-- [ ] T725 P1 - Add accountant review mode with comments, requested evidence, status, owner, and due date on every accounting document.
-- [ ] T726 P1 - Build a dedicated Payroll/RH workspace with employees, contracts, payroll runs, payslips, leave, CNSS/AMO/IR, and Damancom.
-- [ ] T727 P1 - Add employee 360 page with CIN, CNSS, contract, salary, dependents, documents, payslips, leave, loans, and audit access.
-- [ ] T728 P1 - Add payroll run wizard with employee preflight, gross-to-net preview, exceptions, approval, posting, payslip PDFs, and Damancom export.
-- [ ] T729 P1 - Add payroll calculation explanation panel for CNSS cap, AMO, IR bracket, dependents, employer charges, and net pay.
-- [ ] T730 P1 - Add Damancom validation workspace with row length, missing identifiers, contribution totals, checksum, and archive evidence.
-- [ ] T731 P1 - Add leave calendar with monthly view, team conflicts, remaining balances, approval flow, and payroll impact.
-- [ ] T732 P1 - Add HR document center for CIN, CNSS, contracts, medical visits, expiries, restricted access, and redaction.
-- [ ] T733 P1 - Build a dedicated POS workspace with cashier sessions, tickets, refunds, Z report, offline queue, and cash movements.
-- [ ] T734 P1 - Add cashier-friendly POS screen with product search, barcode input, cart, VAT totals, payment capture, and receipt preview.
-- [ ] T735 P1 - Add POS session close wizard with expected cash, counted cash, variance reason, manager approval, and journal posting.
-- [ ] T736 P1 - Add refund workflow with original ticket lookup, line selection, reason, authorization, stock return, and accounting reversal.
-- [ ] T737 P1 - Add offline POS sync review with queue items, conflicts, duplicate detection, replay, and audit trail.
-- [ ] T738 P1 - Build a dedicated Admin/Conformite workspace with tenant settings, users, roles, numbering, documents, adapters, and audit.
-- [ ] T739 P1 - Add user and role management screen with module permissions, segregation-of-duties warnings, invitations, and revocation.
-- [ ] T740 P1 - Add document numbering settings screen with series by type, next number preview, lock rules, and change audit.
-- [ ] T741 P1 - Add compliance rule pack screen with active Morocco rules, version history, effective dates, and impacted modules.
-- [ ] T742 P1 - Add adapter status center for DGI, CNSS, banks, email, webhooks, object storage, and credentials readiness.
-- [ ] T743 P1 - Add legal archive screen with evidence type, source document, checksum, retention, export bundle, and tamper status.
-- [ ] T744 P1 - Add audit explorer with filters by user, module, entity, action, date, IP, and export.
-- [ ] T745 P1 - Add subscription and feature gate screen with plan, usage, write lock state, allowed modules, and upgrade prompts.
-- [ ] T746 P1 - Add support/admin diagnostics screen with API health, job queues, errors, backups, and recent user activity.
-- [ ] T747 P1 - Add responsive desktop layout rules so ERP tables remain dense and readable on laptop screens.
-- [ ] T748 P1 - Add responsive tablet/mobile rules for cashier, warehouse receipt, stock count, and manager approval flows.
-- [ ] T749 P1 - Add a design token system for spacing, typography, colors, borders, focus, status pills, and table density.
-- [ ] T750 P1 - Add a component library for buttons, icon buttons, inputs, selects, date pickers, tables, tabs, drawers, modals, and timelines.
-- [ ] T751 P1 - Add icon system with consistent lucide icons for modules, actions, statuses, file types, and alerts.
-- [ ] T752 P1 - Add French terminology glossary for all modules so labels stay consistent across UI, PDFs, emails, and tests.
-- [ ] T753 P1 - Add Arabic-ready display rules for names, addresses, PDFs, and bilingual document previews.
-- [ ] T754 P1 - Add contextual help drawer per workspace with short operational explanations, not marketing text.
-- [ ] T755 P1 - Add onboarding sample journeys for trading company, services company, retail/POS, and payroll-heavy SME.
+- [x] T716 P1 - Add stock reservation board showing source document, customer, product, reserved quantity, age, and release action.
+- [x] T717 P1 - Add stock adjustment wizard with reason codes, approval threshold, valuation effect, and accounting preview.
+- [x] T718 P1 - Add inventory count workflow with sheet creation, mobile-friendly count entry, variance approval, and posting summary.
+- [x] T719 P1 - Build a dedicated Accounting workspace with PCGE accounts, journals, VAT, periods, bank reconciliation, exports, and evidence.
+- [x] T720 P1 - Add journal entry detail screen with balanced debit/credit indicator, source document link, attachments, and posting controls.
+- [x] T721 P1 - Add VAT cockpit with collected/deductible VAT by rate, invoice drilldown, exceptions, declaration calendar, and export pack.
+- [x] T722 P1 - Add fiscal period close center with blockers, pending drafts, missing evidence, lock status, and accountant sign-off.
+- [x] T723 P1 - Add bank reconciliation workspace with bank import preview, matching suggestions, unmatched items, and payment allocation.
+- [x] T724 P1 - Add PCGE account selector with search by number/label, favorite accounts, and validation against Moroccan chart rules.
+- [x] T725 P1 - Add accountant review mode with comments, requested evidence, status, owner, and due date on every accounting document.
+- [x] T726 P1 - Build a dedicated Payroll/RH workspace with employees, contracts, payroll runs, payslips, leave, CNSS/AMO/IR, and Damancom.
+- [x] T727 P1 - Add employee 360 page with CIN, CNSS, contract, salary, dependents, documents, payslips, leave, loans, and audit access.
+- [x] T728 P1 - Add payroll run wizard with employee preflight, gross-to-net preview, exceptions, approval, posting, payslip PDFs, and Damancom export.
+- [x] T729 P1 - Add payroll calculation explanation panel for CNSS cap, AMO, IR bracket, dependents, employer charges, and net pay.
+- [x] T730 P1 - Add Damancom validation workspace with row length, missing identifiers, contribution totals, checksum, and archive evidence.
+- [x] T731 P1 - Add leave calendar with monthly view, team conflicts, remaining balances, approval flow, and payroll impact.
+- [x] T732 P1 - Add HR document center for CIN, CNSS, contracts, medical visits, expiries, restricted access, and redaction.
+- [x] T733 P1 - Build a dedicated POS workspace with cashier sessions, tickets, refunds, Z report, offline queue, and cash movements.
+- [x] T734 P1 - Add cashier-friendly POS screen with product search, barcode input, cart, VAT totals, payment capture, and receipt preview.
+- [x] T735 P1 - Add POS session close wizard with expected cash, counted cash, variance reason, manager approval, and journal posting.
+- [x] T736 P1 - Add refund workflow with original ticket lookup, line selection, reason, authorization, stock return, and accounting reversal.
+- [x] T737 P1 - Add offline POS sync review with queue items, conflicts, duplicate detection, replay, and audit trail.
+- [x] T738 P1 - Build a dedicated Admin/Conformite workspace with tenant settings, users, roles, numbering, documents, adapters, and audit.
+- [x] T739 P1 - Add user and role management screen with module permissions, segregation-of-duties warnings, invitations, and revocation.
+- [x] T740 P1 - Add document numbering settings screen with series by type, next number preview, lock rules, and change audit.
+- [x] T741 P1 - Add compliance rule pack screen with active Morocco rules, version history, effective dates, and impacted modules.
+- [x] T742 P1 - Add adapter status center for DGI, CNSS, banks, email, webhooks, object storage, and credentials readiness.
+- [x] T743 P1 - Add legal archive screen with evidence type, source document, checksum, retention, export bundle, and tamper status.
+- [x] T744 P1 - Add audit explorer with filters by user, module, entity, action, date, IP, and export.
+- [x] T745 P1 - Add subscription and feature gate screen with plan, usage, write lock state, allowed modules, and upgrade prompts.
+- [x] T746 P1 - Add support/admin diagnostics screen with API health, job queues, errors, backups, and recent user activity.
+- [x] T747 P1 - Add responsive desktop layout rules so ERP tables remain dense and readable on laptop screens.
+- [x] T748 P1 - Add responsive tablet/mobile rules for cashier, warehouse receipt, stock count, and manager approval flows.
+- [x] T749 P1 - Add a design token system for spacing, typography, colors, borders, focus, status pills, and table density.
+- [x] T750 P1 - Add a component library for buttons, icon buttons, inputs, selects, date pickers, tables, tabs, drawers, modals, and timelines.
+- [x] T751 P1 - Add icon system with consistent lucide icons for modules, actions, statuses, file types, and alerts.
+- [x] T752 P1 - Add French terminology glossary for all modules so labels stay consistent across UI, PDFs, emails, and tests.
+- [x] T753 P1 - Add Arabic-ready display rules for names, addresses, PDFs, and bilingual document previews.
+- [x] T754 P1 - Add contextual help drawer per workspace with short operational explanations, not marketing text.
+- [x] T755 P1 - Add onboarding sample journeys for trading company, services company, retail/POS, and payroll-heavy SME.
 - [ ] T756 P1 - Add import assistant with CSV upload, field mapping, validation preview, duplicate detection, and import report.
 - [ ] T757 P1 - Add export center with saved export templates, permissions, filters, file history, and checksums.
 - [ ] T758 P1 - Add PDF preview UX for invoices, delivery notes, credit notes, purchase orders, payslips, and statements.
@@ -886,8 +886,13 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T877 P1 - Add a reusable dense table interaction contract that covers sortable headers, pagination copy, visible columns, export, and bulk actions.
 - [x] T878 P1 - Add a reusable workspace feedback pattern for empty, loading, error, success, forbidden, and validation summary states.
 - [x] T879 P1 - Add a mobile-friendly workspace navigation fallback with accessible labels, persistent focus states, and no horizontal scroll.
-- [ ] T880 P1 - Add a route compatibility map so legacy CRM, Stock, Accounting, Payroll, POS, Compliance, and Admin pages share the new shell language.
+- [x] T880 P1 - Add a route compatibility map so legacy CRM, Stock, Accounting, Payroll, POS, Compliance, and Admin pages share the new shell language.
 - [x] T881 P1 - Add UX verification tests that prove the Odoo/Sage-grade shell, Sales workspace, Purchases workspace, and Inventory workspace render French ERP controls.
+- [x] T882 P1 - Add shared fixtures for accounting, payroll, POS, admin, compliance, inventory reservations, adjustments, and count workflows.
+- [x] T883 P1 - Add a reusable admin/compliance control pattern for roles, numbering, adapters, archives, audit, feature gates, and diagnostics.
+- [x] T884 P1 - Add a French ERP design-system catalog page covering tokens, component states, icon badges, glossary, and Arabic-ready fields.
+- [x] T885 P1 - Add contextual help and onboarding journey panels for trading, services, retail/POS, and payroll-heavy Moroccan SMEs.
+- [x] T886 P1 - Add route-level verification tests for Accounting, Payroll, POS, Admin/Conformité, and design-system responsiveness.
 
 ## Competitive UX Execution And Productization
 

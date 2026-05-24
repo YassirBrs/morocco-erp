@@ -44,8 +44,13 @@ const enterpriseResiliencePageFiles = readdirSync(new URL('../pages/enterprise-r
 const uxShellWorkspace = readFileSync(new URL('../features/ux-organization/erp-shell-workspace.tsx', import.meta.url), 'utf8');
 const uxWorkspacePatterns = readFileSync(new URL('../features/ux-organization/erp-workspace-patterns.tsx', import.meta.url), 'utf8');
 const uxWorkspaceFixtures = readFileSync(new URL('../features/ux-organization/erp-workspace-fixtures.ts', import.meta.url), 'utf8');
+const erpOperationsFixtures = readFileSync(new URL('../features/ux-organization/erp-operations-fixtures.ts', import.meta.url), 'utf8');
 const salesWorkspacePage = readFileSync(new URL('../features/ux-organization/sales-workspace-page.tsx', import.meta.url), 'utf8');
 const purchasesInventoryWorkspacePage = readFileSync(new URL('../features/ux-organization/purchases-inventory-workspace-page.tsx', import.meta.url), 'utf8');
+const accountingWorkspacePage = readFileSync(new URL('../features/ux-organization/accounting-workspace-page.tsx', import.meta.url), 'utf8');
+const payrollWorkspacePage = readFileSync(new URL('../features/ux-organization/payroll-hr-workspace-page.tsx', import.meta.url), 'utf8');
+const posWorkspacePage = readFileSync(new URL('../features/ux-organization/pos-workspace-page.tsx', import.meta.url), 'utf8');
+const adminComplianceWorkspacePage = readFileSync(new URL('../features/ux-organization/admin-compliance-workspace-page.tsx', import.meta.url), 'utf8');
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -382,14 +387,18 @@ test('Next app exposes separate module pages instead of keeping every module onl
   for (const href of ["'/ventes'", "'/achats-stock'", "'/comptabilite'", "'/paie'", "'/admin'"]) {
     assert.ok(page.includes(href), `${href} module navigation link exists`);
   }
-  for (const [index, title] of [[1, 'CRM'], [3, 'Comptabilité'], [4, 'Paie'], [5, 'POS'], [6, 'Conformité'], [7, 'Admin SaaS']]) {
-    assert.ok(modulePages[index].includes(title), `${title} module page has its own route`);
-    assert.ok(modulePages[index].includes('className="modulePage"'), `${title} module page uses module layout`);
+  for (const [index, component] of [[3, 'AccountingWorkspacePage'], [4, 'PayrollHrWorkspacePage'], [5, 'PosWorkspacePage'], [6, 'AdminComplianceWorkspacePage'], [7, 'AdminComplianceWorkspacePage']]) {
+    assert.ok(modulePages[index].includes(component), `${component} route delegates to a dedicated workspace view`);
   }
   assert.ok(modulePages[0].includes('SalesWorkspacePage'), 'Ventes route delegates to the dedicated Sales workspace view');
+  assert.ok(modulePages[1].includes('SalesWorkspacePage'), 'CRM route delegates to the Sales/CRM workspace language');
   assert.ok(modulePages[2].includes('PurchasesInventoryWorkspacePage'), 'Stock route delegates to the dedicated Achats/Stock workspace view');
   assert.ok(salesWorkspacePage.includes('className="modulePage uxRoutePage"'), 'Sales workspace view owns the route layout');
   assert.ok(purchasesInventoryWorkspacePage.includes('className="modulePage uxRoutePage"'), 'Purchases/Inventory workspace view owns the route layout');
+  assert.ok(accountingWorkspacePage.includes('className="modulePage uxRoutePage"'), 'Accounting workspace view owns the route layout');
+  assert.ok(payrollWorkspacePage.includes('className="modulePage uxRoutePage"'), 'Payroll workspace view owns the route layout');
+  assert.ok(posWorkspacePage.includes('className="modulePage uxRoutePage uxPosMode"'), 'POS workspace view owns the route layout');
+  assert.ok(adminComplianceWorkspacePage.includes('className="modulePage uxRoutePage"'), 'Admin/Compliance workspace view owns the route layout');
   assert.ok(css.includes('.modulePage'));
 });
 
@@ -415,11 +424,38 @@ test('Sales workspace covers CRM, document flow, customer 360, invoice preview, 
 });
 
 test('Purchases and inventory workspace covers supplier 360, receipt, matching, product 360, and warehouses', () => {
-  for (const text of ['Fournisseurs 360', 'Demandes et commandes achat', 'Flux achat et réception', 'Réception magasin optimisée', 'Rapprochement facture fournisseur', 'Inventaire et stock par dépôt', 'Article 360', 'Carte des dépôts']) {
+  for (const text of ['Fournisseurs 360', 'Demandes et commandes achat', 'Flux achat et réception', 'Réception magasin optimisée', 'Rapprochement facture fournisseur', 'Inventaire et stock par dépôt', 'Article 360', 'Carte des dépôts', 'Réservations stock à libérer', 'Assistant ajustement stock', 'Workflow inventaire mobile']) {
     assert.ok(purchasesInventoryWorkspacePage.includes(text), `${text} Purchases/Inventory workspace section exists`);
   }
   for (const text of ['Fournitures Nord', 'BC-2026-018', 'CUMP', 'Code-barres', 'Quarantaine', 'Créer dépôt']) {
-    assert.ok(purchasesInventoryWorkspacePage.includes(text) || uxWorkspaceFixtures.includes(text), `${text} Purchases/Inventory workflow label exists`);
+    assert.ok(purchasesInventoryWorkspacePage.includes(text) || uxWorkspaceFixtures.includes(text) || erpOperationsFixtures.includes(text), `${text} Purchases/Inventory workflow label exists`);
+  }
+});
+
+test('Accounting, Payroll, POS, and Admin workspaces render French ERP controls', () => {
+  for (const text of ['Sélecteur PCGE', 'Journaux et écritures', 'Cockpit TVA', 'Centre de clôture fiscale', 'Rapprochement bancaire', 'Mode revue comptable']) {
+    assert.ok(accountingWorkspacePage.includes(text), `${text} accounting section exists`);
+  }
+  for (const text of ['Salarié 360', 'Assistant run paie', 'Explication de calcul paie', 'Validation Damancom', 'Calendrier congés', 'Centre documents RH']) {
+    assert.ok(payrollWorkspacePage.includes(text), `${text} payroll section exists`);
+  }
+  for (const text of ['Écran caisse tactile', 'Tickets et paiements', 'Clôture session POS', 'Aperçu reçu et Z report', 'Remboursements autorisés', 'Offline sync review']) {
+    assert.ok(posWorkspacePage.includes(text), `${text} POS section exists`);
+  }
+  for (const text of ['Utilisateurs, rôles et permissions', 'Paramètres de numérotation', 'Rule packs conformité Maroc', 'Centre adaptateurs', 'Archive légale et preuves', 'Explorateur audit', 'Diagnostics support et feature gates']) {
+    assert.ok(adminComplianceWorkspacePage.includes(text), `${text} admin/compliance section exists`);
+  }
+});
+
+test('Design-system catalog covers tokens, glossary, Arabic-ready fields, help, and onboarding journeys', () => {
+  for (const text of ['Catalogue design system ERP', 'Tokens', 'Composants', 'Icônes badges', 'Glossaire FR', 'Arabic-ready', 'Parcours guidés', 'Tiroir d’aide contextuelle']) {
+    assert.ok(adminComplianceWorkspacePage.includes(text), `${text} design-system panel exists`);
+  }
+  for (const text of ['Couleur primaire', 'Bouton icône', 'Télédéclaration', 'Nom arabe', 'Société de négoce', 'Retail/POS', 'PME forte paie']) {
+    assert.ok(erpOperationsFixtures.includes(text), `${text} design-system fixture exists`);
+  }
+  for (const cssToken of ['.uxPosGrid', '.uxDesignCatalog', '.uxPosMode button', '.uxDesignCatalog span']) {
+    assert.ok(css.includes(cssToken), `${cssToken} responsive design style exists`);
   }
 });
 
