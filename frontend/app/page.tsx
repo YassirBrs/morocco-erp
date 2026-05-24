@@ -7,6 +7,7 @@ import {
   getEnterpriseAccelerationReadiness,
   getEnterpriseDepthReadiness,
   getEnterpriseExpansionReadiness,
+  getEnterpriseIntelligenceReadiness,
   getEnterpriseOperationsReadiness,
   getGovernanceReadiness,
   getGrowthControlReadiness,
@@ -28,6 +29,7 @@ import {
 import { enterpriseDepthFeatureDefinitions } from '../features/enterprise-depth/enterprise-depth-feature-config';
 import { enterpriseAccelerationFeatureDefinitions } from '../features/enterprise-acceleration/enterprise-acceleration-feature-config';
 import { enterpriseExpansionFeatureDefinitions } from '../features/enterprise-expansion/enterprise-expansion-feature-config';
+import { enterpriseIntelligenceFeatureDefinitions } from '../features/enterprise-intelligence/enterprise-intelligence-feature-config';
 import { enterpriseOperationsFeatureDefinitions } from '../features/enterprise-operations/enterprise-operations-feature-config';
 
 const formatMad = (value: number) =>
@@ -57,7 +59,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion, enterpriseAcceleration] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion, enterpriseAcceleration, enterpriseIntelligence] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -83,6 +85,7 @@ export default async function DashboardPage() {
     getEnterpriseOperationsReadiness(),
     getEnterpriseExpansionReadiness(),
     getEnterpriseAccelerationReadiness(),
+    getEnterpriseIntelligenceReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -972,6 +975,73 @@ export default async function DashboardPage() {
           </div>
           <div className="featureLinks" aria-label="Pages dédiées accélération entreprise">
             {enterpriseAccelerationFeatureDefinitions.map((feature) => (
+              <a key={feature.key} href={feature.route}>{feature.title}</a>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Intelligence entreprise Maroc batch">
+          <PanelHeader title="Intelligence entreprise Maroc" action="Piloter décisions" />
+          <div className="reportGrid">
+            <Metric label="Pipeline pondéré" value={formatMad(enterpriseIntelligence.salesPipelineForecast.totalWeighted)} />
+            <Metric label="DSO prévu" value={`${enterpriseIntelligence.dsoForecast.forecastDays} jours`} />
+            <Metric label="Runway cash" value={`${enterpriseIntelligence.cashRunway.runwayDays} jours`} />
+            <Metric label="Régions rentables" value={String(enterpriseIntelligence.regionalProfitability.rows.length)} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Ventes, pricing et cash" rows={[
+              `Pipeline ${formatMad(enterpriseIntelligence.salesPipelineForecast.totalWeighted)}`,
+              `CLV clients ${enterpriseIntelligence.customerLifetimeValue.rows.length}`,
+              `Renouvellements ${enterpriseIntelligence.renewalRevenueCalendar.rows.length}`,
+              `Pricing ${enterpriseIntelligence.pricingElasticity.approval}`,
+              `DSO ${enterpriseIntelligence.dsoForecast.escalation}`,
+              `Covenant ${enterpriseIntelligence.bankCovenant.alert}`,
+              `Runway ${enterpriseIntelligence.cashRunway.runwayDays} jours`,
+              `Assurance crédit ${enterpriseIntelligence.creditInsurance.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="Achats, stock et production" rows={[
+              `Variance fournisseur ${enterpriseIntelligence.supplierPriceVariance.rows.length}`,
+              `Budget restant ${formatMad(enterpriseIntelligence.purchaseBudgetBurn.remainingBudget)}`,
+              `Service stock ${enterpriseIntelligence.stockServiceLevel.rows.length}`,
+              `Forecast demande ${enterpriseIntelligence.demandForecast.rows.length}`,
+              `Slotting ${enterpriseIntelligence.warehouseSlotting.rows.length}`,
+              `Yield production ${enterpriseIntelligence.productionYield.rows.length}`,
+              `Non-conformité ${enterpriseIntelligence.qualityNonconformance.status}`,
+            ]} empty="-" />
+            <MiniList title="RH, paie, support et plateforme" rows={[
+              `Overtime ${enterpriseIntelligence.payrollOvertimeRisk.rows.length}`,
+              `Passif congés ${enterpriseIntelligence.leaveLiability.rows.length}`,
+              `ROI formation ${enterpriseIntelligence.trainingRoi.rows.length}`,
+              `CNSS ${enterpriseIntelligence.cnssDueReminder.status}`,
+              `KB support ${enterpriseIntelligence.supportDeflectionKb.rows.length}`,
+              `Entitlements ${enterpriseIntelligence.featureEntitlementAudit.enabledModules.length}`,
+              `API budget ${enterpriseIntelligence.apiErrorBudget.rows.length}`,
+              `Webhook SLO ${enterpriseIntelligence.webhookDeliverySlo.rows.length}`,
+            ]} empty="-" />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Fiscal, audit et conformité" rows={[
+              `TVA scénario ${formatMad(enterpriseIntelligence.vatSensitivity.cashScenario)}`,
+              `ICE/IF anomalies ${enterpriseIntelligence.iceIfDataQuality.rows.length}`,
+              `Audit sample ${enterpriseIntelligence.auditSampling.selectedEntries}`,
+              `Purge rétention ${enterpriseIntelligence.dataRetentionPurge.rows.length}`,
+              `Backup ${enterpriseIntelligence.backupRestoreSla.status}`,
+              `Régions ${enterpriseIntelligence.regionalProfitability.rows.length}`,
+              `Expansion agences ${enterpriseIntelligence.branchExpansionReadiness.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="Commerce, POS et partenaires" rows={[
+              `Retours e-commerce ${enterpriseIntelligence.ecommerceReturnReasons.rows.length}`,
+              `Anomalies POS ${enterpriseIntelligence.posFraudAnomaly.rows.length}`,
+              `Cohortes fidélité ${enterpriseIntelligence.loyaltyCohorts.rows.length}`,
+              `TTV ${enterpriseIntelligence.onboardingTimeToValue.daysElapsed} jours`,
+              `Referrals ${enterpriseIntelligence.partnerReferralPipeline.rows.length}`,
+              `Charge comptable ${enterpriseIntelligence.accountantWorkloadBalancing.rows.length}`,
+              `Maintenance ${enterpriseIntelligence.maintenanceCostTrend.rows.length}`,
+              `CO2 flotte ${enterpriseIntelligence.fleetCo2Fuel.rows.length}`,
+            ]} empty="-" />
+          </div>
+          <div className="featureLinks" aria-label="Pages dédiées intelligence entreprise">
+            {enterpriseIntelligenceFeatureDefinitions.map((feature) => (
               <a key={feature.key} href={feature.route}>{feature.title}</a>
             ))}
           </div>

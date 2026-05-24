@@ -29,6 +29,9 @@ const enterpriseExpansionPageFiles = readdirSync(new URL('../pages/enterprise-ex
 const enterpriseAccelerationConfig = readFileSync(new URL('../features/enterprise-acceleration/enterprise-acceleration-feature-config.ts', import.meta.url), 'utf8');
 const enterpriseAccelerationFeaturePage = readFileSync(new URL('../features/enterprise-acceleration/enterprise-acceleration-feature-page.tsx', import.meta.url), 'utf8');
 const enterpriseAccelerationPageFiles = readdirSync(new URL('../pages/enterprise-acceleration', import.meta.url));
+const enterpriseIntelligenceConfig = readFileSync(new URL('../features/enterprise-intelligence/enterprise-intelligence-feature-config.ts', import.meta.url), 'utf8');
+const enterpriseIntelligenceFeaturePage = readFileSync(new URL('../features/enterprise-intelligence/enterprise-intelligence-feature-page.tsx', import.meta.url), 'utf8');
+const enterpriseIntelligencePageFiles = readdirSync(new URL('../pages/enterprise-intelligence', import.meta.url));
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -755,4 +758,71 @@ test('Enterprise acceleration batch has one descriptive dedicated frontend page 
   assert.ok(enterpriseAccelerationFeaturePage.includes('EnterpriseAccelerationFeaturePage'), 'shared acceleration feature page component exists');
   assert.ok(enterpriseAccelerationConfig.includes('enterpriseAccelerationFeatureDefinitions'), 'acceleration feature definitions are centralized');
   assert.ok(page.includes('enterpriseAccelerationFeatureDefinitions'), 'dashboard links to dedicated acceleration feature pages');
+});
+
+test('Next primary workspace exposes 40-task Morocco enterprise intelligence controls batch', () => {
+  for (const text of ['Intelligence entreprise Maroc', 'Pipeline pondéré', 'DSO prévu', 'Runway cash', 'Régions rentables', 'Ventes, pricing et cash', 'Achats, stock et production', 'RH, paie, support et plateforme', 'Fiscal, audit et conformité', 'Commerce, POS et partenaires']) {
+    assert.ok(page.includes(text), `${text} enterprise intelligence label is present`);
+  }
+  for (const marker of ['getEnterpriseIntelligenceReadiness', 'enterpriseIntelligence.salesPipelineForecast', 'enterpriseIntelligence.cashRunway', 'enterpriseIntelligence.regionalProfitability', 'enterpriseIntelligence.accountantWorkloadBalancing']) {
+    assert.ok(page.includes(marker), `${marker} enterprise intelligence helper is present`);
+  }
+  assert.ok(api.includes('/tenant/enterprise-intelligence-readiness'), 'enterprise intelligence endpoint is wired');
+  for (const token of ['salesPipelineForecast', 'customerLifetimeValue', 'renewalRevenueCalendar', 'pricingElasticity', 'dsoForecast', 'supplierPriceVariance', 'purchaseBudgetBurn', 'stockServiceLevel', 'demandForecast', 'warehouseSlotting', 'productionYield', 'qualityNonconformance', 'fleetCo2Fuel', 'maintenanceCostTrend', 'projectMilestoneBillingRisk', 'consultantStaffingForecast', 'payrollOvertimeRisk', 'leaveLiability', 'trainingRoi', 'cnssDueReminder', 'vatSensitivity', 'iceIfDataQuality', 'auditSampling', 'bankCovenant', 'cashRunway', 'creditInsurance', 'ecommerceReturnReasons', 'posFraudAnomaly', 'loyaltyCohorts', 'supportDeflectionKb', 'onboardingTimeToValue', 'featureEntitlementAudit', 'apiErrorBudget', 'webhookDeliverySlo', 'dataRetentionPurge', 'backupRestoreSla', 'regionalProfitability', 'branchExpansionReadiness', 'partnerReferralPipeline', 'accountantWorkloadBalancing']) {
+    assert.ok(api.includes(token), `${token} enterprise intelligence data key is represented`);
+  }
+});
+
+test('Enterprise intelligence batch has one descriptive dedicated frontend page per feature', () => {
+  const expectedFiles = [
+    'sales-pipeline-forecast-page.tsx',
+    'customer-lifetime-value-dashboard-page.tsx',
+    'renewal-revenue-calendar-page.tsx',
+    'pricing-elasticity-simulator-page.tsx',
+    'dso-forecast-control-page.tsx',
+    'supplier-price-variance-monitor-page.tsx',
+    'purchase-budget-burn-dashboard-page.tsx',
+    'stock-service-level-dashboard-page.tsx',
+    'demand-forecast-review-page.tsx',
+    'warehouse-slotting-optimizer-page.tsx',
+    'production-yield-analytics-page.tsx',
+    'quality-nonconformance-workflow-page.tsx',
+    'fleet-co2-fuel-dashboard-page.tsx',
+    'maintenance-cost-trend-page.tsx',
+    'project-milestone-billing-risk-page.tsx',
+    'consultant-staffing-forecast-page.tsx',
+    'payroll-overtime-risk-forecast-page.tsx',
+    'leave-liability-report-page.tsx',
+    'training-roi-tracker-page.tsx',
+    'cnss-due-reminder-page.tsx',
+    'vat-sensitivity-analysis-page.tsx',
+    'ice-if-data-quality-queue-page.tsx',
+    'audit-sampling-engine-page.tsx',
+    'bank-covenant-monitor-page.tsx',
+    'cash-runway-dashboard-page.tsx',
+    'credit-insurance-register-page.tsx',
+    'ecommerce-return-reason-analytics-page.tsx',
+    'pos-fraud-anomaly-dashboard-page.tsx',
+    'loyalty-cohort-analytics-page.tsx',
+    'support-deflection-knowledge-base-dashboard-page.tsx',
+    'onboarding-time-to-value-tracker-page.tsx',
+    'feature-entitlement-audit-page.tsx',
+    'api-error-budget-dashboard-page.tsx',
+    'webhook-delivery-slo-dashboard-page.tsx',
+    'data-retention-purge-simulator-page.tsx',
+    'backup-restore-sla-dashboard-page.tsx',
+    'moroccan-regional-profitability-dashboard-page.tsx',
+    'branch-expansion-readiness-page.tsx',
+    'partner-referral-pipeline-page.tsx',
+    'accountant-workload-balancing-page.tsx',
+  ];
+  assert.equal(enterpriseIntelligencePageFiles.filter((file) => file.endsWith('-page.tsx')).length, 40);
+  for (const file of expectedFiles) {
+    assert.ok(enterpriseIntelligencePageFiles.includes(file), `${file} dedicated page exists`);
+    const source = readFileSync(new URL(`../pages/enterprise-intelligence/${file}`, import.meta.url), 'utf8');
+    assert.ok(source.includes('makeEnterpriseIntelligenceServerSideProps'), `${file} has server-side data wiring`);
+  }
+  assert.ok(enterpriseIntelligenceFeaturePage.includes('EnterpriseIntelligenceFeaturePage'), 'shared intelligence feature page component exists');
+  assert.ok(enterpriseIntelligenceConfig.includes('enterpriseIntelligenceFeatureDefinitions'), 'intelligence feature definitions are centralized');
+  assert.ok(page.includes('enterpriseIntelligenceFeatureDefinitions'), 'dashboard links to dedicated intelligence feature pages');
 });

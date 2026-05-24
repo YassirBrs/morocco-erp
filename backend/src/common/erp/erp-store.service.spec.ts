@@ -2528,4 +2528,65 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(store.listFiscalPeriods().find((period) => period.year === year && period.month === month))
       .toMatchObject({ locked: true, status: 'LOCKED' });
   });
+
+  it('covers the enterprise intelligence batch for forecasts, risk, operations, and platform controls', () => {
+    const batch = store.moroccoEnterpriseIntelligenceReadiness();
+
+    expect(batch.salesPipelineForecast.totalWeighted).toBeGreaterThanOrEqual(0);
+    expect(batch.customerLifetimeValue.rows[0]).toHaveProperty('retentionAction');
+    expect(batch.renewalRevenueCalendar.rows[0]).toHaveProperty('noticePeriod');
+    expect(batch.pricingElasticity.forecastImpact.length).toBeGreaterThan(0);
+    expect(batch.dsoForecast).toHaveProperty('targetDays', 45);
+    expect(batch.supplierPriceVariance.rows[0]).toHaveProperty('approvalThreshold');
+    expect(batch.purchaseBudgetBurn).toHaveProperty('remainingBudget');
+    expect(batch.stockServiceLevel.rows[0]).toHaveProperty('fillRate');
+    expect(batch.demandForecast.rows[0]).toHaveProperty('suggestedPo');
+    expect(batch.warehouseSlotting.rows[0]).toHaveProperty('movePlan');
+    expect(batch.productionYield.rows[0]).toHaveProperty('correctiveOwner');
+    expect(batch.qualityNonconformance).toHaveProperty('capa');
+    expect(batch.fleetCo2Fuel.rows[0]).toHaveProperty('co2Kg');
+    expect(batch.maintenanceCostTrend.rows[0]).toHaveProperty('replacementSignal');
+    expect(batch.projectMilestoneBillingRisk).toHaveProperty('delayOwner');
+    expect(batch.consultantStaffingForecast).toHaveProperty('hiringTrigger');
+    expect(batch.payrollOvertimeRisk.rows[0]).toHaveProperty('legalCap');
+    expect(batch.leaveLiability.rows[0]).toHaveProperty('liability');
+    expect(batch.trainingRoi.rows[0]).toHaveProperty('renewalDate');
+    expect(batch.cnssDueReminder).toHaveProperty('paymentDeadline');
+    expect(batch.vatSensitivity).toHaveProperty('cashScenario');
+    expect(batch.iceIfDataQuality).toHaveProperty('rows');
+    expect(batch.auditSampling).toHaveProperty('selectedEntries');
+    expect(batch.bankCovenant).toHaveProperty('threshold');
+    expect(batch.cashRunway.runwayDays).toBeGreaterThan(0);
+    expect(batch.creditInsurance.rows[0]).toHaveProperty('evidence');
+    expect(batch.ecommerceReturnReasons.rows[0]).toHaveProperty('correctiveAction');
+    expect(batch.posFraudAnomaly.rows[0]).toHaveProperty('escalation');
+    expect(batch.loyaltyCohorts.rows[0]).toHaveProperty('liability');
+    expect(batch.supportDeflectionKb.rows[0]).toHaveProperty('owner');
+    expect(batch.onboardingTimeToValue).toHaveProperty('successManager');
+    expect(batch.featureEntitlementAudit).toHaveProperty('remediation');
+    expect(batch.apiErrorBudget.rows[0]).toHaveProperty('slo');
+    expect(batch.webhookDeliverySlo).toHaveProperty('rows');
+    expect(batch.dataRetentionPurge.rows[0]).toHaveProperty('approval');
+    expect(batch.backupRestoreSla).toHaveProperty('rto');
+    expect(batch.regionalProfitability.rows[0]).toHaveProperty('taxNote');
+    expect(batch.branchExpansionReadiness.rows[0]).toHaveProperty('launchChecklist');
+    expect(batch.partnerReferralPipeline.rows[0]).toHaveProperty('commission');
+    expect(batch.accountantWorkloadBalancing.rows[0]).toHaveProperty('reassignmentProposal');
+  });
+
+  it('keeps enterprise intelligence readiness read-only for tenant operational records', () => {
+    const before = {
+      invoices: store.listInvoices().length,
+      journalEntries: store.listJournalEntries().length,
+      auditLogs: store.auditLogs().length,
+    };
+
+    store.moroccoEnterpriseIntelligenceReadiness();
+
+    expect({
+      invoices: store.listInvoices().length,
+      journalEntries: store.listJournalEntries().length,
+      auditLogs: store.auditLogs().length,
+    }).toEqual(before);
+  });
 });

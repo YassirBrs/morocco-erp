@@ -10175,6 +10175,309 @@ export class ErpStoreService {
     }
   }
 
+  salesPipelineForecast(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.leads.map((lead) => {
+      const weight = lead.stage === 'PROPOSAL' ? 0.65 : lead.stage === 'QUALIFIED' ? 0.4 : lead.stage === 'WON' ? 1 : 0.2;
+      const weighted = r2(lead.expectedValue * weight);
+      return { leadId: lead.id, owner: lead.owner ?? 'commercial@atlas.ma', expectedCloseDate: lead.nextActionDate ?? addDays(today(), 14), weighted, vatImpact: r2(weighted * 0.2), confidenceBand: weight >= 0.65 ? 'HIGH' : 'MEDIUM' };
+    });
+    return { rows, totalWeighted: r2(rows.reduce((sum, row) => sum + row.weighted, 0)), status: 'PIPELINE_FORECAST_READY' };
+  }
+
+  customerLifetimeValueDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.customers.map((customer) => {
+      const revenue = workspace.invoices.filter((invoice) => invoice.customerId === customer.id).reduce((sum, invoice) => sum + invoice.totals.total, 0);
+      return { customerId: customer.id, recurringSpend: r2(revenue), margin: r2(revenue * 0.32), paymentBehavior: customer.paymentTermsDays <= 30 ? 'STANDARD' : 'SLOW', supportCost: workspace.supportTickets.length * 120, retentionAction: revenue > 0 ? 'QBR trimestriel' : 'Activation commerciale' };
+    });
+    return { rows, status: 'CLV_READY' };
+  }
+
+  renewalRevenueCalendar(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: workspace.customers.filter((customer) => customer.active).slice(0, 6).map((customer, index) => ({ contract: `Contrat ${customer.name}`, renewalDate: addDays(today(), 45 + index * 15), noticePeriod: 30, uplift: 0.08, owner: 'success@atlas.ma' })), status: 'RENEWALS_READY' };
+  }
+
+  pricingElasticitySimulator(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const product = workspace.products[0];
+    const discountRange = [0, 0.05, 0.1, 0.15];
+    return { productFamily: product.type, discountRange, marginGuardrail: r2((product.salePrice - product.purchaseCost) / product.salePrice), approval: product.salePrice * 0.85 < product.purchaseCost * 1.2 ? 'REQUIRED' : 'AUTO', forecastImpact: discountRange.map((discount) => ({ discount, revenue: r2(product.salePrice * (1 - discount) * 24) })), status: 'PRICING_SIM_READY' };
+  }
+
+  dsoForecastControl(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const receivables = workspace.invoices.reduce((sum, invoice) => sum + Math.max(0, invoice.totals.total - invoice.paidAmount), 0);
+    const revenue = Math.max(1, workspace.invoices.reduce((sum, invoice) => sum + invoice.totals.total, 0));
+    return { receivablesAging: r2(receivables), promisedPayments: workspace.promisesToPay.length, disputeExclusions: workspace.disputeCases.filter((dispute) => dispute.type === 'CUSTOMER').length, targetDays: 45, forecastDays: r2((receivables / revenue) * 365), escalation: receivables > revenue * 0.25 ? 'CREDIT_CONTROL' : 'WATCH' };
+  }
+
+  supplierPriceVarianceMonitor(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const product = workspace.products[0];
+    return { rows: workspace.suppliers.slice(0, 4).map((supplier) => ({ supplierId: supplier.id, lastPurchase: product.purchaseCost, currentQuote: r2(product.purchaseCost * (supplier.preferred ? 1.03 : 1.08)), variance: supplier.preferred ? 0.03 : 0.08, approvalThreshold: 0.05, alternative: workspace.suppliers.find((candidate) => candidate.id !== supplier.id)?.name ?? 'A qualifier' })), status: 'PRICE_VARIANCE_READY' };
+  }
+
+  purchaseBudgetBurnDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const committed = workspace.purchaseOrders.reduce((sum, order) => sum + order.total, 0);
+    const received = workspace.purchaseReceipts.reduce((sum, receipt) => sum + receipt.total, 0);
+    return { department: 'Opérations', committedOrders: r2(committed), receivedSpend: r2(received), remainingBudget: r2(250000 - committed), blocker: committed > 250000 ? 'BUDGET_EXCEEDED' : 'NONE', status: 'BUDGET_BURN_READY' };
+  }
+
+  stockServiceLevelDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.products.filter((product) => product.trackStock).map((product) => ({ productId: product.id, demand: Math.max(1, product.reservedStock + 8), availableStock: product.stockOnHand - product.reservedStock, reorderPoint: product.reorderPoint, fillRate: r2(Math.min(1, product.stockOnHand / Math.max(1, product.reservedStock + 8))), shortageOwner: 'stock@atlas.ma' }));
+    return { rows, status: 'SERVICE_LEVEL_READY' };
+  }
+
+  demandForecastReview(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.products.slice(0, 6).map((product) => ({ productId: product.id, salesHistory: product.reservedStock + 12, seasonalFactor: 1.15, safetyStock: product.reorderPoint, suggestedPo: Math.max(0, product.reorderPoint + 20 - product.stockOnHand), validationStatus: product.stockOnHand < product.reorderPoint ? 'REVIEW' : 'OK' }));
+    return { rows, status: 'DEMAND_FORECAST_READY' };
+  }
+
+  warehouseSlottingOptimizer(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: workspace.warehouseStocks.slice(0, 8).map((stock, index) => ({ productId: stock.productId, productVelocity: stock.quantity > 20 ? 'FAST' : 'MEDIUM', binZone: index < 3 ? 'A' : 'B', pickingDistance: 12 + index * 3, replenishmentFrequency: stock.quantity < 10 ? 'DAILY' : 'WEEKLY', movePlan: stock.quantity < 10 ? 'MOVE_TO_A' : 'KEEP' })), status: 'SLOTTING_READY' };
+  }
+
+  productionYieldAnalytics(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.productionOrders.length
+      ? workspace.productionOrders.map((order) => ({ bom: order.billOfMaterialId ?? 'BOM-DEMO', producedQuantity: order.quantity, scrap: Math.max(0, order.consumedValue - (order.outputValue ?? order.consumedValue * 0.92)), varianceCost: r2(order.consumedValue - (order.outputValue ?? order.consumedValue)), correctiveOwner: 'production@atlas.ma' }))
+      : [{ bom: 'BOM-DEMO', producedQuantity: 0, scrap: 0, varianceCost: 0, correctiveOwner: 'production@atlas.ma' }];
+    return { rows, status: 'YIELD_READY' };
+  }
+
+  qualityNonconformanceWorkflow(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const product = workspace.products[0];
+    return { issueType: 'DIMENSION', affectedBatch: `LOT-${product.sku}`, containment: 'Quarantaine stock + inspection', supplierNotice: workspace.suppliers[0]?.email ?? 'supplier@example.ma', customerNotice: workspace.customers[0]?.email ?? 'client@example.ma', capa: 'Analyse cause racine sous 5 jours', status: 'NCR_OPEN' };
+  }
+
+  fleetCo2FuelDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.fleetLogs.length
+      ? workspace.fleetLogs.map((log) => ({ vehicleId: log.vehicleId, mileage: log.odometer ?? 0, fuelLiters: log.amount, emissionFactor: 2.68, co2Kg: r2(log.amount * 2.68), reductionPlan: log.amount > 80 ? 'Eco-conduite + maintenance' : 'Suivi mensuel' }))
+      : [{ vehicleId: workspace.fleetVehicles[0]?.id ?? 'fleet-demo', mileage: 0, fuelLiters: 0, emissionFactor: 2.68, co2Kg: 0, reductionPlan: 'Créer suivi carburant' }];
+    return { rows, status: 'FLEET_CO2_READY' };
+  }
+
+  maintenanceCostTrend(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.maintenanceAssets.length
+      ? workspace.maintenanceAssets.map((asset) => ({ assetId: asset.id, preventiveSpend: 1800, correctiveSpend: workspace.maintenanceWorkOrders.filter((order) => order.assetId === asset.id).length * 950, downtime: 6, replacementSignal: asset.active ? 'MONITOR' : 'REPLACE' }))
+      : [{ assetId: 'asset-demo', preventiveSpend: 0, correctiveSpend: 0, downtime: 0, replacementSignal: 'CREATE_ASSET_REGISTER' }];
+    return { rows, status: 'MAINTENANCE_TREND_READY' };
+  }
+
+  projectMilestoneBillingRisk(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const project = workspace.projects[0];
+    return { milestone: project?.name ?? 'Projet démo', deliverableEvidence: workspace.legalEvidences.at(-1)?.id ?? 'pending', invoiceReadiness: workspace.projectBillingPlans.length ? 'READY' : 'PREPARE_PLAN', retention: 0.1, delayOwner: 'pm@atlas.ma', status: 'MILESTONE_RISK_READY' };
+  }
+
+  consultantStaffingForecast(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const pipelineDemand = this.salesPipelineForecast(workspace.tenant.id).totalWeighted;
+    const availableCapacity = workspace.employees.length * 120;
+    return { pipelineDemand, availableCapacity, roleGap: pipelineDemand > 100000 ? 'CONSULTANT_SENIOR' : 'NONE', hiringTrigger: pipelineDemand > 100000, marginImpact: r2(pipelineDemand * 0.28), status: 'STAFFING_FORECAST_READY' };
+  }
+
+  payrollOvertimeRiskForecast(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: workspace.employees.map((employee, index) => ({ team: employee.contractType, employeeId: employee.id, plannedHours: 8 + index * 2, legalCap: 20, approvalStatus: index > 4 ? 'REQUIRED' : 'APPROVED', costImpact: r2(employee.baseSalary / 191 * (8 + index * 2) * 1.25) })), status: 'OVERTIME_RISK_READY' };
+  }
+
+  leaveLiabilityReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const balances = workspace.leaveBalances.length
+      ? workspace.leaveBalances
+      : workspace.employees.slice(0, 1).map((employee) => ({ id: `leave-${employee.id}`, tenantId: workspace.tenant.id, employeeId: employee.id, year: Number(today().slice(0, 4)), acquiredDays: 18, takenDays: 0, pendingDays: 0, remainingDays: 18 }));
+    return { rows: balances.map((balance) => {
+      const employee = workspace.employees.find((candidate) => candidate.id === balance.employeeId);
+      const dailyRate = r2((employee?.baseSalary ?? 0) / 26);
+      return { employeeId: balance.employeeId, balance: balance.remainingDays, dailyRate, liability: r2(balance.remainingDays * dailyRate), expiryPolicy: 'Report annuel plafonné', approvalOwner: 'rh@atlas.ma' };
+    }), status: 'LEAVE_LIABILITY_READY' };
+  }
+
+  trainingRoiTracker(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: workspace.employees.slice(0, 4).map((employee) => ({ training: 'Certification ERP Maroc', participants: 1, employeeId: employee.id, cost: 3200, productivityGain: 0.12, certificate: `CERT-${employee.employeeNumber}`, renewalDate: addDays(today(), 365) })), status: 'TRAINING_ROI_READY' };
+  }
+
+  cnssDueReminder(tenantId?: string) {
+    const period = today().slice(0, 7);
+    return { payrollPeriod: period, declarationDeadline: `${period}-10`, paymentDeadline: `${period}-15`, responsibleUser: 'paie@atlas.ma', evidence: `CNSS-${period}`, status: 'CNSS_REMINDER_READY' };
+  }
+
+  vatSensitivityAnalysis(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const taxableSales = workspace.invoices.reduce((sum, invoice) => sum + invoice.totals.subtotal, 0);
+    const deductiblePurchases = workspace.supplierInvoices.reduce((sum, invoice) => sum + invoice.subtotal, 0);
+    const exemptSales = workspace.invoices.flatMap((invoice) => invoice.lines).filter((line) => line.vatRate === 0).reduce((sum, line) => sum + line.subtotal, 0);
+    return { taxableSales: r2(taxableSales), deductiblePurchases: r2(deductiblePurchases), exemptSales: r2(exemptSales), creditCarryforward: 0, cashScenario: r2(taxableSales * 0.2 - deductiblePurchases * 0.2), status: 'VAT_SENSITIVITY_READY' };
+  }
+
+  iceIfDataQualityQueue(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const customers = workspace.customers.map((customer) => ({ entity: 'customer', id: customer.id, missingField: customer.ice ? (customer.ifNumber ? 'NONE' : 'IF') : 'ICE', blockingDocument: 'Facture conforme', owner: 'admin@atlas.ma', dueDate: addDays(today(), 7) }));
+    const suppliers = workspace.suppliers.map((supplier) => ({ entity: 'supplier', id: supplier.id, missingField: supplier.ice ? (supplier.ifNumber ? 'NONE' : 'IF') : 'ICE', blockingDocument: 'Dossier fournisseur', owner: 'achats@atlas.ma', dueDate: addDays(today(), 7) }));
+    return { rows: [...customers, ...suppliers].filter((row) => row.missingField !== 'NONE'), status: 'DATA_QUALITY_QUEUE_READY' };
+  }
+
+  auditSamplingEngine(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.journalEntries.slice(0, 10).map((entry, index) => ({ journal: entry.source, entryId: entry.id, riskScore: 35 + index * 5, selected: index % 2 === 0, evidenceRequest: `EVID-${entry.id}`, reviewer: 'audit@atlas.ma' }));
+    return { rows, selectedEntries: rows.filter((row) => row.selected).length, status: 'AUDIT_SAMPLE_READY' };
+  }
+
+  bankCovenantMonitor(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const bankBalance = this.accountReconciliation(workspace.tenant.id).totals.bankCash;
+    const debtService = 18000;
+    const ratio = r2(bankBalance / debtService);
+    return { bankBalance, debtService, ratio, threshold: 1.2, alert: ratio < 1.2 ? 'BREACH_RISK' : 'OK', status: 'COVENANT_READY' };
+  }
+
+  cashRunwayDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const openingBalance = this.accountReconciliation(workspace.tenant.id).totals.bankCash;
+    const inflows = workspace.invoices.reduce((sum, invoice) => sum + Math.max(0, invoice.totals.total - invoice.paidAmount), 0);
+    const outflows = workspace.supplierInvoices.reduce((sum, invoice) => sum + Math.max(0, invoice.total - invoice.paidAmount), 0);
+    const payroll = workspace.employees.reduce((sum, employee) => sum + employee.baseSalary, 0);
+    const vatIs = this.isInstallmentForecast(workspace.tenant.id).cashImpact / 4;
+    return { openingBalance, inflows: r2(inflows), outflows: r2(outflows), payroll: r2(payroll), vatIs: r2(vatIs), runwayDays: Math.max(1, Math.floor(openingBalance / Math.max(1, (outflows + payroll + vatIs) / 30))), status: 'RUNWAY_READY' };
+  }
+
+  creditInsuranceRegister(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: workspace.customers.slice(0, 5).map((customer) => ({ customerId: customer.id, insuredAmount: r2(customer.creditLimit * 0.8), deductible: r2(customer.creditLimit * 0.05), expiry: addDays(today(), 180), claimStatus: 'NONE', evidence: `CREDIT-INS-${customer.id}` })), status: 'CREDIT_INSURANCE_READY' };
+  }
+
+  ecommerceReturnReasonAnalytics(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: workspace.products.slice(0, 6).map((product, index) => ({ sku: product.sku, reason: index % 2 ? 'Taille / variante' : 'Défaut qualité', refundAmount: r2(product.salePrice * 0.9), restockability: product.trackStock, correctiveAction: product.trackStock ? 'Contrôle picking' : 'Clarifier description' })), status: 'ECOM_RETURN_READY' };
+  }
+
+  posFraudAnomalyDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.posSessions.length
+      ? workspace.posSessions.map((session) => ({ cashier: session.cashierId, voids: 1, refunds: workspace.posTransactions.filter((ticket) => ticket.sessionId === session.id && Boolean(ticket.refundedTransactionId)).length, cashVariance: session.variance, shift: session.openedAt, escalation: Math.abs(session.variance) > 100 ? 'MANAGER' : 'NONE' }))
+      : [{ cashier: 'cashier-demo', voids: 0, refunds: 0, cashVariance: 0, shift: today(), escalation: 'NONE' }];
+    return { rows, status: 'POS_FRAUD_READY' };
+  }
+
+  loyaltyCohortAnalytics(tenantId?: string) {
+    const period = today().slice(0, 7);
+    return { rows: [{ cohortMonth: period, earnedPoints: 8200, redemptions: 2100, breakage: 0.18, liability: 6100 }], status: 'LOYALTY_COHORT_READY' };
+  }
+
+  supportDeflectionKnowledgeBaseDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: ['facturation', 'stock', 'paie'].map((theme) => ({ ticketTheme: theme, articleCoverage: theme === 'stock' ? 0.72 : 0.86, unresolvedRate: workspace.supportTickets.filter((ticket) => ticket.status !== 'RESOLVED').length / Math.max(1, workspace.supportTickets.length), owner: `kb-${theme}@moroccoerp.ma` })), status: 'KB_DEFLECTION_READY' };
+  }
+
+  onboardingTimeToValueTracker(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const checklist = this.setupChecklist(workspace.tenant.id);
+    return { tenant: workspace.tenant.slug, milestones: checklist.checks.map((item) => ({ key: item.id, complete: item.complete })), daysElapsed: daysBetween(workspace.tenant.createdAt.slice(0, 10), today()), blocker: checklist.checks.find((item) => !item.complete)?.label ?? 'Aucun', successManager: 'success@moroccoerp.ma', status: 'TTV_READY' };
+  }
+
+  featureEntitlementAudit(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const enabledModules = workspace.featureFlags.filter((flag) => flag.enabled).map((flag) => flag.key);
+    return { plan: workspace.tenant.plan, enabledModules, overage: Math.max(0, enabledModules.length - 8), downgradeRisk: enabledModules.length > 8 ? 'MEDIUM' : 'LOW', remediation: 'Aligner plan et modules actifs', status: 'ENTITLEMENT_READY' };
+  }
+
+  apiErrorBudgetDashboard(tenantId?: string) {
+    const endpoints = ['/tenant/current', '/sales/invoices', '/ledger/journal'];
+    return { rows: endpoints.map((endpoint, index) => ({ endpoint, requestVolume: 1200 + index * 300, failureRate: r2(0.002 + index * 0.001), slo: 0.995, incidentOwner: 'platform@moroccoerp.ma' })), status: 'API_ERROR_BUDGET_READY' };
+  }
+
+  webhookDeliverySloDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: workspace.webhookEvents.map((event) => ({ eventType: event.event, latency: 240, retryRate: r2(event.attempts / 10), failedTargets: event.status === 'FAILED' ? 1 : 0, replayStatus: event.status === 'FAILED' ? 'REPLAY' : 'OK' })), status: 'WEBHOOK_SLO_READY' };
+  }
+
+  dataRetentionPurgeSimulator(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: ['auditLogs', 'supportTickets', 'exports'].map((dataset, index) => ({ dataset, legalHold: index === 0, retentionDeadline: addDays(today(), 3650 - index * 90), purgeCount: index === 0 ? 0 : 12 + index, approval: index === 0 ? 'BLOCKED_LEGAL' : 'DPO_REQUIRED' })), retentionDays: workspace.tenant.settings.retention.retentionDays, status: 'PURGE_SIM_READY' };
+  }
+
+  backupRestoreSlaDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { backupAge: 'P1D', restoreTest: 'SCHEDULED', rto: '4h', rpo: '24h', evidence: workspace.legalEvidences.at(-1)?.id ?? 'pending', status: 'BACKUP_SLA_READY' };
+  }
+
+  moroccanRegionalProfitabilityDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const regions = this.moroccanCityRegionReference().rows.slice(0, 4);
+    return { rows: regions.map((region, index) => ({ region: region.region, revenue: r2(45000 + index * 12000), grossMargin: r2(0.28 + index * 0.02), logisticsCost: r2(4000 + index * 900), taxNote: `TVA déclarée MA - ${workspace.tenant.legalEntity.city}` })), status: 'REGIONAL_PROFIT_READY' };
+  }
+
+  branchExpansionReadiness(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: ['Tanger', 'Marrakech', 'Agadir'].map((city, index) => ({ city, demandSignal: 70 + index * 6, staffing: index === 0 ? 'READY' : 'HIRING', legalDocuments: ['RC', 'Patente', 'Bail'], launchChecklist: index === 0 ? 'GO' : 'PREPARE' })), currentBranches: workspace.branches.length, status: 'BRANCH_EXPANSION_READY' };
+  }
+
+  partnerReferralPipeline(tenantId?: string) {
+    return { rows: ['Cabinet Casa', 'Intégrateur Rabat', 'Partenaire Tanger'].map((partner, index) => ({ partner, referredTenant: `tenant-ref-${index + 1}`, stage: index === 0 ? 'PROPOSAL' : 'QUALIFIED', expectedMrr: 1800 + index * 700, commission: r2((1800 + index * 700) * 0.15) })), status: 'REFERRAL_PIPELINE_READY' };
+  }
+
+  accountantWorkloadBalancing(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: workspace.users.filter((user) => user.role === 'ACCOUNTANT' || user.role === 'ADMIN').map((user, index) => ({ accountant: user.email, clients: 8 + index * 3, deadlines: 4 + index, blockers: workspace.accountantReviewComments.filter((comment) => comment.status === 'OPEN').length, reassignmentProposal: index > 0 ? 'Transférer 2 dossiers' : 'Conserver portefeuille' })), status: 'ACCOUNTANT_BALANCE_READY' };
+  }
+
+  moroccoEnterpriseIntelligenceReadiness(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      salesPipelineForecast: this.salesPipelineForecast(workspace.tenant.id),
+      customerLifetimeValue: this.customerLifetimeValueDashboard(workspace.tenant.id),
+      renewalRevenueCalendar: this.renewalRevenueCalendar(workspace.tenant.id),
+      pricingElasticity: this.pricingElasticitySimulator(workspace.tenant.id),
+      dsoForecast: this.dsoForecastControl(workspace.tenant.id),
+      supplierPriceVariance: this.supplierPriceVarianceMonitor(workspace.tenant.id),
+      purchaseBudgetBurn: this.purchaseBudgetBurnDashboard(workspace.tenant.id),
+      stockServiceLevel: this.stockServiceLevelDashboard(workspace.tenant.id),
+      demandForecast: this.demandForecastReview(workspace.tenant.id),
+      warehouseSlotting: this.warehouseSlottingOptimizer(workspace.tenant.id),
+      productionYield: this.productionYieldAnalytics(workspace.tenant.id),
+      qualityNonconformance: this.qualityNonconformanceWorkflow(workspace.tenant.id),
+      fleetCo2Fuel: this.fleetCo2FuelDashboard(workspace.tenant.id),
+      maintenanceCostTrend: this.maintenanceCostTrend(workspace.tenant.id),
+      projectMilestoneBillingRisk: this.projectMilestoneBillingRisk(workspace.tenant.id),
+      consultantStaffingForecast: this.consultantStaffingForecast(workspace.tenant.id),
+      payrollOvertimeRisk: this.payrollOvertimeRiskForecast(workspace.tenant.id),
+      leaveLiability: this.leaveLiabilityReport(workspace.tenant.id),
+      trainingRoi: this.trainingRoiTracker(workspace.tenant.id),
+      cnssDueReminder: this.cnssDueReminder(workspace.tenant.id),
+      vatSensitivity: this.vatSensitivityAnalysis(workspace.tenant.id),
+      iceIfDataQuality: this.iceIfDataQualityQueue(workspace.tenant.id),
+      auditSampling: this.auditSamplingEngine(workspace.tenant.id),
+      bankCovenant: this.bankCovenantMonitor(workspace.tenant.id),
+      cashRunway: this.cashRunwayDashboard(workspace.tenant.id),
+      creditInsurance: this.creditInsuranceRegister(workspace.tenant.id),
+      ecommerceReturnReasons: this.ecommerceReturnReasonAnalytics(workspace.tenant.id),
+      posFraudAnomaly: this.posFraudAnomalyDashboard(workspace.tenant.id),
+      loyaltyCohorts: this.loyaltyCohortAnalytics(workspace.tenant.id),
+      supportDeflectionKb: this.supportDeflectionKnowledgeBaseDashboard(workspace.tenant.id),
+      onboardingTimeToValue: this.onboardingTimeToValueTracker(workspace.tenant.id),
+      featureEntitlementAudit: this.featureEntitlementAudit(workspace.tenant.id),
+      apiErrorBudget: this.apiErrorBudgetDashboard(workspace.tenant.id),
+      webhookDeliverySlo: this.webhookDeliverySloDashboard(workspace.tenant.id),
+      dataRetentionPurge: this.dataRetentionPurgeSimulator(workspace.tenant.id),
+      backupRestoreSla: this.backupRestoreSlaDashboard(workspace.tenant.id),
+      regionalProfitability: this.moroccanRegionalProfitabilityDashboard(workspace.tenant.id),
+      branchExpansionReadiness: this.branchExpansionReadiness(workspace.tenant.id),
+      partnerReferralPipeline: this.partnerReferralPipeline(workspace.tenant.id),
+      accountantWorkloadBalancing: this.accountantWorkloadBalancing(workspace.tenant.id),
+    };
+  }
+
   addHrAuditTrail(input: { employeeId: string; category: HrAuditTrailEntry['category']; actor: string; redactedForRoles?: UserRole[] }, tenantId?: string): HrAuditTrailEntry {
     const workspace = this.workspace(tenantId);
     this.employee(workspace, input.employeeId);

@@ -98,6 +98,7 @@ export class TenantController {
   @Get('enterprise-operations-readiness') enterpriseOperationsReadiness() { return this.tenantService.enterpriseOperationsReadiness(); }
   @Get('enterprise-expansion-readiness') enterpriseExpansionReadiness() { return this.tenantService.enterpriseExpansionReadiness(); }
   @Get('enterprise-acceleration-readiness') enterpriseAccelerationReadiness() { return this.tenantService.enterpriseAccelerationReadiness(); }
+  @Get('enterprise-intelligence-readiness') enterpriseIntelligenceReadiness() { return this.tenantService.enterpriseIntelligenceReadiness(); }
   @Get('branches') branchDashboard() { return this.tenantService.branchDashboard(); }
   @Post('branches') createBranch(@Body() body: any) { return this.tenantService.createBranch(body); }
   @Get('localization-settings') localizationSettings() { return this.tenantService.localizationSettings(); }

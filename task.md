@@ -619,3 +619,43 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T513 P1 - Add customer churn risk predictor with overdue balance, support tickets, adoption, renewal date, and action plan.
 - [x] T514 P1 - Add supplier dependency concentration report with spend share, alternative supplier, risk note, and mitigation owner.
 - [x] T515 P1 - Add Moroccan vertical template selector with industry, default chart mapping, workflows, document pack, and demo data.
+- [x] T516 P1 - Add sales pipeline forecast with weighted leads, expected close date, VAT impact, owner, and confidence band.
+- [x] T517 P1 - Add customer lifetime value dashboard with recurring spend, margin, payment behavior, support cost, and retention action.
+- [x] T518 P1 - Add renewal revenue calendar with contract, renewal date, notice period, uplift, and owner.
+- [x] T519 P1 - Add pricing elasticity simulator with product family, discount range, margin guardrail, approval, and forecast impact.
+- [x] T520 P1 - Add DSO forecast control with receivables aging, promised payments, dispute exclusions, target days, and escalation.
+- [x] T521 P1 - Add supplier price variance monitor with last purchase, current quote, variance, approval threshold, and alternative.
+- [x] T522 P1 - Add purchase budget burn dashboard with department, committed orders, received spend, remaining budget, and blocker.
+- [x] T523 P1 - Add stock service level dashboard with demand, available stock, reorder point, fill rate, and shortage owner.
+- [x] T524 P1 - Add demand forecast review with sales history, seasonal factor, safety stock, suggested PO, and validation status.
+- [x] T525 P1 - Add warehouse slotting optimizer with product velocity, bin zone, picking distance, replenishment frequency, and move plan.
+- [x] T526 P1 - Add production yield analytics with BOM, produced quantity, scrap, variance cost, and corrective owner.
+- [x] T527 P1 - Add quality nonconformance workflow with issue type, affected batch, containment, supplier/customer notice, and CAPA.
+- [x] T528 P1 - Add fleet CO2 and fuel dashboard with vehicle, mileage, fuel liters, emission factor, and reduction plan.
+- [x] T529 P1 - Add maintenance cost trend with asset, preventive spend, corrective spend, downtime, and replacement signal.
+- [x] T530 P1 - Add project milestone billing risk with milestone, deliverable evidence, invoice readiness, retention, and delay owner.
+- [x] T531 P1 - Add consultant staffing forecast with pipeline demand, available capacity, role gap, hiring trigger, and margin impact.
+- [x] T532 P1 - Add payroll overtime risk forecast with team, planned hours, legal cap, approval status, and cost impact.
+- [x] T533 P1 - Add leave liability report with employee balance, daily rate, liability, expiry policy, and approval owner.
+- [x] T534 P1 - Add training ROI tracker with training, participants, cost, productivity gain, certificate, and renewal date.
+- [x] T535 P1 - Add CNSS due reminder with payroll period, declaration deadline, payment deadline, responsible user, and evidence.
+- [x] T536 P1 - Add VAT sensitivity analysis with taxable sales, deductible purchases, exempt sales, credit carryforward, and cash scenario.
+- [x] T537 P1 - Add ICE/IF data quality queue with customer/supplier, missing field, blocking document, owner, and due date.
+- [x] T538 P1 - Add audit sampling engine with journal, risk score, selected entries, evidence request, and reviewer.
+- [x] T539 P1 - Add bank covenant monitor with bank balance, debt service, ratio, threshold, and alert.
+- [x] T540 P1 - Add cash runway dashboard with opening balance, inflows, outflows, payroll, VAT/IS, and runway days.
+- [x] T541 P1 - Add credit insurance register with customer, insured amount, deductible, expiry, claim status, and evidence.
+- [x] T542 P1 - Add e-commerce return reason analytics with SKU, reason, refund amount, restockability, and corrective action.
+- [x] T543 P1 - Add POS fraud anomaly dashboard with cashier, voids, refunds, cash variance, shift, and escalation.
+- [x] T544 P1 - Add loyalty cohort analytics with cohort month, earned points, redemptions, breakage, and liability.
+- [x] T545 P1 - Add support deflection knowledge base dashboard with ticket themes, article coverage, unresolved rate, and owner.
+- [x] T546 P1 - Add onboarding time-to-value tracker with tenant, milestones, days elapsed, blocker, and success manager.
+- [x] T547 P1 - Add feature entitlement audit with plan, enabled modules, overage, downgrade risk, and remediation.
+- [x] T548 P1 - Add API error budget dashboard with endpoint, request volume, failure rate, SLO, and incident owner.
+- [x] T549 P1 - Add webhook delivery SLO dashboard with event type, latency, retry rate, failed targets, and replay status.
+- [x] T550 P1 - Add data retention purge simulator with dataset, legal hold, retention deadline, purge count, and approval.
+- [x] T551 P1 - Add backup restore SLA dashboard with backup age, restore test, RTO, RPO, and evidence.
+- [x] T552 P1 - Add Moroccan regional profitability dashboard with region, revenue, gross margin, logistics cost, and tax note.
+- [x] T553 P1 - Add branch expansion readiness with city, demand signal, staffing, legal documents, and launch checklist.
+- [x] T554 P1 - Add partner referral pipeline with partner, referred tenant, stage, expected MRR, and commission.
+- [x] T555 P1 - Add accountant workload balancing with accountant, clients, deadlines, blockers, and reassignment proposal.

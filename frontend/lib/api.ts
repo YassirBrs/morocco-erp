@@ -321,6 +321,7 @@ export type EnterpriseDepthReadiness = Record<string, any>;
 export type EnterpriseOperationsReadiness = Record<string, any>;
 export type EnterpriseExpansionReadiness = Record<string, any>;
 export type EnterpriseAccelerationReadiness = Record<string, any>;
+export type EnterpriseIntelligenceReadiness = Record<string, any>;
 
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
@@ -995,5 +996,50 @@ export async function getEnterpriseAccelerationReadiness(): Promise<EnterpriseAc
     customerChurnRisk: { riskScore: 0, actionPlan: 'A renseigner' },
     supplierDependency: { rows: [] },
     verticalTemplateSelector: { industry: 'A renseigner', status: 'VERTICAL_TEMPLATE_READY' },
+  });
+}
+
+export async function getEnterpriseIntelligenceReadiness(): Promise<EnterpriseIntelligenceReadiness> {
+  return getJson('/tenant/enterprise-intelligence-readiness', {
+    salesPipelineForecast: { rows: [], totalWeighted: 0 },
+    customerLifetimeValue: { rows: [] },
+    renewalRevenueCalendar: { rows: [] },
+    pricingElasticity: { forecastImpact: [] },
+    dsoForecast: { forecastDays: 0 },
+    supplierPriceVariance: { rows: [] },
+    purchaseBudgetBurn: { remainingBudget: 0 },
+    stockServiceLevel: { rows: [] },
+    demandForecast: { rows: [] },
+    warehouseSlotting: { rows: [] },
+    productionYield: { rows: [] },
+    qualityNonconformance: { status: 'NCR_OPEN' },
+    fleetCo2Fuel: { rows: [] },
+    maintenanceCostTrend: { rows: [] },
+    projectMilestoneBillingRisk: { status: 'MILESTONE_RISK_READY' },
+    consultantStaffingForecast: { marginImpact: 0 },
+    payrollOvertimeRisk: { rows: [] },
+    leaveLiability: { rows: [] },
+    trainingRoi: { rows: [] },
+    cnssDueReminder: { status: 'CNSS_REMINDER_READY' },
+    vatSensitivity: { cashScenario: 0 },
+    iceIfDataQuality: { rows: [] },
+    auditSampling: { selectedEntries: 0 },
+    bankCovenant: { ratio: 0 },
+    cashRunway: { runwayDays: 0 },
+    creditInsurance: { rows: [] },
+    ecommerceReturnReasons: { rows: [] },
+    posFraudAnomaly: { rows: [] },
+    loyaltyCohorts: { rows: [] },
+    supportDeflectionKb: { rows: [] },
+    onboardingTimeToValue: { daysElapsed: 0 },
+    featureEntitlementAudit: { enabledModules: [] },
+    apiErrorBudget: { rows: [] },
+    webhookDeliverySlo: { rows: [] },
+    dataRetentionPurge: { rows: [] },
+    backupRestoreSla: { status: 'BACKUP_SLA_READY' },
+    regionalProfitability: { rows: [] },
+    branchExpansionReadiness: { rows: [] },
+    partnerReferralPipeline: { rows: [] },
+    accountantWorkloadBalancing: { rows: [] },
   });
 }
