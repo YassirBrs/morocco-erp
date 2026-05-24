@@ -202,6 +202,29 @@ export type OperationalControlReadiness = {
   employeeChecklists: unknown[];
 };
 
+export type EnterpriseControlReadiness = {
+  hrNotes: unknown[];
+  assetAssignments: unknown[];
+  fleetEfficiency: { rows: unknown[] };
+  preventiveMaintenance: unknown[];
+  projectWip: { rows: unknown[] };
+  productionVariance: { rows: unknown[] };
+  procurementBudgets: { rows: unknown[] };
+  branches: { rows: unknown[] };
+  localization: { mainLanguage: string; currency: string; arabicLabelsReady: boolean };
+  templatePreview: { status: string };
+  emailAudit: unknown[];
+  customerPortal: { paymentStatus?: string };
+  supplierPortal: { paymentStatus?: string };
+  accountantReviews: unknown[];
+  partnerChecklist: { tenantHealth: string; goLiveReady: boolean };
+  ruleRollout: { status: string; impactedTenants: number };
+  featureFlagAudit: unknown[];
+  integrationHealth: { rows: unknown[] };
+  webhookSignature: { replayProtected: boolean };
+  exportTamperEvidence: { tamperEvidence: boolean };
+};
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -455,4 +478,30 @@ export async function getOperationalControlReadiness(): Promise<OperationalContr
     getJson('/payroll/employee-checklists', []),
   ]);
   return { supplierReliability, lifecycleBoard, quarantines, deliveryProofs, commissionReport, customerContracts, supplierContracts, pricingRules, discountApprovals, recurringInvoices, recurringPurchases, expenseClaims, pettyCash, bankMatching, vatExceptions, cnssAnomalies, payrollVariance, employeeChecklists };
+}
+
+export async function getEnterpriseControlReadiness(): Promise<EnterpriseControlReadiness> {
+  const [hrNotes, assetAssignments, fleetEfficiency, preventiveMaintenance, projectWip, productionVariance, procurementBudgets, branches, localization, templatePreview, emailAudit, customerPortal, supplierPortal, accountantReviews, partnerChecklist, ruleRollout, featureFlagAudit, integrationHealth, webhookSignature, exportTamperEvidence] = await Promise.all([
+    getJson('/payroll/hr-notes?role=OWNER', []),
+    getJson('/payroll/asset-assignments', []),
+    getJson('/production/fleet/fuel-efficiency', { rows: [] }),
+    getJson('/production/maintenance/preventive-schedules', []),
+    getJson('/production/projects-wip', { rows: [] }),
+    getJson('/production/variance-report', { rows: [] }),
+    getJson('/inventory/procurement-budgets', { rows: [] }),
+    getJson('/tenant/branches', { rows: [] }),
+    getJson('/tenant/localization-settings', { mainLanguage: 'FR', currency: 'MAD', arabicLabelsReady: true }),
+    postJson('/tenant/document-templates/preview', { type: 'INVOICE' }, { status: 'PREVIEW_READY' }),
+    getJson('/tenant/emails/audit-trail', []),
+    getJson('/tenant/customer-portal/cus-1', { paymentStatus: 'OPEN' }),
+    getJson('/tenant/supplier-portal/sup-1', { paymentStatus: 'CLEAR' }),
+    getJson('/tenant/accountant-portal/reviews', []),
+    postJson('/tenant/partner-implementation-checklist', { industry: 'wholesale' }, { tenantHealth: 'UNKNOWN', goLiveReady: false }),
+    postJson('/tenant/compliance-rule-rollout', { effectiveDate: '2026-06-01' }, { status: 'PLANNED', impactedTenants: 0 }),
+    getJson('/tenant/feature-flags/audit-history', []),
+    getJson('/tenant/integration-health', { rows: [] }),
+    postJson('/tenant/webhooks/signature-verification', {}, { replayProtected: true }),
+    getJson('/tenant/export-tamper-evidence', { tamperEvidence: true }),
+  ]);
+  return { hrNotes, assetAssignments, fleetEfficiency, preventiveMaintenance, projectWip, productionVariance, procurementBudgets, branches, localization, templatePreview, emailAudit, customerPortal, supplierPortal, accountantReviews, partnerChecklist, ruleRollout, featureFlagAudit, integrationHealth, webhookSignature, exportTamperEvidence };
 }

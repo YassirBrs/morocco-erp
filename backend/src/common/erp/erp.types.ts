@@ -102,6 +102,12 @@ export interface TenantSettings {
     deleteRequestedAt?: string;
     deleteScheduledAt?: string;
   };
+  localization?: {
+    mainLanguage: PreferredLanguage;
+    dateFormat: 'DD/MM/YYYY' | 'YYYY-MM-DD';
+    currency: 'MAD';
+    arabicLabelsReady: boolean;
+  };
 }
 
 export interface Tenant {
@@ -1001,6 +1007,102 @@ export interface EmployeeChecklist {
   completedAt?: string;
 }
 
+export interface HrPrivateNote {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  type: 'DISCIPLINARY' | 'PERFORMANCE';
+  body: string;
+  visibilityRoles: UserRole[];
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface AssetAssignment {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  assetType: 'LAPTOP' | 'PHONE' | 'VEHICLE' | 'TOOL';
+  assetTag: string;
+  assignedAt: string;
+  returnedAt?: string;
+  status: 'ASSIGNED' | 'RETURNED';
+}
+
+export interface PreventiveMaintenanceSchedule {
+  id: string;
+  tenantId: string;
+  assetId: string;
+  recurrence: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  nextDueDate: string;
+  partsBudget: number;
+  laborBudget: number;
+  plannedDowntimeHours: number;
+  active: boolean;
+}
+
+export interface ProcurementBudgetControl {
+  id: string;
+  tenantId: string;
+  department: string;
+  supplierId?: string;
+  category: string;
+  period: string;
+  budget: number;
+  committed: number;
+}
+
+export interface Branch {
+  id: string;
+  tenantId: string;
+  name: string;
+  city: string;
+  stockWarehouseId: string;
+  salesAccount: string;
+  posCashAccount: string;
+  active: boolean;
+}
+
+export interface AccountantPortalReview {
+  id: string;
+  tenantId: string;
+  period: string;
+  comment: string;
+  checklist: Array<{ key: string; label: string; approved: boolean }>;
+  status: 'OPEN' | 'APPROVED';
+  createdAt: string;
+}
+
+export interface PartnerImplementationChecklist {
+  id: string;
+  tenantId: string;
+  industry: string;
+  tenantHealth: string;
+  blockers: string[];
+  goLiveReady: boolean;
+  updatedAt: string;
+}
+
+export interface ComplianceRuleRollout {
+  id: string;
+  tenantId: string;
+  rulePackId: string;
+  effectiveDate: string;
+  impactedTenants: number;
+  status: 'PLANNED' | 'ROLLED_OUT';
+  createdAt: string;
+}
+
+export interface FeatureFlagAudit {
+  id: string;
+  tenantId: string;
+  key: ErpModuleKey;
+  actor: string;
+  reason: string;
+  rollbackData: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface StructuredLogEntry {
   id: string;
   tenantId: string;
@@ -1306,6 +1408,15 @@ export interface TenantWorkspace {
   expenseClaims: ExpenseClaim[];
   pettyCashJournals: PettyCashJournal[];
   employeeChecklists: EmployeeChecklist[];
+  hrPrivateNotes: HrPrivateNote[];
+  assetAssignments: AssetAssignment[];
+  preventiveMaintenanceSchedules: PreventiveMaintenanceSchedule[];
+  procurementBudgets: ProcurementBudgetControl[];
+  branches: Branch[];
+  accountantPortalReviews: AccountantPortalReview[];
+  partnerImplementationChecklists: PartnerImplementationChecklist[];
+  complianceRuleRollouts: ComplianceRuleRollout[];
+  featureFlagAudits: FeatureFlagAudit[];
   structuredLogs: StructuredLogEntry[];
   metricSamples: MetricSample[];
   backgroundJobs: BackgroundJob[];

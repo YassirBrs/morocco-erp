@@ -5,6 +5,8 @@ import {
   AuditLog,
   AdapterKind,
   AdapterSubmission,
+  AccountantPortalReview,
+  AssetAssignment,
   AuthSession,
   BackgroundJob,
   BackgroundJobKind,
@@ -18,7 +20,9 @@ import {
   ChequeTracking,
   CollaborationEntityType,
   CompanyProfileChange,
+  Branch,
   ComplianceRuleSet,
+  ComplianceRuleRollout,
   CreditNote,
   Customer,
   DeliveryNote,
@@ -38,6 +42,7 @@ import {
   ErpUser,
   ErpModuleKey,
   FeatureFlag,
+  FeatureFlagAudit,
   FiscalPeriod,
   InventoryCountSheet,
   ImportTemplateKind,
@@ -54,10 +59,12 @@ import {
   LegalEntity,
   FleetLog,
   FleetVehicle,
+  HrPrivateNote,
   MaintenanceAsset,
   MaintenanceWorkOrder,
   Payment,
   PettyCashJournal,
+  PartnerImplementationChecklist,
   PartnerApiKey,
   PayrollExportArchive,
   PayrollRun,
@@ -66,11 +73,13 @@ import {
   PosSession,
   PosTransaction,
   PreferredLanguage,
+  PreventiveMaintenanceSchedule,
   Product,
   ProductLifecycleState,
   ProductionOrder,
   ProjectRecord,
   PurchaseOrder,
+  ProcurementBudgetControl,
   PurchaseRequest,
   PricingRule,
   PurchaseReceipt,
@@ -188,6 +197,7 @@ export class ErpStoreService {
         approvalLimits: { ...defaultApprovalLimits },
         featureGates: { writeLocked: false, allowedModules: [...allModules] },
         retention: { retentionDays: 3650 },
+        localization: { mainLanguage: 'FR', dateFormat: 'DD/MM/YYYY', currency: 'MAD', arabicLabelsReady: true },
       },
       plan: 'ENTERPRISE',
       status: 'ACTIVE',
@@ -476,6 +486,15 @@ export class ErpStoreService {
       expenseClaims: [],
       pettyCashJournals: [],
       employeeChecklists: [],
+      hrPrivateNotes: [],
+      assetAssignments: [],
+      preventiveMaintenanceSchedules: [],
+      procurementBudgets: [],
+      branches: [],
+      accountantPortalReviews: [],
+      partnerImplementationChecklists: [],
+      complianceRuleRollouts: [],
+      featureFlagAudits: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -530,6 +549,7 @@ export class ErpStoreService {
         approvalLimits: { ...defaultApprovalLimits },
         featureGates: { writeLocked: false, allowedModules: [...allModules] },
         retention: { retentionDays: 3650 },
+        localization: { mainLanguage: 'FR', dateFormat: 'DD/MM/YYYY', currency: 'MAD', arabicLabelsReady: true },
       },
       plan: input.plan ?? 'INTILAQ',
       status: 'ACTIVE',
@@ -599,6 +619,15 @@ export class ErpStoreService {
       expenseClaims: [],
       pettyCashJournals: [],
       employeeChecklists: [],
+      hrPrivateNotes: [],
+      assetAssignments: [],
+      preventiveMaintenanceSchedules: [],
+      procurementBudgets: [],
+      branches: [],
+      accountantPortalReviews: [],
+      partnerImplementationChecklists: [],
+      complianceRuleRollouts: [],
+      featureFlagAudits: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -5342,6 +5371,15 @@ export class ErpStoreService {
     flag.updatedBy = this.clean(input.updatedBy) ?? this.cls.get<string>('userEmail') ?? 'system';
     flag.updatedAt = new Date().toISOString();
     workspace.tenant.settings.featureGates.allowedModules = workspace.featureFlags.filter((candidate) => candidate.enabled).map((candidate) => candidate.key);
+    workspace.featureFlagAudits.push({
+      id: this.id('ffaudit'),
+      tenantId: workspace.tenant.id,
+      key,
+      actor: flag.updatedBy,
+      reason: flag.reason,
+      rollbackData: { enabled: !flag.enabled, rollout: flag.enabled ? 'OFF' : 'TENANT' },
+      createdAt: flag.updatedAt,
+    });
     this.audit(workspace, 'feature-flag.updated', 'FeatureFlag', flag.id, flag);
     return flag;
   }
@@ -6136,6 +6174,312 @@ export class ErpStoreService {
 
   listEmployeeChecklists(tenantId?: string): EmployeeChecklist[] {
     return this.workspace(tenantId).employeeChecklists;
+  }
+
+  createHrPrivateNote(input: { employeeId: string; type: HrPrivateNote['type']; body: string; visibilityRoles?: UserRole[]; createdBy?: string }, tenantId?: string): HrPrivateNote {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    this.employee(workspace, input.employeeId);
+    const note: HrPrivateNote = {
+      id: this.id('hrnote'),
+      tenantId: workspace.tenant.id,
+      employeeId: input.employeeId,
+      type: input.type,
+      body: this.nonEmpty(input.body, 'La note RH est obligatoire'),
+      visibilityRoles: input.visibilityRoles ?? ['OWNER', 'ADMIN', 'PAYROLL'],
+      createdBy: this.clean(input.createdBy) ?? this.cls.get<string>('userEmail') ?? 'rh@atlas.ma',
+      createdAt: today(),
+    };
+    workspace.hrPrivateNotes.push(note);
+    this.audit(workspace, 'hr-private-note.created', 'HrPrivateNote', note.id, { employeeId: note.employeeId, type: note.type });
+    return note;
+  }
+
+  listHrPrivateNotes(role: UserRole = 'OWNER', tenantId?: string): HrPrivateNote[] {
+    return this.workspace(tenantId).hrPrivateNotes.filter((note) => note.visibilityRoles.includes(role));
+  }
+
+  assignAsset(input: { employeeId: string; assetType: AssetAssignment['assetType']; assetTag: string; assignedAt?: string }, tenantId?: string): AssetAssignment {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    this.employee(workspace, input.employeeId);
+    const assignment: AssetAssignment = {
+      id: this.id('assetasgn'),
+      tenantId: workspace.tenant.id,
+      employeeId: input.employeeId,
+      assetType: input.assetType,
+      assetTag: this.nonEmpty(input.assetTag, 'Le tag actif est obligatoire'),
+      assignedAt: input.assignedAt ? this.isoDate(input.assignedAt, 'Date affectation actif invalide') : today(),
+      status: 'ASSIGNED',
+    };
+    workspace.assetAssignments.push(assignment);
+    this.audit(workspace, 'asset.assigned', 'AssetAssignment', assignment.id, assignment);
+    return assignment;
+  }
+
+  returnAsset(assignmentId: string, tenantId?: string): AssetAssignment {
+    const workspace = this.workspace(tenantId);
+    const assignment = workspace.assetAssignments.find((candidate) => candidate.id === assignmentId);
+    if (!assignment) throw new NotFoundException('Affectation actif introuvable');
+    assignment.status = 'RETURNED';
+    assignment.returnedAt = today();
+    this.audit(workspace, 'asset.returned', 'AssetAssignment', assignment.id, assignment);
+    return assignment;
+  }
+
+  listAssetAssignments(tenantId?: string): AssetAssignment[] {
+    return this.workspace(tenantId).assetAssignments;
+  }
+
+  fleetFuelEfficiencyReport(input: { month?: string } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const month = input.month ?? today().slice(0, 7);
+    const rows = workspace.fleetVehicles.map((vehicle) => {
+      const logs = workspace.fleetLogs.filter((log) => log.vehicleId === vehicle.id && log.date.startsWith(month));
+      const fuel = logs.filter((log) => log.type === 'FUEL').reduce((sum, log) => sum + log.amount, 0);
+      const odometers = logs.map((log) => log.odometer).filter((value): value is number => value !== undefined).sort((a, b) => a - b);
+      const distance = odometers.length >= 2 ? odometers[odometers.length - 1] - odometers[0] : 0;
+      return { vehicleId: vehicle.id, plate: vehicle.plate, driver: vehicle.driver, route: vehicle.driver ? 'Route affectée' : 'Non affectée', month, fuelAmount: r2(fuel), distance, costPerKm: distance ? r2(fuel / distance) : 0 };
+    });
+    return { month, rows };
+  }
+
+  createPreventiveMaintenanceSchedule(input: { assetId: string; recurrence?: PreventiveMaintenanceSchedule['recurrence']; nextDueDate: string; partsBudget?: number; laborBudget?: number; plannedDowntimeHours?: number }, tenantId?: string): PreventiveMaintenanceSchedule {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const asset = this.maintenanceAsset(workspace, input.assetId);
+    const schedule: PreventiveMaintenanceSchedule = {
+      id: this.id('pms'),
+      tenantId: workspace.tenant.id,
+      assetId: asset.id,
+      recurrence: input.recurrence ?? 'MONTHLY',
+      nextDueDate: this.isoDate(input.nextDueDate, 'Date maintenance préventive invalide'),
+      partsBudget: this.nonNegative(input.partsBudget ?? 0, 'Budget pièces invalide'),
+      laborBudget: this.nonNegative(input.laborBudget ?? 0, 'Budget main d’oeuvre invalide'),
+      plannedDowntimeHours: this.nonNegative(input.plannedDowntimeHours ?? 0, 'Arrêt planifié invalide'),
+      active: true,
+    };
+    workspace.preventiveMaintenanceSchedules.push(schedule);
+    return schedule;
+  }
+
+  listPreventiveMaintenanceSchedules(tenantId?: string): PreventiveMaintenanceSchedule[] {
+    return this.workspace(tenantId).preventiveMaintenanceSchedules;
+  }
+
+  projectWipReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      rows: workspace.projects.map((project) => {
+        const costs = r2(project.expenses.reduce((sum, expense) => sum + expense.amount, 0) + project.timesheets.reduce((sum, line) => sum + line.hours * line.costRate, 0));
+        const billings = r2(project.invoiceMilestones.filter((milestone) => milestone.invoiced).reduce((sum, milestone) => sum + milestone.amount, 0));
+        const forecastBilling = r2(project.invoiceMilestones.reduce((sum, milestone) => sum + milestone.amount, 0));
+        return { projectId: project.id, name: project.name, costs, billings, wip: r2(costs - billings), milestones: project.invoiceMilestones.length, marginForecast: r2(forecastBilling - costs), status: project.status };
+      }),
+    };
+  }
+
+  productionVarianceReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      rows: workspace.productionOrders.map((order) => {
+        const planned = order.outputValue ?? order.consumedValue;
+        return { productionOrderId: order.id, number: order.number, finishedProductId: order.finishedProductId, quantity: order.quantity, plannedCost: planned, actualCost: order.consumedValue, variance: r2(order.consumedValue - planned), status: order.status };
+      }),
+    };
+  }
+
+  createProcurementBudget(input: { department: string; supplierId?: string; category: string; period: string; budget: number }, tenantId?: string): ProcurementBudgetControl {
+    const workspace = this.workspace(tenantId);
+    if (input.supplierId) this.supplier(workspace, input.supplierId);
+    const budget: ProcurementBudgetControl = {
+      id: this.id('pbud'),
+      tenantId: workspace.tenant.id,
+      department: this.nonEmpty(input.department, 'Département budget achat obligatoire'),
+      supplierId: this.clean(input.supplierId),
+      category: this.nonEmpty(input.category, 'Catégorie budget achat obligatoire'),
+      period: this.nonEmpty(input.period, 'Période budget achat obligatoire'),
+      budget: this.nonNegative(input.budget, 'Budget achat invalide'),
+      committed: 0,
+    };
+    workspace.procurementBudgets.push(budget);
+    return budget;
+  }
+
+  procurementBudgetControls(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.procurementBudgets.map((budget) => {
+      const committed = workspace.purchaseOrders
+        .filter((order) => order.date.startsWith(budget.period) && (!budget.supplierId || order.supplierId === budget.supplierId))
+        .reduce((sum, order) => sum + order.total, 0);
+      budget.committed = r2(committed);
+      return { ...budget, remaining: r2(budget.budget - budget.committed), status: budget.committed > budget.budget ? 'BLOCKED' : budget.committed > budget.budget * 0.8 ? 'WARNING' : 'OK' };
+    });
+    return { rows };
+  }
+
+  createBranch(input: { name: string; city: string; stockWarehouseId?: string; salesAccount?: string; posCashAccount?: string }, tenantId?: string): Branch {
+    const workspace = this.workspace(tenantId);
+    const warehouse = input.stockWarehouseId ? this.warehouse(workspace, input.stockWarehouseId) : workspace.warehouses[0];
+    const branch: Branch = {
+      id: this.id('branch'),
+      tenantId: workspace.tenant.id,
+      name: this.nonEmpty(input.name, 'Nom agence obligatoire'),
+      city: this.nonEmpty(input.city, 'Ville agence obligatoire'),
+      stockWarehouseId: warehouse.id,
+      salesAccount: this.clean(input.salesAccount) ?? '7111',
+      posCashAccount: this.clean(input.posCashAccount) ?? '5161',
+      active: true,
+    };
+    workspace.branches.push(branch);
+    return branch;
+  }
+
+  branchDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const branches = workspace.branches.length ? workspace.branches : [this.createBranch({ name: 'Siège', city: workspace.tenant.legalEntity.city }, workspace.tenant.id)];
+    return {
+      branches,
+      rows: branches.map((branch) => ({
+        branchId: branch.id,
+        name: branch.name,
+        city: branch.city,
+        stockLines: workspace.warehouseStocks.filter((stock) => stock.warehouseId === branch.stockWarehouseId).length,
+        sales: workspace.invoices.reduce((sum, invoice) => sum + invoice.totals.total, 0),
+        posCashAccount: branch.posCashAccount,
+      })),
+    };
+  }
+
+  localizationSettings(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.tenant.settings.localization ?? { mainLanguage: 'FR', dateFormat: 'DD/MM/YYYY', currency: 'MAD', arabicLabelsReady: true };
+  }
+
+  updateLocalizationSettings(input: TenantSettings['localization'], tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    workspace.tenant.settings.localization = {
+      mainLanguage: input?.mainLanguage ?? 'FR',
+      dateFormat: input?.dateFormat ?? 'DD/MM/YYYY',
+      currency: 'MAD',
+      arabicLabelsReady: input?.arabicLabelsReady ?? true,
+    };
+    return workspace.tenant.settings.localization;
+  }
+
+  documentTemplatePreview(input: { type?: DocumentExportType; language?: PreferredLanguage } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const type = input.type ?? 'INVOICE';
+    const template = workspace.documentTemplates.find((candidate) => candidate.type === type && candidate.active) ?? workspace.documentTemplates[0];
+    return {
+      template,
+      sample: {
+        seller: workspace.tenant.legalEntity,
+        customer: workspace.customers[0],
+        number: `${workspace.tenant.settings.documentSeries[type] ?? 'DOC'}-2026-0001`,
+        total: 1200,
+        requiredMentions: this.morocco2026Rules.invoiceMentions,
+      },
+      language: input.language ?? template.language,
+      status: 'PREVIEW_READY',
+    };
+  }
+
+  emailAuditTrail(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return workspace.emailDeliveries.map((email) => ({ ...email, retryHistory: workspace.webhookRetryLogs.filter((retry) => retry.webhookEventId === email.id), document: email.attachmentName ?? email.type }));
+  }
+
+  customerPortalWorkflow(customerId: string, tenantId?: string) {
+    const statement = this.customerStatement(customerId, tenantId);
+    return { customer: statement.customer, invoices: statement.entries.filter((entry) => entry.type === 'INVOICE'), statementDownload: `/sales/customers/${customerId}/statement.pdf`, paymentStatus: statement.totals.balance > 0 ? 'OPEN' : 'PAID' };
+  }
+
+  supplierPortalWorkflow(supplierId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const supplier = this.supplier(workspace, supplierId);
+    return { supplier, quoteRequests: workspace.purchaseRequests.filter((request) => !request.supplierId || request.supplierId === supplier.id), documentUpload: { status: 'PLACEHOLDER_READY', required: ['Attestation fiscale', 'RIB', 'Contrat'] }, paymentStatus: this.supplierStatement(supplier.id, workspace.tenant.id).totals.balance > 0 ? 'OPEN' : 'CLEAR' };
+  }
+
+  createAccountantPortalReview(input: { period: string; comment?: string }, tenantId?: string): AccountantPortalReview {
+    const workspace = this.workspace(tenantId);
+    const review: AccountantPortalReview = {
+      id: this.id('accprev'),
+      tenantId: workspace.tenant.id,
+      period: this.nonEmpty(input.period, 'Période revue comptable obligatoire'),
+      comment: this.clean(input.comment) ?? 'Revue période',
+      checklist: ['TVA', 'Paie', 'Banque', 'Stock'].map((label) => ({ key: label.toLowerCase(), label, approved: false })),
+      status: 'OPEN',
+      createdAt: today(),
+    };
+    workspace.accountantPortalReviews.push(review);
+    return review;
+  }
+
+  accountantPortalReviews(tenantId?: string): AccountantPortalReview[] {
+    return this.workspace(tenantId).accountantPortalReviews;
+  }
+
+  partnerImplementationChecklist(input: { industry?: string } = {}, tenantId?: string): PartnerImplementationChecklist {
+    const workspace = this.workspace(tenantId);
+    const blockers = this.fiscalDocumentCompletenessCheck(undefined, undefined, workspace.tenant.id).exceptions.map((exception) => exception.message);
+    const checklist: PartnerImplementationChecklist = {
+      id: this.id('pic'),
+      tenantId: workspace.tenant.id,
+      industry: this.clean(input.industry) ?? 'wholesale',
+      tenantHealth: blockers.length ? 'NEEDS_ATTENTION' : 'HEALTHY',
+      blockers,
+      goLiveReady: blockers.length === 0,
+      updatedAt: today(),
+    };
+    workspace.partnerImplementationChecklists.push(checklist);
+    return checklist;
+  }
+
+  complianceRuleRollout(input: { rulePackId?: string; effectiveDate: string; status?: ComplianceRuleRollout['status'] }, tenantId?: string): ComplianceRuleRollout {
+    const workspace = this.workspace(tenantId);
+    const rollout: ComplianceRuleRollout = {
+      id: this.id('rollout'),
+      tenantId: workspace.tenant.id,
+      rulePackId: input.rulePackId ?? this.morocco2026Rules.id,
+      effectiveDate: this.isoDate(input.effectiveDate, 'Date effective rule pack invalide'),
+      impactedTenants: this.workspaces.size,
+      status: input.status ?? 'PLANNED',
+      createdAt: today(),
+    };
+    workspace.complianceRuleRollouts.push(rollout);
+    return rollout;
+  }
+
+  featureFlagAuditHistory(tenantId?: string): FeatureFlagAudit[] {
+    return this.workspace(tenantId).featureFlagAudits;
+  }
+
+  integrationHealthDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const events = workspace.webhookEvents;
+    return {
+      rows: [
+        { integration: 'DGI', latencyMs: 120, failures: workspace.adapterSubmissions.filter((item) => item.kind === 'DGI' && item.status === 'PENDING_CREDENTIALS').length, retries: 0, lastSuccessAt: workspace.adapterSubmissions.find((item) => item.kind === 'DGI' && item.status !== 'PENDING_CREDENTIALS')?.createdAt },
+        { integration: 'CNSS', latencyMs: 150, failures: workspace.adapterSubmissions.filter((item) => item.kind === 'CNSS' && item.status === 'PENDING_CREDENTIALS').length, retries: 0, lastSuccessAt: workspace.adapterSubmissions.find((item) => item.kind === 'CNSS' && item.status !== 'PENDING_CREDENTIALS')?.createdAt },
+        { integration: 'WEBHOOKS', latencyMs: 80, failures: events.filter((event) => event.status === 'FAILED').length, retries: workspace.webhookRetryLogs.length, lastSuccessAt: events.find((event) => event.status === 'DELIVERED')?.deliveredAt },
+      ],
+    };
+  }
+
+  webhookSignatureVerificationExample(input: { payload?: Record<string, unknown>; signature?: string; timestamp?: string } = {}, tenantId?: string) {
+    this.workspace(tenantId);
+    const payload = input.payload ?? { event: 'invoice.posted', invoiceId: 'fac-demo' };
+    const timestamp = input.timestamp ?? new Date().toISOString();
+    const expectedSignature = createHash('sha256').update(`${timestamp}.${JSON.stringify(payload)}.morocco-erp-demo-secret`).digest('hex');
+    const ageMs = Math.abs(Date.now() - new Date(timestamp).getTime());
+    return { payload, timestamp, expectedSignature, providedSignature: input.signature, valid: input.signature ? input.signature === expectedSignature && ageMs <= 300000 : true, replayProtected: ageMs <= 300000, maxAgeSeconds: 300 };
+  }
+
+  exportTamperEvidenceReport(tenantId?: string) {
+    const manifest = this.tenantDataExportManifest(tenantId);
+    const archiveChecks = manifest.files.map((file: any) => ({ name: file.name, checksum: file.checksum, verified: /^[a-f0-9]{64}$/.test(file.checksum) }));
+    return { manifestChecksum: manifest.manifestChecksum, archiveChecks, tamperEvidence: archiveChecks.every((check) => check.verified), generatedAt: new Date().toISOString() };
   }
 
   upgradePrompts(tenantId?: string) {

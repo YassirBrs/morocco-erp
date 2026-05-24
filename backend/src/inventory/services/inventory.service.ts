@@ -64,6 +64,8 @@ export class InventoryService {
   listRecurringPurchaseSchedules() { return this.store.listRecurringPurchaseSchedules(); }
   createRecurringPurchaseSchedule(data: any) { return this.store.createRecurringPurchaseSchedule(data); }
   runRecurringPurchaseSchedule(id: string) { return this.store.runRecurringPurchaseSchedule(id); }
+  createProcurementBudget(data: any) { return this.store.createProcurementBudget(data); }
+  procurementBudgetControls() { return this.store.procurementBudgetControls(); }
   listPurchaseOrders() { return this.store.listPurchaseOrders(); }
   createPurchaseOrder(data: any) { return this.store.createPurchaseOrder(data); }
   purchaseOrderPdf(id: string) { return this.store.exportPurchaseOrderPdf(id); }

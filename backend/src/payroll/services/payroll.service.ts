@@ -155,6 +155,11 @@ export class PayrollService {
   employeeChecklist(data: any) { return this.store.employeeChecklist(data); }
   completeEmployeeChecklistItem(id: string, data: any) { return this.store.completeEmployeeChecklistItem(id, data); }
   listEmployeeChecklists() { return this.store.listEmployeeChecklists(); }
+  createHrPrivateNote(data: any) { return this.store.createHrPrivateNote(data); }
+  listHrPrivateNotes(role?: any) { return this.store.listHrPrivateNotes(role); }
+  assignAsset(data: any) { return this.store.assignAsset(data); }
+  returnAsset(id: string) { return this.store.returnAsset(id); }
+  listAssetAssignments() { return this.store.listAssetAssignments(); }
   employeeImportTemplateCsv() { return this.store.importTemplateCsv('employees'); }
   payrollRunTimeline(id: string) { return this.store.entityTimeline('PAYROLL_RUN', id); }
   addPayrollRunNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'PAYROLL_RUN', entityId: id, ...data }); }

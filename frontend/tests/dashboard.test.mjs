@@ -398,3 +398,15 @@ test('Next primary workspace exposes operational control workflows for suppliers
     assert.ok(api.includes(endpoint), `${endpoint} operational control API route is wired`);
   }
 });
+
+test('Next primary workspace exposes extended enterprise controls for portals, rollout, integrations, and evidence', () => {
+  for (const text of ['Contrôles entreprise étendus', 'Agences', 'Localisation', 'Intégrations', 'Archive vérifiée', 'RH, actifs et flotte', 'Production, projets, achats', 'Portails et conformité', 'Signature webhooks replay']) {
+    assert.ok(page.includes(text), `${text} enterprise control label is present`);
+  }
+  for (const marker of ['getEnterpriseControlReadiness', 'enterpriseControls.branches', 'enterpriseControls.integrationHealth', 'enterpriseControls.webhookSignature', 'enterpriseControls.exportTamperEvidence']) {
+    assert.ok(page.includes(marker), `${marker} enterprise control helper is present`);
+  }
+  for (const endpoint of ['/payroll/hr-notes?role=OWNER', '/payroll/asset-assignments', '/production/fleet/fuel-efficiency', '/production/maintenance/preventive-schedules', '/production/projects-wip', '/production/variance-report', '/inventory/procurement-budgets', '/tenant/branches', '/tenant/localization-settings', '/tenant/document-templates/preview', '/tenant/emails/audit-trail', '/tenant/customer-portal/cus-1', '/tenant/supplier-portal/sup-1', '/tenant/accountant-portal/reviews', '/tenant/partner-implementation-checklist', '/tenant/compliance-rule-rollout', '/tenant/feature-flags/audit-history', '/tenant/integration-health', '/tenant/webhooks/signature-verification', '/tenant/export-tamper-evidence']) {
+    assert.ok(api.includes(endpoint), `${endpoint} enterprise control API route is wired`);
+  }
+});

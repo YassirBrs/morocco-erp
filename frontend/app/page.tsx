@@ -2,6 +2,7 @@ import {
   getAccountingSnapshot,
   getDashboardSummary,
   getDocumentOperations,
+  getEnterpriseControlReadiness,
   getGovernanceReadiness,
   getInvoices,
   getIntegrationReadiness,
@@ -43,7 +44,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -59,6 +60,7 @@ export default async function DashboardPage() {
     getMoroccoWorkflowReadiness(),
     getGovernanceReadiness(),
     getOperationalControlReadiness(),
+    getEnterpriseControlReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -411,6 +413,40 @@ export default async function DashboardPage() {
               `Petite caisse ${operationalControls.pettyCash.length}`,
               `Matching bancaire ${operationalControls.bankMatching.rows.length}`,
               `Checklists RH ${operationalControls.employeeChecklists.length}`,
+            ]} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Contrôles entreprise étendus">
+          <PanelHeader title="Contrôles entreprise étendus" action="Valider go-live" />
+          <div className="reportGrid">
+            <Metric label="Agences" value={String(enterpriseControls.branches.rows.length)} />
+            <Metric label="Localisation" value={enterpriseControls.localization.mainLanguage} />
+            <Metric label="Intégrations" value={String(enterpriseControls.integrationHealth.rows.length)} />
+            <Metric label="Archive vérifiée" value={enterpriseControls.exportTamperEvidence.tamperEvidence ? 'Oui' : 'Non'} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="RH, actifs et flotte" rows={[
+              `Notes RH privées ${enterpriseControls.hrNotes.length}`,
+              `Affectations actifs ${enterpriseControls.assetAssignments.length}`,
+              `Efficacité flotte ${enterpriseControls.fleetEfficiency.rows.length}`,
+              `Maintenance préventive ${enterpriseControls.preventiveMaintenance.length}`,
+            ]} empty="-" />
+            <MiniList title="Production, projets, achats" rows={[
+              `WIP projets ${enterpriseControls.projectWip.rows.length}`,
+              `Écarts production ${enterpriseControls.productionVariance.rows.length}`,
+              `Budgets achats ${enterpriseControls.procurementBudgets.rows.length}`,
+              `Aperçu modèle ${enterpriseControls.templatePreview.status}`,
+            ]} empty="-" />
+            <MiniList title="Portails et conformité" rows={[
+              `Emails audit ${enterpriseControls.emailAudit.length}`,
+              `Portail client ${enterpriseControls.customerPortal.paymentStatus ?? 'prêt'}`,
+              `Portail fournisseur ${enterpriseControls.supplierPortal.paymentStatus ?? 'prêt'}`,
+              `Revues comptables ${enterpriseControls.accountantReviews.length}`,
+              `Checklist partenaire ${enterpriseControls.partnerChecklist.tenantHealth}`,
+              `Rollout règles ${enterpriseControls.ruleRollout.status}`,
+              `Audit flags ${enterpriseControls.featureFlagAudit.length}`,
+              `Signature webhooks replay ${enterpriseControls.webhookSignature.replayProtected ? 'protégé' : 'à revoir'}`,
             ]} empty="-" />
           </div>
         </section>

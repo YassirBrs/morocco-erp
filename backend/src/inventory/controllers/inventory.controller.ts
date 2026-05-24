@@ -69,6 +69,8 @@ export class InventoryController {
   @Get('recurring-purchases') recurringPurchases() { return this.inventoryService.listRecurringPurchaseSchedules(); }
   @Post('recurring-purchases') createRecurringPurchase(@Body() body: any) { return this.inventoryService.createRecurringPurchaseSchedule(body); }
   @Post('recurring-purchases/:id/run') runRecurringPurchase(@Param('id') id: string) { return this.inventoryService.runRecurringPurchaseSchedule(id); }
+  @Get('procurement-budgets') procurementBudgets() { return this.inventoryService.procurementBudgetControls(); }
+  @Post('procurement-budgets') createProcurementBudget(@Body() body: any) { return this.inventoryService.createProcurementBudget(body); }
   @Get('purchase-orders') purchaseOrders() { return this.inventoryService.listPurchaseOrders(); }
   @Post('purchase-orders') createPurchaseOrder(@Body() body: any) { return this.inventoryService.createPurchaseOrder(body); }
   @Get('purchase-orders/:id/pdf') purchaseOrderPdf(@Param('id') id: string) { return this.inventoryService.purchaseOrderPdf(id); }

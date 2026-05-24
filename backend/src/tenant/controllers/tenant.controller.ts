@@ -35,12 +35,14 @@ export class TenantController {
   @Post('operations/jobs/run-next') runNextJob() { return this.tenantService.runNextJob(); }
   @Get('feature-flags') featureFlags() { return this.tenantService.featureFlags(); }
   @Patch('feature-flags') updateFeatureFlag(@Body() body: any) { return this.tenantService.updateFeatureFlag(body); }
+  @Get('feature-flags/audit-history') featureFlagAuditHistory() { return this.tenantService.featureFlagAuditHistory(); }
   @Get('pricing-plans') pricingPlans() { return this.tenantService.pricingPlans(); }
   @Get('billing-status') billingStatus() { return this.tenantService.billingStatus(); }
   @Get('accountant-workspace') accountantWorkspace() { return this.tenantService.accountantWorkspace(); }
   @Get('super-admin-workspace') superAdminWorkspace() { return this.tenantService.superAdminWorkspace(); }
   @Get('support-diagnostics') supportDiagnostics() { return this.tenantService.supportDiagnostics(); }
   @Get('data-export-manifest') dataExportManifest() { return this.tenantService.dataExportManifest(); }
+  @Get('export-tamper-evidence') exportTamperEvidence() { return this.tenantService.exportTamperEvidenceReport(); }
   @Get('invitations') invitations() { return this.tenantService.invitations(); }
   @Post('invitations') inviteUser(@Body() body: any) { return this.tenantService.inviteUser(body); }
   @Post('sessions/revoke') revokeSession(@Body() body: any) { return this.tenantService.revokeSession(body); }
@@ -57,6 +59,20 @@ export class TenantController {
   @Post('evidence-binder') evidenceBinder(@Body() body: any) { return this.tenantService.evidenceBinder(body); }
   @Get('moroccan-regions') moroccanRegions() { return this.tenantService.moroccanRegions(); }
   @Get('customer-risk-scores') customerRiskScores() { return this.tenantService.customerRiskScores(); }
+  @Get('branches') branchDashboard() { return this.tenantService.branchDashboard(); }
+  @Post('branches') createBranch(@Body() body: any) { return this.tenantService.createBranch(body); }
+  @Get('localization-settings') localizationSettings() { return this.tenantService.localizationSettings(); }
+  @Patch('localization-settings') updateLocalizationSettings(@Body() body: any) { return this.tenantService.updateLocalizationSettings(body); }
+  @Post('document-templates/preview') documentTemplatePreview(@Body() body: any) { return this.tenantService.documentTemplatePreview(body); }
+  @Get('emails/audit-trail') emailAuditTrail() { return this.tenantService.emailAuditTrail(); }
+  @Get('customer-portal/:customerId') customerPortalWorkflow(@Param('customerId') customerId: string) { return this.tenantService.customerPortalWorkflow(customerId); }
+  @Get('supplier-portal/:supplierId') supplierPortalWorkflow(@Param('supplierId') supplierId: string) { return this.tenantService.supplierPortalWorkflow(supplierId); }
+  @Get('accountant-portal/reviews') accountantPortalReviews() { return this.tenantService.accountantPortalReviews(); }
+  @Post('accountant-portal/reviews') createAccountantPortalReview(@Body() body: any) { return this.tenantService.createAccountantPortalReview(body); }
+  @Post('partner-implementation-checklist') partnerImplementationChecklist(@Body() body: any) { return this.tenantService.partnerImplementationChecklist(body); }
+  @Post('compliance-rule-rollout') complianceRuleRollout(@Body() body: any) { return this.tenantService.complianceRuleRollout(body); }
+  @Get('integration-health') integrationHealthDashboard() { return this.tenantService.integrationHealthDashboard(); }
+  @Post('webhooks/signature-verification') webhookSignatureVerification(@Body() body: any) { return this.tenantService.webhookSignatureVerification(body); }
   @Get('upgrade-prompts') upgradePrompts() { return this.tenantService.upgradePrompts(); }
   @Post('performance/large-tenant') performanceScenario(@Body() body: any) { return this.tenantService.performanceScenario(body); }
   @Get('emails') emails() { return this.tenantService.emails(); }

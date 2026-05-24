@@ -18,6 +18,11 @@ export class PayrollController {
   @Post('employee-checklists/:id/complete') completeEmployeeChecklistItem(@Param('id') id: string, @Body() body: any) {
     return this.payrollService.completeEmployeeChecklistItem(id, body);
   }
+  @Get('hr-notes') hrNotes(@Query('role') role?: any) { return this.payrollService.listHrPrivateNotes(role); }
+  @Post('hr-notes') createHrNote(@Body() body: any) { return this.payrollService.createHrPrivateNote(body); }
+  @Get('asset-assignments') assetAssignments() { return this.payrollService.listAssetAssignments(); }
+  @Post('asset-assignments') assignAsset(@Body() body: any) { return this.payrollService.assignAsset(body); }
+  @Post('asset-assignments/:id/return') returnAsset(@Param('id') id: string) { return this.payrollService.returnAsset(id); }
   @Get('employees/:id') employee(@Param('id') id: string) { return this.payrollService.getEmployee(id); }
   @Post('employees') addEmployee(@Body() body: any) { return this.payrollService.addEmployee(body); }
   @Patch('employees/:id') updateEmployee(@Param('id') id: string, @Body() body: any) { return this.payrollService.updateEmployee(id, body); }

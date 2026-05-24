@@ -1919,4 +1919,79 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(completedChecklist.items[0]).toMatchObject({ done: true, evidence: 'cin.pdf' });
     expect(offboarding.items.map((item) => item.label)).toEqual(expect.arrayContaining(['Dernière paie', 'Restitution équipement']));
   });
+
+  it('covers enterprise controls for HR privacy, assets, fleet, maintenance, WIP, branches, portals, rollouts, integrations, and tamper evidence', () => {
+    const note = store.createHrPrivateNote({ employeeId: 'emp-1', type: 'PERFORMANCE', body: 'Objectifs Q2 validés', visibilityRoles: ['OWNER', 'PAYROLL'] });
+    const hiddenNotes = store.listHrPrivateNotes('READ_ONLY');
+    const asset = store.assignAsset({ employeeId: 'emp-1', assetType: 'LAPTOP', assetTag: 'PC-ATLAS-001' });
+    const returnedAsset = store.returnAsset(asset.id);
+
+    const vehicle = store.createFleetVehicle({ plate: 'WW-123456', driver: 'Ahmed Taleb' });
+    store.addFleetLog({ vehicleId: vehicle.id, type: 'FUEL', amount: 500, odometer: 1000, date: '2026-05-01' });
+    store.addFleetLog({ vehicleId: vehicle.id, type: 'FUEL', amount: 650, odometer: 1500, date: '2026-05-20' });
+    const fleetEfficiency = store.fleetFuelEfficiencyReport({ month: '2026-05' });
+
+    const maintenanceAsset = store.createMaintenanceAsset({ name: 'Presse atelier', category: 'Production' });
+    const preventive = store.createPreventiveMaintenanceSchedule({ assetId: maintenanceAsset.id, nextDueDate: '2026-06-15', partsBudget: 1000, laborBudget: 800, plannedDowntimeHours: 4 });
+
+    const project = store.createProject({
+      customerId: 'cus-1',
+      name: 'Projet showroom Rabat',
+      budget: 50000,
+      expenses: [{ label: 'Matériel', amount: 12000 }],
+      timesheets: [{ employeeId: 'emp-1', hours: 10, costRate: 200 }],
+      invoiceMilestones: [{ label: 'Acompte', amount: 18000, invoiced: true }, { label: 'Solde', amount: 30000, invoiced: false }],
+    });
+    const wip = store.projectWipReport();
+
+    const bom = store.createBillOfMaterial({ finishedProductId: 'prd-fg', version: 'V2', components: [{ productId: 'prd-raw', quantity: 2, unitCost: 90 }] });
+    const production = store.createProductionOrder({ finishedProductId: 'prd-fg', quantity: 2, billOfMaterialId: bom.id });
+    const productionVariance = store.productionVarianceReport();
+
+    const budget = store.createProcurementBudget({ department: 'Logistique', supplierId: 'sup-1', category: 'Matières', period: '2026-05', budget: 50000 });
+    store.createPurchaseOrder({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 10, unitCost: 100 }] });
+    const budgetControls = store.procurementBudgetControls();
+    const branch = store.createBranch({ name: 'Agence Rabat', city: 'Rabat' });
+    const branchDashboard = store.branchDashboard();
+    const localization = store.updateLocalizationSettings({ mainLanguage: 'FR', dateFormat: 'DD/MM/YYYY', currency: 'MAD', arabicLabelsReady: true });
+    const preview = store.documentTemplatePreview({ type: 'INVOICE', language: 'FR' });
+
+    store.queueEmailDelivery({ type: 'INVOICE', to: 'finance@rabretail.ma', subject: 'Facture test', attachmentName: 'FAC-test.pdf' });
+    const emailAudit = store.emailAuditTrail();
+    const invoice = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    const customerPortal = store.customerPortalWorkflow('cus-1');
+    const supplierPortal = store.supplierPortalWorkflow('sup-1');
+    const accountantReview = store.createAccountantPortalReview({ period: '2026-05', comment: 'Revue mensuelle' });
+    const partnerChecklist = store.partnerImplementationChecklist({ industry: 'wholesale' });
+    const rollout = store.complianceRuleRollout({ effectiveDate: '2026-06-01' });
+    store.updateFeatureFlag({ key: 'payroll', enabled: false, reason: 'Pilotage rollout', updatedBy: 'admin@atlas.ma' });
+    const flagAudit = store.featureFlagAuditHistory();
+    const webhook = store.emitWebhookEvent({ event: 'invoice.posted', payload: { invoiceId: invoice.id } });
+    store.retryWebhook(webhook.id);
+    const health = store.integrationHealthDashboard();
+    const signature = store.webhookSignatureVerificationExample();
+    const tamper = store.exportTamperEvidenceReport();
+
+    expect(note).toMatchObject({ type: 'PERFORMANCE' });
+    expect(hiddenNotes).toEqual([]);
+    expect(returnedAsset).toMatchObject({ status: 'RETURNED' });
+    expect(fleetEfficiency.rows[0]).toMatchObject({ plate: 'WW-123456', distance: 500 });
+    expect(preventive).toMatchObject({ recurrence: 'MONTHLY', plannedDowntimeHours: 4 });
+    expect(wip.rows[0]).toMatchObject({ projectId: project.id, wip: -4000, marginForecast: 34000 });
+    expect(productionVariance.rows[0]).toMatchObject({ productionOrderId: production.id });
+    expect(budgetControls.rows[0]).toMatchObject({ id: budget.id, status: 'OK' });
+    expect(branchDashboard.rows[0]).toMatchObject({ branchId: branch.id, city: 'Rabat' });
+    expect(localization).toMatchObject({ mainLanguage: 'FR', currency: 'MAD', arabicLabelsReady: true });
+    expect(preview).toMatchObject({ status: 'PREVIEW_READY' });
+    expect(emailAudit[0]).toMatchObject({ to: 'finance@rabretail.ma', document: 'FAC-test.pdf' });
+    expect(customerPortal).toMatchObject({ paymentStatus: 'OPEN' });
+    expect(supplierPortal.documentUpload.required).toEqual(expect.arrayContaining(['Attestation fiscale', 'RIB']));
+    expect(accountantReview.checklist.map((item) => item.label)).toEqual(expect.arrayContaining(['TVA', 'Paie']));
+    expect(partnerChecklist).toHaveProperty('tenantHealth');
+    expect(rollout).toMatchObject({ rulePackId: 'MA-2026', impactedTenants: 1, status: 'PLANNED' });
+    expect(flagAudit[0]).toMatchObject({ key: 'payroll', actor: 'admin@atlas.ma' });
+    expect(health.rows.map((row) => row.integration)).toEqual(['DGI', 'CNSS', 'WEBHOOKS']);
+    expect(signature).toMatchObject({ replayProtected: true, valid: true });
+    expect(tamper).toMatchObject({ tamperEvidence: true });
+  });
 });

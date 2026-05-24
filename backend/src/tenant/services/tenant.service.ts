@@ -129,6 +129,8 @@ export class TenantService {
     return this.store.updateFeatureFlag(data);
   }
 
+  featureFlagAuditHistory() { return this.store.featureFlagAuditHistory(); }
+
   pricingPlans() {
     return this.store.pricingPlans();
   }
@@ -150,6 +152,7 @@ export class TenantService {
   }
 
   dataExportManifest() { return this.store.tenantDataExportManifest(); }
+  exportTamperEvidenceReport() { return this.store.exportTamperEvidenceReport(); }
   invitations() { return this.store.listUserInvitations(); }
   inviteUser(data: any) { return this.store.inviteUser(data); }
   revokeSession(data: any) { return this.store.revokeSession(data.sessionId); }
@@ -165,6 +168,20 @@ export class TenantService {
   evidenceBinder(data: any) { return this.store.accountantEvidenceBinder(data); }
   moroccanRegions() { return this.store.moroccanRegions(); }
   customerRiskScores() { return this.store.customerRiskScores(); }
+  createBranch(data: any) { return this.store.createBranch(data); }
+  branchDashboard() { return this.store.branchDashboard(); }
+  localizationSettings() { return this.store.localizationSettings(); }
+  updateLocalizationSettings(data: any) { return this.store.updateLocalizationSettings(data); }
+  documentTemplatePreview(data: any) { return this.store.documentTemplatePreview(data); }
+  emailAuditTrail() { return this.store.emailAuditTrail(); }
+  customerPortalWorkflow(customerId: string) { return this.store.customerPortalWorkflow(customerId); }
+  supplierPortalWorkflow(supplierId: string) { return this.store.supplierPortalWorkflow(supplierId); }
+  createAccountantPortalReview(data: any) { return this.store.createAccountantPortalReview(data); }
+  accountantPortalReviews() { return this.store.accountantPortalReviews(); }
+  partnerImplementationChecklist(data: any) { return this.store.partnerImplementationChecklist(data); }
+  complianceRuleRollout(data: any) { return this.store.complianceRuleRollout(data); }
+  integrationHealthDashboard() { return this.store.integrationHealthDashboard(); }
+  webhookSignatureVerification(data: any) { return this.store.webhookSignatureVerificationExample(data); }
 
   upgradePrompts() {
     return this.store.upgradePrompts();

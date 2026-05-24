@@ -302,26 +302,26 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T208 P1 - Add payroll variance report compared with previous month and contract salary.
 - [x] T209 P1 - Add employee onboarding checklist with documents, contract, payroll identifiers, and equipment.
 - [x] T210 P1 - Add employee offboarding checklist with final payroll, asset return, and document archive.
-- [ ] T211 P1 - Add HR disciplinary and performance note register with role-restricted visibility.
-- [ ] T212 P1 - Add asset assignment tracking for laptops, phones, vehicles, tools, and return status.
-- [ ] T213 P1 - Add fleet fuel efficiency report by vehicle, driver, route, and month.
-- [ ] T214 P1 - Add maintenance preventive schedule with recurrence, parts, labor, and downtime.
-- [ ] T215 P1 - Add project WIP report with costs, billings, milestones, and margin forecast.
-- [ ] T216 P1 - Add production variance report for planned versus actual component usage and cost.
-- [ ] T217 P1 - Add procurement budget controls by department, supplier, category, and period.
-- [ ] T218 P1 - Add multi-branch support with branch-specific stock, sales, POS, and cash accounts.
-- [ ] T219 P1 - Add tenant localization settings for French, Arabic-ready labels, date formats, and currencies.
-- [ ] T220 P1 - Add document template preview before activation with sample Moroccan invoice data.
-- [ ] T221 P1 - Add outgoing email audit trail with recipient, document, status, and retry history.
-- [ ] T222 P1 - Add customer portal invoice payment status and statement download workflow.
-- [ ] T223 P1 - Add supplier portal quote request, document upload, and payment status workflow.
-- [ ] T224 P1 - Add accountant portal period review comments and approval checklist.
-- [ ] T225 P1 - Add partner implementation checklist with tenant health, open blockers, and go-live readiness.
-- [ ] T226 P1 - Add super-admin compliance rule rollout workflow with effective dates and tenant impact.
-- [ ] T227 P1 - Add feature flag audit history with actor, reason, tenant, and rollback data.
-- [ ] T228 P1 - Add API integration health dashboard with latency, failures, retries, and last success.
-- [ ] T229 P1 - Add webhook signature verification examples and replay protection tests.
-- [ ] T230 P1 - Add export checksum verification and tamper-evidence report for archived files.
+- [x] T211 P1 - Add HR disciplinary and performance note register with role-restricted visibility.
+- [x] T212 P1 - Add asset assignment tracking for laptops, phones, vehicles, tools, and return status.
+- [x] T213 P1 - Add fleet fuel efficiency report by vehicle, driver, route, and month.
+- [x] T214 P1 - Add maintenance preventive schedule with recurrence, parts, labor, and downtime.
+- [x] T215 P1 - Add project WIP report with costs, billings, milestones, and margin forecast.
+- [x] T216 P1 - Add production variance report for planned versus actual component usage and cost.
+- [x] T217 P1 - Add procurement budget controls by department, supplier, category, and period.
+- [x] T218 P1 - Add multi-branch support with branch-specific stock, sales, POS, and cash accounts.
+- [x] T219 P1 - Add tenant localization settings for French, Arabic-ready labels, date formats, and currencies.
+- [x] T220 P1 - Add document template preview before activation with sample Moroccan invoice data.
+- [x] T221 P1 - Add outgoing email audit trail with recipient, document, status, and retry history.
+- [x] T222 P1 - Add customer portal invoice payment status and statement download workflow.
+- [x] T223 P1 - Add supplier portal quote request, document upload, and payment status workflow.
+- [x] T224 P1 - Add accountant portal period review comments and approval checklist.
+- [x] T225 P1 - Add partner implementation checklist with tenant health, open blockers, and go-live readiness.
+- [x] T226 P1 - Add super-admin compliance rule rollout workflow with effective dates and tenant impact.
+- [x] T227 P1 - Add feature flag audit history with actor, reason, tenant, and rollback data.
+- [x] T228 P1 - Add API integration health dashboard with latency, failures, retries, and last success.
+- [x] T229 P1 - Add webhook signature verification examples and replay protection tests.
+- [x] T230 P1 - Add export checksum verification and tamper-evidence report for archived files.
 - [ ] T231 P1 - Add database restore rehearsal checklist and tenant-level restore validation.
 - [ ] T232 P1 - Add support impersonation approval workflow with time limit and audit evidence.
 - [ ] T233 P1 - Add in-app release notes targeted by role, module, and tenant plan.
