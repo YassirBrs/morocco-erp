@@ -31,8 +31,11 @@ export class LedgerService {
   bankImportPreview(data: { csv: string }) { return this.store.importBankStatement(data); }
   bankStatementMatchingSuggestions(data: any) { return this.store.bankStatementMatchingSuggestions(data); }
   paymentMethodReconciliation() { return this.store.paymentMethodReconciliation(); }
+  upsertPaymentAllocationRule(data: any) { return this.store.upsertPaymentAllocationRule(data); }
+  paymentAllocationPreview(data: any) { return this.store.paymentAllocationPreview(data); }
   listCheques() { return this.store.listCheques(); }
   createCheque(data: any) { return this.store.createCheque(data); }
+  chequeLifecycleAudit() { return this.store.chequeLifecycleAudit(); }
   listDepositBatches() { return this.store.listDepositBatches(); }
   createDepositBatch(data: any) { return this.store.createDepositBatch(data); }
   legalEvidence() { return this.store.listLegalEvidences(); }
@@ -47,4 +50,6 @@ export class LedgerService {
   openPettyCashJournal(data: any) { return this.store.openPettyCashJournal(data); }
   addPettyCashMovement(id: string, data: any) { return this.store.addPettyCashMovement(id, data); }
   closePettyCashJournal(id: string, data: any) { return this.store.closePettyCashJournal(id, data.countedBalance); }
+  suggestPaymentAdjustment(data: any) { return this.store.suggestPaymentAdjustment(data); }
+  paymentAdjustmentSuggestions() { return this.store.paymentAdjustmentSuggestions(); }
 }

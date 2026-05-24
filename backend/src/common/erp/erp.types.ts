@@ -1103,6 +1103,145 @@ export interface FeatureFlagAudit {
   createdAt: string;
 }
 
+export interface SupportImpersonationApproval {
+  id: string;
+  tenantId: string;
+  supportUser: string;
+  approvedBy: string;
+  reason: string;
+  expiresAt: string;
+  status: 'PENDING' | 'APPROVED' | 'EXPIRED' | 'REVOKED';
+  evidenceId?: string;
+  createdAt: string;
+}
+
+export interface ReleaseNote {
+  id: string;
+  tenantId: string;
+  title: string;
+  body: string;
+  roles: UserRole[];
+  modules: ErpModuleKey[];
+  plans: SubscriptionPlan[];
+  publishedAt: string;
+}
+
+export interface EscalationRule {
+  id: string;
+  tenantId: string;
+  role: UserRole;
+  amountThreshold?: number;
+  customerRisk?: 'LOW' | 'MEDIUM' | 'HIGH';
+  supplierRisk?: 'LOW' | 'MEDIUM' | 'HIGH';
+  overdueDays?: number;
+  escalateTo: UserRole;
+  active: boolean;
+}
+
+export interface MultiCurrencyPreparation {
+  id: string;
+  tenantId: string;
+  documentType: 'QUOTE' | 'INVOICE';
+  documentId?: string;
+  currency: 'EUR' | 'USD' | 'MAD';
+  foreignAmount: number;
+  fxRateToMad: number;
+  madAmount: number;
+  revaluationEvidence: string;
+  createdAt: string;
+}
+
+export interface BranchNumberingPolicy {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  invoicePrefix: string;
+  nextNumber: number;
+  legalIdentifierValid: boolean;
+  validationMessages: string[];
+}
+
+export interface CustomerKycChecklist {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  items: Array<{ key: string; label: string; done: boolean }>;
+  status: 'COMPLETE' | 'INCOMPLETE';
+}
+
+export interface SupplierKysChecklist {
+  id: string;
+  tenantId: string;
+  supplierId: string;
+  items: Array<{ key: string; label: string; done: boolean }>;
+  riskApprovalRequired: boolean;
+  status: 'COMPLETE' | 'INCOMPLETE';
+}
+
+export interface DisputeCase {
+  id: string;
+  tenantId: string;
+  type: 'CUSTOMER' | 'SUPPLIER';
+  partyId: string;
+  referenceId?: string;
+  reason: string;
+  status: 'OPEN' | 'IN_REVIEW' | 'RESOLVED';
+  collectionStatus?: string;
+  blockedApprovals?: boolean;
+  createdAt: string;
+}
+
+export interface PromiseToPay {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  invoiceId: string;
+  promisedDate: string;
+  amount: number;
+  owner: string;
+  status: 'PROMISED' | 'BROKEN' | 'KEPT';
+  reminderAt: string;
+}
+
+export interface PaymentAllocationRule {
+  id: string;
+  tenantId: string;
+  mode: 'OLDEST_INVOICE' | 'SELECTED_INVOICE' | 'MANUAL_SPLIT';
+  priority: number;
+  active: boolean;
+}
+
+export interface DunningPolicy {
+  id: string;
+  tenantId: string;
+  level: 1 | 2 | 3;
+  daysOverdue: number;
+  subjectFr: string;
+  bodyFr: string;
+  legalFooter: string;
+  holdPolicy: 'NONE' | 'SOFT_HOLD' | 'BLOCK_ORDERS';
+}
+
+export interface SupplierPaymentProposalRun {
+  id: string;
+  tenantId: string;
+  cutoffDate: string;
+  cashBalance: number;
+  proposals: Array<{ supplierId: string; invoiceId: string; amount: number; riskFlags: string[] }>;
+  approvalStatus: ApprovalStatus;
+  createdAt: string;
+}
+
+export interface PaymentAdjustmentSuggestion {
+  id: string;
+  tenantId: string;
+  paymentId: string;
+  bankFee: number;
+  withholdingTax: number;
+  journalSuggestion: JournalEntry['lines'];
+  status: 'SUGGESTED' | 'POSTED';
+}
+
 export interface StructuredLogEntry {
   id: string;
   tenantId: string;
@@ -1417,6 +1556,19 @@ export interface TenantWorkspace {
   partnerImplementationChecklists: PartnerImplementationChecklist[];
   complianceRuleRollouts: ComplianceRuleRollout[];
   featureFlagAudits: FeatureFlagAudit[];
+  supportImpersonations: SupportImpersonationApproval[];
+  releaseNotes: ReleaseNote[];
+  escalationRules: EscalationRule[];
+  currencyPreparations: MultiCurrencyPreparation[];
+  branchNumberingPolicies: BranchNumberingPolicy[];
+  customerKycChecklists: CustomerKycChecklist[];
+  supplierKysChecklists: SupplierKysChecklist[];
+  disputeCases: DisputeCase[];
+  promisesToPay: PromiseToPay[];
+  paymentAllocationRules: PaymentAllocationRule[];
+  dunningPolicies: DunningPolicy[];
+  supplierPaymentProposalRuns: SupplierPaymentProposalRun[];
+  paymentAdjustmentSuggestions: PaymentAdjustmentSuggestion[];
   structuredLogs: StructuredLogEntry[];
   metricSamples: MetricSample[];
   backgroundJobs: BackgroundJob[];

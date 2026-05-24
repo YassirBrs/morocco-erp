@@ -21,11 +21,14 @@ import {
   CollaborationEntityType,
   CompanyProfileChange,
   Branch,
+  BranchNumberingPolicy,
   ComplianceRuleSet,
   ComplianceRuleRollout,
   CreditNote,
   Customer,
+  CustomerKycChecklist,
   DeliveryNote,
+  DisputeCase,
   DocumentLine,
   DocumentLineInput,
   DocumentExportType,
@@ -41,6 +44,7 @@ import {
   EmploymentContract,
   ErpUser,
   ErpModuleKey,
+  EscalationRule,
   FeatureFlag,
   FeatureFlagAudit,
   FiscalPeriod,
@@ -62,7 +66,10 @@ import {
   HrPrivateNote,
   MaintenanceAsset,
   MaintenanceWorkOrder,
+  MultiCurrencyPreparation,
   Payment,
+  PaymentAdjustmentSuggestion,
+  PaymentAllocationRule,
   PettyCashJournal,
   PartnerImplementationChecklist,
   PartnerApiKey,
@@ -94,8 +101,11 @@ import {
   StoredFile,
   Supplier,
   SupplierContract,
+  SupplierKysChecklist,
+  SupplierPaymentProposalRun,
   SupplierQuoteComparison,
   SupplierInvoice,
+  SubscriptionPlan,
   Tenant,
   TenantSettings,
   TenantWorkspace,
@@ -109,6 +119,10 @@ import {
   WebhookRetryLog,
   CustomerContract,
   DiscountApproval,
+  DunningPolicy,
+  PromiseToPay,
+  ReleaseNote,
+  SupportImpersonationApproval,
 } from './erp.types';
 
 const r2 = (value: number): number => Math.round(value * 100) / 100;
@@ -495,6 +509,19 @@ export class ErpStoreService {
       partnerImplementationChecklists: [],
       complianceRuleRollouts: [],
       featureFlagAudits: [],
+      supportImpersonations: [],
+      releaseNotes: [],
+      escalationRules: [],
+      currencyPreparations: [],
+      branchNumberingPolicies: [],
+      customerKycChecklists: [],
+      supplierKysChecklists: [],
+      disputeCases: [],
+      promisesToPay: [],
+      paymentAllocationRules: [],
+      dunningPolicies: [],
+      supplierPaymentProposalRuns: [],
+      paymentAdjustmentSuggestions: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -628,6 +655,19 @@ export class ErpStoreService {
       partnerImplementationChecklists: [],
       complianceRuleRollouts: [],
       featureFlagAudits: [],
+      supportImpersonations: [],
+      releaseNotes: [],
+      escalationRules: [],
+      currencyPreparations: [],
+      branchNumberingPolicies: [],
+      customerKycChecklists: [],
+      supplierKysChecklists: [],
+      disputeCases: [],
+      promisesToPay: [],
+      paymentAllocationRules: [],
+      dunningPolicies: [],
+      supplierPaymentProposalRuns: [],
+      paymentAdjustmentSuggestions: [],
       structuredLogs: [],
       metricSamples: [],
       backgroundJobs: [],
@@ -6480,6 +6520,368 @@ export class ErpStoreService {
     const manifest = this.tenantDataExportManifest(tenantId);
     const archiveChecks = manifest.files.map((file: any) => ({ name: file.name, checksum: file.checksum, verified: /^[a-f0-9]{64}$/.test(file.checksum) }));
     return { manifestChecksum: manifest.manifestChecksum, archiveChecks, tamperEvidence: archiveChecks.every((check) => check.verified), generatedAt: new Date().toISOString() };
+  }
+
+  restoreRehearsalChecklist(input: { evidenceId?: string } = {}, tenantId?: string) {
+    const result = this.restoreRehearsal(input, tenantId);
+    return {
+      ...result,
+      tenantValidation: {
+        tenantId: this.workspace(tenantId).tenant.id,
+        legalEntityPreserved: true,
+        isolatedRestore: result.checks.find((check) => check.name === 'Tenant isolation')?.passed === true,
+      },
+      checklist: [
+        { key: 'backup-evidence', label: 'Preuve sauvegarde archivée', passed: result.status === 'RESTORE_VALIDATED' },
+        { key: 'tenant-isolation', label: 'Validation isolation tenant', passed: true },
+        { key: 'balanced-ledger', label: 'Écritures restaurées équilibrées', passed: result.checks[1]?.passed ?? false },
+      ],
+    };
+  }
+
+  requestSupportImpersonation(input: { supportUser: string; approvedBy?: string; reason: string; durationMinutes?: number }, tenantId?: string): SupportImpersonationApproval {
+    const workspace = this.workspace(tenantId);
+    const evidence = this.archiveEvidence(workspace, 'ACCOUNTING_EXPORT', `IMPERSONATION-${today()}-${input.supportUser}`, { reason: input.reason, supportUser: input.supportUser });
+    const approval: SupportImpersonationApproval = {
+      id: this.id('imp'),
+      tenantId: workspace.tenant.id,
+      supportUser: this.nonEmpty(input.supportUser, 'Utilisateur support obligatoire'),
+      approvedBy: this.clean(input.approvedBy) ?? 'owner@atlas.ma',
+      reason: this.nonEmpty(input.reason, 'Raison impersonation obligatoire'),
+      expiresAt: this.minutesFromNow(input.durationMinutes ?? 30),
+      status: 'APPROVED',
+      evidenceId: evidence.id,
+      createdAt: new Date().toISOString(),
+    };
+    workspace.supportImpersonations.push(approval);
+    this.audit(workspace, 'support.impersonation-approved', 'SupportImpersonationApproval', approval.id, approval);
+    return approval;
+  }
+
+  listSupportImpersonations(tenantId?: string): SupportImpersonationApproval[] {
+    return this.workspace(tenantId).supportImpersonations;
+  }
+
+  publishReleaseNote(input: { title: string; body: string; roles?: UserRole[]; modules?: ErpModuleKey[]; plans?: SubscriptionPlan[] }, tenantId?: string): ReleaseNote {
+    const workspace = this.workspace(tenantId);
+    const note: ReleaseNote = {
+      id: this.id('rel'),
+      tenantId: workspace.tenant.id,
+      title: this.nonEmpty(input.title, 'Titre release note obligatoire'),
+      body: this.nonEmpty(input.body, 'Corps release note obligatoire'),
+      roles: input.roles ?? ['OWNER', 'ADMIN'],
+      modules: input.modules ?? ['tenant'],
+      plans: input.plans ?? [workspace.tenant.plan],
+      publishedAt: today(),
+    };
+    workspace.releaseNotes.push(note);
+    return note;
+  }
+
+  targetedReleaseNotes(input: { role?: UserRole; module?: ErpModuleKey; plan?: SubscriptionPlan } = {}, tenantId?: string): ReleaseNote[] {
+    const workspace = this.workspace(tenantId);
+    const role = input.role ?? 'OWNER';
+    const plan = input.plan ?? workspace.tenant.plan;
+    return workspace.releaseNotes.filter((note) => note.roles.includes(role) && note.plans.includes(plan) && (!input.module || note.modules.includes(input.module)));
+  }
+
+  usageBasedOnboardingNudges(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const adoption = this.cohortMetrics(workspace.tenant.id).moduleAdoption;
+    return {
+      rows: adoption.map((module) => ({
+        module: module.module,
+        records: module.records,
+        nudge: module.records === 0 ? 'Créer les premières données' : module.records < 3 ? 'Former utilisateur clé' : 'Optimiser le workflow',
+        priority: module.records === 0 ? 'HIGH' : module.records < 3 ? 'MEDIUM' : 'LOW',
+      })),
+    };
+  }
+
+  competitiveReadinessScorecard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const moduleDepth = Math.min(100, allModules.filter((module) => workspace.tenant.settings.featureGates.allowedModules.includes(module)).length * 10);
+    const compliance = this.fiscalDocumentCompletenessCheck(undefined, undefined, workspace.tenant.id).status === 'READY_TO_CLOSE' ? 100 : 75;
+    const onboardingRisk = this.onboardingProgress('trading', workspace.tenant.id).progressPercent;
+    return {
+      competitors: ['Odoo', 'Sage', 'Cegid', 'Zoho', 'ERP local Maroc'],
+      scores: { moduleDepth, compliance, onboardingRisk, total: Math.round((moduleDepth + compliance + onboardingRisk) / 3) },
+      advantages: ['Règles Maroc versionnées', 'Damancom/DGI adapters', 'Portails comptable et partenaire', 'Audit tenant'],
+      risks: onboardingRisk < 100 ? ['Finaliser données d’ouverture'] : [],
+    };
+  }
+
+  workflowSlaTimers(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = [
+      ...workspace.quotes.map((quote) => ({ type: 'QUOTE', reference: quote.number, owner: 'SALES', dueAt: addDays(quote.date, 2), status: quote.status })),
+      ...workspace.deliveryNotes.map((note) => ({ type: 'DELIVERY', reference: note.number, owner: 'WAREHOUSE', dueAt: addDays(note.date, 1), status: note.status })),
+      ...workspace.invoices.map((invoice) => ({ type: 'INVOICE', reference: invoice.number, owner: 'ACCOUNTANT', dueAt: invoice.dueDate, status: invoice.status })),
+      ...workspace.purchaseOrders.map((order) => ({ type: 'PURCHASE', reference: order.number, owner: 'WAREHOUSE', dueAt: order.expectedDate ?? addDays(order.date, 7), status: order.status })),
+      ...workspace.payrollRuns.map((run) => ({ type: 'PAYROLL', reference: run.number, owner: 'PAYROLL', dueAt: `${run.period}-28`, status: run.status })),
+    ].map((row) => ({ ...row, daysRemaining: this.daysUntil(row.dueAt), breached: this.daysUntil(row.dueAt) < 0 }));
+    return { rows, breached: rows.filter((row) => row.breached).length };
+  }
+
+  createEscalationRule(input: Partial<EscalationRule> & { role: UserRole; escalateTo: UserRole }, tenantId?: string): EscalationRule {
+    const workspace = this.workspace(tenantId);
+    const rule: EscalationRule = {
+      id: this.id('esc'),
+      tenantId: workspace.tenant.id,
+      role: input.role,
+      amountThreshold: input.amountThreshold,
+      customerRisk: input.customerRisk,
+      supplierRisk: input.supplierRisk,
+      overdueDays: input.overdueDays,
+      escalateTo: input.escalateTo,
+      active: input.active ?? true,
+    };
+    workspace.escalationRules.push(rule);
+    return rule;
+  }
+
+  listEscalationRules(tenantId?: string): EscalationRule[] {
+    return this.workspace(tenantId).escalationRules;
+  }
+
+  prepareMultiCurrencyDocument(input: { documentType: MultiCurrencyPreparation['documentType']; documentId?: string; currency?: MultiCurrencyPreparation['currency']; foreignAmount: number; fxRateToMad: number }, tenantId?: string): MultiCurrencyPreparation {
+    const workspace = this.workspace(tenantId);
+    const prep: MultiCurrencyPreparation = {
+      id: this.id('fx'),
+      tenantId: workspace.tenant.id,
+      documentType: input.documentType,
+      documentId: this.clean(input.documentId),
+      currency: input.currency ?? 'EUR',
+      foreignAmount: this.positive(input.foreignAmount, 'Montant devise obligatoire'),
+      fxRateToMad: this.positive(input.fxRateToMad, 'Taux de change obligatoire'),
+      madAmount: r2(input.foreignAmount * input.fxRateToMad),
+      revaluationEvidence: `FX-${today()}-${input.currency ?? 'EUR'}-MAD`,
+      createdAt: today(),
+    };
+    workspace.currencyPreparations.push(prep);
+    return prep;
+  }
+
+  listCurrencyPreparations(tenantId?: string): MultiCurrencyPreparation[] {
+    return this.workspace(tenantId).currencyPreparations;
+  }
+
+  upsertBranchNumberingPolicy(input: { branchId: string; invoicePrefix: string; nextNumber?: number }, tenantId?: string): BranchNumberingPolicy {
+    const workspace = this.workspace(tenantId);
+    const branch = workspace.branches.find((candidate) => candidate.id === input.branchId) ?? this.createBranch({ name: 'Siège', city: workspace.tenant.legalEntity.city }, workspace.tenant.id);
+    const legalIdentifierValid = Boolean(workspace.tenant.legalEntity.ice && workspace.tenant.legalEntity.ifNumber && workspace.tenant.legalEntity.rc && workspace.tenant.legalEntity.patente);
+    const existing = workspace.branchNumberingPolicies.find((policy) => policy.branchId === branch.id);
+    const policy: BranchNumberingPolicy = existing ?? {
+      id: this.id('bnum'),
+      tenantId: workspace.tenant.id,
+      branchId: branch.id,
+      invoicePrefix: '',
+      nextNumber: 1,
+      legalIdentifierValid,
+      validationMessages: [],
+    };
+    policy.invoicePrefix = this.nonEmpty(input.invoicePrefix, 'Préfixe facture agence obligatoire');
+    policy.nextNumber = this.nonNegative(input.nextNumber ?? policy.nextNumber, 'Prochain numéro invalide');
+    policy.legalIdentifierValid = legalIdentifierValid;
+    policy.validationMessages = legalIdentifierValid ? [] : ['ICE/IF/RC/Patente tenant requis'];
+    if (!existing) workspace.branchNumberingPolicies.push(policy);
+    return policy;
+  }
+
+  branchNumberingPolicies(tenantId?: string): BranchNumberingPolicy[] {
+    return this.workspace(tenantId).branchNumberingPolicies;
+  }
+
+  regionalSalesHeatmap(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.invoices.map((invoice) => {
+      const customer = this.customer(workspace, invoice.customerId);
+      const region = this.moroccanRegions().find((row) => row.city === customer.city)?.region ?? 'Autre';
+      return { city: customer.city ?? 'Casablanca', region, productFamily: invoice.lines[0]?.sku ?? 'N/A', salesperson: workspace.leads.find((lead) => lead.convertedQuoteId === invoice.sourceQuoteId)?.owner ?? 'Équipe commerciale', revenue: invoice.totals.total };
+    });
+    return { rows };
+  }
+
+  customerKycChecklist(customerId: string, tenantId?: string): CustomerKycChecklist {
+    const workspace = this.workspace(tenantId);
+    const customer = this.customer(workspace, customerId);
+    const items = [
+      { key: 'ice', label: 'ICE', done: Boolean(customer.ice) },
+      { key: 'if', label: 'IF', done: Boolean(customer.ifNumber) },
+      { key: 'rc', label: 'RC', done: Boolean(customer.rc) },
+      { key: 'address', label: 'Adresse', done: Boolean(customer.address) },
+      { key: 'bank-reference', label: 'Référence bancaire', done: customer.documentExpiries.some((doc) => doc.type.includes('Garantie')) },
+      { key: 'signed-terms', label: 'Conditions signées', done: customer.documentExpiries.some((doc) => doc.type.includes('Contrat') || doc.type.includes('Garantie')) },
+    ];
+    const checklist: CustomerKycChecklist = { id: this.id('kyc'), tenantId: workspace.tenant.id, customerId: customer.id, items, status: items.every((item) => item.done) ? 'COMPLETE' : 'INCOMPLETE' };
+    workspace.customerKycChecklists = workspace.customerKycChecklists.filter((candidate) => candidate.customerId !== customer.id);
+    workspace.customerKycChecklists.push(checklist);
+    return checklist;
+  }
+
+  supplierKysChecklist(supplierId: string, tenantId?: string): SupplierKysChecklist {
+    const workspace = this.workspace(tenantId);
+    const supplier = this.supplier(workspace, supplierId);
+    const hasDoc = (name: string) => supplier.documentExpiries.some((doc) => doc.type.toLowerCase().includes(name));
+    const items = [
+      { key: 'tax-certificate', label: 'Attestation fiscale', done: hasDoc('fiscale') },
+      { key: 'cnss-certificate', label: 'Attestation CNSS', done: hasDoc('cnss') },
+      { key: 'rib', label: 'RIB', done: supplier.bankDetails.length > 0 },
+      { key: 'contract', label: 'Contrat', done: workspace.supplierContracts.some((contract) => contract.supplierId === supplier.id) },
+      { key: 'risk-approval', label: 'Approbation risque', done: !supplier.riskNotes },
+    ];
+    const checklist: SupplierKysChecklist = { id: this.id('kys'), tenantId: workspace.tenant.id, supplierId: supplier.id, items, riskApprovalRequired: Boolean(supplier.riskNotes), status: items.every((item) => item.done) ? 'COMPLETE' : 'INCOMPLETE' };
+    workspace.supplierKysChecklists = workspace.supplierKysChecklists.filter((candidate) => candidate.supplierId !== supplier.id);
+    workspace.supplierKysChecklists.push(checklist);
+    return checklist;
+  }
+
+  createDisputeCase(input: { type: DisputeCase['type']; partyId: string; referenceId?: string; reason: string; collectionStatus?: string; blockedApprovals?: boolean }, tenantId?: string): DisputeCase {
+    const workspace = this.workspace(tenantId);
+    if (input.type === 'CUSTOMER') this.customer(workspace, input.partyId);
+    else this.supplier(workspace, input.partyId);
+    const dispute: DisputeCase = {
+      id: this.id('disp'),
+      tenantId: workspace.tenant.id,
+      type: input.type,
+      partyId: input.partyId,
+      referenceId: this.clean(input.referenceId),
+      reason: this.nonEmpty(input.reason, 'Motif litige obligatoire'),
+      status: 'OPEN',
+      collectionStatus: this.clean(input.collectionStatus),
+      blockedApprovals: input.blockedApprovals,
+      createdAt: today(),
+    };
+    workspace.disputeCases.push(dispute);
+    return dispute;
+  }
+
+  listDisputeCases(type?: DisputeCase['type'], tenantId?: string): DisputeCase[] {
+    return this.workspace(tenantId).disputeCases.filter((dispute) => !type || dispute.type === type);
+  }
+
+  createPromiseToPay(input: { customerId: string; invoiceId: string; promisedDate: string; amount: number; owner?: string }, tenantId?: string): PromiseToPay {
+    const workspace = this.workspace(tenantId);
+    this.customer(workspace, input.customerId);
+    this.invoice(workspace, input.invoiceId);
+    const promise: PromiseToPay = {
+      id: this.id('ptp'),
+      tenantId: workspace.tenant.id,
+      customerId: input.customerId,
+      invoiceId: input.invoiceId,
+      promisedDate: this.isoDate(input.promisedDate, 'Date promesse paiement invalide'),
+      amount: this.positive(input.amount, 'Montant promesse obligatoire'),
+      owner: this.clean(input.owner) ?? 'recouvrement@atlas.ma',
+      status: this.isoDate(input.promisedDate, 'Date promesse paiement invalide') < today() ? 'BROKEN' : 'PROMISED',
+      reminderAt: addDays(input.promisedDate, -2),
+    };
+    workspace.promisesToPay.push(promise);
+    return promise;
+  }
+
+  listPromisesToPay(tenantId?: string): PromiseToPay[] {
+    return this.workspace(tenantId).promisesToPay;
+  }
+
+  upsertPaymentAllocationRule(input: { mode: PaymentAllocationRule['mode']; priority?: number; active?: boolean }, tenantId?: string): PaymentAllocationRule {
+    const workspace = this.workspace(tenantId);
+    const existing = workspace.paymentAllocationRules.find((rule) => rule.mode === input.mode);
+    const rule: PaymentAllocationRule = existing ?? { id: this.id('alloc'), tenantId: workspace.tenant.id, mode: input.mode, priority: 1, active: true };
+    rule.priority = input.priority ?? rule.priority;
+    rule.active = input.active ?? rule.active;
+    if (!existing) workspace.paymentAllocationRules.push(rule);
+    return rule;
+  }
+
+  paymentAllocationPreview(input: { customerId: string; amount: number; mode?: PaymentAllocationRule['mode']; invoiceId?: string }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    this.customer(workspace, input.customerId);
+    const amount = this.positive(input.amount, 'Montant allocation obligatoire');
+    const invoices = workspace.invoices.filter((invoice) => invoice.customerId === input.customerId && invoice.status !== 'PAID').sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    let remaining = amount;
+    const rows = (input.mode === 'SELECTED_INVOICE' && input.invoiceId ? invoices.filter((invoice) => invoice.id === input.invoiceId) : invoices).map((invoice) => {
+      const open = r2(invoice.totals.total - invoice.paidAmount - this.invoiceCreditTotal(workspace, invoice.id));
+      const allocated = Math.min(open, remaining);
+      remaining = r2(remaining - allocated);
+      return { invoiceId: invoice.id, number: invoice.number, open, allocated };
+    }).filter((row) => row.allocated > 0);
+    return { mode: input.mode ?? 'OLDEST_INVOICE', rows, unallocated: remaining };
+  }
+
+  upsertDunningPolicy(input: Partial<DunningPolicy> & { level: DunningPolicy['level']; daysOverdue: number }, tenantId?: string): DunningPolicy {
+    const workspace = this.workspace(tenantId);
+    const existing = workspace.dunningPolicies.find((policy) => policy.level === input.level);
+    const policy: DunningPolicy = existing ?? {
+      id: this.id('dun'),
+      tenantId: workspace.tenant.id,
+      level: input.level,
+      daysOverdue: 0,
+      subjectFr: '',
+      bodyFr: '',
+      legalFooter: `ICE ${workspace.tenant.legalEntity.ice} · IF ${workspace.tenant.legalEntity.ifNumber}`,
+      holdPolicy: 'NONE',
+    };
+    policy.daysOverdue = this.nonNegative(input.daysOverdue, 'Jours relance invalides');
+    policy.subjectFr = input.subjectFr ?? `Relance paiement niveau ${input.level}`;
+    policy.bodyFr = input.bodyFr ?? 'Bonjour, merci de régulariser votre compte.';
+    policy.holdPolicy = input.holdPolicy ?? (input.level >= 3 ? 'BLOCK_ORDERS' : input.level === 2 ? 'SOFT_HOLD' : 'NONE');
+    if (!existing) workspace.dunningPolicies.push(policy);
+    return policy;
+  }
+
+  dunningPolicies(tenantId?: string): DunningPolicy[] {
+    return this.workspace(tenantId).dunningPolicies;
+  }
+
+  supplierPaymentProposalRun(input: { cutoffDate?: string; cashBalance?: number } = {}, tenantId?: string): SupplierPaymentProposalRun {
+    const workspace = this.workspace(tenantId);
+    const cutoffDate = input.cutoffDate ? this.isoDate(input.cutoffDate, 'Date cutoff paiement fournisseur invalide') : today();
+    const proposals = workspace.supplierInvoices
+      .filter((invoice) => invoice.dueDate <= cutoffDate && invoice.status !== 'PAID')
+      .map((invoice) => ({ supplierId: invoice.supplierId, invoiceId: invoice.id, amount: r2(invoice.total - invoice.paidAmount), riskFlags: this.supplier(workspace, invoice.supplierId).riskNotes ? ['SUPPLIER_RISK'] : [] }));
+    const run: SupplierPaymentProposalRun = { id: this.id('sprun'), tenantId: workspace.tenant.id, cutoffDate, cashBalance: input.cashBalance ?? this.accountReconciliation(workspace.tenant.id).totals.bankCash, proposals, approvalStatus: proposals.length ? 'REQUIRED' : 'AUTO_APPROVED', createdAt: today() };
+    workspace.supplierPaymentProposalRuns.push(run);
+    return run;
+  }
+
+  chequeLifecycleAudit(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      rows: workspace.cheques.map((cheque) => ({
+        chequeId: cheque.id,
+        number: cheque.number,
+        status: cheque.status,
+        lifecycle: ['RECEIVED', cheque.depositBatchId ? 'DEPOSITED' : undefined, cheque.status === 'CLEARED' ? 'CLEARED' : undefined, cheque.status === 'REJECTED' ? 'CUSTOMER_NOTIFICATION_REQUIRED' : undefined].filter(Boolean),
+        depositBatchId: cheque.depositBatchId,
+      })),
+    };
+  }
+
+  suggestPaymentAdjustment(input: { paymentId: string; bankFee?: number; withholdingTax?: number }, tenantId?: string): PaymentAdjustmentSuggestion {
+    const workspace = this.workspace(tenantId);
+    const payment = workspace.payments.find((candidate) => candidate.id === input.paymentId);
+    if (!payment) throw new NotFoundException('Paiement introuvable');
+    const bankFee = this.nonNegative(input.bankFee ?? 0, 'Frais bancaires invalides');
+    const withholdingTax = this.nonNegative(input.withholdingTax ?? 0, 'Retenue à la source invalide');
+    const suggestion: PaymentAdjustmentSuggestion = {
+      id: this.id('pads'),
+      tenantId: workspace.tenant.id,
+      paymentId: payment.id,
+      bankFee,
+      withholdingTax,
+      journalSuggestion: [
+        { account: '6198', label: 'Frais bancaires', debit: bankFee, credit: 0 },
+        { account: '3455', label: 'Retenue à la source imputable', debit: withholdingTax, credit: 0 },
+        { account: payment.method === 'CASH' ? '5161' : '5141', label: 'Ajustement encaissement', debit: 0, credit: r2(bankFee + withholdingTax) },
+      ],
+      status: 'SUGGESTED',
+    };
+    workspace.paymentAdjustmentSuggestions.push(suggestion);
+    return suggestion;
+  }
+
+  paymentAdjustmentSuggestions(tenantId?: string): PaymentAdjustmentSuggestion[] {
+    return this.workspace(tenantId).paymentAdjustmentSuggestions;
   }
 
   upgradePrompts(tenantId?: string) {

@@ -32,6 +32,9 @@ export class InventoryService {
   supplierPaymentCalendar() { return this.store.supplierPaymentCalendar(); }
   supplierStatement(id: string) { return this.store.supplierStatement(id); }
   supplierReliabilityScores() { return this.store.supplierReliabilityScores(); }
+  supplierKysChecklist(id: string) { return this.store.supplierKysChecklist(id); }
+  createSupplierDispute(data: any) { return this.store.createDisputeCase({ ...data, type: 'SUPPLIER' }); }
+  supplierDisputes() { return this.store.listDisputeCases('SUPPLIER'); }
   listSupplierContracts() { return this.store.listSupplierContracts(); }
   createSupplierContract(data: any) { return this.store.createSupplierContract(data); }
   addSupplierDocumentPlaceholder(id: string, data: any) { return this.store.addSupplierDocumentPlaceholder(id, data); }
@@ -66,6 +69,7 @@ export class InventoryService {
   runRecurringPurchaseSchedule(id: string) { return this.store.runRecurringPurchaseSchedule(id); }
   createProcurementBudget(data: any) { return this.store.createProcurementBudget(data); }
   procurementBudgetControls() { return this.store.procurementBudgetControls(); }
+  supplierPaymentProposalRun(data: any) { return this.store.supplierPaymentProposalRun(data); }
   listPurchaseOrders() { return this.store.listPurchaseOrders(); }
   createPurchaseOrder(data: any) { return this.store.createPurchaseOrder(data); }
   purchaseOrderPdf(id: string) { return this.store.exportPurchaseOrderPdf(id); }

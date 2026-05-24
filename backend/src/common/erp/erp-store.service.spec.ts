@@ -1994,4 +1994,63 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(signature).toMatchObject({ replayProtected: true, valid: true });
     expect(tamper).toMatchObject({ tamperEvidence: true });
   });
+
+  it('covers growth, restore, support, SLA, FX, onboarding, dispute, collection, and payment control workflows', () => {
+    const backup = store.requestBackup();
+    const restore = store.restoreRehearsalChecklist({ evidenceId: backup.evidence.id });
+    const impersonation = store.requestSupportImpersonation({ supportUser: 'support@morocco-erp.ma', approvedBy: 'owner@atlas.ma', reason: 'Analyse ticket facture', durationMinutes: 20 });
+    const release = store.publishReleaseNote({ title: 'Nouveaux contrôles recouvrement', body: 'Relances et promesses de paiement.', roles: ['OWNER'], modules: ['tenant'], plans: ['ENTERPRISE'] });
+    const targeted = store.targetedReleaseNotes({ role: 'OWNER', module: 'tenant', plan: 'ENTERPRISE' });
+    const nudges = store.usageBasedOnboardingNudges();
+    const scorecard = store.competitiveReadinessScorecard();
+
+    const quote = store.createQuote({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    const invoice = store.convertQuoteToInvoice(quote.id);
+    const sla = store.workflowSlaTimers();
+    const escalation = store.createEscalationRule({ role: 'SALES', amountThreshold: 50000, customerRisk: 'HIGH', overdueDays: 30, escalateTo: 'ADMIN' });
+    const fx = store.prepareMultiCurrencyDocument({ documentType: 'INVOICE', documentId: invoice.id, currency: 'EUR', foreignAmount: 1000, fxRateToMad: 10.9 });
+    const branch = store.createBranch({ name: 'Agence Tanger', city: 'Tanger' });
+    const branchPolicy = store.upsertBranchNumberingPolicy({ branchId: branch.id, invoicePrefix: 'TNG-FAC', nextNumber: 25 });
+    const heatmap = store.regionalSalesHeatmap();
+
+    const kyc = store.customerKycChecklist('cus-1');
+    const kys = store.supplierKysChecklist('sup-1');
+    const customerDispute = store.createDisputeCase({ type: 'CUSTOMER', partyId: 'cus-1', referenceId: invoice.id, reason: 'Prix contesté', collectionStatus: 'PAUSED' });
+    const receipt = store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 2, unitCost: 100 }] });
+    const supplierInvoice = store.createSupplierInvoice({ purchaseReceiptId: receipt.id });
+    const supplierDispute = store.createDisputeCase({ type: 'SUPPLIER', partyId: 'sup-1', referenceId: supplierInvoice.id, reason: 'Écart réception', blockedApprovals: true });
+    const promise = store.createPromiseToPay({ customerId: 'cus-1', invoiceId: invoice.id, promisedDate: '2026-06-10', amount: 500, owner: 'recouvrement@atlas.ma' });
+    const allocationRule = store.upsertPaymentAllocationRule({ mode: 'OLDEST_INVOICE', priority: 1 });
+    const allocationPreview = store.paymentAllocationPreview({ customerId: 'cus-1', amount: 500, mode: 'OLDEST_INVOICE' });
+    const dunning = store.upsertDunningPolicy({ level: 2, daysOverdue: 15 });
+    const proposal = store.supplierPaymentProposalRun({ cutoffDate: '2026-12-31', cashBalance: 50000 });
+    const payment = store.recordPayment({ invoiceId: invoice.id, amount: 300, method: 'BANK' });
+    const cheque = store.createCheque({ invoiceId: invoice.id, number: 'CHQ-AUDIT-001', bank: 'Bank of Africa', drawer: 'Rabat Retail SARL', dueDate: '2026-06-20', amount: 250 });
+    const chequeAudit = store.chequeLifecycleAudit();
+    const adjustment = store.suggestPaymentAdjustment({ paymentId: payment.id, bankFee: 15, withholdingTax: 10 });
+
+    expect(restore).toMatchObject({ status: 'RESTORE_VALIDATED' });
+    expect(restore.tenantValidation).toMatchObject({ tenantId: 'tenant-demo', isolatedRestore: true });
+    expect(impersonation).toMatchObject({ status: 'APPROVED', supportUser: 'support@morocco-erp.ma' });
+    expect(targeted[0]).toMatchObject({ id: release.id, title: 'Nouveaux contrôles recouvrement' });
+    expect(nudges.rows.length).toBeGreaterThan(0);
+    expect(scorecard.competitors).toEqual(expect.arrayContaining(['Odoo', 'Sage', 'ERP local Maroc']));
+    expect(scorecard.scores.total).toBeGreaterThan(0);
+    expect(sla.rows.map((row) => row.type)).toEqual(expect.arrayContaining(['QUOTE', 'INVOICE']));
+    expect(escalation).toMatchObject({ role: 'SALES', escalateTo: 'ADMIN' });
+    expect(fx).toMatchObject({ currency: 'EUR', madAmount: 10900 });
+    expect(branchPolicy).toMatchObject({ invoicePrefix: 'TNG-FAC', legalIdentifierValid: true });
+    expect(heatmap.rows[0]).toHaveProperty('region');
+    expect(kyc.items.map((item) => item.key)).toEqual(expect.arrayContaining(['ice', 'signed-terms']));
+    expect(kys.riskApprovalRequired).toBe(true);
+    expect(customerDispute).toMatchObject({ type: 'CUSTOMER', collectionStatus: 'PAUSED' });
+    expect(supplierDispute).toMatchObject({ type: 'SUPPLIER', blockedApprovals: true });
+    expect(promise).toMatchObject({ status: 'PROMISED', owner: 'recouvrement@atlas.ma' });
+    expect(allocationRule).toMatchObject({ mode: 'OLDEST_INVOICE', active: true });
+    expect(allocationPreview.rows[0]).toMatchObject({ allocated: 500 });
+    expect(dunning).toMatchObject({ level: 2, holdPolicy: 'SOFT_HOLD' });
+    expect(proposal.proposals[0]).toMatchObject({ supplierId: 'sup-1' });
+    expect(chequeAudit.rows.map((row) => row.number)).toContain(cheque.number);
+    expect(adjustment).toMatchObject({ bankFee: 15, withholdingTax: 10, status: 'SUGGESTED' });
+  });
 });

@@ -22,9 +22,12 @@ export class InventoryController {
   @Get('suppliers/risk-reminders') supplierRiskReminders(@Query('filter') filter?: string) { return this.inventoryService.supplierRiskReminders(filter); }
   @Get('suppliers/payment-calendar') supplierPaymentCalendar() { return this.inventoryService.supplierPaymentCalendar(); }
   @Get('suppliers/reliability-scores') supplierReliabilityScores() { return this.inventoryService.supplierReliabilityScores(); }
+  @Get('supplier-disputes') supplierDisputes() { return this.inventoryService.supplierDisputes(); }
+  @Post('supplier-disputes') createSupplierDispute(@Body() body: any) { return this.inventoryService.createSupplierDispute(body); }
   @Get('supplier-contracts') supplierContracts() { return this.inventoryService.listSupplierContracts(); }
   @Post('supplier-contracts') createSupplierContract(@Body() body: any) { return this.inventoryService.createSupplierContract(body); }
   @Get('suppliers/:id/statement') supplierStatement(@Param('id') id: string) { return this.inventoryService.supplierStatement(id); }
+  @Get('suppliers/:id/kys-checklist') supplierKysChecklist(@Param('id') id: string) { return this.inventoryService.supplierKysChecklist(id); }
   @Post('suppliers/bulk-status') bulkSupplierStatus(@Body() body: any) { return this.inventoryService.bulkSupplierStatus(body); }
   @Post('suppliers/:id/document-placeholders') addSupplierDocumentPlaceholder(@Param('id') id: string, @Body() body: any) {
     return this.inventoryService.addSupplierDocumentPlaceholder(id, body);
@@ -71,6 +74,7 @@ export class InventoryController {
   @Post('recurring-purchases/:id/run') runRecurringPurchase(@Param('id') id: string) { return this.inventoryService.runRecurringPurchaseSchedule(id); }
   @Get('procurement-budgets') procurementBudgets() { return this.inventoryService.procurementBudgetControls(); }
   @Post('procurement-budgets') createProcurementBudget(@Body() body: any) { return this.inventoryService.createProcurementBudget(body); }
+  @Post('supplier-payment-proposals') supplierPaymentProposalRun(@Body() body: any) { return this.inventoryService.supplierPaymentProposalRun(body); }
   @Get('purchase-orders') purchaseOrders() { return this.inventoryService.listPurchaseOrders(); }
   @Post('purchase-orders') createPurchaseOrder(@Body() body: any) { return this.inventoryService.createPurchaseOrder(body); }
   @Get('purchase-orders/:id/pdf') purchaseOrderPdf(@Param('id') id: string) { return this.inventoryService.purchaseOrderPdf(id); }

@@ -15,11 +15,19 @@ export class CrmController {
   @Get('customers/import-template.csv') customerImportTemplateCsv() { return this.crmService.customerImportTemplateCsv(); }
   @Get('customers/credit-control') customerCreditControls() { return this.crmService.customerCreditControls(); }
   @Get('customers/document-reminders') customerDocumentReminders() { return this.crmService.customerDocumentReminders(); }
+  @Get('regional-sales-heatmap') regionalSalesHeatmap() { return this.crmService.regionalSalesHeatmap(); }
+  @Get('customer-disputes') customerDisputes() { return this.crmService.customerDisputes(); }
+  @Post('customer-disputes') createCustomerDispute(@Body() body: any) { return this.crmService.createCustomerDispute(body); }
+  @Get('promises-to-pay') promisesToPay() { return this.crmService.promisesToPay(); }
+  @Post('promises-to-pay') createPromiseToPay(@Body() body: any) { return this.crmService.createPromiseToPay(body); }
+  @Get('dunning-policies') dunningPolicies() { return this.crmService.dunningPolicies(); }
+  @Post('dunning-policies') upsertDunningPolicy(@Body() body: any) { return this.crmService.upsertDunningPolicy(body); }
   @Get('customers/duplicates') customerDuplicateReview() { return this.crmService.customerDuplicateReview(); }
   @Post('customers/bulk-status') bulkCustomerStatus(@Body() body: any) { return this.crmService.bulkCustomerStatus(body); }
   @Get('customers/:id/timeline') customerTimeline(@Param('id') id: string) { return this.crmService.customerTimeline(id); }
   @Post('customers/:id/notes') addCustomerNote(@Param('id') id: string, @Body() body: any) { return this.crmService.addCustomerNote(id, body); }
   @Post('customers/:id/tasks') addCustomerTask(@Param('id') id: string, @Body() body: any) { return this.crmService.addCustomerTask(id, body); }
+  @Get('customers/:id/kyc-checklist') customerKycChecklist(@Param('id') id: string) { return this.crmService.customerKycChecklist(id); }
   @Get('customers/:id') customer(@Param('id') id: string) { return this.crmService.getCustomer(id); }
   @Post('customers') createCustomer(@Body() body: any) { return this.crmService.createCustomer(body); }
   @Patch('customers/:id') updateCustomer(@Param('id') id: string, @Body() body: any) { return this.crmService.updateCustomer(id, body); }

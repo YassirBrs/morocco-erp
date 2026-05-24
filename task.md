@@ -322,29 +322,29 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T228 P1 - Add API integration health dashboard with latency, failures, retries, and last success.
 - [x] T229 P1 - Add webhook signature verification examples and replay protection tests.
 - [x] T230 P1 - Add export checksum verification and tamper-evidence report for archived files.
-- [ ] T231 P1 - Add database restore rehearsal checklist and tenant-level restore validation.
-- [ ] T232 P1 - Add support impersonation approval workflow with time limit and audit evidence.
-- [ ] T233 P1 - Add in-app release notes targeted by role, module, and tenant plan.
-- [ ] T234 P1 - Add usage-based onboarding nudges from real module adoption signals.
-- [ ] T235 P1 - Add competitive readiness scorecard comparing ERP module depth, compliance, and onboarding risk.
+- [x] T231 P1 - Add database restore rehearsal checklist and tenant-level restore validation.
+- [x] T232 P1 - Add support impersonation approval workflow with time limit and audit evidence.
+- [x] T233 P1 - Add in-app release notes targeted by role, module, and tenant plan.
+- [x] T234 P1 - Add usage-based onboarding nudges from real module adoption signals.
+- [x] T235 P1 - Add competitive readiness scorecard comparing ERP module depth, compliance, and onboarding risk.
 
 ## Enterprise Expansion Backlog
 
-- [ ] T236 P1 - Add workflow SLA timers for quotes, deliveries, invoices, purchases, payroll approvals, and support tickets.
-- [ ] T237 P1 - Add configurable escalation rules by tenant role, amount, customer risk, supplier risk, and overdue days.
-- [ ] T238 P1 - Add multi-currency quote and invoice preparation with MAD accounting base and FX revaluation evidence.
-- [ ] T239 P1 - Add branch-level invoice numbering policies with Moroccan legal identifier validation.
-- [ ] T240 P1 - Add regional sales heatmap by Moroccan city, region, product family, and salesperson.
-- [ ] T241 P1 - Add customer onboarding KYC checklist for ICE, IF, RC, address, bank references, and signed terms.
-- [ ] T242 P1 - Add supplier onboarding KYS checklist for tax certificate, CNSS certificate, RIB, contracts, and risk approvals.
-- [ ] T243 P1 - Add customer dispute case tracking linked to invoices, credit notes, documents, and collection status.
-- [ ] T244 P1 - Add supplier dispute case tracking linked to receipts, invoices, payments, and blocked purchase approvals.
-- [ ] T245 P1 - Add collection promise-to-pay tracking with commitments, reminders, broken promises, and next action owners.
-- [ ] T246 P1 - Add payment allocation rules for partial payments across oldest invoice, selected invoice, or manual split.
-- [ ] T247 P1 - Add customer dunning levels with French email templates, legal footer, and account hold policy.
-- [ ] T248 P1 - Add supplier payment proposal run with due-date cutoffs, risk flags, cash balance, and approval status.
-- [ ] T249 P1 - Add cheque lifecycle audit from receipt to deposit, clearing, rejection, and customer notification.
-- [ ] T250 P1 - Add bank fee and withholding tax handling on payments with accounting entry suggestions.
+- [x] T236 P1 - Add workflow SLA timers for quotes, deliveries, invoices, purchases, payroll approvals, and support tickets.
+- [x] T237 P1 - Add configurable escalation rules by tenant role, amount, customer risk, supplier risk, and overdue days.
+- [x] T238 P1 - Add multi-currency quote and invoice preparation with MAD accounting base and FX revaluation evidence.
+- [x] T239 P1 - Add branch-level invoice numbering policies with Moroccan legal identifier validation.
+- [x] T240 P1 - Add regional sales heatmap by Moroccan city, region, product family, and salesperson.
+- [x] T241 P1 - Add customer onboarding KYC checklist for ICE, IF, RC, address, bank references, and signed terms.
+- [x] T242 P1 - Add supplier onboarding KYS checklist for tax certificate, CNSS certificate, RIB, contracts, and risk approvals.
+- [x] T243 P1 - Add customer dispute case tracking linked to invoices, credit notes, documents, and collection status.
+- [x] T244 P1 - Add supplier dispute case tracking linked to receipts, invoices, payments, and blocked purchase approvals.
+- [x] T245 P1 - Add collection promise-to-pay tracking with commitments, reminders, broken promises, and next action owners.
+- [x] T246 P1 - Add payment allocation rules for partial payments across oldest invoice, selected invoice, or manual split.
+- [x] T247 P1 - Add customer dunning levels with French email templates, legal footer, and account hold policy.
+- [x] T248 P1 - Add supplier payment proposal run with due-date cutoffs, risk flags, cash balance, and approval status.
+- [x] T249 P1 - Add cheque lifecycle audit from receipt to deposit, clearing, rejection, and customer notification.
+- [x] T250 P1 - Add bank fee and withholding tax handling on payments with accounting entry suggestions.
 - [ ] T251 P1 - Add stock reservation aging report by order, customer, product, warehouse, and expiry policy.
 - [ ] T252 P1 - Add customer-specific delivery instructions and route constraints for Moroccan cities.
 - [ ] T253 P1 - Add transporter registry with vehicle, driver, license, insurance, and delivery performance metrics.

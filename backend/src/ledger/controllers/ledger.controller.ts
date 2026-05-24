@@ -43,8 +43,13 @@ export class LedgerController {
   @Post('bank-import/preview') bankImportPreview(@Body() body: { csv: string }) { return this.ledgerService.bankImportPreview(body); }
   @Post('bank-matching/suggestions') bankMatchingSuggestions(@Body() body: any) { return this.ledgerService.bankStatementMatchingSuggestions(body); }
   @Get('payments/reconciliation-by-method') paymentMethodReconciliation() { return this.ledgerService.paymentMethodReconciliation(); }
+  @Post('payments/allocation-rules') upsertPaymentAllocationRule(@Body() body: any) { return this.ledgerService.upsertPaymentAllocationRule(body); }
+  @Post('payments/allocation-preview') paymentAllocationPreview(@Body() body: any) { return this.ledgerService.paymentAllocationPreview(body); }
+  @Get('payments/adjustment-suggestions') paymentAdjustmentSuggestions() { return this.ledgerService.paymentAdjustmentSuggestions(); }
+  @Post('payments/adjustment-suggestions') suggestPaymentAdjustment(@Body() body: any) { return this.ledgerService.suggestPaymentAdjustment(body); }
   @Get('cheques') cheques() { return this.ledgerService.listCheques(); }
   @Post('cheques') createCheque(@Body() body: any) { return this.ledgerService.createCheque(body); }
+  @Get('cheques/lifecycle-audit') chequeLifecycleAudit() { return this.ledgerService.chequeLifecycleAudit(); }
   @Get('deposit-batches') depositBatches() { return this.ledgerService.listDepositBatches(); }
   @Post('deposit-batches') createDepositBatch(@Body() body: any) { return this.ledgerService.createDepositBatch(body); }
   @Get('evidence') legalEvidence() { return this.ledgerService.legalEvidence(); }

@@ -225,6 +225,29 @@ export type EnterpriseControlReadiness = {
   exportTamperEvidence: { tamperEvidence: boolean };
 };
 
+export type GrowthControlReadiness = {
+  restoreChecklist: { status: string; checklist: unknown[] };
+  supportImpersonations: unknown[];
+  releaseNotes: unknown[];
+  onboardingNudges: { rows: unknown[] };
+  competitiveScorecard: { scores: { total: number }; competitors: string[] };
+  slaTimers: { rows: unknown[]; breached: number };
+  escalationRules: unknown[];
+  currencyPreparations: unknown[];
+  branchNumberingPolicies: unknown[];
+  regionalSalesHeatmap: { rows: unknown[] };
+  customerKyc: { status: string };
+  supplierKys: { status: string };
+  customerDisputes: unknown[];
+  supplierDisputes: unknown[];
+  promisesToPay: unknown[];
+  paymentAllocationPreview: { rows: unknown[] };
+  dunningPolicies: unknown[];
+  supplierPaymentProposal: { proposals: unknown[]; approvalStatus: string };
+  chequeLifecycle: { rows: unknown[] };
+  paymentAdjustments: unknown[];
+};
+
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
   id: string;
@@ -504,4 +527,30 @@ export async function getEnterpriseControlReadiness(): Promise<EnterpriseControl
     getJson('/tenant/export-tamper-evidence', { tamperEvidence: true }),
   ]);
   return { hrNotes, assetAssignments, fleetEfficiency, preventiveMaintenance, projectWip, productionVariance, procurementBudgets, branches, localization, templatePreview, emailAudit, customerPortal, supplierPortal, accountantReviews, partnerChecklist, ruleRollout, featureFlagAudit, integrationHealth, webhookSignature, exportTamperEvidence };
+}
+
+export async function getGrowthControlReadiness(): Promise<GrowthControlReadiness> {
+  const [restoreChecklist, supportImpersonations, releaseNotes, onboardingNudges, competitiveScorecard, slaTimers, escalationRules, currencyPreparations, branchNumberingPolicies, regionalSalesHeatmap, customerKyc, supplierKys, customerDisputes, supplierDisputes, promisesToPay, paymentAllocationPreview, dunningPolicies, supplierPaymentProposal, chequeLifecycle, paymentAdjustments] = await Promise.all([
+    postJson('/tenant/operations/restore-rehearsal/checklist', {}, { status: 'NO_BACKUP_AVAILABLE', checklist: [] }),
+    getJson('/tenant/support-impersonations', []),
+    getJson('/tenant/release-notes?role=OWNER&module=tenant', []),
+    getJson('/tenant/onboarding-nudges', { rows: [] }),
+    getJson('/tenant/competitive-scorecard', { scores: { total: 0 }, competitors: [] }),
+    getJson('/tenant/workflow-sla-timers', { rows: [], breached: 0 }),
+    getJson('/tenant/escalation-rules', []),
+    getJson('/tenant/currency-preparations', []),
+    getJson('/tenant/branch-numbering-policies', []),
+    getJson('/crm/regional-sales-heatmap', { rows: [] }),
+    getJson('/crm/customers/cus-1/kyc-checklist', { status: 'INCOMPLETE' }),
+    getJson('/inventory/suppliers/sup-1/kys-checklist', { status: 'INCOMPLETE' }),
+    getJson('/crm/customer-disputes', []),
+    getJson('/inventory/supplier-disputes', []),
+    getJson('/crm/promises-to-pay', []),
+    postJson('/ledger/payments/allocation-preview', { customerId: 'cus-1', amount: 0 }, { rows: [] }),
+    getJson('/crm/dunning-policies', []),
+    postJson('/inventory/supplier-payment-proposals', {}, { proposals: [], approvalStatus: 'AUTO_APPROVED' }),
+    getJson('/ledger/cheques/lifecycle-audit', { rows: [] }),
+    getJson('/ledger/payments/adjustment-suggestions', []),
+  ]);
+  return { restoreChecklist, supportImpersonations, releaseNotes, onboardingNudges, competitiveScorecard, slaTimers, escalationRules, currencyPreparations, branchNumberingPolicies, regionalSalesHeatmap, customerKyc, supplierKys, customerDisputes, supplierDisputes, promisesToPay, paymentAllocationPreview, dunningPolicies, supplierPaymentProposal, chequeLifecycle, paymentAdjustments };
 }

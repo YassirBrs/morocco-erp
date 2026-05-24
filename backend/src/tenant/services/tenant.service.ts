@@ -104,6 +104,7 @@ export class TenantService {
   restoreRehearsal(data: any) {
     return this.store.restoreRehearsal(data);
   }
+  restoreRehearsalChecklist(data: any) { return this.store.restoreRehearsalChecklist(data); }
 
   stagingDeployment() {
     return this.store.stagingDeployment();
@@ -130,6 +131,19 @@ export class TenantService {
   }
 
   featureFlagAuditHistory() { return this.store.featureFlagAuditHistory(); }
+  requestSupportImpersonation(data: any) { return this.store.requestSupportImpersonation(data); }
+  supportImpersonations() { return this.store.listSupportImpersonations(); }
+  publishReleaseNote(data: any) { return this.store.publishReleaseNote(data); }
+  targetedReleaseNotes(data: any) { return this.store.targetedReleaseNotes(data); }
+  onboardingNudges() { return this.store.usageBasedOnboardingNudges(); }
+  competitiveScorecard() { return this.store.competitiveReadinessScorecard(); }
+  workflowSlaTimers() { return this.store.workflowSlaTimers(); }
+  createEscalationRule(data: any) { return this.store.createEscalationRule(data); }
+  escalationRules() { return this.store.listEscalationRules(); }
+  prepareMultiCurrencyDocument(data: any) { return this.store.prepareMultiCurrencyDocument(data); }
+  currencyPreparations() { return this.store.listCurrencyPreparations(); }
+  upsertBranchNumberingPolicy(data: any) { return this.store.upsertBranchNumberingPolicy(data); }
+  branchNumberingPolicies() { return this.store.branchNumberingPolicies(); }
 
   pricingPlans() {
     return this.store.pricingPlans();

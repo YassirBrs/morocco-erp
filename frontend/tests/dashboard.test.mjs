@@ -410,3 +410,15 @@ test('Next primary workspace exposes extended enterprise controls for portals, r
     assert.ok(api.includes(endpoint), `${endpoint} enterprise control API route is wired`);
   }
 });
+
+test('Next primary workspace exposes growth, restore, SLA, KYC, dispute, collection, and payment control batch', () => {
+  for (const text of ['Accélération croissance et recouvrement', 'Score compétitif', 'SLA dépassés', 'KYC client', 'KYS fournisseur', 'Support, release, onboarding', 'SLA, FX et agences', 'Litiges et paiements', 'Concurrents suivis']) {
+    assert.ok(page.includes(text), `${text} growth control label is present`);
+  }
+  for (const marker of ['getGrowthControlReadiness', 'growthControls.restoreChecklist', 'growthControls.competitiveScorecard', 'growthControls.slaTimers', 'growthControls.paymentAllocationPreview']) {
+    assert.ok(page.includes(marker), `${marker} growth control helper is present`);
+  }
+  for (const endpoint of ['/tenant/operations/restore-rehearsal/checklist', '/tenant/support-impersonations', '/tenant/release-notes?role=OWNER&module=tenant', '/tenant/onboarding-nudges', '/tenant/competitive-scorecard', '/tenant/workflow-sla-timers', '/tenant/escalation-rules', '/tenant/currency-preparations', '/tenant/branch-numbering-policies', '/crm/regional-sales-heatmap', '/crm/customers/cus-1/kyc-checklist', '/inventory/suppliers/sup-1/kys-checklist', '/crm/customer-disputes', '/inventory/supplier-disputes', '/crm/promises-to-pay', '/ledger/payments/allocation-preview', '/crm/dunning-policies', '/inventory/supplier-payment-proposals', '/ledger/cheques/lifecycle-audit', '/ledger/payments/adjustment-suggestions']) {
+    assert.ok(api.includes(endpoint), `${endpoint} growth control API route is wired`);
+  }
+});

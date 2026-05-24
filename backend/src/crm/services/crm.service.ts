@@ -16,6 +16,14 @@ export class CrmService {
   customerImportTemplateCsv() { return this.store.importTemplateCsv('customers'); }
   customerCreditControls() { return this.store.customerCreditControls(); }
   customerDocumentReminders() { return this.store.customerDocumentReminders(); }
+  regionalSalesHeatmap() { return this.store.regionalSalesHeatmap(); }
+  customerKycChecklist(id: string) { return this.store.customerKycChecklist(id); }
+  createCustomerDispute(data: any) { return this.store.createDisputeCase({ ...data, type: 'CUSTOMER' }); }
+  customerDisputes() { return this.store.listDisputeCases('CUSTOMER'); }
+  createPromiseToPay(data: any) { return this.store.createPromiseToPay(data); }
+  promisesToPay() { return this.store.listPromisesToPay(); }
+  upsertDunningPolicy(data: any) { return this.store.upsertDunningPolicy(data); }
+  dunningPolicies() { return this.store.dunningPolicies(); }
   customerDuplicateReview() { return this.store.customerDuplicateReview(); }
   customerTimeline(id: string) { return this.store.entityTimeline('CUSTOMER', id); }
   addCustomerNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'CUSTOMER', entityId: id, ...data }); }

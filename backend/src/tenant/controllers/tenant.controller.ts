@@ -29,6 +29,7 @@ export class TenantController {
   @Get('operations/backup') backupPlan() { return this.tenantService.backupPlan(); }
   @Post('operations/backup') requestBackup() { return this.tenantService.requestBackup(); }
   @Post('operations/restore-rehearsal') restoreRehearsal(@Body() body: any) { return this.tenantService.restoreRehearsal(body); }
+  @Post('operations/restore-rehearsal/checklist') restoreRehearsalChecklist(@Body() body: any) { return this.tenantService.restoreRehearsalChecklist(body); }
   @Get('staging-deployment') stagingDeployment() { return this.tenantService.stagingDeployment(); }
   @Get('operations/jobs') jobs() { return this.tenantService.jobs(); }
   @Post('operations/jobs') enqueueJob(@Body() body: any) { return this.tenantService.enqueueJob(body); }
@@ -36,6 +37,21 @@ export class TenantController {
   @Get('feature-flags') featureFlags() { return this.tenantService.featureFlags(); }
   @Patch('feature-flags') updateFeatureFlag(@Body() body: any) { return this.tenantService.updateFeatureFlag(body); }
   @Get('feature-flags/audit-history') featureFlagAuditHistory() { return this.tenantService.featureFlagAuditHistory(); }
+  @Get('support-impersonations') supportImpersonations() { return this.tenantService.supportImpersonations(); }
+  @Post('support-impersonations') requestSupportImpersonation(@Body() body: any) { return this.tenantService.requestSupportImpersonation(body); }
+  @Get('release-notes') releaseNotes(@Query('role') role?: any, @Query('module') module?: any, @Query('plan') plan?: any) {
+    return this.tenantService.targetedReleaseNotes({ role, module, plan });
+  }
+  @Post('release-notes') publishReleaseNote(@Body() body: any) { return this.tenantService.publishReleaseNote(body); }
+  @Get('onboarding-nudges') onboardingNudges() { return this.tenantService.onboardingNudges(); }
+  @Get('competitive-scorecard') competitiveScorecard() { return this.tenantService.competitiveScorecard(); }
+  @Get('workflow-sla-timers') workflowSlaTimers() { return this.tenantService.workflowSlaTimers(); }
+  @Get('escalation-rules') escalationRules() { return this.tenantService.escalationRules(); }
+  @Post('escalation-rules') createEscalationRule(@Body() body: any) { return this.tenantService.createEscalationRule(body); }
+  @Get('currency-preparations') currencyPreparations() { return this.tenantService.currencyPreparations(); }
+  @Post('currency-preparations') prepareCurrency(@Body() body: any) { return this.tenantService.prepareMultiCurrencyDocument(body); }
+  @Get('branch-numbering-policies') branchNumberingPolicies() { return this.tenantService.branchNumberingPolicies(); }
+  @Post('branch-numbering-policies') upsertBranchNumberingPolicy(@Body() body: any) { return this.tenantService.upsertBranchNumberingPolicy(body); }
   @Get('pricing-plans') pricingPlans() { return this.tenantService.pricingPlans(); }
   @Get('billing-status') billingStatus() { return this.tenantService.billingStatus(); }
   @Get('accountant-workspace') accountantWorkspace() { return this.tenantService.accountantWorkspace(); }

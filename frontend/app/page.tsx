@@ -4,6 +4,7 @@ import {
   getDocumentOperations,
   getEnterpriseControlReadiness,
   getGovernanceReadiness,
+  getGrowthControlReadiness,
   getInvoices,
   getIntegrationReadiness,
   getModuleData,
@@ -44,7 +45,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -61,6 +62,7 @@ export default async function DashboardPage() {
     getGovernanceReadiness(),
     getOperationalControlReadiness(),
     getEnterpriseControlReadiness(),
+    getGrowthControlReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -447,6 +449,42 @@ export default async function DashboardPage() {
               `Rollout règles ${enterpriseControls.ruleRollout.status}`,
               `Audit flags ${enterpriseControls.featureFlagAudit.length}`,
               `Signature webhooks replay ${enterpriseControls.webhookSignature.replayProtected ? 'protégé' : 'à revoir'}`,
+            ]} empty="-" />
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Accélération croissance et recouvrement">
+          <PanelHeader title="Accélération croissance et recouvrement" action="Piloter risques" />
+          <div className="reportGrid">
+            <Metric label="Score compétitif" value={String(growthControls.competitiveScorecard.scores.total)} />
+            <Metric label="SLA dépassés" value={String(growthControls.slaTimers.breached)} />
+            <Metric label="KYC client" value={growthControls.customerKyc.status} />
+            <Metric label="KYS fournisseur" value={growthControls.supplierKys.status} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Support, release, onboarding" rows={[
+              `Restore tenant ${growthControls.restoreChecklist.status}`,
+              `Impersonations support ${growthControls.supportImpersonations.length}`,
+              `Release notes ciblées ${growthControls.releaseNotes.length}`,
+              `Nudges adoption ${growthControls.onboardingNudges.rows.length}`,
+              `Concurrents suivis ${growthControls.competitiveScorecard.competitors.join(', ')}`,
+            ]} empty="-" />
+            <MiniList title="SLA, FX et agences" rows={[
+              `Timers workflow ${growthControls.slaTimers.rows.length}`,
+              `Règles escalade ${growthControls.escalationRules.length}`,
+              `Préparations devises ${growthControls.currencyPreparations.length}`,
+              `Numérotation agence ${growthControls.branchNumberingPolicies.length}`,
+              `Heatmap régions ${growthControls.regionalSalesHeatmap.rows.length}`,
+            ]} empty="-" />
+            <MiniList title="Litiges et paiements" rows={[
+              `Litiges clients ${growthControls.customerDisputes.length}`,
+              `Litiges fournisseurs ${growthControls.supplierDisputes.length}`,
+              `Promesses paiement ${growthControls.promisesToPay.length}`,
+              `Allocations paiement ${growthControls.paymentAllocationPreview.rows.length}`,
+              `Relances FR ${growthControls.dunningPolicies.length}`,
+              `Propositions fournisseurs ${growthControls.supplierPaymentProposal.proposals.length}`,
+              `Audit chèques ${growthControls.chequeLifecycle.rows.length}`,
+              `Frais banque/RAS ${growthControls.paymentAdjustments.length}`,
             ]} empty="-" />
           </div>
         </section>
