@@ -2390,4 +2390,72 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(batch.auditAnomalies).toHaveProperty('summary');
     expect(batch.customerProfitability.rows[0]).toHaveProperty('profitability');
   });
+
+  it('covers the enterprise expansion batch for SaaS adoption, verticals, compliance, finance, and stock workflows', () => {
+    const batch = store.moroccoEnterpriseExpansionReadiness();
+
+    expect(batch.supplierProfitabilityRisk.rows[0]).toHaveProperty('purchaseVolume');
+    expect(batch.onboardingWizard).toMatchObject({ persisted: true });
+    expect(batch.trainingChecklist.rows[0]).toHaveProperty('completedLessons');
+    expect(batch.tenantSuccess.score).toBeGreaterThanOrEqual(0);
+    expect(batch.migrationRoi.rows.map((row) => row.competitor)).toEqual(expect.arrayContaining(['Odoo', 'Sage']));
+    expect(batch.cashflowStress).toHaveProperty('stressedBalance');
+    expect(batch.accountantTimeline.rows.map((row) => row.type)).toEqual(expect.arrayContaining(['REQUEST', 'SIGN_OFF']));
+    expect(batch.creditCommittee).toHaveProperty('proposedLimit');
+    expect(batch.supplierRenewal).toHaveProperty('renewalDecision');
+    expect(batch.branchTransferImpact).toHaveProperty('approvalRoute');
+    expect(batch.hospitalityServiceCharge).toHaveProperty('tipAccountingProposal');
+    expect(batch.loyaltyLiability.accountingProvisionPreview).toHaveLength(1);
+    expect(batch.educationBilling.parentPortalPromises.length).toBeGreaterThan(0);
+    expect(batch.clinicInvoicing).toMatchObject({ status: 'COMPLIANT' });
+    expect(batch.constructionProgress).toHaveProperty('customerApproval');
+    expect(batch.landedCostVariance).toHaveProperty('dumReference');
+    expect(batch.exporterCurrencyPack).toMatchObject({ currency: 'EUR' });
+    expect(batch.agriPurchaseIntake).toHaveProperty('withholdingNote');
+    expect(batch.scrapRecovery.accountingRecoveryProposal[0]).toHaveProperty('account');
+    expect(batch.retainerRevenue).toHaveProperty('deferredRevenue');
+    expect(batch.downgradeRisk).toHaveProperty('customerCommunication');
+    expect(batch.legalIdentityChange).toMatchObject({ historicalInvoiceProtection: true });
+    expect(batch.dataResidency.checks.map((check) => check.key)).toEqual(expect.arrayContaining(['region', 'subcontractors']));
+    expect(batch.incidentResponse.timeline.length).toBeGreaterThan(0);
+    expect(batch.releaseReadiness).toMatchObject({ status: 'READY_TO_RELEASE' });
+    expect(batch.aiBookkeeping.rows[0]).toHaveProperty('confidence');
+    expect(batch.ocrBenchmark.rows[0]).toHaveProperty('arabicSupport');
+    expect(batch.bankFeedConsent).toMatchObject({ status: 'CONSENT_ACTIVE' });
+    expect(batch.eInvoicingGaps.gaps.map((gap) => gap.key)).toEqual(expect.arrayContaining(['legalMentions', 'adapter']));
+    expect(batch.payrollRuleDiff.impactedEmployees).toContain('emp-1');
+    expect(batch.vatAuditTrail).toHaveProperty('archiveEvidenceId');
+    expect(batch.fixedAssetDepreciation.journalProposal).toHaveLength(2);
+    expect(batch.leasingTracker.paymentSchedule.length).toBeGreaterThan(0);
+    expect(batch.insuranceRegister.rows[0]).toHaveProperty('documentVault');
+    expect(batch.pettyCashReplenishment).toHaveProperty('cashboxImpact');
+    expect(batch.corporateCardImport).toHaveProperty('duplicateDetection');
+    expect(batch.travelMission).toMatchObject({ clientBillable: true });
+    expect(batch.slaPenalty).toMatchObject({ status: 'PENALTY_TRACKED' });
+    expect(batch.supplierRebate).toHaveProperty('creditNoteExpectation');
+    expect(batch.reservationExpiry).toMatchObject({ status: 'RESERVATION_TRACKED' });
+  });
+
+  it('keeps enterprise expansion readiness available without mutating a locked fiscal period', () => {
+    const [year, month] = new Date().toISOString().slice(0, 7).split('-').map(Number);
+    const invoiceCountBefore = store.listInvoices().length;
+
+    store.requestFiscalLockException({
+      year,
+      month,
+      reason: 'Correction contrôlée après revue comptable',
+      approver: 'accountant@atlas.ma',
+    });
+
+    const lockedBefore = store.listFiscalPeriods().find((period) => period.year === year && period.month === month);
+    expect(lockedBefore).toMatchObject({ locked: true, status: 'LOCKED' });
+
+    const batch = store.moroccoEnterpriseExpansionReadiness();
+
+    expect(batch.exporterCurrencyPack).toMatchObject({ currency: 'EUR' });
+    expect(batch.vatAuditTrail).toMatchObject({ status: 'TRACE_READY' });
+    expect(store.listInvoices()).toHaveLength(invoiceCountBefore);
+    expect(store.listFiscalPeriods().find((period) => period.year === year && period.month === month))
+      .toMatchObject({ locked: true, status: 'LOCKED' });
+  });
 });

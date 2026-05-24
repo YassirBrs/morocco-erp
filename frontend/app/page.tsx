@@ -5,6 +5,7 @@ import {
   getDocumentOperations,
   getEnterpriseControlReadiness,
   getEnterpriseDepthReadiness,
+  getEnterpriseExpansionReadiness,
   getEnterpriseOperationsReadiness,
   getGovernanceReadiness,
   getGrowthControlReadiness,
@@ -24,6 +25,7 @@ import {
   searchBusiness,
 } from '../lib/api';
 import { enterpriseDepthFeatureDefinitions } from '../features/enterprise-depth/enterprise-depth-feature-config';
+import { enterpriseExpansionFeatureDefinitions } from '../features/enterprise-expansion/enterprise-expansion-feature-config';
 import { enterpriseOperationsFeatureDefinitions } from '../features/enterprise-operations/enterprise-operations-feature-config';
 
 const formatMad = (value: number) =>
@@ -53,7 +55,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -77,6 +79,7 @@ export default async function DashboardPage() {
     getScaleControlsReadiness(),
     getEnterpriseDepthReadiness(),
     getEnterpriseOperationsReadiness(),
+    getEnterpriseExpansionReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -821,6 +824,74 @@ export default async function DashboardPage() {
           </div>
           <div className="featureLinks" aria-label="Pages dédiées opérations entreprise">
             {enterpriseOperationsFeatureDefinitions.map((feature) => (
+              <a key={feature.key} href={feature.route}>{feature.title}</a>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Expansion entreprise Maroc batch">
+          <PanelHeader title="Expansion entreprise Maroc" action="Accélérer adoption" />
+          <div className="reportGrid">
+            <Metric label="Succès tenant" value={`${enterpriseExpansion.tenantSuccess.score}/100`} />
+            <Metric label="Cash stress" value={enterpriseExpansion.cashflowStress.status} />
+            <Metric label="Marge transfert" value={formatMad(enterpriseExpansion.branchTransferImpact.destinationMargin)} />
+            <Metric label="Réserve fidélité" value={formatMad(enterpriseExpansion.loyaltyLiability.liability)} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Croissance, onboarding et risque tiers" rows={[
+              `Fournisseurs risque ${enterpriseExpansion.supplierProfitabilityRisk.rows.length}`,
+              `Onboarding étapes ${enterpriseExpansion.onboardingWizard.completedSteps.length}`,
+              `Formation rôles ${enterpriseExpansion.trainingChecklist.rows.length}`,
+              `ROI migration ${enterpriseExpansion.migrationRoi.rows.length} comparatifs`,
+              `Stress cash ${formatMad(enterpriseExpansion.cashflowStress.stressedBalance)}`,
+              `Timeline comptable ${enterpriseExpansion.accountantTimeline.rows.length}`,
+              `Comité crédit exposition ${formatMad(enterpriseExpansion.creditCommittee.exposure)}`,
+              `Renouvellement fournisseur ${enterpriseExpansion.supplierRenewal.renewalDecision}`,
+            ]} empty="-" />
+            <MiniList title="Verticales métier Maroc" rows={[
+              `Transfert agence marge ${formatMad(enterpriseExpansion.branchTransferImpact.destinationMargin)}`,
+              `Service charge ${formatMad(enterpriseExpansion.hospitalityServiceCharge.serviceCharge)}`,
+              `Fidélité provision ${formatMad(enterpriseExpansion.loyaltyLiability.liability)}`,
+              `Éducation factures ${enterpriseExpansion.educationBilling.monthlyInvoices.length}`,
+              `Clinique reste patient ${formatMad(enterpriseExpansion.clinicInvoicing.patientShare)}`,
+              `BTP retenue ${formatMad(enterpriseExpansion.constructionProgress.retention)}`,
+              `Import variance ${formatMad(enterpriseExpansion.landedCostVariance.stockValuationDelta)}`,
+              `Export devise ${enterpriseExpansion.exporterCurrencyPack.currency}`,
+            ]} empty="-" />
+            <MiniList title="Production, services et SaaS" rows={[
+              `Achat agri grade ${enterpriseExpansion.agriPurchaseIntake.qualityGrade}`,
+              `Scrap recovery ${enterpriseExpansion.scrapRecovery.accountingRecoveryProposal.length}`,
+              `Retainer planning ${enterpriseExpansion.retainerRevenue.schedule.length}`,
+              `Downgrade locks ${enterpriseExpansion.downgradeRisk.moduleLocks.length}`,
+              `Identité légale protégée ${enterpriseExpansion.legalIdentityChange.historicalInvoiceProtection ? 'oui' : 'non'}`,
+              `Résidence data checks ${enterpriseExpansion.dataResidency.checks.length}`,
+              `Incident timeline ${enterpriseExpansion.incidentResponse.timeline.length}`,
+              `Release ${enterpriseExpansion.releaseReadiness.status}`,
+            ]} empty="-" />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Automatisation, conformité et finance" rows={[
+              `AI bookkeeping ${enterpriseExpansion.aiBookkeeping.rows.length}`,
+              `Benchmark OCR ${enterpriseExpansion.ocrBenchmark.rows.length}`,
+              `Consentement banque ${enterpriseExpansion.bankFeedConsent.status}`,
+              `E-invoicing gaps ${enterpriseExpansion.eInvoicingGaps.gaps.length}`,
+              `Diff paie employés ${enterpriseExpansion.payrollRuleDiff.impactedEmployees.length}`,
+              `Trace TVA ${enterpriseExpansion.vatAuditTrail.status}`,
+              `Immobilisations écritures ${enterpriseExpansion.fixedAssetDepreciation.journalProposal.length}`,
+              `Leasing échéances ${enterpriseExpansion.leasingTracker.paymentSchedule.length}`,
+            ]} empty="-" />
+            <MiniList title="Dépenses, contrats et stock" rows={[
+              `Assurances ${enterpriseExpansion.insuranceRegister.rows.length}`,
+              `Petite caisse reçus ${enterpriseExpansion.pettyCashReplenishment.receipts.length}`,
+              `Cartes corporate ${enterpriseExpansion.corporateCardImport.rows.length}`,
+              `Mission voyage ${formatMad(enterpriseExpansion.travelMission.settlement)}`,
+              `Pénalité SLA ${enterpriseExpansion.slaPenalty.status}`,
+              `Remise fournisseur ${formatMad(enterpriseExpansion.supplierRebate.creditNoteExpectation)}`,
+              `Réservation dispo ${enterpriseExpansion.reservationExpiry.stockAvailability}`,
+            ]} empty="-" />
+          </div>
+          <div className="featureLinks" aria-label="Pages dédiées expansion entreprise">
+            {enterpriseExpansionFeatureDefinitions.map((feature) => (
               <a key={feature.key} href={feature.route}>{feature.title}</a>
             ))}
           </div>

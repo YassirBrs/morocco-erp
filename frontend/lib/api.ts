@@ -319,6 +319,7 @@ export type AccountingRiskReadiness = {
 export type ScaleControlsReadiness = Record<string, any>;
 export type EnterpriseDepthReadiness = Record<string, any>;
 export type EnterpriseOperationsReadiness = Record<string, any>;
+export type EnterpriseExpansionReadiness = Record<string, any>;
 
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
@@ -898,5 +899,50 @@ export async function getEnterpriseOperationsReadiness(): Promise<EnterpriseOper
     permissionSimulator: { expected: 'DENY' },
     auditAnomalies: { rows: [], summary: {} },
     customerProfitability: { rows: [] },
+  });
+}
+
+export async function getEnterpriseExpansionReadiness(): Promise<EnterpriseExpansionReadiness> {
+  return getJson('/tenant/enterprise-expansion-readiness', {
+    supplierProfitabilityRisk: { rows: [] },
+    onboardingWizard: { completedSteps: [], blockers: [] },
+    trainingChecklist: { rows: [] },
+    tenantSuccess: { score: 0 },
+    migrationRoi: { rows: [] },
+    cashflowStress: { status: 'PASS', stressedBalance: 0 },
+    accountantTimeline: { rows: [] },
+    creditCommittee: { exposure: 0 },
+    supplierRenewal: { renewalDecision: 'RENEW' },
+    branchTransferImpact: { destinationMargin: 0 },
+    hospitalityServiceCharge: { serviceCharge: 0 },
+    loyaltyLiability: { liability: 0 },
+    educationBilling: { monthlyInvoices: [] },
+    clinicInvoicing: { patientShare: 0 },
+    constructionProgress: { retention: 0 },
+    landedCostVariance: { stockValuationDelta: 0 },
+    exporterCurrencyPack: { currency: 'EUR' },
+    agriPurchaseIntake: { qualityGrade: 'A' },
+    scrapRecovery: { accountingRecoveryProposal: [] },
+    retainerRevenue: { schedule: [] },
+    downgradeRisk: { moduleLocks: [] },
+    legalIdentityChange: { historicalInvoiceProtection: true },
+    dataResidency: { checks: [] },
+    incidentResponse: { timeline: [] },
+    releaseReadiness: { status: 'READY_TO_RELEASE' },
+    aiBookkeeping: { rows: [] },
+    ocrBenchmark: { rows: [] },
+    bankFeedConsent: { status: 'CONSENT_ACTIVE' },
+    eInvoicingGaps: { gaps: [] },
+    payrollRuleDiff: { impactedEmployees: [] },
+    vatAuditTrail: { status: 'TRACE_READY' },
+    fixedAssetDepreciation: { journalProposal: [] },
+    leasingTracker: { paymentSchedule: [] },
+    insuranceRegister: { rows: [] },
+    pettyCashReplenishment: { receipts: [] },
+    corporateCardImport: { rows: [] },
+    travelMission: { settlement: 0 },
+    slaPenalty: { status: 'PENALTY_TRACKED' },
+    supplierRebate: { creditNoteExpectation: 0 },
+    reservationExpiry: { stockAvailability: 0 },
   });
 }

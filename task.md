@@ -534,48 +534,88 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T428 P1 - Add role permission simulator with module, action, branch, amount, and expected allow/deny explanation.
 - [x] T429 P1 - Add audit anomaly detector for after-hours changes, large discounts, manual journals, and payroll edits.
 - [x] T430 P1 - Add customer profitability report by invoice margin, support tickets, delivery cost, discounts, and payment delay.
-- [ ] T431 P1 - Add supplier profitability and risk report by purchase volume, disputes, lead time, price variance, and documents.
-- [ ] T432 P1 - Add SaaS onboarding wizard state persistence with completed steps, owner, deadline, and blocker escalation.
-- [ ] T433 P1 - Add training checklist by role with completed lessons, failed actions, module adoption, and support nudges.
-- [ ] T434 P1 - Add tenant success score combining activation, data quality, compliance, support SLA, and payment status.
-- [ ] T435 P1 - Add competitor migration ROI calculator comparing license cost, implementation time, feature gaps, and local compliance fit.
-- [ ] T436 P1 - Add Moroccan SME cashflow stress test by VAT due date, payroll due date, supplier aging, and bank balance.
-- [ ] T437 P1 - Add certified accountant collaboration timeline with document requests, answers, blockers, and sign-off trail.
-- [ ] T438 P1 - Add customer credit committee pack with exposure, guarantees, payment history, litigation, and proposed limit.
-- [ ] T439 P1 - Add supplier renewal scorecard with documents, pricing trend, delivery SLA, disputes, and negotiated terms.
-- [ ] T440 P1 - Add branch stock transfer profitability impact with freight, shrinkage, destination margin, and approval route.
-- [ ] T441 P1 - Add restaurant/hospitality POS service charge workflow with VAT split, cashier close, and tip accounting proposal.
-- [ ] T442 P1 - Add retail loyalty liability ledger with earned points, redemption, expiry, and accounting provision preview.
-- [ ] T443 P1 - Add school/private education billing cycle with registration fees, monthly invoices, discounts, and parent portal promises.
-- [ ] T444 P1 - Add clinic service invoicing compliance with practitioner, acte, insurance share, patient share, and archive evidence.
-- [ ] T445 P1 - Add construction progress billing certificate workflow with BOQ line, retention, tax, and client approval.
-- [ ] T446 P1 - Add importer landed cost variance analysis by DUM, exchange rate, transit invoice, and stock valuation delta.
-- [ ] T447 P1 - Add exporter foreign currency invoice pack with exchange rate, customs proof, VAT exemption note, and bank repatriation.
-- [ ] T448 P1 - Add cooperative/agri purchase intake workflow with producer identity, weighing, quality grade, and withholding note.
-- [ ] T449 P1 - Add manufacturing scrap cost recovery workflow with reason, responsible center, rework, and accounting recovery proposal.
-- [ ] T450 P1 - Add service company retainer revenue recognition schedule with contract, consumed hours, deferred revenue, and invoice trigger.
-- [ ] T451 P1 - Add SaaS plan downgrade risk simulator with module locks, data limits, exports, and customer communication.
-- [ ] T452 P1 - Add tenant legal identity change workflow with RC/ICE/IF proof, approval, historical invoice protection, and audit.
-- [ ] T453 P1 - Add data residency checklist for Moroccan customers with storage region, backups, access logs, and subcontractor register.
-- [ ] T454 P1 - Add incident response report builder with impact, timeline, affected tenants, remediation, and customer notices.
-- [ ] T455 P1 - Add release readiness gate with migrations, tests, rollback plan, support notes, and customer-visible changes.
-- [ ] T456 P1 - Add AI bookkeeping suggestion queue with source document, proposed journal, confidence, reviewer decision, and audit.
-- [ ] T457 P1 - Add OCR vendor benchmark dashboard with accuracy, cost, latency, Arabic/French support, and fallback rule.
-- [ ] T458 P1 - Add bank feed consent lifecycle with mandate, expiration, refresh, revoked state, and evidence archive.
-- [ ] T459 P1 - Add e-invoicing readiness gap tracker with legal mentions, signature, archiving, numbering, and adapter status.
-- [ ] T460 P1 - Add payroll rule pack version diff viewer with old/new CNSS, AMO, IR, effective date, and impacted employees.
-- [ ] T461 P1 - Add VAT audit trail explorer from invoice line to declaration line, payment, archive, and accountant note.
-- [ ] T462 P1 - Add fixed asset depreciation module with acquisition, component split, fiscal method, disposal, and journal proposal.
-- [ ] T463 P1 - Add leasing contract tracker with payment schedule, option value, VAT treatment, and accounting classification.
-- [ ] T464 P1 - Add insurance policy register with covered assets, premiums, claims, expiry alerts, and document vault.
-- [ ] T465 P1 - Add petty cash replenishment workflow with receipts, caps, reviewer, journal preview, and cashbox impact.
-- [ ] T466 P1 - Add corporate card expense import with cardholder, merchant, VAT eligibility, duplicate detection, and approval.
-- [ ] T467 P1 - Add employee travel mission workflow with per diem, transport, lodging, client billable flag, and settlement.
-- [ ] T468 P1 - Add customer contract SLA penalty tracker with breach evidence, invoice adjustment, approval, and legal note.
-- [ ] T469 P1 - Add supplier rebate accrual tracker with purchase thresholds, credit note expectation, period close, and evidence.
-- [ ] T470 P1 - Add inventory reservation expiry workflow with sales order, customer priority, release date, and stock availability.
+- [x] T431 P1 - Add supplier profitability and risk report by purchase volume, disputes, lead time, price variance, and documents.
+- [x] T432 P1 - Add SaaS onboarding wizard state persistence with completed steps, owner, deadline, and blocker escalation.
+- [x] T433 P1 - Add training checklist by role with completed lessons, failed actions, module adoption, and support nudges.
+- [x] T434 P1 - Add tenant success score combining activation, data quality, compliance, support SLA, and payment status.
+- [x] T435 P1 - Add competitor migration ROI calculator comparing license cost, implementation time, feature gaps, and local compliance fit.
+- [x] T436 P1 - Add Moroccan SME cashflow stress test by VAT due date, payroll due date, supplier aging, and bank balance.
+- [x] T437 P1 - Add certified accountant collaboration timeline with document requests, answers, blockers, and sign-off trail.
+- [x] T438 P1 - Add customer credit committee pack with exposure, guarantees, payment history, litigation, and proposed limit.
+- [x] T439 P1 - Add supplier renewal scorecard with documents, pricing trend, delivery SLA, disputes, and negotiated terms.
+- [x] T440 P1 - Add branch stock transfer profitability impact with freight, shrinkage, destination margin, and approval route.
+- [x] T441 P1 - Add restaurant/hospitality POS service charge workflow with VAT split, cashier close, and tip accounting proposal.
+- [x] T442 P1 - Add retail loyalty liability ledger with earned points, redemption, expiry, and accounting provision preview.
+- [x] T443 P1 - Add school/private education billing cycle with registration fees, monthly invoices, discounts, and parent portal promises.
+- [x] T444 P1 - Add clinic service invoicing compliance with practitioner, acte, insurance share, patient share, and archive evidence.
+- [x] T445 P1 - Add construction progress billing certificate workflow with BOQ line, retention, tax, and client approval.
+- [x] T446 P1 - Add importer landed cost variance analysis by DUM, exchange rate, transit invoice, and stock valuation delta.
+- [x] T447 P1 - Add exporter foreign currency invoice pack with exchange rate, customs proof, VAT exemption note, and bank repatriation.
+- [x] T448 P1 - Add cooperative/agri purchase intake workflow with producer identity, weighing, quality grade, and withholding note.
+- [x] T449 P1 - Add manufacturing scrap cost recovery workflow with reason, responsible center, rework, and accounting recovery proposal.
+- [x] T450 P1 - Add service company retainer revenue recognition schedule with contract, consumed hours, deferred revenue, and invoice trigger.
+- [x] T451 P1 - Add SaaS plan downgrade risk simulator with module locks, data limits, exports, and customer communication.
+- [x] T452 P1 - Add tenant legal identity change workflow with RC/ICE/IF proof, approval, historical invoice protection, and audit.
+- [x] T453 P1 - Add data residency checklist for Moroccan customers with storage region, backups, access logs, and subcontractor register.
+- [x] T454 P1 - Add incident response report builder with impact, timeline, affected tenants, remediation, and customer notices.
+- [x] T455 P1 - Add release readiness gate with migrations, tests, rollback plan, support notes, and customer-visible changes.
+- [x] T456 P1 - Add AI bookkeeping suggestion queue with source document, proposed journal, confidence, reviewer decision, and audit.
+- [x] T457 P1 - Add OCR vendor benchmark dashboard with accuracy, cost, latency, Arabic/French support, and fallback rule.
+- [x] T458 P1 - Add bank feed consent lifecycle with mandate, expiration, refresh, revoked state, and evidence archive.
+- [x] T459 P1 - Add e-invoicing readiness gap tracker with legal mentions, signature, archiving, numbering, and adapter status.
+- [x] T460 P1 - Add payroll rule pack version diff viewer with old/new CNSS, AMO, IR, effective date, and impacted employees.
+- [x] T461 P1 - Add VAT audit trail explorer from invoice line to declaration line, payment, archive, and accountant note.
+- [x] T462 P1 - Add fixed asset depreciation module with acquisition, component split, fiscal method, disposal, and journal proposal.
+- [x] T463 P1 - Add leasing contract tracker with payment schedule, option value, VAT treatment, and accounting classification.
+- [x] T464 P1 - Add insurance policy register with covered assets, premiums, claims, expiry alerts, and document vault.
+- [x] T465 P1 - Add petty cash replenishment workflow with receipts, caps, reviewer, journal preview, and cashbox impact.
+- [x] T466 P1 - Add corporate card expense import with cardholder, merchant, VAT eligibility, duplicate detection, and approval.
+- [x] T467 P1 - Add employee travel mission workflow with per diem, transport, lodging, client billable flag, and settlement.
+- [x] T468 P1 - Add customer contract SLA penalty tracker with breach evidence, invoice adjustment, approval, and legal note.
+- [x] T469 P1 - Add supplier rebate accrual tracker with purchase thresholds, credit note expectation, period close, and evidence.
+- [x] T470 P1 - Add inventory reservation expiry workflow with sales order, customer priority, release date, and stock availability.
 - [ ] T471 P1 - Add consignment stock workflow with owner, receipt, consumption, supplier invoice trigger, and valuation exclusion.
 - [ ] T472 P1 - Add warranty reserve calculation with sales family, claim rate, repair cost, and accounting provision.
 - [ ] T473 P1 - Add after-sales RMA workflow with customer proof, serial/lot, repair decision, credit note link, and stock movement.
 - [ ] T474 P1 - Add subscription billing proration for SaaS customers with plan change, period split, VAT, and invoice note.
 - [ ] T475 P1 - Add Moroccan competitor battlecard dashboard by vertical, feature gap, price objection, compliance proof, and win/loss reason.
+- [ ] T476 P1 - Add Moroccan e-commerce order reconciliation with marketplace payout, shipping fee, return, VAT, and customer invoice.
+- [ ] T477 P1 - Add marketplace seller settlement workflow with commission, withholding, payment batch, and dispute reserve.
+- [ ] T478 P1 - Add wholesale customer rebate contract with tier thresholds, monthly accrual, credit note, and approval evidence.
+- [ ] T479 P1 - Add retail store daily cash audit by branch, cashier, POS Z-report, deposit slip, and variance owner.
+- [ ] T480 P1 - Add pharmaceutical lot expiry compliance with product, batch, expiry, quarantine, supplier recall, and destruction evidence.
+- [ ] T481 P1 - Add food traceability recall drill with supplier lot, customer deliveries, notification status, and stock hold.
+- [ ] T482 P1 - Add hotel occupancy revenue dashboard with rooms, nights, city tax placeholder, VAT, and payment mix.
+- [ ] T483 P1 - Add salon/spa package liability ledger with prepaid sessions, consumption, expiry, and revenue recognition.
+- [ ] T484 P1 - Add logistics route profitability dashboard with vehicle, driver, fuel, tolls, delivery revenue, and margin.
+- [ ] T485 P1 - Add customs broker fee reconciliation with DUM, invoice, disbursements, VAT, and landed cost allocation.
+- [ ] T486 P1 - Add international supplier FX exposure report with currency, invoice due date, rate scenario, and gain/loss preview.
+- [ ] T487 P1 - Add customer bounced payment recovery workflow with fees, dunning, promise, legal note, and account hold.
+- [ ] T488 P1 - Add supplier blocked payment release workflow with dispute resolution, document validation, approval, and bank file update.
+- [ ] T489 P1 - Add customer warranty claim reserve by product family, claim age, repair cost, replacement probability, and accounting proposal.
+- [ ] T490 P1 - Add fleet insurance claim settlement workflow with accident, repair invoice, insurer payment, deductible, and journal proposal.
+- [ ] T491 P1 - Add maintenance preventive compliance score with planned jobs, overdue assets, spare availability, downtime risk, and owner.
+- [ ] T492 P1 - Add project profitability closeout checklist with revenue, WIP reversal, retention, lessons learned, and archive bundle.
+- [ ] T493 P1 - Add consultant utilization dashboard with billable hours, bench time, retainer consumption, travel, and gross margin.
+- [ ] T494 P1 - Add employee certification register with certificate, expiry, training cost, role requirement, and renewal workflow.
+- [ ] T495 P1 - Add payroll loan compliance dashboard with outstanding balance, deduction cap, employee consent, and payslip disclosure.
+- [ ] T496 P1 - Add HR onboarding document pack with contract, CNSS, CIN, bank RIB, medical visit, and restricted archive.
+- [ ] T497 P1 - Add executive KPI subscription digest with usage, revenue, churn risk, compliance blockers, and support backlog.
+- [ ] T498 P1 - Add support SLA escalation matrix with severity, deadline, assigned team, customer notice, and breach report.
+- [ ] T499 P1 - Add implementation partner capacity planning with consultants, client workload, deadlines, risk score, and margin.
+- [ ] T500 P1 - Add tenant sandbox reset audit with modules reset, preserved legal archives, actor, timestamp, and restore point.
+- [ ] T501 P1 - Add Moroccan invoice legal mention validator with ICE, IF, RC, CNSS, Arabic label readiness, and numbering rule.
+- [ ] T502 P1 - Add bilingual PDF quality queue with document type, RTL fields, missing Arabic labels, reviewer, and status.
+- [ ] T503 P1 - Add VAT credit carryforward tracker with period, source declaration, offset, refund request, and evidence.
+- [ ] T504 P1 - Add IS installment forecast with taxable profit estimate, prior year basis, due dates, and cash impact.
+- [ ] T505 P1 - Add professional tax due calendar with municipality, rental value, rate placeholder, due date, and archive.
+- [ ] T506 P1 - Add CNSS payroll anomaly heatmap by branch, contract type, missing identifiers, duplicate CNSS, and correction owner.
+- [ ] T507 P1 - Add AMO reimbursement tracking placeholder with employee, claim date, amount, status, and document vault.
+- [ ] T508 P1 - Add data export approval workflow with requester, dataset, legal basis, approver, checksum, and expiry.
+- [ ] T509 P1 - Add API integration contract dashboard with partner, scopes, rate limits, webhook status, and key rotation.
+- [ ] T510 P1 - Add webhook incident replay workflow with event, signature validation, retry count, target response, and audit.
+- [ ] T511 P1 - Add tenant feature adoption experiment dashboard with cohort, feature flag, activation metric, retention, and rollback.
+- [ ] T512 P1 - Add price increase communication workflow with segment, effective date, template FR/AR, approval, and customer impact.
+- [ ] T513 P1 - Add customer churn risk predictor with overdue balance, support tickets, adoption, renewal date, and action plan.
+- [ ] T514 P1 - Add supplier dependency concentration report with spend share, alternative supplier, risk note, and mitigation owner.
+- [ ] T515 P1 - Add Moroccan vertical template selector with industry, default chart mapping, workflows, document pack, and demo data.

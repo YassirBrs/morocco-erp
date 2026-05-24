@@ -23,6 +23,9 @@ const enterpriseDepthPageFiles = readdirSync(new URL('../pages/enterprise-depth'
 const enterpriseOperationsConfig = readFileSync(new URL('../features/enterprise-operations/enterprise-operations-feature-config.ts', import.meta.url), 'utf8');
 const enterpriseOperationsFeaturePage = readFileSync(new URL('../features/enterprise-operations/enterprise-operations-feature-page.tsx', import.meta.url), 'utf8');
 const enterpriseOperationsPageFiles = readdirSync(new URL('../pages/enterprise-operations', import.meta.url));
+const enterpriseExpansionConfig = readFileSync(new URL('../features/enterprise-expansion/enterprise-expansion-feature-config.ts', import.meta.url), 'utf8');
+const enterpriseExpansionFeaturePage = readFileSync(new URL('../features/enterprise-expansion/enterprise-expansion-feature-page.tsx', import.meta.url), 'utf8');
+const enterpriseExpansionPageFiles = readdirSync(new URL('../pages/enterprise-expansion', import.meta.url));
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -610,4 +613,71 @@ test('Enterprise operations batch has one descriptive dedicated frontend page pe
   assert.ok(enterpriseOperationsFeaturePage.includes('EnterpriseOperationsFeaturePage'), 'shared operations feature page component exists');
   assert.ok(enterpriseOperationsConfig.includes('enterpriseOperationsFeatureDefinitions'), 'operations feature definitions are centralized');
   assert.ok(page.includes('enterpriseOperationsFeatureDefinitions'), 'dashboard links to dedicated operations feature pages');
+});
+
+test('Next primary workspace exposes 40-task Morocco enterprise expansion controls batch', () => {
+  for (const text of ['Expansion entreprise Maroc', 'Succès tenant', 'Cash stress', 'Marge transfert', 'Réserve fidélité', 'Croissance, onboarding et risque tiers', 'Verticales métier Maroc', 'Production, services et SaaS', 'Automatisation, conformité et finance', 'Dépenses, contrats et stock']) {
+    assert.ok(page.includes(text), `${text} enterprise expansion label is present`);
+  }
+  for (const marker of ['getEnterpriseExpansionReadiness', 'enterpriseExpansion.tenantSuccess', 'enterpriseExpansion.cashflowStress', 'enterpriseExpansion.branchTransferImpact', 'enterpriseExpansion.reservationExpiry']) {
+    assert.ok(page.includes(marker), `${marker} enterprise expansion helper is present`);
+  }
+  assert.ok(api.includes('/tenant/enterprise-expansion-readiness'), 'enterprise expansion endpoint is wired');
+  for (const token of ['supplierProfitabilityRisk', 'onboardingWizard', 'trainingChecklist', 'tenantSuccess', 'migrationRoi', 'cashflowStress', 'accountantTimeline', 'creditCommittee', 'supplierRenewal', 'branchTransferImpact', 'hospitalityServiceCharge', 'loyaltyLiability', 'educationBilling', 'clinicInvoicing', 'constructionProgress', 'landedCostVariance', 'exporterCurrencyPack', 'agriPurchaseIntake', 'scrapRecovery', 'retainerRevenue', 'downgradeRisk', 'legalIdentityChange', 'dataResidency', 'incidentResponse', 'releaseReadiness', 'aiBookkeeping', 'ocrBenchmark', 'bankFeedConsent', 'eInvoicingGaps', 'payrollRuleDiff', 'vatAuditTrail', 'fixedAssetDepreciation', 'leasingTracker', 'insuranceRegister', 'pettyCashReplenishment', 'corporateCardImport', 'travelMission', 'slaPenalty', 'supplierRebate', 'reservationExpiry']) {
+    assert.ok(api.includes(token), `${token} enterprise expansion data key is represented`);
+  }
+});
+
+test('Enterprise expansion batch has one descriptive dedicated frontend page per feature', () => {
+  const expectedFiles = [
+    'supplier-profitability-risk-report-page.tsx',
+    'saas-onboarding-wizard-state-page.tsx',
+    'role-training-checklist-page.tsx',
+    'tenant-success-score-page.tsx',
+    'competitor-migration-roi-calculator-page.tsx',
+    'moroccan-sme-cashflow-stress-test-page.tsx',
+    'certified-accountant-collaboration-timeline-page.tsx',
+    'customer-credit-committee-pack-page.tsx',
+    'supplier-renewal-scorecard-page.tsx',
+    'branch-stock-transfer-profitability-page.tsx',
+    'hospitality-pos-service-charge-page.tsx',
+    'retail-loyalty-liability-ledger-page.tsx',
+    'private-education-billing-cycle-page.tsx',
+    'clinic-service-invoicing-compliance-page.tsx',
+    'construction-progress-billing-certificate-page.tsx',
+    'importer-landed-cost-variance-page.tsx',
+    'exporter-foreign-currency-invoice-pack-page.tsx',
+    'cooperative-agri-purchase-intake-page.tsx',
+    'manufacturing-scrap-cost-recovery-page.tsx',
+    'service-retainer-revenue-recognition-page.tsx',
+    'saas-plan-downgrade-risk-simulator-page.tsx',
+    'tenant-legal-identity-change-page.tsx',
+    'data-residency-checklist-page.tsx',
+    'incident-response-report-builder-page.tsx',
+    'release-readiness-gate-page.tsx',
+    'ai-bookkeeping-suggestion-queue-page.tsx',
+    'ocr-vendor-benchmark-dashboard-page.tsx',
+    'bank-feed-consent-lifecycle-page.tsx',
+    'e-invoicing-readiness-gap-tracker-page.tsx',
+    'payroll-rule-pack-version-diff-page.tsx',
+    'vat-audit-trail-explorer-page.tsx',
+    'fixed-asset-depreciation-module-page.tsx',
+    'leasing-contract-tracker-page.tsx',
+    'insurance-policy-register-page.tsx',
+    'petty-cash-replenishment-workflow-page.tsx',
+    'corporate-card-expense-import-page.tsx',
+    'employee-travel-mission-workflow-page.tsx',
+    'customer-contract-sla-penalty-tracker-page.tsx',
+    'supplier-rebate-accrual-tracker-page.tsx',
+    'inventory-reservation-expiry-workflow-page.tsx',
+  ];
+  assert.equal(enterpriseExpansionPageFiles.filter((file) => file.endsWith('-page.tsx')).length, 40);
+  for (const file of expectedFiles) {
+    assert.ok(enterpriseExpansionPageFiles.includes(file), `${file} dedicated page exists`);
+    const source = readFileSync(new URL(`../pages/enterprise-expansion/${file}`, import.meta.url), 'utf8');
+    assert.ok(source.includes('makeEnterpriseExpansionServerSideProps'), `${file} has server-side data wiring`);
+  }
+  assert.ok(enterpriseExpansionFeaturePage.includes('EnterpriseExpansionFeaturePage'), 'shared expansion feature page component exists');
+  assert.ok(enterpriseExpansionConfig.includes('enterpriseExpansionFeatureDefinitions'), 'expansion feature definitions are centralized');
+  assert.ok(page.includes('enterpriseExpansionFeatureDefinitions'), 'dashboard links to dedicated expansion feature pages');
 });
