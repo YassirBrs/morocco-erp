@@ -335,6 +335,13 @@
                 <span>Alertes fournisseurs</span>
                 <strong id="supplierReminderCount">0 alerte</strong>
               </div>
+              <div class="segmented" id="supplierReminderFilters">
+                <button type="button" class="active" data-supplier-filter="all">Tout</button>
+                <button type="button" data-supplier-filter="expired">Expirés</button>
+                <button type="button" data-supplier-filter="expiring">À renouveler</button>
+                <button type="button" data-supplier-filter="preferred">Préférés</button>
+                <button type="button" data-supplier-filter="noted">Notes risque</button>
+              </div>
               <div class="tableWrap">
                 <table class="miniTable">
                   <thead><tr><th>Fournisseur</th><th>Priorité</th><th>Document</th><th>Échéance</th></tr></thead>
@@ -386,7 +393,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, leadAnalytics: [], supplierReminders: [], quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -717,8 +724,18 @@
       }
 
       function renderSupplierReminders() {
-        qs('#supplierReminderCount').textContent = `${state.supplierReminders.length} alerte${state.supplierReminders.length > 1 ? 's' : ''}`;
-        qs('#supplierReminderRows').innerHTML = state.supplierReminders.length ? state.supplierReminders.slice(0, 5).map((row) => {
+        const rows = state.supplierReminders.filter((row) => {
+          if (state.supplierReminderFilter === 'expired') return row.expiredDocuments?.length;
+          if (state.supplierReminderFilter === 'expiring') return row.expiringDocuments?.length;
+          if (state.supplierReminderFilter === 'preferred') return row.preferred;
+          if (state.supplierReminderFilter === 'noted') return row.riskNotes;
+          return true;
+        });
+        document.querySelectorAll('[data-supplier-filter]').forEach((button) => {
+          button.classList.toggle('active', button.dataset.supplierFilter === state.supplierReminderFilter);
+        });
+        qs('#supplierReminderCount').textContent = `${rows.length} alerte${rows.length > 1 ? 's' : ''}`;
+        qs('#supplierReminderRows').innerHTML = rows.length ? rows.slice(0, 5).map((row) => {
           const document = row.expiredDocuments?.[0] || row.expiringDocuments?.[0];
           const priority = row.expiredDocuments?.length ? 'Expiré' : row.expiringDocuments?.length ? 'À renouveler' : row.preferred ? 'Préféré' : 'Risque';
           return `
@@ -1066,6 +1083,13 @@
             csv: 'name,ice,ifNumber,email,paymentTermsDays,bankName,rib\nFournisseur CSV Démo,003333444555666,300400,csv-supplier@example.ma,60,awb,007 780 000000000000000654'
           });
           showMessage(result.failed ? 'warning' : 'success', `Import CSV fournisseurs: ${result.created} créé(s), ${result.failed} rejeté(s).`);
+        });
+      });
+
+      document.querySelectorAll('[data-supplier-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+          state.supplierReminderFilter = button.dataset.supplierFilter;
+          renderSupplierReminders();
         });
       });
 

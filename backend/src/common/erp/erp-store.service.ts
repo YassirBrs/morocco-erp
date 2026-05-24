@@ -888,8 +888,9 @@ export class ErpStoreService {
     return { created: created.length, failed: errors.length, errors, records: created };
   }
 
-  supplierRiskReminders(tenantId?: string) {
+  supplierRiskReminders(options: { filter?: string } = {}, tenantId?: string) {
     const reminderWindowDays = 60;
+    const filter = options.filter ?? 'all';
     return this.workspace(tenantId).suppliers
       .filter((supplier) => supplier.active)
       .map((supplier) => {
@@ -913,6 +914,13 @@ export class ErpStoreService {
         };
       })
       .filter((row) => row.preferred || row.riskNotes || row.expiredDocuments.length || row.expiringDocuments.length)
+      .filter((row) => {
+        if (filter === 'expired') return row.expiredDocuments.length > 0;
+        if (filter === 'expiring') return row.expiringDocuments.length > 0;
+        if (filter === 'preferred') return row.preferred;
+        if (filter === 'noted') return Boolean(row.riskNotes);
+        return true;
+      })
       .sort((left, right) => (left.nextExpiryDays ?? 9999) - (right.nextExpiryDays ?? 9999) || left.supplierName.localeCompare(right.supplierName));
   }
 

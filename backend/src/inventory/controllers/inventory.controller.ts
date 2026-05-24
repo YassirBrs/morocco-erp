@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { InventoryService } from '../services/inventory.service';
 
 @Controller('inventory')
@@ -13,7 +13,7 @@ export class InventoryController {
   @Get('suppliers') suppliers() { return this.inventoryService.listSuppliers(); }
   @Get('suppliers/export.csv') exportSuppliersCsv() { return this.inventoryService.exportSuppliersCsv(); }
   @Post('suppliers/import') importSuppliersCsv(@Body() body: { csv?: string }) { return this.inventoryService.importSuppliersCsv(body); }
-  @Get('suppliers/risk-reminders') supplierRiskReminders() { return this.inventoryService.supplierRiskReminders(); }
+  @Get('suppliers/risk-reminders') supplierRiskReminders(@Query('filter') filter?: string) { return this.inventoryService.supplierRiskReminders(filter); }
   @Get('suppliers/:id') supplier(@Param('id') id: string) { return this.inventoryService.getSupplier(id); }
   @Post('suppliers') createSupplier(@Body() body: any) { return this.inventoryService.createSupplier(body); }
   @Patch('suppliers/:id') updateSupplier(@Param('id') id: string, @Body() body: any) { return this.inventoryService.updateSupplier(id, body); }

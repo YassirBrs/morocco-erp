@@ -503,6 +503,26 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(() => store.updateSupplier(supplier.id, { documentExpiries: [{ type: '', expiresAt: 'bad-date' }] })).toThrow(BadRequestException);
   });
 
+  it('filters supplier risk reminders by expired, expiring, preferred, and noted states', () => {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    store.addSupplier({
+      name: 'Expired Docs Supplier',
+      documentExpiries: [{ type: 'RC', expiresAt: yesterday }],
+    });
+    store.addSupplier({
+      name: 'Expiring Docs Supplier',
+      documentExpiries: [{ type: 'Attestation fiscale', expiresAt: tomorrow }],
+    });
+    store.addSupplier({ name: 'Preferred Only Supplier', preferred: true });
+    store.addSupplier({ name: 'Noted Only Supplier', riskNotes: 'Surveiller les délais de livraison.' });
+
+    expect(store.supplierRiskReminders({ filter: 'expired' }).map((row) => row.supplierName)).toContain('Expired Docs Supplier');
+    expect(store.supplierRiskReminders({ filter: 'expiring' }).map((row) => row.supplierName)).toContain('Expiring Docs Supplier');
+    expect(store.supplierRiskReminders({ filter: 'preferred' }).map((row) => row.supplierName)).toContain('Preferred Only Supplier');
+    expect(store.supplierRiskReminders({ filter: 'noted' }).map((row) => row.supplierName)).toContain('Noted Only Supplier');
+  });
+
   it('imports and exports leads CSV with validation summaries', () => {
     const result = store.importLeadsCsv([
       'customerName,stage,owner,source,nextActionDate,expectedValue',
