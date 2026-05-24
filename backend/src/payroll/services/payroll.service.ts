@@ -135,6 +135,15 @@ export class PayrollService {
   runSummary(id: string) { return this.store.payrollRunSummary(id); }
   runPayslipPdf(runId: string, payslipId: string) { return this.store.generatePayslipPdf(runId, payslipId); }
   runDamancom(id: string) { return this.store.exportPayrollRunDamancom(id); }
+  leaveBalances() { return this.store.listLeaveBalances(); }
+  leaveRequests() { return this.store.listLeaveRequests(); }
+  createLeaveRequest(data: any) { return this.store.createLeaveRequest(data); }
+  approveLeaveRequest(id: string) { return this.store.approveLeaveRequest(id); }
+  rejectLeaveRequest(id: string, data: any) { return this.store.rejectLeaveRequest(id, data?.reason); }
+  portalAccesses() { return this.store.listEmployeePortalAccesses(); }
+  grantPortalAccess(data: any) { return this.store.grantEmployeePortalAccess(data); }
+  portalDashboard(employeeId: string) { return this.store.employeePortalDashboard(employeeId); }
+  employeeDocumentReminders() { return this.store.employeeDocumentReminders(); }
   employeeImportTemplateCsv() { return this.store.importTemplateCsv('employees'); }
   payrollRunTimeline(id: string) { return this.store.entityTimeline('PAYROLL_RUN', id); }
   addPayrollRunNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'PAYROLL_RUN', entityId: id, ...data }); }

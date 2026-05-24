@@ -12,6 +12,11 @@ export type StockTransferStatus = 'IN_TRANSIT' | 'RECEIVED' | 'CANCELLED';
 export type InventoryCountStatus = 'DRAFT' | 'APPROVED' | 'POSTED';
 export type FiscalPeriodStatus = 'OPEN' | 'SOFT_LOCKED' | 'LOCKED' | 'CLOSED';
 export type PayrollRunStatus = 'DRAFT' | 'CALCULATED' | 'APPROVED' | 'POSTED' | 'CANCELLED';
+export type LeaveRequestStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type PosSessionStatus = 'OPEN' | 'CLOSED';
+export type PosOfflineQueueStatus = 'PENDING' | 'SYNCED' | 'CONFLICT';
+export type WorkOrderStatus = 'OPEN' | 'ASSIGNED' | 'DONE';
+export type ProjectStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'ON_HOLD';
 export type StockMoveType = 'RECEIPT' | 'DELIVERY' | 'DELIVERY_REVERSAL' | 'ADJUSTMENT' | 'PRODUCTION_CONSUME' | 'PRODUCTION_OUTPUT' | 'POS_SALE' | 'RESERVATION' | 'RESERVATION_RELEASE' | 'TRANSFER_OUT' | 'TRANSFER_IN' | 'COUNT_VARIANCE';
 export type BusinessSearchType = 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
 export type ApprovalStatus = 'AUTO_APPROVED' | 'REQUIRED' | 'APPROVED';
@@ -596,6 +601,43 @@ export interface PayrollRun {
   };
 }
 
+export interface LeaveBalance {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  year: number;
+  acquiredDays: number;
+  takenDays: number;
+  pendingDays: number;
+  remainingDays: number;
+}
+
+export interface LeaveRequest {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  startDate: string;
+  endDate: string;
+  days: number;
+  status: LeaveRequestStatus;
+  reason?: string;
+  payrollImpact: number;
+  approvedAt?: string;
+  rejectedAt?: string;
+  createdAt: string;
+}
+
+export interface EmployeePortalAccess {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  email: string;
+  active: boolean;
+  canViewPayslips: boolean;
+  canRequestLeave: boolean;
+  createdAt: string;
+}
+
 export interface LegalEvidence {
   id: string;
   tenantId: string;
@@ -611,21 +653,125 @@ export interface PosTransaction {
   id: string;
   tenantId: string;
   number: string;
+  sessionId?: string;
   cashierId: string;
   date: string;
   lines: DocumentLine[];
   totals: DocumentTotals;
-  paymentMethod: 'CASH' | 'CARD';
+  paymentMethod: 'CASH' | 'CARD' | 'BANK';
+  refundedTransactionId?: string;
+}
+
+export interface PosSession {
+  id: string;
+  tenantId: string;
+  number: string;
+  cashierId: string;
+  openedAt: string;
+  closedAt?: string;
+  status: PosSessionStatus;
+  openingCash: number;
+  expectedCash: number;
+  countedCash?: number;
+  variance: number;
+}
+
+export interface CashDrawerMovement {
+  id: string;
+  tenantId: string;
+  sessionId: string;
+  type: 'CASH_IN' | 'CASH_OUT' | 'EXPENSE';
+  amount: number;
+  reason: string;
+  createdAt: string;
+}
+
+export interface PosOfflineQueueItem {
+  id: string;
+  tenantId: string;
+  payload: Record<string, unknown>;
+  status: PosOfflineQueueStatus;
+  conflictReason?: string;
+  syncedTransactionId?: string;
+  createdAt: string;
+  syncedAt?: string;
 }
 
 export interface ProductionOrder {
   id: string;
   tenantId: string;
   number: string;
+  billOfMaterialId?: string;
   finishedProductId: string;
   quantity: number;
   status: 'PLANNED' | 'COMPLETED';
   consumedValue: number;
+  outputValue?: number;
+  createdAt: string;
+}
+
+export interface BillOfMaterial {
+  id: string;
+  tenantId: string;
+  finishedProductId: string;
+  version: string;
+  components: Array<{ productId: string; quantity: number; unitCost: number }>;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface MaintenanceAsset {
+  id: string;
+  tenantId: string;
+  name: string;
+  category: string;
+  location?: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface MaintenanceWorkOrder {
+  id: string;
+  tenantId: string;
+  assetId: string;
+  technician: string;
+  status: WorkOrderStatus;
+  cost: number;
+  description: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface FleetVehicle {
+  id: string;
+  tenantId: string;
+  plate: string;
+  driver?: string;
+  documentExpiry?: string;
+  active: boolean;
+}
+
+export interface FleetLog {
+  id: string;
+  tenantId: string;
+  vehicleId: string;
+  type: 'FUEL' | 'MAINTENANCE';
+  amount: number;
+  odometer?: number;
+  date: string;
+}
+
+export interface ProjectRecord {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  name: string;
+  budget: number;
+  status: ProjectStatus;
+  tasks: Array<{ title: string; status: 'OPEN' | 'DONE' }>;
+  expenses: Array<{ label: string; amount: number }>;
+  timesheets: Array<{ employeeId: string; hours: number; costRate: number }>;
+  invoiceMilestones: Array<{ label: string; amount: number; invoiced: boolean }>;
   createdAt: string;
 }
 
@@ -728,9 +874,21 @@ export interface TenantWorkspace {
   fiscalPeriods: FiscalPeriod[];
   employmentContracts: EmploymentContract[];
   payrollRuns: PayrollRun[];
+  leaveBalances: LeaveBalance[];
+  leaveRequests: LeaveRequest[];
+  employeePortalAccesses: EmployeePortalAccess[];
   legalEvidences: LegalEvidence[];
+  posSessions: PosSession[];
+  cashDrawerMovements: CashDrawerMovement[];
+  posOfflineQueue: PosOfflineQueueItem[];
   posTransactions: PosTransaction[];
+  billsOfMaterial: BillOfMaterial[];
   productionOrders: ProductionOrder[];
+  maintenanceAssets: MaintenanceAsset[];
+  maintenanceWorkOrders: MaintenanceWorkOrder[];
+  fleetVehicles: FleetVehicle[];
+  fleetLogs: FleetLog[];
+  projects: ProjectRecord[];
   auditLogs: AuditLog[];
   profileChanges: CompanyProfileChange[];
   internalNotes: InternalNote[];

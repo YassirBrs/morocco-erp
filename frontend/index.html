@@ -24,6 +24,8 @@
           <button class="navItem" data-view="stock" type="button"><span>Stock</span><strong>CUMP</strong></button>
           <button class="navItem" data-view="accounting" type="button"><span>Comptabilité</span><strong>PCGE</strong></button>
           <button class="navItem" data-view="payroll" type="button"><span>Paie</span><strong>CNSS</strong></button>
+          <button class="navItem" data-view="pos" type="button"><span>POS</span><strong>Caisse</strong></button>
+          <button class="navItem" data-view="production" type="button"><span>Production</span><strong>OF</strong></button>
           <button class="navItem" data-view="compliance" type="button"><span>Conformité</span><strong>DGI</strong></button>
           <button class="navItem" data-view="implementation" type="button"><span>Accompagnement</span><strong>Clients</strong></button>
         </nav>
@@ -426,6 +428,95 @@
             <table class="miniTable">
               <thead><tr><th>Run</th><th>Statut</th><th>Salariés</th><th>Coût employeur</th></tr></thead>
               <tbody id="payrollRunRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel hrPosPanel" data-view-section="payroll pos">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">RH et caisse</p>
+              <h2>Congés, portail salarié, sessions POS et Z caisse</h2>
+            </div>
+            <div class="headerActions">
+              <span id="hrPosBadge" class="badge">0 demande</span>
+              <button id="runLeaveFlow" type="button">Demande congé</button>
+              <button id="grantPortalAccess" type="button">Accès portail salarié</button>
+              <button id="runPosSession" type="button">Session POS</button>
+              <button id="runPosRefund" type="button">Remboursement POS</button>
+              <button id="runOfflinePosSync" type="button">Sync offline POS</button>
+            </div>
+          </div>
+          <div class="hrPosGrid">
+            <div>
+              <span>Congés</span>
+              <strong id="leaveSummary">0 jour</strong>
+              <small>Solde, approbation et impact paie</small>
+            </div>
+            <div>
+              <span>Documents RH</span>
+              <strong id="hrDocumentSummary">0 alerte</strong>
+              <small>CIN, CNSS, contrats et visites</small>
+            </div>
+            <div>
+              <span>Sessions caisse</span>
+              <strong id="posSessionSummary">0 ouverte</strong>
+              <small>Fond, attendu, compté, variance</small>
+            </div>
+            <div>
+              <span>Z caisse</span>
+              <strong id="zReportSummary">0 MAD</strong>
+              <small>TVA, paiements, remboursements, écarts</small>
+            </div>
+          </div>
+          <div class="tableWrap">
+            <table class="miniTable">
+              <thead><tr><th>Flux</th><th>Référence</th><th>Statut</th><th>Détail</th></tr></thead>
+              <tbody id="hrPosRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel operationsBackofficePanel" data-view-section="production stock accounting">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Opérations avancées</p>
+              <h2>Nomenclatures, maintenance, flotte, projets et rentabilité</h2>
+            </div>
+            <div class="headerActions">
+              <span id="operationsBackofficeBadge" class="badge">0 dossier</span>
+              <button id="runBomProduction" type="button">OF avec nomenclature</button>
+              <button id="runMaintenanceFlow" type="button">Maintenance</button>
+              <button id="runFleetFlow" type="button">Flotte</button>
+              <button id="runProjectFlow" type="button">Projet</button>
+            </div>
+          </div>
+          <div class="operationsBackofficeGrid">
+            <div>
+              <span>Nomenclatures</span>
+              <strong id="bomSummary">0 BOM</strong>
+              <small>Composants, sortie finie, coût rollup</small>
+            </div>
+            <div>
+              <span>Maintenance</span>
+              <strong id="maintenanceSummary">0 OT</strong>
+              <small>Actifs, techniciens, coûts</small>
+            </div>
+            <div>
+              <span>Flotte</span>
+              <strong id="fleetSummary">0 véhicule</strong>
+              <small>Documents, carburant, maintenance, conducteur</small>
+            </div>
+            <div>
+              <span>Rentabilité</span>
+              <strong id="profitabilitySummary">0 MAD</strong>
+              <small>Production, actifs, véhicules, projets</small>
+            </div>
+          </div>
+          <div class="tableWrap">
+            <table class="miniTable">
+              <thead><tr><th>Type</th><th>Référence</th><th>CA</th><th>Coût</th><th>Marge</th></tr></thead>
+              <tbody id="profitabilityRows"></tbody>
             </table>
           </div>
         </section>
@@ -887,7 +978,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', roleNavigation: null, subscriptionGate: null, retentionPolicy: null, deviceHistory: null, paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], customers: [], products: [], suppliers: [], employees: [], contracts: [], payrollRuns: [], importTemplates: null, partnerWorkspace: null, purchaseOrders: [], purchaseReceipts: [], supplierInvoices: [], warehouses: [], warehouseStock: [], stockAlerts: null, stockReservations: null, stockTransfers: [], inventoryCounts: [], barcodeLookup: null, accounts: [], accountSearch: [], journalEntries: [], fiscalPeriods: [], vatReport: null, accountingExport: null, reconciliation: null, legalEvidence: [], damancomExport: null, statement: null, profile: null, audit: [], customerTimeline: null, supplierTimeline: null, invoiceTimeline: null, payrollTimeline: null, collaborationBoard: null };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', roleNavigation: null, subscriptionGate: null, retentionPolicy: null, deviceHistory: null, paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], customers: [], products: [], suppliers: [], employees: [], contracts: [], payrollRuns: [], leaveBalances: [], leaveRequests: [], portalAccesses: [], employeeDocumentReminders: [], importTemplates: null, partnerWorkspace: null, purchaseOrders: [], purchaseReceipts: [], supplierInvoices: [], warehouses: [], warehouseStock: [], stockAlerts: null, stockReservations: null, stockTransfers: [], inventoryCounts: [], barcodeLookup: null, posSessions: [], posTransactions: [], posOfflineQueue: [], zReport: null, boms: [], productionOrders: [], maintenance: null, fleet: null, projects: [], profitability: null, accounts: [], accountSearch: [], journalEntries: [], fiscalPeriods: [], vatReport: null, accountingExport: null, reconciliation: null, legalEvidence: [], damancomExport: null, statement: null, profile: null, audit: [], customerTimeline: null, supplierTimeline: null, invoiceTimeline: null, payrollTimeline: null, collaborationBoard: null };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -912,6 +1003,13 @@
           LOCKED: 'Verrouillée',
           CLOSED: 'Clôturée',
           CALCULATED: 'Calculée',
+          REQUESTED: 'Demandée',
+          CLOSED: 'Clôturée',
+          SYNCED: 'Synchronisée',
+          CONFLICT: 'Conflit',
+          OPEN: 'Ouverte',
+          ASSIGNED: 'Assignée',
+          DONE: 'Terminée',
           AUTO_APPROVED: 'Auto-approuvé',
           PREPARED: 'Préparé',
           PENDING_REVIEW: 'En attente revue',
@@ -1086,7 +1184,7 @@
         state.payrollTimeline = payrollTimeline;
         state.collaborationBoard = collaborationBoard;
         state.invoiceTimeline = latest(invoices) ? await get(`/sales/invoices/${latest(invoices).id}/timeline`) : null;
-        const [roleNavigation, subscriptionGate, retentionPolicy, deviceHistory, purchaseOrders, purchaseReceipts, supplierInvoices, warehouses, warehouseStock, stockAlerts, stockReservations, stockTransfers, inventoryCounts, barcodeLookup, accounts, accountSearch, journalEntries, fiscalPeriods, vatReport, accountingExport, reconciliation, legalEvidence, contracts, payrollRuns] = await Promise.all([
+        const [roleNavigation, subscriptionGate, retentionPolicy, deviceHistory, purchaseOrders, purchaseReceipts, supplierInvoices, warehouses, warehouseStock, stockAlerts, stockReservations, stockTransfers, inventoryCounts, barcodeLookup, accounts, accountSearch, journalEntries, fiscalPeriods, vatReport, accountingExport, reconciliation, legalEvidence, contracts, payrollRuns, leaveBalances, leaveRequests, portalAccesses, employeeDocumentReminders, posSessions, posTransactions, posOfflineQueue, zReport, boms, productionOrders, maintenance, fleet, projects, profitability] = await Promise.all([
           get('/tenant/role-navigation/READ_ONLY'),
           get('/tenant/subscription-gate'),
           get('/tenant/retention-policy'),
@@ -1110,7 +1208,21 @@
           get('/ledger/reconciliation'),
           get('/ledger/evidence'),
           get('/payroll/contracts'),
-          get('/payroll/runs')
+          get('/payroll/runs'),
+          get('/payroll/leave-balances'),
+          get('/payroll/leave-requests'),
+          get('/payroll/portal-access'),
+          get('/payroll/employees/document-reminders'),
+          get('/pos/sessions'),
+          get('/pos/transactions'),
+          get('/pos/offline-queue'),
+          get('/pos/z-report'),
+          get('/production/boms'),
+          get('/production/orders'),
+          get('/production/maintenance'),
+          get('/production/fleet'),
+          get('/production/projects'),
+          get('/production/profitability')
         ]);
         state.roleNavigation = roleNavigation;
         state.subscriptionGate = subscriptionGate;
@@ -1136,6 +1248,20 @@
         state.legalEvidence = legalEvidence;
         state.contracts = contracts;
         state.payrollRuns = payrollRuns;
+        state.leaveBalances = leaveBalances;
+        state.leaveRequests = leaveRequests;
+        state.portalAccesses = portalAccesses;
+        state.employeeDocumentReminders = employeeDocumentReminders;
+        state.posSessions = posSessions;
+        state.posTransactions = posTransactions;
+        state.posOfflineQueue = posOfflineQueue;
+        state.zReport = zReport;
+        state.boms = boms;
+        state.productionOrders = productionOrders;
+        state.maintenance = maintenance;
+        state.fleet = fleet;
+        state.projects = projects;
+        state.profitability = profitability;
         const entity = summary.tenant.legalEntity;
         qs('#tradeName').textContent = entity.tradeName;
         qs('#identity').innerHTML = [
@@ -1177,6 +1303,8 @@
         renderSecurityAndProcurement();
         renderAccountingControls();
         renderPayrollRuns();
+        renderHrPos();
+        renderOperationsBackoffice();
         switchModuleView(state.activeView);
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
         qs('#setupBadge').className = setup.ready ? 'badge green' : 'badge';
@@ -1452,6 +1580,50 @@
             <td>${mad(item.totals.employerCost || 0)}</td>
           </tr>
         `).join('') : emptyRow('Aucun run de paie créé', 4);
+      }
+
+      function renderHrPos() {
+        const openSessions = state.posSessions.filter((session) => session.status === 'OPEN');
+        const remaining = state.leaveBalances.reduce((sum, balance) => sum + balance.remainingDays, 0);
+        qs('#hrPosBadge').textContent = `${state.leaveRequests.length} demande${state.leaveRequests.length > 1 ? 's' : ''}`;
+        qs('#leaveSummary').textContent = `${remaining} jour${remaining > 1 ? 's' : ''}`;
+        qs('#hrDocumentSummary').textContent = `${state.employeeDocumentReminders.length} alerte${state.employeeDocumentReminders.length > 1 ? 's' : ''}`;
+        qs('#posSessionSummary').textContent = `${openSessions.length} ouverte${openSessions.length > 1 ? 's' : ''}`;
+        qs('#zReportSummary').textContent = mad(state.zReport?.salesTotal || 0);
+        const rows = [
+          ...state.leaveRequests.map((request) => ({ type: 'Congé', reference: request.id, status: request.status, detail: `${request.days} j · impact ${mad(request.payrollImpact || 0)}` })),
+          ...state.portalAccesses.map((access) => ({ type: 'Portail', reference: access.email, status: access.active ? 'ACTIVE' : 'VOID', detail: `${access.canViewPayslips ? 'Bulletins' : ''} ${access.canRequestLeave ? 'Congés' : ''}` })),
+          ...state.posSessions.map((session) => ({ type: 'Session POS', reference: session.number, status: session.status, detail: `attendu ${mad(session.expectedCash)} · écart ${mad(session.variance)}` })),
+          ...state.posOfflineQueue.map((item) => ({ type: 'Offline POS', reference: item.id, status: item.status, detail: item.conflictReason || item.syncedTransactionId || 'En attente' })),
+        ];
+        qs('#hrPosRows').innerHTML = rows.length ? rows.slice(-8).map((row) => `
+          <tr>
+            <td>${row.type}</td>
+            <td><strong>${row.reference}</strong></td>
+            <td><span class="statusPill ${['APPROVED', 'ACTIVE', 'CLOSED', 'SYNCED'].includes(row.status) ? 'success' : row.status === 'CONFLICT' ? 'warning' : 'neutral'}">${translate('statuses', row.status)}</span></td>
+            <td>${row.detail}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun flux RH ou POS lancé', 4);
+      }
+
+      function renderOperationsBackoffice() {
+        const maintenanceOrders = state.maintenance?.workOrders || [];
+        const vehicles = state.fleet?.vehicles || [];
+        const rows = state.profitability?.rows || [];
+        qs('#operationsBackofficeBadge').textContent = `${state.projects.length + state.productionOrders.length + maintenanceOrders.length + vehicles.length} dossier${state.projects.length > 1 ? 's' : ''}`;
+        qs('#bomSummary').textContent = `${state.boms.length} BOM`;
+        qs('#maintenanceSummary').textContent = `${maintenanceOrders.length} OT`;
+        qs('#fleetSummary').textContent = `${vehicles.length} véhicule${vehicles.length > 1 ? 's' : ''}`;
+        qs('#profitabilitySummary').textContent = mad(state.profitability?.totals?.margin || 0);
+        qs('#profitabilityRows').innerHTML = rows.length ? rows.slice(-8).map((row) => `
+          <tr>
+            <td>${row.type}</td>
+            <td><strong>${row.reference}</strong></td>
+            <td>${mad(row.revenue)}</td>
+            <td>${mad(row.cost)}</td>
+            <td><span class="${row.margin < 0 ? 'warningText' : ''}">${mad(row.margin)}</span></td>
+          </tr>
+        `).join('') : emptyRow('Aucune donnée de rentabilité', 5);
       }
 
       function renderProfile() {
@@ -1967,6 +2139,92 @@
           const payslip = run.payslips[0];
           const pdf = await get(`/payroll/runs/${run.id}/payslips/${payslip.id}/pdf`);
           showMessage('success', `Bulletin PDF ${pdf.fileName} généré et archivé.`);
+        });
+      });
+
+      qs('#runLeaveFlow').addEventListener('click', async () => {
+        await runAction('#runLeaveFlow', 'Congé...', async () => {
+          const employee = state.employees.find((item) => item.active);
+          if (!employee) throw new Error('Aucun salarié actif.');
+          const request = await post('/payroll/leave-requests', { employeeId: employee.id, startDate: '2026-06-10', endDate: '2026-06-11', reason: 'Congé annuel' });
+          const approved = await post(`/payroll/leave-requests/${request.id}/approve`, {});
+          showMessage('success', `Congé ${approved.id} approuvé avec impact paie ${mad(approved.payrollImpact)}.`);
+        });
+      });
+
+      qs('#grantPortalAccess').addEventListener('click', async () => {
+        await runAction('#grantPortalAccess', 'Portail...', async () => {
+          const employee = state.employees.find((item) => item.active);
+          if (!employee) throw new Error('Aucun salarié actif.');
+          const access = await post('/payroll/portal-access', { employeeId: employee.id, email: `${employee.employeeNumber.toLowerCase()}@atlas.ma`, canViewPayslips: true, canRequestLeave: true });
+          showMessage('success', `Portail salarié activé pour ${access.email}.`);
+        });
+      });
+
+      qs('#runPosSession').addEventListener('click', async () => {
+        await runAction('#runPosSession', 'Caisse...', async () => {
+          const session = await post('/pos/sessions', { cashierId: 'cashier-1', openingCash: 500 });
+          await post('/pos/transactions', { sessionId: session.id, lines: [{ productId: 'prd-1', quantity: 1 }], paymentMethod: 'CASH' });
+          await post('/pos/cash-movements', { sessionId: session.id, type: 'CASH_OUT', amount: 50, reason: 'Petite dépense caisse' });
+          const closed = await post(`/pos/sessions/${session.id}/close`, { countedCash: 1470 });
+          showMessage('success', `Session ${closed.number} clôturée avec écart ${mad(closed.variance)}.`);
+        });
+      });
+
+      qs('#runPosRefund').addEventListener('click', async () => {
+        await runAction('#runPosRefund', 'Remboursement...', async () => {
+          const ticket = [...state.posTransactions].reverse().find((item) => !item.refundedTransactionId);
+          if (!ticket) throw new Error('Aucun ticket POS à rembourser.');
+          const refund = await post(`/pos/transactions/${ticket.id}/refund`, { reason: 'Retour client' });
+          showMessage('success', `Remboursement ${refund.number} comptabilisé et stock retourné.`);
+        });
+      });
+
+      qs('#runOfflinePosSync').addEventListener('click', async () => {
+        await runAction('#runOfflinePosSync', 'Sync...', async () => {
+          await post('/pos/offline-queue', { payload: { cashierId: 'offline-cashier', lines: [{ productId: 'prd-2', quantity: 1 }], paymentMethod: 'CARD' } });
+          const sync = await post('/pos/offline-queue/sync', {});
+          showMessage('success', `File offline POS synchronisée: ${sync.results.length} élément(s).`);
+        });
+      });
+
+      qs('#runBomProduction').addEventListener('click', async () => {
+        await runAction('#runBomProduction', 'Production...', async () => {
+          const bom = await post('/production/boms', { finishedProductId: 'prd-fg', version: `V${state.boms.length + 1}`, components: [{ productId: 'prd-raw', quantity: 2 }] });
+          const order = await post('/production/orders', { finishedProductId: 'prd-fg', billOfMaterialId: bom.id, quantity: 2 });
+          showMessage('success', `OF ${order.number} terminé avec coût rollup ${mad(order.consumedValue)}.`);
+        });
+      });
+
+      qs('#runMaintenanceFlow').addEventListener('click', async () => {
+        await runAction('#runMaintenanceFlow', 'Maintenance...', async () => {
+          const asset = await post('/production/maintenance/assets', { name: `Machine ${Date.now()}`, category: 'Atelier', location: 'Casablanca' });
+          const order = await post('/production/maintenance/work-orders', { assetId: asset.id, technician: 'Technicien Casa', cost: 800, description: 'Révision préventive' });
+          await post(`/production/maintenance/work-orders/${order.id}/complete`, {});
+          showMessage('success', `Maintenance ${asset.name} clôturée.`);
+        });
+      });
+
+      qs('#runFleetFlow').addEventListener('click', async () => {
+        await runAction('#runFleetFlow', 'Flotte...', async () => {
+          const vehicle = await post('/production/fleet/vehicles', { plate: `WW-${Date.now()}`.slice(0, 12), driver: 'Chauffeur Casa', documentExpiry: '2026-12-31' });
+          await post('/production/fleet/logs', { vehicleId: vehicle.id, type: 'FUEL', amount: 450, odometer: 12000 });
+          showMessage('success', `Véhicule ${vehicle.plate} suivi avec carburant et documents.`);
+        });
+      });
+
+      qs('#runProjectFlow').addEventListener('click', async () => {
+        await runAction('#runProjectFlow', 'Projet...', async () => {
+          const project = await post('/production/projects', {
+            customerId: 'cus-1',
+            name: `Projet client ${state.projects.length + 1}`,
+            budget: 25000,
+            tasks: [{ title: 'Installation', status: 'OPEN' }],
+            expenses: [{ label: 'Déplacement', amount: 600 }],
+            timesheets: [{ employeeId: 'emp-1', hours: 8, costRate: 120 }],
+            invoiceMilestones: [{ label: 'Acompte', amount: 10000, invoiced: true }]
+          });
+          showMessage('success', `Projet ${project.name} créé avec jalon facturable.`);
         });
       });
 

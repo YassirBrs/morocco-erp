@@ -643,7 +643,9 @@ button:disabled {
 .securityGrid,
 .procurementGrid,
 .accountingGrid,
-.payrollRunGrid {
+.payrollRunGrid,
+.hrPosGrid,
+.operationsBackofficeGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   border-top: 1px solid var(--line);
@@ -652,7 +654,9 @@ button:disabled {
 .securityGrid div,
 .procurementGrid div,
 .accountingGrid div,
-.payrollRunGrid div {
+.payrollRunGrid div,
+.hrPosGrid div,
+.operationsBackofficeGrid div {
   display: grid;
   gap: 5px;
   min-width: 0;
@@ -663,7 +667,9 @@ button:disabled {
 .securityGrid div:last-child,
 .procurementGrid div:last-child,
 .accountingGrid div:last-child,
-.payrollRunGrid div:last-child {
+.payrollRunGrid div:last-child,
+.hrPosGrid div:last-child,
+.operationsBackofficeGrid div:last-child {
   border-right: 0;
 }
 
@@ -674,14 +680,20 @@ button:disabled {
 .accountingGrid span,
 .accountingGrid small,
 .payrollRunGrid span,
-.payrollRunGrid small {
+.payrollRunGrid small,
+.hrPosGrid span,
+.hrPosGrid small,
+.operationsBackofficeGrid span,
+.operationsBackofficeGrid small {
   color: var(--muted);
 }
 
 .securityGrid strong,
 .procurementGrid strong,
 .accountingGrid strong,
-.payrollRunGrid strong {
+.payrollRunGrid strong,
+.hrPosGrid strong,
+.operationsBackofficeGrid strong {
   color: var(--primary);
   font-size: 18px;
 }
@@ -1076,6 +1088,8 @@ tbody tr:hover {
   .procurementGrid,
   .accountingGrid,
   .payrollRunGrid,
+  .hrPosGrid,
+  .operationsBackofficeGrid,
   .vatReviewGrid,
   .filterCards,
   .kpis {
@@ -1112,7 +1126,9 @@ tbody tr:hover {
   .securityGrid div,
   .procurementGrid div,
   .accountingGrid div,
-  .payrollRunGrid div {
+  .payrollRunGrid div,
+  .hrPosGrid div,
+  .operationsBackofficeGrid div {
     border-right: 0;
     border-top: 1px solid var(--line);
   }
@@ -1120,7 +1136,9 @@ tbody tr:hover {
   .securityGrid div:first-child,
   .procurementGrid div:first-child,
   .accountingGrid div:first-child,
-  .payrollRunGrid div:first-child {
+  .payrollRunGrid div:first-child,
+  .hrPosGrid div:first-child,
+  .operationsBackofficeGrid div:first-child {
     border-top: 0;
   }
 

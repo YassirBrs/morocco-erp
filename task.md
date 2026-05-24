@@ -80,28 +80,28 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T053 P0 - Calculate gross salary, CNSS, AMO, IR, net salary, employer charges, and taxable base from versioned rules.
 - [x] T054 P0 - Generate payslip PDF per employee and payroll summary per run.
 - [x] T055 P0 - Generate Damancom export files and validate line length/format in tests.
-- [ ] T056 P1 - Add leave balance tracking, leave requests, approvals, and payroll impact.
-- [ ] T057 P1 - Add payroll accounting entries and reject posting to locked periods.
-- [ ] T058 P1 - Add employee portal access for payslips and leave requests.
-- [ ] T059 P2 - Add HR document expiry alerts for contracts, IDs, residence permits, and certifications.
+- [x] T056 P1 - Add leave balance tracking, leave requests, approvals, and payroll impact.
+- [x] T057 P1 - Add payroll accounting entries and reject posting to locked periods.
+- [x] T058 P1 - Add employee portal access for payslips and leave requests.
+- [x] T059 P2 - Add HR document expiry alerts for contracts, IDs, residence permits, and certifications.
 
 ## POS And Cash Operations
 
-- [ ] T060 P0 - Add cashier session open/close with expected cash and variance.
-- [ ] T061 P0 - Add POS ticket creation with stock deduction and payment capture.
-- [ ] T062 P0 - Add POS refund flow linked to original ticket and stock return.
-- [ ] T063 P1 - Add cash drawer movements for cash in, cash out, and expense payout.
-- [ ] T064 P1 - Add daily Z report with sales, VAT, payment methods, refunds, and cash variance.
-- [ ] T065 P2 - Add offline-ready POS queue with later sync and conflict handling.
+- [x] T060 P0 - Add cashier session open/close with expected cash and variance.
+- [x] T061 P0 - Add POS ticket creation with stock deduction and payment capture.
+- [x] T062 P0 - Add POS refund flow linked to original ticket and stock return.
+- [x] T063 P1 - Add cash drawer movements for cash in, cash out, and expense payout.
+- [x] T064 P1 - Add daily Z report with sales, VAT, payment methods, refunds, and cash variance.
+- [x] T065 P2 - Add offline-ready POS queue with later sync and conflict handling.
 
 ## Production, Maintenance, Fleet, And Projects
 
-- [ ] T066 P1 - Add bill of materials for manufactured products.
-- [ ] T067 P1 - Add production order workflow with component issue, finished goods receipt, and cost rollup.
-- [ ] T068 P1 - Add maintenance asset registry, work orders, technician assignment, and cost tracking.
-- [ ] T069 P1 - Add fleet vehicle registry with documents, fuel logs, maintenance, and driver assignment.
-- [ ] T070 P1 - Add project CRUD with customer, budget, tasks, expenses, timesheets, and invoice milestones.
-- [ ] T071 P2 - Add profitability view across production orders, assets, vehicles, and projects.
+- [x] T066 P1 - Add bill of materials for manufactured products.
+- [x] T067 P1 - Add production order workflow with component issue, finished goods receipt, and cost rollup.
+- [x] T068 P1 - Add maintenance asset registry, work orders, technician assignment, and cost tracking.
+- [x] T069 P1 - Add fleet vehicle registry with documents, fuel logs, maintenance, and driver assignment.
+- [x] T070 P1 - Add project CRUD with customer, budget, tasks, expenses, timesheets, and invoice milestones.
+- [x] T071 P2 - Add profitability view across production orders, assets, vehicles, and projects.
 
 ## Documents, PDFs, And Exports
 
@@ -433,3 +433,56 @@ This backlog contains concrete tasks to improve the app from the current working
 - [ ] T333 P1 - Add competitive migration importer for common Moroccan Excel templates and legacy ERP exports.
 - [ ] T334 P1 - Add data quality auto-fix suggestions for duplicate tiers, missing ICE, invalid RIB, and inactive products.
 - [ ] T335 P1 - Add executive compliance cockpit with tax calendar, pending evidence, locked periods, and risk alerts.
+
+## Morocco Scale-Up Backlog
+
+- [ ] T336 P1 - Add branch and establishment registry with IF/RC/patente references, city, manager, and invoice series policy.
+- [ ] T337 P1 - Add multi-branch stock visibility with transfer lead times, branch reorder thresholds, and exception alerts.
+- [ ] T338 P1 - Add Moroccan delivery zone pricing by city, route, weight band, delivery promise, and transporter.
+- [ ] T339 P1 - Add customer sector classification for Moroccan SME analytics, risk scoring, and benchmark dashboards.
+- [ ] T340 P1 - Add supplier compliance vault with tax certificate, CNSS certificate, RIB, contract, and renewal workflow.
+- [ ] T341 P1 - Add delegated approval chains for branch managers, accountants, HR managers, and substitute approvers.
+- [ ] T342 P1 - Add role-based document redaction for salary, tax ID, bank RIB, and private HR evidence.
+- [ ] T343 P1 - Add accounting attachment OCR queue with manual verification, confidence score, and journal linking.
+- [ ] T344 P1 - Add cash collection route planning with collector assignment, receipt numbers, and variance review.
+- [ ] T345 P1 - Add customer credit insurance fields with insurer, covered amount, expiry date, and blocked exposure.
+- [ ] T346 P1 - Add customer guarantee register for deposits, bank guarantees, signed contracts, and release dates.
+- [ ] T347 P1 - Add supplier advance payment tracking with PO linkage, residual balance, and approval evidence.
+- [ ] T348 P1 - Add purchase landed-cost simulation before receipt with customs, freight, transit, insurance, and VAT treatment.
+- [ ] T349 P1 - Add inventory ABC classification by value, margin, velocity, and Moroccan warehouse location.
+- [ ] T350 P1 - Add cycle count schedule by warehouse, family, risk level, and last count variance.
+- [ ] T351 P1 - Add stock damage claim workflow with photo evidence placeholder, root cause, and accounting impact.
+- [ ] T352 P1 - Add product substitute mapping with stockout recommendation, margin comparison, and customer restrictions.
+- [ ] T353 P1 - Add customer price list import with date ranges, quantity breaks, and approval audit.
+- [ ] T354 P1 - Add margin guardrails for quotes, orders, POS sales, and project milestones.
+- [ ] T355 P1 - Add sales target dashboard by branch, salesperson, product family, and Moroccan region.
+- [ ] T356 P1 - Add sales commission accrual workflow with invoice payment dependency and accountant approval.
+- [ ] T357 P1 - Add receivable collection queue with promised date, dispute status, dunning level, and next owner.
+- [ ] T358 P1 - Add customer dispute resolution SLA with root cause, credit note decision, and legal evidence.
+- [ ] T359 P1 - Add supplier dispute resolution SLA with blocked payments, receipt exceptions, and settlement notes.
+- [ ] T360 P1 - Add treasury cash position dashboard combining banks, cashboxes, cheques, and planned payments.
+- [ ] T361 P1 - Add cheque deposit slip generation with bank, agency, cheque list, and reconciliation status.
+- [ ] T362 P1 - Add bounced cheque workflow with fees, customer notification, hold policy, and accounting proposal.
+- [ ] T363 P1 - Add bank statement categorization rules by wording, amount, counterparty RIB, and tenant branch.
+- [ ] T364 P1 - Add recurring expense calendar for rent, telecom, insurance, leasing, utilities, and tax installments.
+- [ ] T365 P1 - Add expense approval matrix by category, project, branch, amount, and budget owner.
+- [ ] T366 P1 - Add employee advance request workflow with repayment plan, payroll deduction, and approval evidence.
+- [ ] T367 P1 - Add employee loan ledger with outstanding balance, monthly deduction cap, and payslip explanation.
+- [ ] T368 P1 - Add overtime planning and approval with department budget, rate multiplier, and payroll impact preview.
+- [ ] T369 P1 - Add attendance import validation for biometric devices with anomaly flags and payroll impact.
+- [ ] T370 P1 - Add leave calendar conflict detection for departments, public holidays, and critical roles.
+- [ ] T371 P1 - Add CNSS registration checklist for new hires with missing identifier and contract evidence.
+- [ ] T372 P1 - Add employee offboarding workflow with final payroll, asset return, document archive, and access revocation.
+- [ ] T373 P1 - Add maintenance spare part consumption with warehouse deduction, CUMP valuation, and work order cost rollup.
+- [ ] T374 P1 - Add fleet document alerts for insurance, vignette, technical inspection, authorization, and driver license.
+- [ ] T375 P1 - Add fleet accident case workflow with photos placeholder, insurance claim, repair order, and cost tracking.
+- [ ] T376 P1 - Add production quality checklist with scrap, rework, pass/fail result, and finished-goods hold.
+- [ ] T377 P1 - Add production capacity planning by workstation, operator, shift, and component availability.
+- [ ] T378 P1 - Add project change request workflow with budget delta, deadline impact, customer approval, and invoice effect.
+- [ ] T379 P1 - Add project WIP dashboard with earned value, unbilled costs, milestone risk, and accountant notes.
+- [ ] T380 P1 - Add customer portal invoice view with statement, payment promises, dispute messages, and file evidence.
+- [ ] T381 P1 - Add supplier portal document upload placeholder with validation status and renewal reminders.
+- [ ] T382 P1 - Add tenant data room for accountant handoff with period packs, evidence checklists, and checksums.
+- [ ] T383 P1 - Add implementation checklist templates by industry: retail, wholesale, services, manufacturing, and construction.
+- [ ] T384 P1 - Add usage telemetry dashboard for module adoption, dormant users, failed actions, and training needs.
+- [ ] T385 P1 - Add competitive gap heatmap against Odoo, Sage, Cegid, Zoho, and local Moroccan ERP alternatives.

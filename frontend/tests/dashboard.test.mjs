@@ -103,7 +103,7 @@ test('frontend is wired for tenant-scoped backend calls', () => {
 });
 
 test('static dashboard uses sidebar module navigation instead of showing one compacted page', () => {
-  for (const view of ['dashboard', 'sales', 'crm', 'stock', 'accounting', 'payroll', 'compliance', 'implementation']) {
+  for (const view of ['dashboard', 'sales', 'crm', 'stock', 'accounting', 'payroll', 'pos', 'production', 'compliance', 'implementation']) {
     assert.ok(staticPage.includes(`data-view="${view}"`), `${view} navigation item exists`);
   }
   for (const marker of ['data-view-section="dashboard"', 'data-view-section="sales stock"', 'data-view-section="crm stock"', 'data-view-section="sales accounting compliance"']) {
@@ -254,5 +254,20 @@ test('static dashboard exposes accounting compliance and payroll run workflows',
   }
   for (const token of ['/ledger/accounts?q=client', '/ledger/export?format=CSV', '/ledger/reconciliation', '/payroll/contracts', '/payroll/runs']) {
     assert.ok(api.includes(token) || staticPage.includes(token), `${token} API route is wired`);
+  }
+});
+
+test('static dashboard exposes HR, POS, production, fleet, project, and profitability workflows', () => {
+  for (const text of ['Congés, portail salarié, sessions POS et Z caisse', 'Demande congé', 'Accès portail salarié', 'Session POS', 'Remboursement POS', 'Sync offline POS', 'Z caisse', 'Nomenclatures, maintenance, flotte, projets et rentabilité', 'OF avec nomenclature', 'Maintenance', 'Flotte', 'Projet', 'Rentabilité']) {
+    assert.ok(staticPage.includes(text), `${text} HR/POS/operations label is present`);
+  }
+  for (const marker of ['renderHrPos', 'renderOperationsBackoffice', 'runLeaveFlow', 'grantPortalAccess', 'runPosSession', 'runPosRefund', 'runOfflinePosSync', 'runBomProduction', 'runMaintenanceFlow', 'runFleetFlow', 'runProjectFlow']) {
+    assert.ok(staticPage.includes(marker), `${marker} helper or action is present`);
+  }
+  for (const endpoint of ['/payroll/leave-balances', '/payroll/leave-requests', '/payroll/portal-access', '/payroll/employees/document-reminders', '/pos/sessions', '/pos/transactions', '/pos/offline-queue', '/pos/z-report', '/production/boms', '/production/orders', '/production/maintenance', '/production/fleet', '/production/projects', '/production/profitability']) {
+    assert.ok(staticPage.includes(endpoint), `${endpoint} endpoint is wired`);
+  }
+  for (const cssToken of ['.hrPosGrid', '.operationsBackofficeGrid']) {
+    assert.ok(staticCss.includes(cssToken), `${cssToken} style exists`);
   }
 });

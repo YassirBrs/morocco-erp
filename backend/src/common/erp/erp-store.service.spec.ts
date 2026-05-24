@@ -1385,4 +1385,161 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(() => store.postPayrollRun(lockedRun.id)).toThrow(ForbiddenException);
     expect(store.archiveEmployee(employee.id).active).toBe(false);
   });
+
+  it('tracks leave balances, approvals, payroll impact, employee portal access, and HR document reminders', () => {
+    const employee = store.addEmployee({
+      employeeNumber: 'EMP-HR',
+      fullName: 'Salariée RH Test',
+      cin: 'RH123456',
+      cnssNumber: '1112223334',
+      hireDate: '2026-01-01',
+      baseSalary: 7800,
+      documentExpiries: [{ type: 'CIN', expiresAt: '2026-06-15', reference: 'RH123456' }],
+    });
+    store.addEmploymentContract({
+      employeeId: employee.id,
+      startDate: '2026-01-01',
+      endDate: '2026-06-20',
+      salary: 7800,
+    });
+
+    const request = store.createLeaveRequest({
+      employeeId: employee.id,
+      startDate: '2026-06-10',
+      endDate: '2026-06-12',
+      reason: 'Congé annuel',
+    });
+    const balanceAfterRequest = { ...store.listLeaveBalances().find((balance) => balance.employeeId === employee.id)! };
+    const approved = store.approveLeaveRequest(request.id);
+    const balanceAfterApproval = store.listLeaveBalances().find((balance) => balance.employeeId === employee.id);
+    const rejectedRequest = store.createLeaveRequest({
+      employeeId: employee.id,
+      startDate: '2026-07-01',
+      endDate: '2026-07-01',
+      reason: 'Personnel',
+    });
+    const rejected = store.rejectLeaveRequest(rejectedRequest.id, 'Planning équipe');
+    const access = store.grantEmployeePortalAccess({
+      employeeId: employee.id,
+      email: 'salarie.rh@atlas.ma',
+      canViewPayslips: true,
+      canRequestLeave: true,
+    });
+    const portal = store.employeePortalDashboard(employee.id);
+    const reminders = store.employeeDocumentReminders();
+
+    expect(request.days).toBe(3);
+    expect(balanceAfterRequest).toMatchObject({ pendingDays: 3, remainingDays: 15 });
+    expect(approved).toMatchObject({ status: 'APPROVED', days: 3 });
+    expect(approved.payrollImpact).toBeCloseTo(900, 2);
+    expect(balanceAfterApproval).toMatchObject({ takenDays: 3, pendingDays: 0, remainingDays: 15 });
+    expect(rejected.status).toBe('REJECTED');
+    expect(access).toMatchObject({ active: true, email: 'salarie.rh@atlas.ma', canViewPayslips: true, canRequestLeave: true });
+    expect(portal).toMatchObject({ status: 'ACTIVE' });
+    expect(portal.leaveRequests.map((item) => item.id)).toEqual(expect.arrayContaining([request.id, rejectedRequest.id]));
+    expect(reminders.find((row) => row.employeeId === employee.id)).toMatchObject({ status: 'EXPIRING', contractRenewal: expect.any(Object) });
+    expect(store.auditLogs().map((entry) => entry.action)).toEqual(expect.arrayContaining(['leave.requested', 'leave.approved', 'leave.rejected', 'employee-portal.granted']));
+  });
+
+  it('runs POS sessions, tickets, cash movements, refunds, Z reports, and offline queue sync conflicts', () => {
+    const stockBefore = store.getProduct('prd-1').stockOnHand;
+    const session = store.openPosSession({ cashierId: 'cashier-test', openingCash: 1100 });
+    const ticket = store.createPosTransaction({
+      sessionId: session.id,
+      lines: [{ productId: 'prd-1', quantity: 1 }],
+      paymentMethod: 'CASH',
+    });
+    const movement = store.addCashDrawerMovement({
+      sessionId: session.id,
+      type: 'CASH_OUT',
+      amount: 20,
+      reason: 'Achat fourniture caisse',
+    });
+    const closed = store.closePosSession(session.id, { countedCash: 2105 });
+    const refund = store.refundPosTransaction(ticket.id, { reason: 'Retour client' });
+    const validQueued = store.queueOfflinePosSale({
+      payload: { cashierId: 'offline-test', lines: [{ productId: 'prd-2', quantity: 1 }], paymentMethod: 'CARD' },
+    });
+    const invalidQueued = store.queueOfflinePosSale({
+      payload: { cashierId: 'offline-test', lines: [{ productId: 'missing-product', quantity: 1 }], paymentMethod: 'CARD' },
+    });
+    const sync = store.syncOfflinePosQueue();
+    const zReport = store.dailyZReport();
+
+    expect(ticket.number).toMatch(/^POS-/);
+    expect(ticket.sessionId).toBe(session.id);
+    expect(store.getProduct('prd-1').stockOnHand).toBe(stockBefore);
+    expect(movement).toMatchObject({ type: 'CASH_OUT', amount: 20 });
+    expect(closed).toMatchObject({ status: 'CLOSED', expectedCash: 2100, countedCash: 2105, variance: 5 });
+    expect(refund.refundedTransactionId).toBe(ticket.id);
+    expect(refund.totals.total).toBe(-ticket.totals.total);
+    expect(sync.results.find((item) => item.id === validQueued.id)).toMatchObject({ status: 'SYNCED' });
+    expect(sync.results.find((item) => item.id === invalidQueued.id)).toMatchObject({ status: 'CONFLICT' });
+    expect(zReport).toMatchObject({ ticketCount: 2, refundCount: 1, salesTotal: 1440, cashVariance: 5, status: 'PREPARED' });
+    expect(zReport.byPayment).toMatchObject({ CASH: 0, CARD: 1440 });
+    expect(store.listJournalEntries().map((entry) => entry.source)).toEqual(expect.arrayContaining([ticket.number, refund.number]));
+  });
+
+  it('builds BOM-driven production orders with component issue, finished goods receipt, and cost rollup', () => {
+    const rawBefore = store.getProduct('prd-raw').stockOnHand;
+    const finishedBefore = store.getProduct('prd-fg').stockOnHand;
+    const bom = store.createBillOfMaterial({
+      finishedProductId: 'prd-fg',
+      version: 'TEST-V1',
+      components: [{ productId: 'prd-raw', quantity: 2 }],
+    });
+    const order = store.createProductionOrder({
+      finishedProductId: 'prd-fg',
+      billOfMaterialId: bom.id,
+      quantity: 3,
+    });
+
+    expect(bom).toMatchObject({ active: true, finishedProductId: 'prd-fg' });
+    expect(order).toMatchObject({ status: 'COMPLETED', billOfMaterialId: bom.id, consumedValue: 540, outputValue: 540 });
+    expect(store.getProduct('prd-raw').stockOnHand).toBe(rawBefore - 6);
+    expect(store.getProduct('prd-fg').stockOnHand).toBe(finishedBefore + 3);
+    expect(store.getProduct('prd-fg').weightedAverageCost).toBeCloseTo(267.27, 2);
+    expect(store.listProductionOrders()[0].number).toMatch(/^OF-/);
+  });
+
+  it('tracks maintenance assets, fleet logs, projects, and profitability rows', () => {
+    const asset = store.createMaintenanceAsset({ name: 'Presse atelier', category: 'Machine', location: 'Tanger' });
+    const workOrder = store.createMaintenanceWorkOrder({
+      assetId: asset.id,
+      technician: 'Technicien Tanger',
+      description: 'Révision hydraulique',
+      cost: 1250,
+    });
+    const completedWorkOrder = store.completeMaintenanceWorkOrder(workOrder.id);
+    const vehicle = store.createFleetVehicle({
+      plate: 'WW-123456',
+      driver: 'Chauffeur Nord',
+      documentExpiry: '2026-12-31',
+    });
+    const fleetLog = store.addFleetLog({ vehicleId: vehicle.id, type: 'FUEL', amount: 500, odometer: 15000 });
+    const project = store.createProject({
+      customerId: 'cus-1',
+      name: 'Projet intégration ERP',
+      budget: 40000,
+      tasks: [{ title: 'Atelier cadrage', status: 'DONE' }],
+      expenses: [{ label: 'Déplacement', amount: 700 }],
+      timesheets: [{ employeeId: 'emp-1', hours: 10, costRate: 150 }],
+      invoiceMilestones: [{ label: 'Acompte', amount: 12000, invoiced: true }],
+    });
+    const updated = store.updateProject(project.id, { status: 'IN_PROGRESS', tasks: [{ title: 'Recette', status: 'OPEN' }] });
+    const maintenance = store.listMaintenance();
+    const fleet = store.listFleet();
+    const profitability = store.profitabilityView();
+
+    expect(completedWorkOrder.status).toBe('DONE');
+    expect(maintenance).toMatchObject({ assets: [expect.objectContaining({ id: asset.id })], workOrders: [expect.objectContaining({ id: workOrder.id, cost: 1250 })] });
+    expect(fleet).toMatchObject({ vehicles: [expect.objectContaining({ id: vehicle.id })], logs: [expect.objectContaining({ id: fleetLog.id, amount: 500 })] });
+    expect(updated).toMatchObject({ status: 'IN_PROGRESS', tasks: [{ title: 'Recette', status: 'OPEN' }] });
+    expect(profitability.rows).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'MAINTENANCE', cost: 1250, margin: -1250 }),
+      expect.objectContaining({ type: 'FLEET', cost: 500, margin: -500 }),
+      expect.objectContaining({ type: 'PROJECT', reference: 'Projet intégration ERP', revenue: 12000, cost: 2200, margin: 9800 }),
+    ]));
+    expect(profitability.totals.margin).toBe(8050);
+  });
 });

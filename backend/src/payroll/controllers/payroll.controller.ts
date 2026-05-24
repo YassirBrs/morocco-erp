@@ -10,6 +10,7 @@ export class PayrollController {
 
   @Get('employees') employees() { return this.payrollService.listEmployees(); }
   @Get('employees/import-template.csv') employeeImportTemplateCsv() { return this.payrollService.employeeImportTemplateCsv(); }
+  @Get('employees/document-reminders') employeeDocumentReminders() { return this.payrollService.employeeDocumentReminders(); }
   @Get('employees/:id') employee(@Param('id') id: string) { return this.payrollService.getEmployee(id); }
   @Post('employees') addEmployee(@Body() body: any) { return this.payrollService.addEmployee(body); }
   @Patch('employees/:id') updateEmployee(@Param('id') id: string, @Body() body: any) { return this.payrollService.updateEmployee(id, body); }
@@ -17,6 +18,16 @@ export class PayrollController {
 
   @Get('contracts') contracts() { return this.payrollService.listContracts(); }
   @Post('contracts') addContract(@Body() body: any) { return this.payrollService.addContract(body); }
+
+  @Get('leave-balances') leaveBalances() { return this.payrollService.leaveBalances(); }
+  @Get('leave-requests') leaveRequests() { return this.payrollService.leaveRequests(); }
+  @Post('leave-requests') createLeaveRequest(@Body() body: any) { return this.payrollService.createLeaveRequest(body); }
+  @Post('leave-requests/:id/approve') approveLeaveRequest(@Param('id') id: string) { return this.payrollService.approveLeaveRequest(id); }
+  @Post('leave-requests/:id/reject') rejectLeaveRequest(@Param('id') id: string, @Body() body: any) { return this.payrollService.rejectLeaveRequest(id, body); }
+
+  @Get('portal-access') portalAccesses() { return this.payrollService.portalAccesses(); }
+  @Post('portal-access') grantPortalAccess(@Body() body: any) { return this.payrollService.grantPortalAccess(body); }
+  @Get('portal/:employeeId') portalDashboard(@Param('employeeId') employeeId: string) { return this.payrollService.portalDashboard(employeeId); }
 
   @Get('runs') runs() { return this.payrollService.listRuns(); }
   @Post('runs') createRun(@Body() body: any) { return this.payrollService.createRun(body); }

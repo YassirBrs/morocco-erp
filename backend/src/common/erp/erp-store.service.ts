@@ -4,9 +4,11 @@ import { createHash, randomBytes } from 'crypto';
 import {
   AuditLog,
   AuthSession,
+  BillOfMaterial,
   BusinessSearchInput,
   BusinessSearchResult,
   BusinessSearchType,
+  CashDrawerMovement,
   ChartAccount,
   CollaborationEntityType,
   CompanyProfileChange,
@@ -18,6 +20,7 @@ import {
   DocumentLineInput,
   DocumentTotals,
   Employee,
+  EmployeePortalAccess,
   EmploymentContract,
   ErpUser,
   ErpModuleKey,
@@ -30,15 +33,24 @@ import {
   Invoice,
   JournalEntry,
   Lead,
+  LeaveBalance,
+  LeaveRequest,
   LegalEvidence,
   LegalEntity,
+  FleetLog,
+  FleetVehicle,
+  MaintenanceAsset,
+  MaintenanceWorkOrder,
   Payment,
   PayrollRun,
   Payslip,
+  PosOfflineQueueItem,
+  PosSession,
   PosTransaction,
   PreferredLanguage,
   Product,
   ProductionOrder,
+  ProjectRecord,
   PurchaseOrder,
   PurchaseReceipt,
   SalesOrder,
@@ -394,9 +406,21 @@ export class ErpStoreService {
         },
       ],
       payrollRuns: [],
+      leaveBalances: [],
+      leaveRequests: [],
+      employeePortalAccesses: [],
       legalEvidences: [],
+      posSessions: [],
+      cashDrawerMovements: [],
+      posOfflineQueue: [],
       posTransactions: [],
+      billsOfMaterial: [],
       productionOrders: [],
+      maintenanceAssets: [],
+      maintenanceWorkOrders: [],
+      fleetVehicles: [],
+      fleetLogs: [],
+      projects: [],
       auditLogs: [],
       profileChanges: [],
       internalNotes: [],
@@ -473,9 +497,21 @@ export class ErpStoreService {
       fiscalPeriods: [this.openFiscalPeriod(tenantId, today())],
       employmentContracts: [],
       payrollRuns: [],
+      leaveBalances: [],
+      leaveRequests: [],
+      employeePortalAccesses: [],
       legalEvidences: [],
+      posSessions: [],
+      cashDrawerMovements: [],
+      posOfflineQueue: [],
       posTransactions: [],
+      billsOfMaterial: [],
       productionOrders: [],
+      maintenanceAssets: [],
+      maintenanceWorkOrders: [],
+      fleetVehicles: [],
+      fleetLogs: [],
+      projects: [],
       auditLogs: [],
       profileChanges: [],
       internalNotes: [],
@@ -3545,16 +3581,68 @@ export class ErpStoreService {
     return this.workspace(tenantId).fiscalPeriods;
   }
 
-  createPosTransaction(input: { cashierId?: string; lines: DocumentLineInput[]; paymentMethod?: PosTransaction['paymentMethod'] }, tenantId?: string): PosTransaction {
+  openPosSession(input: { cashierId: string; openingCash?: number }, tenantId?: string): PosSession {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const cashierId = this.nonEmpty(input.cashierId, 'Le caissier est obligatoire');
+    const existing = workspace.posSessions.find((session) => session.cashierId === cashierId && session.status === 'OPEN');
+    if (existing) return existing;
+    const openingCash = this.nonNegative(input.openingCash ?? 0, 'Le fond de caisse doit être positif');
+    const session: PosSession = {
+      id: this.id('poss'),
+      tenantId: workspace.tenant.id,
+      number: this.nextNumber(workspace, 'CAISSE'),
+      cashierId,
+      openedAt: new Date().toISOString(),
+      status: 'OPEN',
+      openingCash,
+      expectedCash: openingCash,
+      variance: 0,
+    };
+    workspace.posSessions.push(session);
+    this.audit(workspace, 'pos-session.opened', 'PosSession', session.id, session);
+    return session;
+  }
+
+  closePosSession(sessionId: string, input: { countedCash: number }, tenantId?: string): PosSession {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const session = this.posSession(workspace, sessionId);
+    if (session.status !== 'OPEN') throw new BadRequestException('La session caisse est déjà clôturée');
+    const cashSales = workspace.posTransactions
+      .filter((ticket) => ticket.sessionId === session.id && ticket.paymentMethod === 'CASH')
+      .reduce((sum, ticket) => sum + ticket.totals.total, 0);
+    const cashMovements = workspace.cashDrawerMovements
+      .filter((movement) => movement.sessionId === session.id)
+      .reduce((sum, movement) => sum + (movement.type === 'CASH_IN' ? movement.amount : -movement.amount), 0);
+    session.expectedCash = r2(session.openingCash + cashSales + cashMovements);
+    session.countedCash = this.nonNegative(input.countedCash, 'Le comptage caisse doit être positif');
+    session.variance = r2(session.countedCash - session.expectedCash);
+    session.status = 'CLOSED';
+    session.closedAt = new Date().toISOString();
+    this.audit(workspace, 'pos-session.closed', 'PosSession', session.id, session);
+    return session;
+  }
+
+  listPosSessions(tenantId?: string): PosSession[] {
+    return this.workspace(tenantId).posSessions;
+  }
+
+  createPosTransaction(input: { cashierId?: string; sessionId?: string; lines: DocumentLineInput[]; paymentMethod?: PosTransaction['paymentMethod'] }, tenantId?: string): PosTransaction {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
     this.assertPeriodOpen(workspace, today());
+    const session = input.sessionId
+      ? this.posSession(workspace, input.sessionId)
+      : this.openPosSession({ cashierId: input.cashierId ?? 'cashier', openingCash: 0 }, workspace.tenant.id);
+    if (session.status !== 'OPEN') throw new BadRequestException('La session caisse doit être ouverte');
     const lines = this.documentLines(workspace, input.lines);
     const transaction: PosTransaction = {
       id: this.id('pos'),
       tenantId: workspace.tenant.id,
       number: this.nextNumber(workspace, 'POS'),
-      cashierId: input.cashierId ?? 'cashier',
+      sessionId: session.id,
+      cashierId: session.cashierId,
       date: today(),
       lines,
       totals: this.totals(lines),
@@ -3575,15 +3663,155 @@ export class ErpStoreService {
     return this.workspace(tenantId).posTransactions;
   }
 
-  createProductionOrder(input: { finishedProductId: string; quantity: number; components?: Array<{ productId: string; quantity: number }> }, tenantId?: string): ProductionOrder {
+  refundPosTransaction(transactionId: string, input: { reason?: string } = {}, tenantId?: string): PosTransaction {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    this.assertPeriodOpen(workspace, today());
+    const original = workspace.posTransactions.find((candidate) => candidate.id === transactionId || candidate.number === transactionId);
+    if (!original) throw new NotFoundException('Ticket POS introuvable');
+    if (original.refundedTransactionId) throw new BadRequestException('Un ticket de remboursement ne peut pas être remboursé');
+    const refund: PosTransaction = {
+      id: this.id('pos-refund'),
+      tenantId: workspace.tenant.id,
+      number: this.nextNumber(workspace, 'AVPOS'),
+      sessionId: original.sessionId,
+      cashierId: original.cashierId,
+      date: today(),
+      lines: original.lines.map((line) => ({ ...line, quantity: -line.quantity, subtotal: -line.subtotal, vatAmount: -line.vatAmount, total: -line.total })),
+      totals: { subtotal: -original.totals.subtotal, vatByRate: Object.fromEntries(Object.entries(original.totals.vatByRate).map(([rate, amount]) => [rate, -amount])), vatTotal: -original.totals.vatTotal, total: -original.totals.total },
+      paymentMethod: original.paymentMethod,
+      refundedTransactionId: original.id,
+    };
+    workspace.posTransactions.push(refund);
+    for (const line of original.lines) {
+      const product = this.product(workspace, line.productId);
+      if (product.trackStock && product.type !== 'SERVICE') {
+        product.stockOnHand = r2(product.stockOnHand + line.quantity);
+        this.stockMove(workspace, product, line.quantity, product.weightedAverageCost, 'DELIVERY_REVERSAL', refund.number);
+      }
+    }
+    this.postJournal(workspace, `Remboursement POS ${refund.number}`, refund.number, [
+      { account: '7111', label: 'Annulation ventes POS', debit: original.totals.subtotal, credit: 0 },
+      { account: '4455', label: 'Annulation TVA POS', debit: original.totals.vatTotal, credit: 0 },
+      { account: original.paymentMethod === 'CASH' ? '5161' : '5141', label: input.reason ?? 'Remboursement POS', debit: 0, credit: original.totals.total },
+    ]);
+    this.audit(workspace, 'pos.refunded', 'PosTransaction', refund.id, { refund, originalId: original.id, reason: input.reason });
+    return refund;
+  }
+
+  addCashDrawerMovement(input: { sessionId: string; type: CashDrawerMovement['type']; amount: number; reason: string }, tenantId?: string): CashDrawerMovement {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const session = this.posSession(workspace, input.sessionId);
+    if (session.status !== 'OPEN') throw new BadRequestException('La session caisse doit être ouverte');
+    const movement: CashDrawerMovement = {
+      id: this.id('cashmv'),
+      tenantId: workspace.tenant.id,
+      sessionId: session.id,
+      type: input.type,
+      amount: this.nonNegative(input.amount, 'Le mouvement caisse doit être positif'),
+      reason: this.nonEmpty(input.reason, 'Le motif du mouvement caisse est obligatoire'),
+      createdAt: new Date().toISOString(),
+    };
+    workspace.cashDrawerMovements.push(movement);
+    this.audit(workspace, 'cash-drawer.moved', 'CashDrawerMovement', movement.id, movement);
+    return movement;
+  }
+
+  dailyZReport(date = today(), tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const tickets = workspace.posTransactions.filter((ticket) => ticket.date === date);
+    const sessions = workspace.posSessions.filter((session) => session.openedAt.startsWith(date) || session.closedAt?.startsWith(date));
+    const byPayment = tickets.reduce<Record<string, number>>((acc, ticket) => {
+      acc[ticket.paymentMethod] = r2((acc[ticket.paymentMethod] ?? 0) + ticket.totals.total);
+      return acc;
+    }, {});
+    return {
+      date,
+      ticketCount: tickets.filter((ticket) => !ticket.refundedTransactionId).length,
+      refundCount: tickets.filter((ticket) => ticket.refundedTransactionId).length,
+      salesTotal: r2(tickets.reduce((sum, ticket) => sum + ticket.totals.total, 0)),
+      vatTotal: r2(tickets.reduce((sum, ticket) => sum + ticket.totals.vatTotal, 0)),
+      byPayment,
+      sessions: sessions.map((session) => ({ number: session.number, cashierId: session.cashierId, status: session.status, expectedCash: session.expectedCash, countedCash: session.countedCash, variance: session.variance })),
+      cashVariance: r2(sessions.reduce((sum, session) => sum + session.variance, 0)),
+      status: 'PREPARED',
+    };
+  }
+
+  queueOfflinePosSale(input: { payload: Record<string, unknown> }, tenantId?: string): PosOfflineQueueItem {
+    const workspace = this.workspace(tenantId);
+    const item: PosOfflineQueueItem = {
+      id: this.id('posq'),
+      tenantId: workspace.tenant.id,
+      payload: input.payload,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+    workspace.posOfflineQueue.push(item);
+    return item;
+  }
+
+  syncOfflinePosQueue(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const results = workspace.posOfflineQueue.filter((item) => item.status === 'PENDING').map((item) => {
+      try {
+        const tx = this.createPosTransaction(item.payload as any, workspace.tenant.id);
+        item.status = 'SYNCED';
+        item.syncedTransactionId = tx.id;
+        item.syncedAt = new Date().toISOString();
+      } catch (error) {
+        item.status = 'CONFLICT';
+        item.conflictReason = error instanceof Error ? error.message : 'Conflit synchronisation POS';
+      }
+      return item;
+    });
+    return { status: 'SYNCED', results, pending: workspace.posOfflineQueue.filter((item) => item.status === 'PENDING').length };
+  }
+
+  listPosOfflineQueue(tenantId?: string): PosOfflineQueueItem[] {
+    return this.workspace(tenantId).posOfflineQueue;
+  }
+
+  createBillOfMaterial(input: { finishedProductId: string; version?: string; components: Array<{ productId: string; quantity: number; unitCost?: number }> }, tenantId?: string): BillOfMaterial {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const finished = this.product(workspace, input.finishedProductId);
+    const bom: BillOfMaterial = {
+      id: this.id('bom'),
+      tenantId: workspace.tenant.id,
+      finishedProductId: finished.id,
+      version: this.clean(input.version) ?? `V${workspace.billsOfMaterial.length + 1}`,
+      components: input.components.map((component) => {
+        const product = this.product(workspace, component.productId);
+        return { productId: product.id, quantity: this.nonNegative(component.quantity, 'La quantité composant doit être positive'), unitCost: component.unitCost ?? product.weightedAverageCost };
+      }),
+      active: true,
+      createdAt: today(),
+    };
+    workspace.billsOfMaterial.filter((candidate) => candidate.finishedProductId === finished.id).forEach((candidate) => { candidate.active = false; });
+    workspace.billsOfMaterial.push(bom);
+    this.audit(workspace, 'bom.created', 'BillOfMaterial', bom.id, bom);
+    return bom;
+  }
+
+  listBillsOfMaterial(tenantId?: string): BillOfMaterial[] {
+    return this.workspace(tenantId).billsOfMaterial;
+  }
+
+  createProductionOrder(input: { finishedProductId: string; quantity: number; billOfMaterialId?: string; components?: Array<{ productId: string; quantity: number }> }, tenantId?: string): ProductionOrder {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
     const finished = this.product(workspace, input.finishedProductId);
     if (input.quantity <= 0) {
       throw new BadRequestException('La quantité de production doit être positive');
     }
+    const bom = input.billOfMaterialId
+      ? this.billOfMaterial(workspace, input.billOfMaterialId)
+      : workspace.billsOfMaterial.find((candidate) => candidate.finishedProductId === finished.id && candidate.active);
+    const components = input.components ?? bom?.components.map((component) => ({ productId: component.productId, quantity: component.quantity * input.quantity })) ?? [{ productId: 'prd-raw', quantity: input.quantity * 2 }];
     let consumedValue = 0;
-    for (const component of input.components ?? [{ productId: 'prd-raw', quantity: input.quantity * 2 }]) {
+    for (const component of components) {
       const raw = this.product(workspace, component.productId);
       const qty = component.quantity;
       if (raw.stockOnHand < qty) {
@@ -3602,10 +3830,12 @@ export class ErpStoreService {
       id: this.id('mo'),
       tenantId: workspace.tenant.id,
       number: this.nextNumber(workspace, 'OF'),
+      billOfMaterialId: bom?.id,
       finishedProductId: finished.id,
       quantity: input.quantity,
       status: 'COMPLETED',
       consumedValue: r2(consumedValue),
+      outputValue: r2(input.quantity * unitCost),
       createdAt: today(),
     };
     workspace.productionOrders.push(order);
@@ -3615,6 +3845,160 @@ export class ErpStoreService {
 
   listProductionOrders(tenantId?: string): ProductionOrder[] {
     return this.workspace(tenantId).productionOrders;
+  }
+
+  createMaintenanceAsset(input: { name: string; category?: string; location?: string }, tenantId?: string): MaintenanceAsset {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const asset: MaintenanceAsset = {
+      id: this.id('asset'),
+      tenantId: workspace.tenant.id,
+      name: this.nonEmpty(input.name, 'Le nom de l’actif maintenance est obligatoire'),
+      category: this.clean(input.category) ?? 'Équipement',
+      location: this.clean(input.location),
+      active: true,
+      createdAt: today(),
+    };
+    workspace.maintenanceAssets.push(asset);
+    this.audit(workspace, 'maintenance-asset.created', 'MaintenanceAsset', asset.id, asset);
+    return asset;
+  }
+
+  createMaintenanceWorkOrder(input: { assetId: string; technician?: string; description?: string; cost?: number }, tenantId?: string): MaintenanceWorkOrder {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const asset = this.maintenanceAsset(workspace, input.assetId);
+    const order: MaintenanceWorkOrder = {
+      id: this.id('wo'),
+      tenantId: workspace.tenant.id,
+      assetId: asset.id,
+      technician: this.clean(input.technician) ?? 'Technicien',
+      status: 'ASSIGNED',
+      cost: this.nonNegative(input.cost ?? 0, 'Le coût maintenance doit être positif'),
+      description: this.clean(input.description) ?? 'Intervention maintenance',
+      createdAt: today(),
+    };
+    workspace.maintenanceWorkOrders.push(order);
+    this.audit(workspace, 'maintenance-work-order.created', 'MaintenanceWorkOrder', order.id, order);
+    return order;
+  }
+
+  completeMaintenanceWorkOrder(orderId: string, tenantId?: string): MaintenanceWorkOrder {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const order = this.maintenanceWorkOrder(workspace, orderId);
+    order.status = 'DONE';
+    order.completedAt = today();
+    this.audit(workspace, 'maintenance-work-order.completed', 'MaintenanceWorkOrder', order.id, order);
+    return order;
+  }
+
+  listMaintenance(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { assets: workspace.maintenanceAssets, workOrders: workspace.maintenanceWorkOrders };
+  }
+
+  createFleetVehicle(input: { plate: string; driver?: string; documentExpiry?: string }, tenantId?: string): FleetVehicle {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const vehicle: FleetVehicle = {
+      id: this.id('veh'),
+      tenantId: workspace.tenant.id,
+      plate: this.nonEmpty(input.plate, 'L’immatriculation véhicule est obligatoire'),
+      driver: this.clean(input.driver),
+      documentExpiry: input.documentExpiry ? this.isoDate(input.documentExpiry, 'Date document véhicule invalide') : undefined,
+      active: true,
+    };
+    workspace.fleetVehicles.push(vehicle);
+    this.audit(workspace, 'fleet-vehicle.created', 'FleetVehicle', vehicle.id, vehicle);
+    return vehicle;
+  }
+
+  addFleetLog(input: { vehicleId: string; type: FleetLog['type']; amount: number; odometer?: number; date?: string }, tenantId?: string): FleetLog {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const vehicle = this.fleetVehicle(workspace, input.vehicleId);
+    const log: FleetLog = {
+      id: this.id('fleetlog'),
+      tenantId: workspace.tenant.id,
+      vehicleId: vehicle.id,
+      type: input.type,
+      amount: this.nonNegative(input.amount, 'Le montant flotte doit être positif'),
+      odometer: input.odometer !== undefined ? this.nonNegative(input.odometer, 'Le kilométrage doit être positif') : undefined,
+      date: input.date ? this.isoDate(input.date, 'Date flotte invalide') : today(),
+    };
+    workspace.fleetLogs.push(log);
+    this.audit(workspace, 'fleet-log.created', 'FleetLog', log.id, log);
+    return log;
+  }
+
+  listFleet(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { vehicles: workspace.fleetVehicles, logs: workspace.fleetLogs };
+  }
+
+  createProject(input: { customerId: string; name: string; budget?: number; tasks?: ProjectRecord['tasks']; expenses?: ProjectRecord['expenses']; timesheets?: ProjectRecord['timesheets']; invoiceMilestones?: ProjectRecord['invoiceMilestones'] }, tenantId?: string): ProjectRecord {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const customer = this.customer(workspace, input.customerId);
+    const project: ProjectRecord = {
+      id: this.id('proj'),
+      tenantId: workspace.tenant.id,
+      customerId: customer.id,
+      name: this.nonEmpty(input.name, 'Le nom du projet est obligatoire'),
+      budget: this.nonNegative(input.budget ?? 0, 'Le budget projet doit être positif'),
+      status: 'OPEN',
+      tasks: input.tasks ?? [{ title: 'Cadrage', status: 'OPEN' }],
+      expenses: input.expenses ?? [],
+      timesheets: input.timesheets ?? [],
+      invoiceMilestones: input.invoiceMilestones ?? [],
+      createdAt: today(),
+    };
+    workspace.projects.push(project);
+    this.audit(workspace, 'project.created', 'ProjectRecord', project.id, project);
+    return project;
+  }
+
+  updateProject(projectId: string, input: Partial<ProjectRecord>, tenantId?: string): ProjectRecord {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const project = this.project(workspace, projectId);
+    if (input.name !== undefined) project.name = this.nonEmpty(input.name, 'Le nom du projet est obligatoire');
+    if (input.budget !== undefined) project.budget = this.nonNegative(input.budget, 'Le budget projet doit être positif');
+    if (input.status !== undefined) project.status = input.status;
+    if (input.tasks !== undefined) project.tasks = input.tasks;
+    if (input.expenses !== undefined) project.expenses = input.expenses;
+    if (input.timesheets !== undefined) project.timesheets = input.timesheets;
+    if (input.invoiceMilestones !== undefined) project.invoiceMilestones = input.invoiceMilestones;
+    this.audit(workspace, 'project.updated', 'ProjectRecord', project.id, project);
+    return project;
+  }
+
+  listProjects(tenantId?: string): ProjectRecord[] {
+    return this.workspace(tenantId).projects;
+  }
+
+  profitabilityView(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const production = workspace.productionOrders.map((order) => ({ type: 'PRODUCTION', reference: order.number, revenue: order.outputValue ?? 0, cost: order.consumedValue, margin: r2((order.outputValue ?? 0) - order.consumedValue) }));
+    const maintenance = workspace.maintenanceWorkOrders.map((order) => ({ type: 'MAINTENANCE', reference: order.id, revenue: 0, cost: order.cost, margin: -order.cost }));
+    const fleet = workspace.fleetLogs.map((log) => ({ type: 'FLEET', reference: log.id, revenue: 0, cost: log.amount, margin: -log.amount }));
+    const projects = workspace.projects.map((project) => {
+      const revenue = project.invoiceMilestones.reduce((sum, milestone) => sum + (milestone.invoiced ? milestone.amount : 0), 0);
+      const expenses = project.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+      const labor = project.timesheets.reduce((sum, line) => sum + line.hours * line.costRate, 0);
+      const cost = r2(expenses + labor);
+      return { type: 'PROJECT', reference: project.name, revenue: r2(revenue), cost, margin: r2(revenue - cost) };
+    });
+    const rows = [...production, ...maintenance, ...fleet, ...projects];
+    return {
+      rows,
+      totals: {
+        revenue: r2(rows.reduce((sum, row) => sum + row.revenue, 0)),
+        cost: r2(rows.reduce((sum, row) => sum + row.cost, 0)),
+        margin: r2(rows.reduce((sum, row) => sum + row.margin, 0)),
+      },
+    };
   }
 
   exportVatReport(input?: string | { year?: number; month?: number }, tenantId?: string) {
@@ -3939,6 +4323,146 @@ export class ErpStoreService {
     return { status: 'PREPARED', runId: run.id, payslipId: payslip.id, ...pdf };
   }
 
+  listLeaveBalances(tenantId?: string): LeaveBalance[] {
+    const workspace = this.workspace(tenantId);
+    workspace.employees.filter((employee) => employee.active).forEach((employee) => this.leaveBalance(workspace, employee.id, Number(today().slice(0, 4))));
+    return workspace.leaveBalances;
+  }
+
+  createLeaveRequest(input: { employeeId: string; startDate: string; endDate: string; reason?: string }, tenantId?: string): LeaveRequest {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const employee = this.employee(workspace, input.employeeId);
+    const startDate = this.isoDate(input.startDate, 'La date de début de congé est obligatoire');
+    const endDate = this.isoDate(input.endDate, 'La date de fin de congé est obligatoire');
+    const days = daysBetween(startDate, endDate) + 1;
+    if (days <= 0) throw new BadRequestException('La demande de congé est invalide');
+    const balance = this.leaveBalance(workspace, employee.id, Number(startDate.slice(0, 4)));
+    if (days > balance.remainingDays) throw new BadRequestException('Solde congé insuffisant');
+    const request: LeaveRequest = {
+      id: this.id('leave'),
+      tenantId: workspace.tenant.id,
+      employeeId: employee.id,
+      startDate,
+      endDate,
+      days,
+      status: 'REQUESTED',
+      reason: this.clean(input.reason),
+      payrollImpact: 0,
+      createdAt: today(),
+    };
+    balance.pendingDays = r2(balance.pendingDays + days);
+    balance.remainingDays = r2(balance.acquiredDays - balance.takenDays - balance.pendingDays);
+    workspace.leaveRequests.push(request);
+    this.audit(workspace, 'leave.requested', 'LeaveRequest', request.id, request);
+    return request;
+  }
+
+  approveLeaveRequest(requestId: string, tenantId?: string): LeaveRequest {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const request = this.leaveRequest(workspace, requestId);
+    if (request.status !== 'REQUESTED') throw new BadRequestException('La demande de congé n’est plus en attente');
+    const employee = this.employee(workspace, request.employeeId);
+    const balance = this.leaveBalance(workspace, employee.id, Number(request.startDate.slice(0, 4)));
+    balance.pendingDays = r2(Math.max(0, balance.pendingDays - request.days));
+    balance.takenDays = r2(balance.takenDays + request.days);
+    balance.remainingDays = r2(balance.acquiredDays - balance.takenDays - balance.pendingDays);
+    request.status = 'APPROVED';
+    request.approvedAt = new Date().toISOString();
+    request.payrollImpact = r2((employee.baseSalary / 26) * request.days);
+    this.audit(workspace, 'leave.approved', 'LeaveRequest', request.id, request);
+    return request;
+  }
+
+  rejectLeaveRequest(requestId: string, reason = 'Refus RH', tenantId?: string): LeaveRequest {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const request = this.leaveRequest(workspace, requestId);
+    if (request.status !== 'REQUESTED') throw new BadRequestException('La demande de congé n’est plus en attente');
+    const balance = this.leaveBalance(workspace, request.employeeId, Number(request.startDate.slice(0, 4)));
+    balance.pendingDays = r2(Math.max(0, balance.pendingDays - request.days));
+    balance.remainingDays = r2(balance.acquiredDays - balance.takenDays - balance.pendingDays);
+    request.status = 'REJECTED';
+    request.reason = reason;
+    request.rejectedAt = new Date().toISOString();
+    this.audit(workspace, 'leave.rejected', 'LeaveRequest', request.id, request);
+    return request;
+  }
+
+  listLeaveRequests(tenantId?: string): LeaveRequest[] {
+    return this.workspace(tenantId).leaveRequests;
+  }
+
+  listEmployeePortalAccesses(tenantId?: string): EmployeePortalAccess[] {
+    return this.workspace(tenantId).employeePortalAccesses;
+  }
+
+  grantEmployeePortalAccess(input: { employeeId: string; email: string; canViewPayslips?: boolean; canRequestLeave?: boolean }, tenantId?: string): EmployeePortalAccess {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const employee = this.employee(workspace, input.employeeId);
+    const existing = workspace.employeePortalAccesses.find((access) => access.employeeId === employee.id);
+    if (existing) {
+      existing.email = this.nonEmpty(input.email, 'Email portail salarié obligatoire');
+      existing.canViewPayslips = input.canViewPayslips ?? existing.canViewPayslips;
+      existing.canRequestLeave = input.canRequestLeave ?? existing.canRequestLeave;
+      existing.active = true;
+      this.audit(workspace, 'employee-portal.updated', 'EmployeePortalAccess', existing.id, existing);
+      return existing;
+    }
+    const access: EmployeePortalAccess = {
+      id: this.id('portal'),
+      tenantId: workspace.tenant.id,
+      employeeId: employee.id,
+      email: this.nonEmpty(input.email, 'Email portail salarié obligatoire'),
+      active: true,
+      canViewPayslips: input.canViewPayslips ?? true,
+      canRequestLeave: input.canRequestLeave ?? true,
+      createdAt: today(),
+    };
+    workspace.employeePortalAccesses.push(access);
+    this.audit(workspace, 'employee-portal.granted', 'EmployeePortalAccess', access.id, access);
+    return access;
+  }
+
+  employeePortalDashboard(employeeId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const employee = this.employee(workspace, employeeId);
+    const access = workspace.employeePortalAccesses.find((item) => item.employeeId === employee.id && item.active);
+    const payslips = workspace.payrollRuns.flatMap((run) => run.payslips.filter((payslip) => payslip.employeeId === employee.id));
+    return {
+      employee,
+      access,
+      leaveBalance: this.leaveBalance(workspace, employee.id, Number(today().slice(0, 4))),
+      leaveRequests: workspace.leaveRequests.filter((request) => request.employeeId === employee.id),
+      payslips,
+      status: access ? 'ACTIVE' : 'NOT_ENABLED',
+    };
+  }
+
+  employeeDocumentReminders(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const contractsByEmployee = new Map(workspace.employmentContracts.filter((contract) => contract.active).map((contract) => [contract.employeeId, contract]));
+    return workspace.employees.filter((employee) => employee.active).map((employee) => {
+      const documents = employee.documentExpiries.map((document) => ({ ...document, daysUntilExpiry: this.daysUntil(document.expiresAt) }));
+      const expiredDocuments = documents.filter((document) => document.daysUntilExpiry < 0);
+      const expiringDocuments = documents.filter((document) => document.daysUntilExpiry >= 0 && document.daysUntilExpiry <= 60);
+      const contract = contractsByEmployee.get(employee.id);
+      const contractDays = contract?.endDate ? this.daysUntil(contract.endDate) : null;
+      return {
+        employeeId: employee.id,
+        employeeName: employee.fullName,
+        cin: employee.cin,
+        cnssNumber: employee.cnssNumber,
+        expiredDocuments,
+        expiringDocuments,
+        contractRenewal: contract?.endDate ? { endDate: contract.endDate, daysUntilExpiry: contractDays } : null,
+        status: expiredDocuments.length ? 'EXPIRED' : expiringDocuments.length || (contractDays !== null && contractDays <= 60) ? 'EXPIRING' : 'OK',
+      };
+    }).filter((row) => row.status !== 'OK');
+  }
+
   auditLogs(tenantId?: string): AuditLog[] {
     return this.workspace(tenantId).auditLogs;
   }
@@ -4093,6 +4617,66 @@ export class ErpStoreService {
     const run = workspace.payrollRuns.find((candidate) => candidate.id === runId || candidate.number === runId);
     if (!run) throw new NotFoundException('Run de paie introuvable');
     return run;
+  }
+
+  private leaveBalance(workspace: TenantWorkspace, employeeId: string, year: number): LeaveBalance {
+    let balance = workspace.leaveBalances.find((candidate) => candidate.employeeId === employeeId && candidate.year === year);
+    if (!balance) {
+      balance = {
+        id: this.id('leavebal'),
+        tenantId: workspace.tenant.id,
+        employeeId,
+        year,
+        acquiredDays: 18,
+        takenDays: 0,
+        pendingDays: 0,
+        remainingDays: 18,
+      };
+      workspace.leaveBalances.push(balance);
+    }
+    return balance;
+  }
+
+  private leaveRequest(workspace: TenantWorkspace, requestId: string): LeaveRequest {
+    const request = workspace.leaveRequests.find((candidate) => candidate.id === requestId);
+    if (!request) throw new NotFoundException('Demande de congé introuvable');
+    return request;
+  }
+
+  private posSession(workspace: TenantWorkspace, sessionId: string): PosSession {
+    const session = workspace.posSessions.find((candidate) => candidate.id === sessionId || candidate.number === sessionId);
+    if (!session) throw new NotFoundException('Session caisse introuvable');
+    return session;
+  }
+
+  private billOfMaterial(workspace: TenantWorkspace, bomId: string): BillOfMaterial {
+    const bom = workspace.billsOfMaterial.find((candidate) => candidate.id === bomId || candidate.version === bomId);
+    if (!bom) throw new NotFoundException('Nomenclature introuvable');
+    return bom;
+  }
+
+  private maintenanceAsset(workspace: TenantWorkspace, assetId: string): MaintenanceAsset {
+    const asset = workspace.maintenanceAssets.find((candidate) => candidate.id === assetId);
+    if (!asset) throw new NotFoundException('Actif maintenance introuvable');
+    return asset;
+  }
+
+  private maintenanceWorkOrder(workspace: TenantWorkspace, orderId: string): MaintenanceWorkOrder {
+    const order = workspace.maintenanceWorkOrders.find((candidate) => candidate.id === orderId);
+    if (!order) throw new NotFoundException('Ordre de maintenance introuvable');
+    return order;
+  }
+
+  private fleetVehicle(workspace: TenantWorkspace, vehicleId: string): FleetVehicle {
+    const vehicle = workspace.fleetVehicles.find((candidate) => candidate.id === vehicleId || candidate.plate === vehicleId);
+    if (!vehicle) throw new NotFoundException('Véhicule introuvable');
+    return vehicle;
+  }
+
+  private project(workspace: TenantWorkspace, projectId: string): ProjectRecord {
+    const project = workspace.projects.find((candidate) => candidate.id === projectId);
+    if (!project) throw new NotFoundException('Projet introuvable');
+    return project;
   }
 
   private assertCollaborationEntity(workspace: TenantWorkspace, entityType: CollaborationEntityType, entityId: string): void {
