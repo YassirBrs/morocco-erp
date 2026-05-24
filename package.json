@@ -5,7 +5,11 @@
   "scripts": {
     "backend:build": "npm --prefix backend run build",
     "backend:test": "npm --prefix backend test -- --runInBand",
+    "e2e": "playwright test e2e/morocco-core-journey.e2e.ts",
     "frontend:test": "npm --prefix frontend test",
     "test": "npm run backend:test && npm run frontend:test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
   }
 }

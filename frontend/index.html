@@ -186,6 +186,20 @@
             <span id="setupBadge" class="badge">0/0</span>
           </div>
           <div id="setupList" class="setupList"></div>
+          <form id="onboardingForm" class="compactForm">
+            <label class="field"><span>Raison sociale</span><input id="onboardingTradeName" name="tradeName" required /></label>
+            <label class="field"><span>ICE</span><input id="onboardingIce" name="ice" required inputmode="numeric" minlength="15" maxlength="15" /></label>
+            <label class="field"><span>IF</span><input id="onboardingIf" name="ifNumber" required /></label>
+            <label class="field"><span>RC</span><input id="onboardingRc" name="rc" required /></label>
+            <label class="field"><span>Patente</span><input id="onboardingPatente" name="patente" required /></label>
+            <label class="field"><span>CNSS employeur</span><input id="onboardingCnss" name="cnssNumber" required /></label>
+            <label class="field"><span>Adresse légale</span><input id="onboardingAddress" name="address" required /></label>
+            <label class="field"><span>Ville fiscale</span><input id="onboardingCity" name="city" required /></label>
+            <label class="field"><span>Série facture</span><input id="onboardingInvoiceSeries" name="invoiceSeries" required maxlength="12" /></label>
+            <label class="field"><span>TVA</span><select id="onboardingVatStatus" name="vatStatus"><option value="ENABLED">Assujetti</option><option value="EXEMPT">Exonéré</option></select></label>
+            <label class="field"><span>Début exercice</span><input id="onboardingFiscalYearStart" name="fiscalYearStartMonth" type="number" min="1" max="12" value="1" /></label>
+            <button id="submitOnboarding" type="submit">Valider onboarding</button>
+          </form>
         </section>
 
         <section class="panel profilePanel" data-view-section="dashboard accounting compliance">
@@ -611,6 +625,7 @@
               <button id="createDelivery">BL</button>
               <button id="invoiceOrder">Facturer</button>
               <button id="createCreditNote">Avoir</button>
+              <button id="payInvoicePartial">Acompte 50%</button>
               <button id="payInvoice">Payer solde</button>
               <button id="refreshStatement">Relevé client</button>
             </div>
@@ -1639,6 +1654,20 @@
         qs('#profileReview').textContent = latestChange
           ? `${translate('statuses', latestChange.status)} · ${latestChange.reviewer || 'en revue'}`
           : 'Aucune modification';
+        const onboardingForm = qs('#onboardingForm');
+        if (onboardingForm && document.activeElement?.form !== onboardingForm) {
+          onboardingForm.tradeName.value = tenant.legalEntity.tradeName;
+          onboardingForm.ice.value = tenant.legalEntity.ice;
+          onboardingForm.ifNumber.value = tenant.legalEntity.ifNumber;
+          onboardingForm.rc.value = tenant.legalEntity.rc;
+          onboardingForm.patente.value = tenant.legalEntity.patente;
+          onboardingForm.cnssNumber.value = tenant.legalEntity.cnssNumber;
+          onboardingForm.address.value = tenant.legalEntity.address;
+          onboardingForm.city.value = tenant.legalEntity.city;
+          onboardingForm.invoiceSeries.value = tenant.settings.invoiceSeries;
+          onboardingForm.vatStatus.value = tenant.settings.vatStatus;
+          onboardingForm.fiscalYearStartMonth.value = tenant.settings.fiscalYearStartMonth;
+        }
         const profileAuditCount = state.audit.filter((entry) => entry.action.startsWith('tenant.profile') || entry.action === 'tenant.demo-reset').length;
         qs('#auditSummary').textContent = `${profileAuditCount} événement${profileAuditCount > 1 ? 's' : ''}`;
       }
@@ -2375,9 +2404,40 @@
         });
       });
 
+      qs('#onboardingForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formEl = event.currentTarget;
+        const form = new FormData(formEl);
+        const button = qs('#submitOnboarding');
+        button.disabled = true;
+        clearMessage();
+        try {
+          const result = await post('/tenant/onboarding', {
+            tradeName: form.get('tradeName'),
+            ice: form.get('ice'),
+            ifNumber: form.get('ifNumber'),
+            rc: form.get('rc'),
+            patente: form.get('patente'),
+            cnssNumber: form.get('cnssNumber'),
+            address: form.get('address'),
+            city: form.get('city'),
+            invoiceSeries: form.get('invoiceSeries'),
+            fiscalYearStartMonth: formNumber(form, 'fiscalYearStartMonth'),
+            vatStatus: form.get('vatStatus')
+          });
+          showMessage('success', `Onboarding ${result.tenant.legalEntity.tradeName} validé avec ICE ${result.tenant.legalEntity.ice}.`);
+          await load();
+        } catch (error) {
+          showMessage('error', error.message);
+        } finally {
+          button.disabled = false;
+        }
+      });
+
       qs('#createQuote').addEventListener('click', async () => {
         await runAction('#createQuote', 'Création...', async () => {
-          const quote = await post('/sales/quotes', { customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+          const customer = [...state.customers].reverse().find((candidate) => candidate.active) || { id: 'cus-1' };
+          const quote = await post('/sales/quotes', { customerId: customer.id, lines: [{ productId: 'prd-1', quantity: 1 }] });
           qs('#invoiceResult').textContent = `${quote.number} · ${mad(quote.totals.total)} · ${translate('statuses', quote.status)}`;
           showMessage('success', `Devis ${quote.number} créé.`);
         });
@@ -2420,6 +2480,18 @@
           const invoice = await post(`/sales/orders/${order.id}/invoice`, {});
           qs('#invoiceResult').textContent = `${invoice.number} · ${mad(invoice.totals.total)} · ${translate('statuses', invoice.status)}`;
           showMessage('success', `Facture ${invoice.number} créée depuis commande.`);
+        });
+      });
+
+      qs('#payInvoicePartial').addEventListener('click', async () => {
+        await runAction('#payInvoicePartial', 'Acompte...', async () => {
+          const invoice = latestInvoiceWithBalance();
+          if (!invoice) throw new Error('Aucune facture ouverte à payer');
+          const remaining = Number((invoice.totals.total - invoice.paidAmount - invoiceCreditTotal(invoice.id)).toFixed(2));
+          const amount = Number(Math.max(1, remaining / 2).toFixed(2));
+          const payment = await post('/sales/payments', { invoiceId: invoice.id, amount, method: 'BANK' });
+          qs('#invoiceResult').textContent = `${invoice.number} · acompte ${mad(payment.amount)} · ${translate('paymentMethods', payment.method)}`;
+          showMessage('success', `Acompte bancaire de ${mad(payment.amount)} enregistré.`);
         });
       });
 
