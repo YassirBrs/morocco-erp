@@ -267,7 +267,7 @@
               <label class="field"><span>Email</span><input name="email" type="email" placeholder="achat@fournisseur.ma" /></label>
               <label class="field"><span>Délai paiement</span><input name="paymentTermsDays" type="number" min="0" value="30" /></label>
               <label class="field"><span>Banque</span><input name="bankName" placeholder="Banque" /></label>
-              <label class="field"><span>RIB</span><input name="rib" placeholder="24 chiffres" /></label>
+              <label class="field"><span>RIB marocain</span><input name="rib" inputmode="numeric" pattern="[0-9\\s-]{24,}" placeholder="24 chiffres" /></label>
               <button type="submit">Ajouter fournisseur</button>
             </form>
             <div class="tableWrap">
@@ -497,7 +497,7 @@
             <td><strong>${supplier.name}</strong><small>${supplier.ifNumber || '-'}</small>${supplier.duplicateWarnings?.length ? `<small class="warningText">${supplier.duplicateWarnings.join(' · ')}</small>` : ''}</td>
             <td>${supplier.ice || '-'}</td>
             <td>${supplier.paymentTermsDays} j</td>
-            <td>${supplier.bankDetails?.[0]?.bankName || '-'}</td>
+            <td>${supplier.bankDetails?.[0]?.bankName || '-'}<small>${supplier.bankDetails?.[0]?.rib || ''}</small></td>
           </tr>
         `).join('') : emptyRow('Aucun fournisseur créé', 4);
         qs('#stockRows').innerHTML = stock.map((line) => `
@@ -828,7 +828,7 @@
           formEl.paymentTermsDays.value = 30;
           showMessage(supplier.duplicateWarnings?.length ? 'warning' : 'success', supplier.duplicateWarnings?.length
             ? `Fournisseur ${supplier.name} ajouté avec alerte doublon: ${supplier.duplicateWarnings.join(' · ')}.`
-            : `Fournisseur ${supplier.name} ajouté.`);
+            : `Fournisseur ${supplier.name} ajouté. Banque normalisée: ${supplier.bankDetails?.[0]?.bankName || 'non renseignée'}.`);
           await load();
         } catch (error) {
           showMessage('error', error.message);

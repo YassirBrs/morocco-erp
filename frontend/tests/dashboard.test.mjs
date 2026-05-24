@@ -74,12 +74,13 @@ test('global styles expose the professional ERP palette', () => {
 });
 
 test('static dashboard exposes onboarding and master-data workflows', () => {
-  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'Créer devis', 'Convertir en devis', 'Avoir', 'Relevé client', 'Payer solde']) {
+  for (const text of ['Liste de mise en service', 'Ajouter client', 'Ajouter article', 'Ajouter prospect', 'Ajouter fournisseur', 'Nom client', 'Prix vente', 'RIB marocain', 'Créer devis', 'Convertir en devis', 'Avoir', 'Relevé client', 'Payer solde']) {
     assert.ok(staticPage.includes(text), `${text} workflow is present`);
   }
-  for (const text of ['Comptabilisée', 'Payée', 'Facture', 'Paiement', 'Marchandise', 'Pipeline prospects', 'Fournisseurs', 'Profil entreprise', 'Réinitialiser démo', 'En attente revue', 'Approuver', 'alerte doublon']) {
+  for (const text of ['Comptabilisée', 'Payée', 'Facture', 'Paiement', 'Marchandise', 'Pipeline prospects', 'Fournisseurs', 'Profil entreprise', 'Réinitialiser démo', 'En attente revue', 'Approuver', 'alerte doublon', 'Banque normalisée']) {
     assert.ok(staticPage.includes(text), `${text} French label is present`);
   }
+  assert.ok(staticPage.includes('pattern="[0-9\\\\s-]{24,}"'));
   assert.ok(staticCss.includes('.compactForm'));
   assert.ok(staticCss.includes('.salesFlowActions'));
   assert.ok(staticCss.includes('.statementBox'));

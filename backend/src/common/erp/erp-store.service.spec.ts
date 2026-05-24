@@ -458,6 +458,27 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(store.auditLogs().filter((log) => log.entity === 'Supplier')).toHaveLength(3);
   });
 
+  it('normalizes Moroccan supplier banks and validates 24 digit RIB values', () => {
+    const supplier = store.addSupplier({
+      name: 'Banque Test Supplier',
+      bankDetails: [{ bankName: '  awb  ', rib: '007 780 000000000000000123' }],
+    });
+
+    expect(supplier.bankDetails[0].bankName).toBe('Attijariwafa bank');
+    expect(supplier.bankDetails[0].rib).toBe('007780000000000000000123');
+
+    const updated = store.updateSupplier(supplier.id, {
+      bankDetails: [{ bankName: 'boa', rib: '01178-0000000000000000456' }],
+    });
+
+    expect(updated.bankDetails[0].bankName).toBe('Bank of Africa');
+    expect(updated.bankDetails[0].rib).toBe('011780000000000000000456');
+    expect(() => store.addSupplier({
+      name: 'Invalid RIB',
+      bankDetails: [{ bankName: 'CIH', rib: '23078' }],
+    })).toThrow(BadRequestException);
+  });
+
   it('supports full product CRUD, SKU uniqueness, VAT rule validation, and stock behavior', () => {
     const product = store.addProduct({
       sku: 'sku-desk',

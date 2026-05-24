@@ -1884,9 +1884,47 @@ export class ErpStoreService {
 
   private validateBankDetails(bankDetails: Supplier['bankDetails']): void {
     for (const bank of bankDetails) {
-      this.nonEmpty(bank.bankName, 'Le nom de la banque est obligatoire');
-      this.nonEmpty(bank.rib, 'Le RIB fournisseur est obligatoire');
+      bank.bankName = this.normalizeBankName(this.nonEmpty(bank.bankName, 'Le nom de la banque est obligatoire'));
+      bank.rib = this.moroccanRib(this.nonEmpty(bank.rib, 'Le RIB fournisseur est obligatoire'));
     }
+  }
+
+  private normalizeBankName(value: string): string {
+    const normalized = value
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+    const banks: Record<string, string> = {
+      attijariwafa: 'Attijariwafa bank',
+      'attijariwafa bank': 'Attijariwafa bank',
+      awb: 'Attijariwafa bank',
+      'bank of africa': 'Bank of Africa',
+      boa: 'Bank of Africa',
+      bmce: 'Bank of Africa',
+      'banque populaire': 'Banque Populaire',
+      bcp: 'Banque Populaire',
+      bp: 'Banque Populaire',
+      cih: 'CIH Bank',
+      'cih bank': 'CIH Bank',
+      bmci: 'BMCI',
+      sgmb: 'Société Générale Maroc',
+      'societe generale': 'Société Générale Maroc',
+      'credit agricole': 'Crédit Agricole du Maroc',
+      'credit agricole du maroc': 'Crédit Agricole du Maroc',
+      cam: 'Crédit Agricole du Maroc',
+    };
+    return banks[normalized] ?? value.trim().replace(/\s+/g, ' ');
+  }
+
+  private moroccanRib(value: string): string {
+    const rib = value.replace(/[\s-]/g, '');
+    if (!/^\d{24}$/.test(rib)) {
+      throw new BadRequestException('Le RIB marocain doit contenir exactement 24 chiffres');
+    }
+    return rib;
   }
 
   private validateAddresses(addresses: Customer['addresses']): void {
