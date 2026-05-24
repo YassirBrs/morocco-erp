@@ -2458,4 +2458,74 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(store.listFiscalPeriods().find((period) => period.year === year && period.month === month))
       .toMatchObject({ locked: true, status: 'LOCKED' });
   });
+
+  it('covers the enterprise acceleration batch for commerce, verticals, HR, tax, and integration workflows', () => {
+    const batch = store.moroccoEnterpriseAccelerationReadiness();
+
+    expect(batch.consignmentStock).toMatchObject({ valuationExcluded: true });
+    expect(batch.warrantyReserve.reserve).toBeGreaterThan(0);
+    expect(batch.afterSalesRma).toHaveProperty('creditNoteLink');
+    expect(batch.subscriptionProration).toHaveProperty('invoiceNote');
+    expect(batch.competitorBattlecard.rows.map((row) => row.competitor)).toEqual(expect.arrayContaining(['Odoo', 'Sage']));
+    expect(batch.ecommerceReconciliation).toHaveProperty('marketplacePayout');
+    expect(batch.marketplaceSettlement).toHaveProperty('netSettlement');
+    expect(batch.wholesaleRebate).toHaveProperty('monthlyAccrual');
+    expect(batch.retailCashAudit).toMatchObject({ status: 'CASH_AUDITED' });
+    expect(batch.pharmaLotExpiry).toMatchObject({ quarantine: true });
+    expect(batch.foodRecallDrill.customerDeliveries.length).toBeGreaterThan(0);
+    expect(batch.hotelOccupancy).toHaveProperty('occupancyRate');
+    expect(batch.spaPackageLiability).toHaveProperty('liability');
+    expect(batch.routeProfitability.margin).toBeGreaterThan(0);
+    expect(batch.brokerFeeReconciliation).toHaveProperty('dumReference');
+    expect(batch.fxExposure).toHaveProperty('gainLossPreview');
+    expect(batch.bouncedPaymentRecovery).toMatchObject({ accountHold: true });
+    expect(batch.blockedPaymentRelease).toMatchObject({ status: 'PAYMENT_RELEASED' });
+    expect(batch.warrantyClaimReserve.accountingProposal).toHaveLength(2);
+    expect(batch.fleetClaimSettlement.journalProposal).toHaveLength(3);
+    expect(batch.maintenanceCompliance).toHaveProperty('score');
+    expect(batch.projectCloseout).toHaveProperty('archiveBundle');
+    expect(batch.consultantUtilization).toHaveProperty('grossMargin');
+    expect(batch.certificationRegister.rows[0]).toHaveProperty('renewalWorkflow');
+    expect(batch.payrollLoanCompliance.rows[0]).toHaveProperty('payslipDisclosure', true);
+    expect(batch.hrOnboardingPack.documents).toEqual(expect.arrayContaining(['CIN']));
+    expect(batch.executiveDigest).toHaveProperty('churnRisk');
+    expect(batch.supportEscalation.rows[0]).toHaveProperty('customerNotice');
+    expect(batch.partnerCapacity).toHaveProperty('riskScore');
+    expect(batch.sandboxResetAudit.restorePoint).toHaveLength(64);
+    expect(batch.invoiceMentionValidator.checks.map((check) => check.key)).toEqual(expect.arrayContaining(['ICE', 'NUMBERING']));
+    expect(batch.bilingualPdfQueue.rows[0]).toHaveProperty('rtlFields');
+    expect(batch.vatCarryforward).toHaveProperty('sourceDeclaration');
+    expect(batch.isForecast.dueDates).toHaveLength(4);
+    expect(batch.professionalTaxCalendar.rows[0]).toHaveProperty('municipality');
+    expect(batch.cnssAnomalyHeatmap.rows[0]).toHaveProperty('correctionOwner');
+    expect(batch.amoReimbursements.rows[0]).toHaveProperty('documentVault');
+    expect(batch.dataExportApproval.checksum).toHaveLength(64);
+    expect(batch.apiContractDashboard.rows[0]).toHaveProperty('keyRotation');
+    expect(batch.webhookReplay).toMatchObject({ signatureValidation: 'VALID' });
+    expect(batch.featureAdoptionExperiment).toHaveProperty('rollback');
+    expect(batch.priceIncreaseCommunication).toHaveProperty('templateFr');
+    expect(batch.customerChurnRisk).toHaveProperty('actionPlan');
+    expect(batch.supplierDependency.rows[0]).toHaveProperty('mitigationOwner');
+    expect(batch.verticalTemplateSelector.documentPack).toEqual(expect.arrayContaining(['Facture FR/AR']));
+  });
+
+  it('keeps enterprise acceleration readiness available without mutating a locked fiscal period', () => {
+    const [year, month] = new Date().toISOString().slice(0, 7).split('-').map(Number);
+    const invoiceCountBefore = store.listInvoices().length;
+
+    store.requestFiscalLockException({
+      year,
+      month,
+      reason: 'Correction contrôlée après revue comptable',
+      approver: 'accountant@atlas.ma',
+    });
+
+    const batch = store.moroccoEnterpriseAccelerationReadiness();
+
+    expect(batch.invoiceMentionValidator).toMatchObject({ status: 'MENTIONS_VALID' });
+    expect(batch.webhookReplay).toMatchObject({ status: 'REPLAY_READY' });
+    expect(store.listInvoices()).toHaveLength(invoiceCountBefore);
+    expect(store.listFiscalPeriods().find((period) => period.year === year && period.month === month))
+      .toMatchObject({ locked: true, status: 'LOCKED' });
+  });
 });

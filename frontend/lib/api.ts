@@ -320,6 +320,7 @@ export type ScaleControlsReadiness = Record<string, any>;
 export type EnterpriseDepthReadiness = Record<string, any>;
 export type EnterpriseOperationsReadiness = Record<string, any>;
 export type EnterpriseExpansionReadiness = Record<string, any>;
+export type EnterpriseAccelerationReadiness = Record<string, any>;
 
 export type BusinessSearchResult = {
   type: 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
@@ -944,5 +945,55 @@ export async function getEnterpriseExpansionReadiness(): Promise<EnterpriseExpan
     slaPenalty: { status: 'PENALTY_TRACKED' },
     supplierRebate: { creditNoteExpectation: 0 },
     reservationExpiry: { stockAvailability: 0 },
+  });
+}
+
+export async function getEnterpriseAccelerationReadiness(): Promise<EnterpriseAccelerationReadiness> {
+  return getJson('/tenant/enterprise-acceleration-readiness', {
+    consignmentStock: { valuationExcluded: false },
+    warrantyReserve: { reserve: 0 },
+    afterSalesRma: { status: 'RMA_OPEN' },
+    subscriptionProration: { total: 0 },
+    competitorBattlecard: { rows: [] },
+    ecommerceReconciliation: { status: 'RECONCILED', marketplacePayout: 0 },
+    marketplaceSettlement: { netSettlement: 0 },
+    wholesaleRebate: { monthlyAccrual: 0 },
+    retailCashAudit: { status: 'CASH_AUDITED' },
+    pharmaLotExpiry: { status: 'QUARANTINE' },
+    foodRecallDrill: { customerDeliveries: [] },
+    hotelOccupancy: { nights: 0 },
+    spaPackageLiability: { liability: 0 },
+    routeProfitability: { margin: 0 },
+    brokerFeeReconciliation: { dumReference: '' },
+    fxExposure: { gainLossPreview: 0 },
+    bouncedPaymentRecovery: { status: 'RECOVERY_OPEN' },
+    blockedPaymentRelease: { status: 'PAYMENT_RELEASED' },
+    warrantyClaimReserve: { reserve: 0 },
+    fleetClaimSettlement: { status: 'CLAIM_SETTLED' },
+    maintenanceCompliance: { score: 0 },
+    projectCloseout: { margin: 0 },
+    consultantUtilization: { grossMargin: 0 },
+    certificationRegister: { rows: [] },
+    payrollLoanCompliance: { rows: [] },
+    hrOnboardingPack: { documents: [] },
+    executiveDigest: { churnRisk: 'LOW' },
+    supportEscalation: { rows: [] },
+    partnerCapacity: { riskScore: 0 },
+    sandboxResetAudit: { restorePoint: '00000000' },
+    invoiceMentionValidator: { status: 'MENTIONS_VALID' },
+    bilingualPdfQueue: { rows: [] },
+    vatCarryforward: { status: 'VAT_CREDIT_TRACKED' },
+    isForecast: { cashImpact: 0 },
+    professionalTaxCalendar: { rows: [] },
+    cnssAnomalyHeatmap: { rows: [] },
+    amoReimbursements: { rows: [] },
+    dataExportApproval: { checksum: '00000000' },
+    apiContractDashboard: { status: 'API_CONTRACT_READY' },
+    webhookReplay: { status: 'REPLAY_READY' },
+    featureAdoptionExperiment: { activationMetric: 0 },
+    priceIncreaseCommunication: { customerImpact: 0 },
+    customerChurnRisk: { riskScore: 0, actionPlan: 'A renseigner' },
+    supplierDependency: { rows: [] },
+    verticalTemplateSelector: { industry: 'A renseigner', status: 'VERTICAL_TEMPLATE_READY' },
   });
 }

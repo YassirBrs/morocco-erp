@@ -4,6 +4,7 @@ import {
   getDashboardSummary,
   getDocumentOperations,
   getEnterpriseControlReadiness,
+  getEnterpriseAccelerationReadiness,
   getEnterpriseDepthReadiness,
   getEnterpriseExpansionReadiness,
   getEnterpriseOperationsReadiness,
@@ -25,6 +26,7 @@ import {
   searchBusiness,
 } from '../lib/api';
 import { enterpriseDepthFeatureDefinitions } from '../features/enterprise-depth/enterprise-depth-feature-config';
+import { enterpriseAccelerationFeatureDefinitions } from '../features/enterprise-acceleration/enterprise-acceleration-feature-config';
 import { enterpriseExpansionFeatureDefinitions } from '../features/enterprise-expansion/enterprise-expansion-feature-config';
 import { enterpriseOperationsFeatureDefinitions } from '../features/enterprise-operations/enterprise-operations-feature-config';
 
@@ -55,7 +57,7 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults, operationalReports, integrationReadiness, platformReadiness, moroccoWorkflows, governanceReadiness, operationalControls, enterpriseControls, growthControls, logisticsClose, regulatedServices, accountingRisk, scaleControls, enterpriseDepth, enterpriseOperations, enterpriseExpansion, enterpriseAcceleration] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
@@ -80,6 +82,7 @@ export default async function DashboardPage() {
     getEnterpriseDepthReadiness(),
     getEnterpriseOperationsReadiness(),
     getEnterpriseExpansionReadiness(),
+    getEnterpriseAccelerationReadiness(),
   ]);
 
   const entity = summary.tenant.legalEntity;
@@ -892,6 +895,83 @@ export default async function DashboardPage() {
           </div>
           <div className="featureLinks" aria-label="Pages dédiées expansion entreprise">
             {enterpriseExpansionFeatureDefinitions.map((feature) => (
+              <a key={feature.key} href={feature.route}>{feature.title}</a>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel" aria-label="Accélération entreprise Maroc batch">
+          <PanelHeader title="Accélération entreprise Maroc" action="Piloter croissance" />
+          <div className="reportGrid">
+            <Metric label="Réserve garantie" value={formatMad(enterpriseAcceleration.warrantyReserve.reserve)} />
+            <Metric label="E-commerce" value={enterpriseAcceleration.ecommerceReconciliation.status} />
+            <Metric label="Route marge" value={formatMad(enterpriseAcceleration.routeProfitability.margin)} />
+            <Metric label="API contrats" value={enterpriseAcceleration.apiContractDashboard.status} />
+            <Metric label="Churn client" value={`${enterpriseAcceleration.customerChurnRisk.riskScore}/100`} />
+            <Metric label="Templates verticales" value={enterpriseAcceleration.verticalTemplateSelector.status} />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="Commerce, garanties et abonnements" rows={[
+              `Consignation exclue ${enterpriseAcceleration.consignmentStock.valuationExcluded ? 'oui' : 'non'}`,
+              `Réserve garantie ${formatMad(enterpriseAcceleration.warrantyReserve.reserve)}`,
+              `RMA ${enterpriseAcceleration.afterSalesRma.status}`,
+              `Prorata abonnement ${formatMad(enterpriseAcceleration.subscriptionProration.total)}`,
+              `Battlecards ${enterpriseAcceleration.competitorBattlecard.rows.length}`,
+              `E-commerce payout ${formatMad(enterpriseAcceleration.ecommerceReconciliation.marketplacePayout)}`,
+              `Marketplace net ${formatMad(enterpriseAcceleration.marketplaceSettlement.netSettlement)}`,
+              `Remise wholesale ${formatMad(enterpriseAcceleration.wholesaleRebate.monthlyAccrual)}`,
+            ]} empty="-" />
+            <MiniList title="Verticales Maroc et logistique" rows={[
+              `Audit caisse ${enterpriseAcceleration.retailCashAudit.status}`,
+              `Pharma ${enterpriseAcceleration.pharmaLotExpiry.status}`,
+              `Recall food ${enterpriseAcceleration.foodRecallDrill.customerDeliveries.length}`,
+              `Hôtel nuitées ${enterpriseAcceleration.hotelOccupancy.nights}`,
+              `Spa liability ${formatMad(enterpriseAcceleration.spaPackageLiability.liability)}`,
+              `Route marge ${formatMad(enterpriseAcceleration.routeProfitability.margin)}`,
+              `Broker DUM ${enterpriseAcceleration.brokerFeeReconciliation.dumReference}`,
+              `FX gain/perte ${formatMad(enterpriseAcceleration.fxExposure.gainLossPreview)}`,
+            ]} empty="-" />
+            <MiniList title="Paiements, flotte et projets" rows={[
+              `Rejet paiement ${enterpriseAcceleration.bouncedPaymentRecovery.status}`,
+              `Paiement fournisseur ${enterpriseAcceleration.blockedPaymentRelease.status}`,
+              `Garantie claim ${formatMad(enterpriseAcceleration.warrantyClaimReserve.reserve)}`,
+              `Assurance flotte ${enterpriseAcceleration.fleetClaimSettlement.status}`,
+              `Maintenance score ${enterpriseAcceleration.maintenanceCompliance.score}`,
+              `Closeout marge ${formatMad(enterpriseAcceleration.projectCloseout.margin)}`,
+              `Utilisation consultant ${formatMad(enterpriseAcceleration.consultantUtilization.grossMargin)}`,
+              `Certifications ${enterpriseAcceleration.certificationRegister.rows.length}`,
+            ]} empty="-" />
+          </div>
+          <div className="opsReadiness">
+            <MiniList title="RH, support et pilotage SaaS" rows={[
+              `Prêts paie ${enterpriseAcceleration.payrollLoanCompliance.rows.length}`,
+              `Pack onboarding ${enterpriseAcceleration.hrOnboardingPack.documents.length}`,
+              `Digest churn ${enterpriseAcceleration.executiveDigest.churnRisk}`,
+              `Escalations support ${enterpriseAcceleration.supportEscalation.rows.length}`,
+              `Capacité partenaire ${enterpriseAcceleration.partnerCapacity.riskScore}`,
+              `Reset audit ${enterpriseAcceleration.sandboxResetAudit.restorePoint.slice(0, 8)}`,
+            ]} empty="-" />
+            <MiniList title="Fiscal, exports et intégrations" rows={[
+              `Mentions facture ${enterpriseAcceleration.invoiceMentionValidator.status}`,
+              `PDF bilingues ${enterpriseAcceleration.bilingualPdfQueue.rows.length}`,
+              `Crédit TVA ${enterpriseAcceleration.vatCarryforward.status}`,
+              `Acomptes IS ${formatMad(enterpriseAcceleration.isForecast.cashImpact)}`,
+              `Taxe pro ${enterpriseAcceleration.professionalTaxCalendar.rows.length}`,
+              `Heatmap CNSS ${enterpriseAcceleration.cnssAnomalyHeatmap.rows.length}`,
+              `AMO ${enterpriseAcceleration.amoReimbursements.rows.length}`,
+              `Export checksum ${enterpriseAcceleration.dataExportApproval.checksum.slice(0, 8)}`,
+              `Webhook ${enterpriseAcceleration.webhookReplay.status}`,
+            ]} empty="-" />
+            <MiniList title="Expérimentation et rétention" rows={[
+              `Adoption feature ${enterpriseAcceleration.featureAdoptionExperiment.activationMetric}`,
+              `Hausse tarifaire ${enterpriseAcceleration.priceIncreaseCommunication.customerImpact} clients`,
+              `Churn client ${enterpriseAcceleration.customerChurnRisk.actionPlan}`,
+              `Dépendance fournisseur ${enterpriseAcceleration.supplierDependency.rows.length}`,
+              `Template verticale ${enterpriseAcceleration.verticalTemplateSelector.industry}`,
+            ]} empty="-" />
+          </div>
+          <div className="featureLinks" aria-label="Pages dédiées accélération entreprise">
+            {enterpriseAccelerationFeatureDefinitions.map((feature) => (
               <a key={feature.key} href={feature.route}>{feature.title}</a>
             ))}
           </div>

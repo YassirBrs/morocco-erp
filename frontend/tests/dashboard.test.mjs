@@ -26,6 +26,9 @@ const enterpriseOperationsPageFiles = readdirSync(new URL('../pages/enterprise-o
 const enterpriseExpansionConfig = readFileSync(new URL('../features/enterprise-expansion/enterprise-expansion-feature-config.ts', import.meta.url), 'utf8');
 const enterpriseExpansionFeaturePage = readFileSync(new URL('../features/enterprise-expansion/enterprise-expansion-feature-page.tsx', import.meta.url), 'utf8');
 const enterpriseExpansionPageFiles = readdirSync(new URL('../pages/enterprise-expansion', import.meta.url));
+const enterpriseAccelerationConfig = readFileSync(new URL('../features/enterprise-acceleration/enterprise-acceleration-feature-config.ts', import.meta.url), 'utf8');
+const enterpriseAccelerationFeaturePage = readFileSync(new URL('../features/enterprise-acceleration/enterprise-acceleration-feature-page.tsx', import.meta.url), 'utf8');
+const enterpriseAccelerationPageFiles = readdirSync(new URL('../pages/enterprise-acceleration', import.meta.url));
 
 test('dashboard renders Morocco ERP workspace sections', () => {
   for (const text of ['Ventes', 'Stock et CUMP', 'Comptabilité', 'Paie', 'Conformité Maroc']) {
@@ -680,4 +683,76 @@ test('Enterprise expansion batch has one descriptive dedicated frontend page per
   assert.ok(enterpriseExpansionFeaturePage.includes('EnterpriseExpansionFeaturePage'), 'shared expansion feature page component exists');
   assert.ok(enterpriseExpansionConfig.includes('enterpriseExpansionFeatureDefinitions'), 'expansion feature definitions are centralized');
   assert.ok(page.includes('enterpriseExpansionFeatureDefinitions'), 'dashboard links to dedicated expansion feature pages');
+});
+
+test('Next primary workspace exposes 45-task Morocco enterprise acceleration controls batch', () => {
+  for (const text of ['Accélération entreprise Maroc', 'Réserve garantie', 'E-commerce', 'Route marge', 'API contrats', 'Churn client', 'Templates verticales', 'Commerce, garanties et abonnements', 'Verticales Maroc et logistique', 'Paiements, flotte et projets', 'RH, support et pilotage SaaS', 'Fiscal, exports et intégrations', 'Expérimentation et rétention']) {
+    assert.ok(page.includes(text), `${text} enterprise acceleration label is present`);
+  }
+  for (const marker of ['getEnterpriseAccelerationReadiness', 'enterpriseAcceleration.warrantyReserve', 'enterpriseAcceleration.ecommerceReconciliation', 'enterpriseAcceleration.routeProfitability', 'enterpriseAcceleration.webhookReplay', 'enterpriseAcceleration.customerChurnRisk', 'enterpriseAcceleration.verticalTemplateSelector']) {
+    assert.ok(page.includes(marker), `${marker} enterprise acceleration helper is present`);
+  }
+  assert.ok(api.includes('/tenant/enterprise-acceleration-readiness'), 'enterprise acceleration endpoint is wired');
+  for (const token of ['consignmentStock', 'warrantyReserve', 'afterSalesRma', 'subscriptionProration', 'competitorBattlecard', 'ecommerceReconciliation', 'marketplaceSettlement', 'wholesaleRebate', 'retailCashAudit', 'pharmaLotExpiry', 'foodRecallDrill', 'hotelOccupancy', 'spaPackageLiability', 'routeProfitability', 'brokerFeeReconciliation', 'fxExposure', 'bouncedPaymentRecovery', 'blockedPaymentRelease', 'warrantyClaimReserve', 'fleetClaimSettlement', 'maintenanceCompliance', 'projectCloseout', 'consultantUtilization', 'certificationRegister', 'payrollLoanCompliance', 'hrOnboardingPack', 'executiveDigest', 'supportEscalation', 'partnerCapacity', 'sandboxResetAudit', 'invoiceMentionValidator', 'bilingualPdfQueue', 'vatCarryforward', 'isForecast', 'professionalTaxCalendar', 'cnssAnomalyHeatmap', 'amoReimbursements', 'dataExportApproval', 'apiContractDashboard', 'webhookReplay', 'featureAdoptionExperiment', 'priceIncreaseCommunication', 'customerChurnRisk', 'supplierDependency', 'verticalTemplateSelector']) {
+    assert.ok(api.includes(token), `${token} enterprise acceleration data key is represented`);
+  }
+});
+
+test('Enterprise acceleration batch has one descriptive dedicated frontend page per feature', () => {
+  const expectedFiles = [
+    'consignment-stock-workflow-page.tsx',
+    'warranty-reserve-calculation-page.tsx',
+    'after-sales-rma-workflow-page.tsx',
+    'subscription-billing-proration-page.tsx',
+    'moroccan-competitor-battlecard-page.tsx',
+    'ecommerce-order-reconciliation-page.tsx',
+    'marketplace-seller-settlement-page.tsx',
+    'wholesale-customer-rebate-contract-page.tsx',
+    'retail-store-daily-cash-audit-page.tsx',
+    'pharmaceutical-lot-expiry-compliance-page.tsx',
+    'food-traceability-recall-drill-page.tsx',
+    'hotel-occupancy-revenue-dashboard-page.tsx',
+    'salon-spa-package-liability-ledger-page.tsx',
+    'logistics-route-profitability-dashboard-page.tsx',
+    'customs-broker-fee-reconciliation-page.tsx',
+    'international-supplier-fx-exposure-page.tsx',
+    'customer-bounced-payment-recovery-page.tsx',
+    'supplier-blocked-payment-release-page.tsx',
+    'customer-warranty-claim-reserve-page.tsx',
+    'fleet-insurance-claim-settlement-page.tsx',
+    'maintenance-preventive-compliance-score-page.tsx',
+    'project-profitability-closeout-checklist-page.tsx',
+    'consultant-utilization-dashboard-page.tsx',
+    'employee-certification-register-page.tsx',
+    'payroll-loan-compliance-dashboard-page.tsx',
+    'hr-onboarding-document-pack-page.tsx',
+    'executive-kpi-subscription-digest-page.tsx',
+    'support-sla-escalation-matrix-page.tsx',
+    'implementation-partner-capacity-planning-page.tsx',
+    'tenant-sandbox-reset-audit-page.tsx',
+    'moroccan-invoice-legal-mention-validator-page.tsx',
+    'bilingual-pdf-quality-queue-page.tsx',
+    'vat-credit-carryforward-tracker-page.tsx',
+    'is-installment-forecast-page.tsx',
+    'professional-tax-due-calendar-page.tsx',
+    'cnss-payroll-anomaly-heatmap-page.tsx',
+    'amo-reimbursement-tracking-page.tsx',
+    'data-export-approval-workflow-page.tsx',
+    'api-integration-contract-dashboard-page.tsx',
+    'webhook-incident-replay-workflow-page.tsx',
+    'tenant-feature-adoption-experiment-dashboard-page.tsx',
+    'price-increase-communication-workflow-page.tsx',
+    'customer-churn-risk-predictor-page.tsx',
+    'supplier-dependency-concentration-report-page.tsx',
+    'moroccan-vertical-template-selector-page.tsx',
+  ];
+  assert.equal(enterpriseAccelerationPageFiles.filter((file) => file.endsWith('-page.tsx')).length, 45);
+  for (const file of expectedFiles) {
+    assert.ok(enterpriseAccelerationPageFiles.includes(file), `${file} dedicated page exists`);
+    const source = readFileSync(new URL(`../pages/enterprise-acceleration/${file}`, import.meta.url), 'utf8');
+    assert.ok(source.includes('makeEnterpriseAccelerationServerSideProps'), `${file} has server-side data wiring`);
+  }
+  assert.ok(enterpriseAccelerationFeaturePage.includes('EnterpriseAccelerationFeaturePage'), 'shared acceleration feature page component exists');
+  assert.ok(enterpriseAccelerationConfig.includes('enterpriseAccelerationFeatureDefinitions'), 'acceleration feature definitions are centralized');
+  assert.ok(page.includes('enterpriseAccelerationFeatureDefinitions'), 'dashboard links to dedicated acceleration feature pages');
 });

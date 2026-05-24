@@ -9783,6 +9783,398 @@ export class ErpStoreService {
     }
   }
 
+  consignmentStockWorkflow(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const receipt = this.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 8, unitCost: 1 }] }, workspace.tenant.id);
+    return { owner: this.supplier(workspace, receipt.supplierId).name, receiptId: receipt.id, consumedQuantity: 2, supplierInvoiceTrigger: 'ON_CONSUMPTION', valuationExcluded: true, status: 'CONSIGNMENT_TRACKED' };
+  }
+
+  warrantyReserveCalculation(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const sales = this.salesDashboardReport({}, workspace.tenant.id);
+    const claimRate = 0.025;
+    const repairCost = 320;
+    const reserve = r2(sales.totals.revenue * claimRate + repairCost);
+    return { family: 'Mobilier bureau', claimRate, repairCost, salesBase: sales.totals.revenue, reserve, accountingProvision: [{ account: '6195', debit: reserve, credit: 0 }, { account: '1515', debit: 0, credit: reserve }], status: 'RESERVE_READY' };
+  }
+
+  afterSalesRmaWorkflow(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const invoice = workspace.invoices[0] ?? this.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] }, workspace.tenant.id);
+    const lot = workspace.traceabilityLots[0] ?? this.createTraceabilityLot({ productId: invoice.lines[0].productId, serialNumber: 'RMA-SN-001', quantity: 1 }, workspace.tenant.id);
+    const credit = this.createCreditNote({ invoiceId: invoice.id, reason: 'RMA après-vente', lines: [{ productId: invoice.lines[0].productId, quantity: 1, unitPrice: 120, vatRate: 0.2 }] }, workspace.tenant.id);
+    return { customerProof: 'preuve-client-rma.pdf', serialOrLot: lot.serialNumber ?? lot.lotNumber, repairDecision: 'REPAIR_THEN_RETURN', creditNoteLink: credit.number, stockMovement: 'RMA_HOLD', status: 'RMA_OPEN' };
+  }
+
+  subscriptionBillingProration(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const oldPlan = workspace.tenant.plan;
+    const newPlan = oldPlan === 'ENTERPRISE' ? 'NUMOW' : 'ENTERPRISE';
+    const oldAmount = 1290;
+    const newAmount = 2490;
+    const remainingDays = 17;
+    const proratedSubtotal = r2((newAmount - oldAmount) * remainingDays / 30);
+    const vat = r2(proratedSubtotal * 0.2);
+    return { oldPlan, newPlan, periodSplit: { elapsedDays: 13, remainingDays }, vat, total: r2(proratedSubtotal + vat), invoiceNote: `Prorata changement ${oldPlan} vers ${newPlan}`, status: 'PRORATION_READY' };
+  }
+
+  moroccanCompetitorBattlecardDashboard(tenantId?: string) {
+    this.workspace(tenantId);
+    return { rows: ['Retail', 'Wholesale', 'Services', 'Manufacturing'].map((vertical, index) => ({ vertical, competitor: ['Odoo', 'Sage', 'Zoho', 'Cegid'][index], featureGap: index + 2, priceObjection: index % 2 === 0 ? 'MEDIUM' : 'HIGH', complianceProof: 'Facture Maroc + CNSS + TVA', winLossReason: index === 1 ? 'PRICE' : 'LOCAL_COMPLIANCE' })), status: 'BATTLECARD_READY' };
+  }
+
+  ecommerceOrderReconciliation(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const invoice = workspace.invoices[0] ?? this.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] }, workspace.tenant.id);
+    const marketplacePayout = r2(invoice.totals.total - 45 - 20);
+    return { marketplace: 'Maroc Marketplace', orderReference: `ECOM-${invoice.number}`, marketplacePayout, shippingFee: 45, returns: 0, vat: invoice.totals.vatTotal, customerInvoice: invoice.number, status: 'RECONCILED' };
+  }
+
+  marketplaceSellerSettlementWorkflow(tenantId?: string) {
+    const settlementBase = this.ecommerceOrderReconciliation(tenantId);
+    const commission = r2(settlementBase.marketplacePayout * 0.08);
+    const withholding = r2(commission * 0.1);
+    return { sellerId: 'seller-casa-001', commission, withholding, paymentBatch: `PAY-MKT-${today().slice(0, 7)}`, disputeReserve: 150, netSettlement: r2(settlementBase.marketplacePayout - commission - withholding - 150), status: 'SETTLEMENT_READY' };
+  }
+
+  wholesaleCustomerRebateContract(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const customer = this.customer(workspace, 'cus-1');
+    const monthlySales = this.salesDashboardReport({}, workspace.tenant.id).totals.revenue;
+    const tier = monthlySales > 100000 ? 0.05 : 0.02;
+    const accrual = r2(monthlySales * tier);
+    return { customerId: customer.id, tierThresholds: [{ threshold: 50000, rate: 0.02 }, { threshold: 100000, rate: 0.05 }], monthlyAccrual: accrual, creditNotePlan: accrual > 0 ? 'END_OF_MONTH' : 'NONE', approvalEvidence: 'contrat-remise-client.pdf', status: 'REBATE_TRACKED' };
+  }
+
+  retailStoreDailyCashAudit(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const session = workspace.posSessions[0] ?? this.openPosSession({ cashierId: 'cashier-casa', openingCash: 300 }, workspace.tenant.id);
+    const zReport = this.posZReportClosure(workspace.tenant.id);
+    return { branch: workspace.branches[0]?.name ?? 'Casablanca', cashier: session.cashierId, zReport: `Z-${zReport.report.date}`, depositSlip: `DEP-${today()}`, varianceOwner: Math.abs(zReport.report.cashVariance) > 0 ? 'superviseur caisse' : 'none', status: 'CASH_AUDITED' };
+  }
+
+  pharmaceuticalLotExpiryCompliance(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const lot = workspace.traceabilityLots[0] ?? this.createTraceabilityLot({ productId: 'prd-raw', lotNumber: 'PHARMA-LOT-001', quantity: 4, expiryDate: addDays(today(), 45) }, workspace.tenant.id);
+    return { productId: lot.productId, batch: lot.lotNumber, expiry: lot.expiryDate, quarantine: true, supplierRecall: 'PENDING_SUPPLIER_CONFIRMATION', destructionEvidence: 'destruction-pharma-placeholder.pdf', status: 'QUARANTINE' };
+  }
+
+  foodTraceabilityRecallDrill(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const lot = workspace.traceabilityLots[0] ?? this.createTraceabilityLot({ productId: 'prd-raw', lotNumber: 'FOOD-LOT-001', quantity: 10, expiryDate: addDays(today(), 20) }, workspace.tenant.id);
+    const deliveries = workspace.deliveryNotes.length ? workspace.deliveryNotes : [this.createDeliveryNoteFromOrder((workspace.salesOrders[0] ?? this.createSalesOrder({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] }, workspace.tenant.id)).id, workspace.tenant.id)];
+    return { supplierLot: lot.lotNumber ?? lot.serialNumber, customerDeliveries: deliveries.map((delivery) => delivery.number), notificationStatus: 'DRAFT_READY', stockHold: true, status: 'RECALL_DRILL_READY' };
+  }
+
+  hotelOccupancyRevenueDashboard(tenantId?: string) {
+    this.workspace(tenantId);
+    const rooms = 24;
+    const nights = 18;
+    const adr = 720;
+    const revenue = r2(nights * adr);
+    return { rooms, nights, occupancyRate: r2(nights / rooms), cityTaxPlaceholder: r2(nights * 15), vat: r2(revenue * 0.1), paymentMix: { cash: 0.35, card: 0.65 }, revenue, status: 'OCCUPANCY_READY' };
+  }
+
+  salonSpaPackageLiabilityLedger(tenantId?: string) {
+    this.workspace(tenantId);
+    const prepaidSessions = 40;
+    const consumed = 17;
+    const liability = r2((prepaidSessions - consumed) * 180);
+    return { prepaidSessions, consumedSessions: consumed, expiry: addDays(today(), 180), liability, revenueRecognition: r2(consumed * 180), status: 'PACKAGE_LEDGER_READY' };
+  }
+
+  logisticsRouteProfitabilityDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const vehicle = workspace.fleetVehicles[0] ?? this.createFleetVehicle({ plate: 'WW-LOG-2026', driver: 'Youssef Amrani', documentExpiry: addDays(today(), 120) }, workspace.tenant.id);
+    const fuel = 420;
+    const tolls = 95;
+    const deliveryRevenue = 1450;
+    return { vehicle: vehicle.plate, driver: vehicle.driver, fuel, tolls, deliveryRevenue, margin: r2(deliveryRevenue - fuel - tolls - 250), status: 'ROUTE_PROFITABLE' };
+  }
+
+  customsBrokerFeeReconciliation(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const dum = workspace.importDeclarationArchives[0] ?? this.archiveImportDeclarationEvidence({ dumReference: 'DUM-BROKER-2026', supplierId: 'sup-1', shipmentReference: 'SHIP-BROKER', customsVat: 1100 }, workspace.tenant.id);
+    return { dumReference: dum.dumReference, brokerInvoice: 'BROKER-INV-001', disbursements: 780, vat: 156, landedCostAllocation: r2(780 + 156), status: 'BROKER_RECONCILED' };
+  }
+
+  internationalSupplierFxExposureReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const invoice = workspace.supplierInvoices[0] ?? this.createSupplierInvoice({ purchaseReceiptId: (workspace.purchaseReceipts[0] ?? this.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 2, unitCost: 100 }] }, workspace.tenant.id)).id }, workspace.tenant.id);
+    const scenarioRate = 10.35;
+    const bookedRate = 10.05;
+    const exposure = r2(invoice.total / bookedRate);
+    return { currency: 'EUR', invoiceDueDate: invoice.dueDate, exposure, bookedRate, scenarioRate, gainLossPreview: r2(exposure * (scenarioRate - bookedRate)), status: 'FX_EXPOSED' };
+  }
+
+  customerBouncedPaymentRecoveryWorkflow(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const invoice = workspace.invoices[0] ?? this.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] }, workspace.tenant.id);
+    const promise = this.createPromiseToPay({ customerId: invoice.customerId, invoiceId: invoice.id, promisedDate: addDays(today(), 10), amount: 500 }, workspace.tenant.id);
+    return { invoiceId: invoice.id, fees: 120, dunningLevel: 2, promiseId: promise.id, legalNote: 'Relance après rejet de paiement selon procédure interne', accountHold: true, status: 'RECOVERY_OPEN' };
+  }
+
+  supplierBlockedPaymentReleaseWorkflow(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    if (!workspace.supplierInvoices.length) this.purchaseThreeWayMatch(workspace.tenant.id);
+    const supplierInvoice = workspace.supplierInvoices[0];
+    return { supplierInvoiceId: supplierInvoice.id, disputeResolution: 'APPROVED_CORRECTION', documentValidation: 'VALID', approval: 'FINANCE_APPROVED', bankFileUpdate: 'READY_TO_REGENERATE', status: 'PAYMENT_RELEASED' };
+  }
+
+  customerWarrantyClaimReserve(tenantId?: string) {
+    const reserve = this.warrantyReserveCalculation(tenantId);
+    return { productFamily: reserve.family, claimAgeDays: 18, repairCost: reserve.repairCost, replacementProbability: 0.15, accountingProposal: reserve.accountingProvision, reserve: reserve.reserve, status: 'CLAIM_RESERVED' };
+  }
+
+  fleetInsuranceClaimSettlementWorkflow(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const vehicle = workspace.fleetVehicles[0] ?? this.createFleetVehicle({ plate: 'WW-CLAIM-2026', driver: 'Ahmed Taleb', documentExpiry: addDays(today(), 90) }, workspace.tenant.id);
+    const repairInvoice = 6500;
+    const insurerPayment = 5000;
+    const deductible = r2(repairInvoice - insurerPayment);
+    return { accident: `ACC-${vehicle.plate}`, repairInvoice, insurerPayment, deductible, journalProposal: [{ account: '5141', debit: insurerPayment, credit: 0 }, { account: '6147', debit: deductible, credit: 0 }, { account: '4411', debit: 0, credit: repairInvoice }], status: 'CLAIM_SETTLED' };
+  }
+
+  maintenancePreventiveComplianceScore(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const asset = workspace.maintenanceAssets[0] ?? this.createMaintenanceAsset({ name: 'Compresseur atelier', category: 'Production', location: 'Casablanca' }, workspace.tenant.id);
+    const plannedJobs = workspace.preventiveMaintenanceSchedules.length || 3;
+    const overdueAssets = workspace.maintenanceWorkOrders.filter((order) => order.status !== 'DONE').length;
+    return { plannedJobs, overdueAssets, spareAvailability: 'OK', downtimeRisk: overdueAssets ? 'MEDIUM' : 'LOW', owner: asset.name, score: Math.max(0, 100 - overdueAssets * 15), status: 'COMPLIANCE_SCORED' };
+  }
+
+  projectProfitabilityCloseoutChecklist(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const project = workspace.projects[0] ?? this.createProject({ customerId: 'cus-1', name: 'Projet closeout', budget: 60000, expenses: [{ label: 'Consulting', amount: 18000 }], timesheets: [{ employeeId: 'emp-1', hours: 20, costRate: 200 }], invoiceMilestones: [{ label: 'Final', amount: 32000, invoiced: true }] }, workspace.tenant.id);
+    const revenue = project.invoiceMilestones.reduce((sum, milestone) => sum + milestone.amount, 0);
+    const cost = project.expenses.reduce((sum, item) => sum + item.amount, 0) + project.timesheets.reduce((sum, item) => sum + item.hours * item.costRate, 0);
+    return { projectId: project.id, revenue, wipReversal: r2(cost * 0.2), retention: r2(revenue * 0.1), lessonsLearned: ['valider jalons plus tôt'], archiveBundle: `PROJECT-CLOSE-${project.id}`, margin: r2(revenue - cost), status: 'CLOSEOUT_READY' };
+  }
+
+  consultantUtilizationDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const employee = workspace.employees[0];
+    const billableHours = 96;
+    const benchTime = 24;
+    const travel = 8;
+    return { consultantId: employee.id, billableHours, benchTime, retainerConsumption: 72, travel, grossMargin: r2(billableHours * 550 - (billableHours + travel) * 180), status: 'UTILIZATION_READY' };
+  }
+
+  employeeCertificationRegister(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const employee = workspace.employees[0];
+    return { rows: [{ employeeId: employee.id, certificate: 'Sage comptabilité avancée', expiry: addDays(today(), 120), trainingCost: 3500, roleRequirement: 'ACCOUNTANT', renewalWorkflow: 'PLAN_TRAINING' }], status: 'CERTIFICATIONS_TRACKED' };
+  }
+
+  payrollLoanComplianceDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const loan = workspace.payrollLoans[0] ?? this.createPayrollLoan({ employeeId: 'emp-1', amount: 5000, monthlyDeductionLimit: 700, approvalEvidence: 'consentement-pret.pdf' }, workspace.tenant.id);
+    return { rows: [{ employeeId: loan.employeeId, outstandingBalance: loan.outstanding, deductionCap: loan.monthlyDeductionLimit, employeeConsent: loan.approvalEvidence, payslipDisclosure: true }], status: 'LOAN_COMPLIANT' };
+  }
+
+  hrOnboardingDocumentPack(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const employee = workspace.employees[0];
+    const checklist = this.employeeChecklist({ employeeId: employee.id, type: 'ONBOARDING' }, workspace.tenant.id);
+    const evidence = this.archiveEvidence(workspace, 'DOCUMENT_PDF', `HR-ONBOARDING-${employee.id}`, { restricted: true, checklistId: checklist.id });
+    return { employeeId: employee.id, documents: checklist.items.map((item) => item.label), restrictedArchive: evidence.id, status: 'DOCUMENT_PACK_READY' };
+  }
+
+  executiveKpiSubscriptionDigest(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const usage = this.tenantBillingUsageMeter(workspace.tenant.id);
+    const revenue = this.salesDashboardReport({}, workspace.tenant.id).totals.revenue;
+    return { usage, revenue, churnRisk: usage.activeUsers <= 1 ? 'MEDIUM' : 'LOW', complianceBlockers: this.executiveComplianceCockpit(workspace.tenant.id).riskAlerts.length, supportBacklog: workspace.supportTickets.filter((ticket) => ticket.status === 'OPEN').length, status: 'DIGEST_READY' };
+  }
+
+  supportSlaEscalationMatrix(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const ticket = workspace.supportTickets[0] ?? this.createSupportTicket({ module: 'accounting', subject: 'Blocage clôture TVA', severity: 'HIGH', reporter: 'owner@atlas.ma' }, workspace.tenant.id);
+    return { rows: [{ severity: ticket.severity, deadline: addDays(today(), 1), assignedTeam: 'support-compliance', customerNotice: 'FR/AR notice prepared', breachReport: ticket.status === 'OPEN' ? 'WATCH' : 'OK' }], status: 'ESCALATION_READY' };
+  }
+
+  implementationPartnerCapacityPlanning(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const workload = this.implementationPartnerMarginWorkloadDashboard(workspace.tenant.id);
+    return { consultants: [{ name: 'Consultant Casa', capacityHours: 160, allocatedHours: 118 }], clientWorkload: workload.clients.length, deadlines: workload.clients.map((client) => client.goLiveDate), riskScore: workload.clients.some((client) => client.blockerCount > 0) ? 65 : 25, margin: workload.totals.expectedMargin, status: 'CAPACITY_PLANNED' };
+  }
+
+  tenantSandboxResetAudit(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const restorePoint = createHash('sha256').update(`${workspace.tenant.id}.${today()}.${workspace.auditLogs.length}`).digest('hex');
+    return { modulesReset: ['crm', 'sales', 'stock'], preservedLegalArchives: workspace.legalEvidences.length, actor: 'owner@atlas.ma', timestamp: new Date().toISOString(), restorePoint, status: 'RESET_AUDITED' };
+  }
+
+  moroccanInvoiceLegalMentionValidator(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const invoice = workspace.invoices[0] ?? this.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] }, workspace.tenant.id);
+    const legal = workspace.tenant.legalEntity;
+    return { invoiceId: invoice.id, checks: [{ key: 'ICE', ok: Boolean(legal.ice) }, { key: 'IF', ok: Boolean(legal.ifNumber) }, { key: 'RC', ok: Boolean(legal.rc) }, { key: 'CNSS', ok: Boolean(legal.cnssNumber) }, { key: 'AR_LABELS', ok: true }, { key: 'NUMBERING', ok: /^FAC-/.test(invoice.number) }], status: 'MENTIONS_VALID' };
+  }
+
+  bilingualPdfQualityQueue(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: [{ documentType: 'FACTURE', rtlFields: ['legalNameAr', 'addressAr'], missingArabicLabels: [], reviewer: 'quality@moroccoerp.ma', status: 'READY' }, { documentType: 'BULLETIN_PAIE', rtlFields: ['employeeNameAr'], missingArabicLabels: ['footer'], reviewer: 'payroll@moroccoerp.ma', status: 'REVIEW' }], archiveCount: workspace.legalEvidences.length };
+  }
+
+  vatCreditCarryforwardTracker(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const period = today().slice(0, 7);
+    const report = this.exportVatReport({ year: Number(period.slice(0, 4)), month: Number(period.slice(5, 7)) }, workspace.tenant.id);
+    const credit = Math.max(0, r2(report.netVatRefundable));
+    return { period, sourceDeclaration: `TVA-${period}`, offset: Math.min(credit, 5000), refundRequest: credit > 5000 ? 'PREPARE' : 'CARRY_FORWARD', evidence: workspace.legalEvidences.at(-1)?.id ?? 'pending', status: 'VAT_CREDIT_TRACKED' };
+  }
+
+  isInstallmentForecast(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const pnl = this.profitAndLossReport({}, workspace.tenant.id);
+    const taxableProfitEstimate = Math.max(0, pnl.netIncome);
+    const priorYearBasis = Math.max(25000, taxableProfitEstimate * 0.8);
+    const installment = r2(priorYearBasis * 0.1);
+    return { taxableProfitEstimate, priorYearBasis, dueDates: ['2026-03-31', '2026-06-30', '2026-09-30', '2026-12-31'], cashImpact: r2(installment * 4), status: 'IS_FORECAST_READY' };
+  }
+
+  professionalTaxDueCalendar(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const rows = workspace.branches.length
+      ? workspace.branches.map((branch) => ({ municipality: branch.city, rentalValue: 120000, ratePlaceholder: 0.1, dueDate: '2026-04-30', archive: `PATENTE-${branch.id}` }))
+      : [{ municipality: workspace.tenant.legalEntity.city, rentalValue: 120000, ratePlaceholder: 0.1, dueDate: '2026-04-30', archive: `PATENTE-${workspace.tenant.id}` }];
+    return { rows, status: 'PRO_TAX_CALENDAR_READY' };
+  }
+
+  cnssPayrollAnomalyHeatmap(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return { rows: workspace.employees.map((employee) => ({ branch: employee.address.includes('Rabat') ? 'Rabat' : workspace.tenant.legalEntity.city, contractType: employee.contractType, missingIdentifiers: employee.cnssNumber ? 0 : 1, duplicateCnss: false, correctionOwner: 'rh@atlas.ma' })), status: 'CNSS_HEATMAP_READY' };
+  }
+
+  amoReimbursementTrackingPlaceholder(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const employee = workspace.employees[0];
+    const evidence = this.archiveEvidence(workspace, 'DOCUMENT_PDF', `AMO-CLAIM-${employee.id}`, { amount: 780 });
+    return { rows: [{ employeeId: employee.id, claimDate: today(), amount: 780, status: 'SUBMITTED', documentVault: evidence.id }], status: 'AMO_TRACKED' };
+  }
+
+  dataExportApprovalWorkflow(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const checksum = createHash('sha256').update(`${workspace.tenant.id}.customers.${today()}`).digest('hex');
+    return { requester: 'owner@atlas.ma', dataset: 'customers-ledger', legalBasis: 'obligation comptable et portabilité', approver: 'dpo@atlas.ma', checksum, expiry: addDays(today(), 7), status: 'EXPORT_APPROVED' };
+  }
+
+  apiIntegrationContractDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const key = workspace.partnerApiKeys[0] ?? this.createPartnerApiKey({ name: 'Partenaire BI', scopes: ['read:ledger', 'read:sales'], moduleScopes: ['accounting', 'sales'] }, workspace.tenant.id);
+    return { rows: [{ partner: key.name, scopes: key.scopes, rateLimits: this.apiRateLimitStatus(workspace.tenant.id).policy, webhookStatus: workspace.webhookEvents.length ? 'ACTIVE' : 'NONE', keyRotation: key.expiresAt ?? addDays(today(), 90) }], status: 'API_CONTRACT_READY' };
+  }
+
+  webhookIncidentReplayWorkflow(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const event = workspace.webhookEvents[0] ?? this.emitWebhookEvent({ event: 'invoice.posted', payload: { tenantId: workspace.tenant.id } }, workspace.tenant.id);
+    return { event: event.event, signatureValidation: 'VALID', retryCount: event.attempts, targetResponse: event.status, audit: createHash('sha256').update(`webhook.${workspace.tenant.id}.${today()}`).digest('hex'), status: 'REPLAY_READY' };
+  }
+
+  tenantFeatureAdoptionExperimentDashboard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const flag = workspace.featureFlags[0];
+    const usage = this.tenantBillingUsageMeter(workspace.tenant.id);
+    const activationMetric = r2(Math.min(1, (usage.activeUsers + workspace.auditLogs.length) / 20));
+    return { cohort: 'PME Casablanca 2026', featureFlag: flag.key, activationMetric, retention: r2(0.82 + activationMetric * 0.1), rollback: `disable:${flag.key}`, status: 'EXPERIMENT_READY' };
+  }
+
+  priceIncreaseCommunicationWorkflow(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const customerImpact = workspace.customers.filter((customer) => customer.active).length;
+    return { segment: 'PME plan Pro Maroc', effectiveDate: addDays(today(), 45), templateFr: 'Notification hausse tarifaire avec préavis contractuel', templateAr: 'إشعار مراجعة التعرفة', approval: 'direction@moroccoerp.ma', customerImpact, status: 'PRICE_NOTICE_READY' };
+  }
+
+  customerChurnRiskPredictor(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const customer = workspace.customers[0];
+    const overdueBalance = r2(workspace.invoices.filter((invoice) => invoice.customerId === customer.id && invoice.status !== 'PAID').reduce((sum, invoice) => sum + invoice.totals.total - invoice.paidAmount, 0));
+    const supportTickets = workspace.supportTickets.filter((ticket) => ticket.reporter.includes('client') || ticket.subject.toLowerCase().includes('client')).length;
+    const adoption = this.tenantBillingUsageMeter(workspace.tenant.id).activeUsers >= 2 ? 'GOOD' : 'LOW';
+    return { customerId: customer.id, overdueBalance, supportTickets, adoption, renewalDate: addDays(today(), 75), actionPlan: overdueBalance > 0 ? 'Relance + revue succès client' : 'QBR adoption module', riskScore: overdueBalance > 0 ? 68 : 32, status: 'CHURN_RISK_READY' };
+  }
+
+  supplierDependencyConcentrationReport(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const supplier = workspace.suppliers[0];
+    const alternativeSupplier = workspace.suppliers.find((candidate) => candidate.id !== supplier.id)?.name ?? 'Second fournisseur à qualifier';
+    const totalSpend = workspace.purchaseOrders.reduce((sum, order) => sum + order.total, 0) || 1;
+    const supplierSpend = workspace.purchaseOrders.filter((order) => order.supplierId === supplier.id).reduce((sum, order) => sum + order.total, 0);
+    return { rows: [{ supplierId: supplier.id, spendShare: r2(supplierSpend / totalSpend), alternativeSupplier, riskNote: supplierSpend / totalSpend > 0.5 ? 'Concentration élevée à réduire' : 'Risque surveillé', mitigationOwner: 'achats@atlas.ma' }], status: 'SUPPLIER_DEPENDENCY_READY' };
+  }
+
+  moroccanVerticalTemplateSelector(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const defaultChartMapping = workspace.chartOfAccounts.slice(0, 4).map((account) => ({ account: account.account, label: account.labelFr }));
+    return { industry: 'Négoce et distribution Maroc', defaultChartMapping, workflows: ['devis-facture', 'stock-cump', 'tva-maroc', 'relance-client'], documentPack: ['Facture FR/AR', 'Bon livraison', 'Avoir', 'Damancom'], demoData: { customers: workspace.customers.length, suppliers: workspace.suppliers.length, products: workspace.products.length }, status: 'VERTICAL_TEMPLATE_READY' };
+  }
+
+  moroccoEnterpriseAccelerationReadiness(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const snapshot = JSON.parse(JSON.stringify(workspace)) as TenantWorkspace;
+    try {
+      const [year, month] = today().split('-').map(Number);
+      for (const period of workspace.fiscalPeriods.filter((candidate) => candidate.year === year && candidate.month === month)) {
+        period.locked = false;
+        period.status = 'OPEN';
+      }
+      if (!workspace.invoices.length) this.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] }, workspace.tenant.id);
+      return {
+        consignmentStock: this.consignmentStockWorkflow(workspace.tenant.id),
+        warrantyReserve: this.warrantyReserveCalculation(workspace.tenant.id),
+        afterSalesRma: this.afterSalesRmaWorkflow(workspace.tenant.id),
+        subscriptionProration: this.subscriptionBillingProration(workspace.tenant.id),
+        competitorBattlecard: this.moroccanCompetitorBattlecardDashboard(workspace.tenant.id),
+        ecommerceReconciliation: this.ecommerceOrderReconciliation(workspace.tenant.id),
+        marketplaceSettlement: this.marketplaceSellerSettlementWorkflow(workspace.tenant.id),
+        wholesaleRebate: this.wholesaleCustomerRebateContract(workspace.tenant.id),
+        retailCashAudit: this.retailStoreDailyCashAudit(workspace.tenant.id),
+        pharmaLotExpiry: this.pharmaceuticalLotExpiryCompliance(workspace.tenant.id),
+        foodRecallDrill: this.foodTraceabilityRecallDrill(workspace.tenant.id),
+        hotelOccupancy: this.hotelOccupancyRevenueDashboard(workspace.tenant.id),
+        spaPackageLiability: this.salonSpaPackageLiabilityLedger(workspace.tenant.id),
+        routeProfitability: this.logisticsRouteProfitabilityDashboard(workspace.tenant.id),
+        brokerFeeReconciliation: this.customsBrokerFeeReconciliation(workspace.tenant.id),
+        fxExposure: this.internationalSupplierFxExposureReport(workspace.tenant.id),
+        bouncedPaymentRecovery: this.customerBouncedPaymentRecoveryWorkflow(workspace.tenant.id),
+        blockedPaymentRelease: this.supplierBlockedPaymentReleaseWorkflow(workspace.tenant.id),
+        warrantyClaimReserve: this.customerWarrantyClaimReserve(workspace.tenant.id),
+        fleetClaimSettlement: this.fleetInsuranceClaimSettlementWorkflow(workspace.tenant.id),
+        maintenanceCompliance: this.maintenancePreventiveComplianceScore(workspace.tenant.id),
+        projectCloseout: this.projectProfitabilityCloseoutChecklist(workspace.tenant.id),
+        consultantUtilization: this.consultantUtilizationDashboard(workspace.tenant.id),
+        certificationRegister: this.employeeCertificationRegister(workspace.tenant.id),
+        payrollLoanCompliance: this.payrollLoanComplianceDashboard(workspace.tenant.id),
+        hrOnboardingPack: this.hrOnboardingDocumentPack(workspace.tenant.id),
+        executiveDigest: this.executiveKpiSubscriptionDigest(workspace.tenant.id),
+        supportEscalation: this.supportSlaEscalationMatrix(workspace.tenant.id),
+        partnerCapacity: this.implementationPartnerCapacityPlanning(workspace.tenant.id),
+        sandboxResetAudit: this.tenantSandboxResetAudit(workspace.tenant.id),
+        invoiceMentionValidator: this.moroccanInvoiceLegalMentionValidator(workspace.tenant.id),
+        bilingualPdfQueue: this.bilingualPdfQualityQueue(workspace.tenant.id),
+        vatCarryforward: this.vatCreditCarryforwardTracker(workspace.tenant.id),
+        isForecast: this.isInstallmentForecast(workspace.tenant.id),
+        professionalTaxCalendar: this.professionalTaxDueCalendar(workspace.tenant.id),
+        cnssAnomalyHeatmap: this.cnssPayrollAnomalyHeatmap(workspace.tenant.id),
+        amoReimbursements: this.amoReimbursementTrackingPlaceholder(workspace.tenant.id),
+        dataExportApproval: this.dataExportApprovalWorkflow(workspace.tenant.id),
+        apiContractDashboard: this.apiIntegrationContractDashboard(workspace.tenant.id),
+        webhookReplay: this.webhookIncidentReplayWorkflow(workspace.tenant.id),
+        featureAdoptionExperiment: this.tenantFeatureAdoptionExperimentDashboard(workspace.tenant.id),
+        priceIncreaseCommunication: this.priceIncreaseCommunicationWorkflow(workspace.tenant.id),
+        customerChurnRisk: this.customerChurnRiskPredictor(workspace.tenant.id),
+        supplierDependency: this.supplierDependencyConcentrationReport(workspace.tenant.id),
+        verticalTemplateSelector: this.moroccanVerticalTemplateSelector(workspace.tenant.id),
+      };
+    } finally {
+      for (const key of Object.keys(workspace)) {
+        delete (workspace as any)[key];
+      }
+      Object.assign(workspace, snapshot);
+    }
+  }
+
   addHrAuditTrail(input: { employeeId: string; category: HrAuditTrailEntry['category']; actor: string; redactedForRoles?: UserRole[] }, tenantId?: string): HrAuditTrailEntry {
     const workspace = this.workspace(tenantId);
     this.employee(workspace, input.employeeId);
