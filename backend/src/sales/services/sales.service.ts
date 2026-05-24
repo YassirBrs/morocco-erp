@@ -7,7 +7,18 @@ export class SalesService {
 
   listQuotes() { return this.store.listQuotes(); }
   createQuote(data: any) { return this.store.createQuote(data); }
+  getQuote(id: string) { return this.store.getQuote(id); }
+  reviseQuote(id: string, data: any) { return this.store.reviseQuote(id, data); }
+  approveQuote(id: string) { return this.store.approveQuote(id); }
+  exportQuotePdf(id: string) { return this.store.exportQuotePdf(id); }
+  convertQuoteToOrder(id: string) { return this.store.convertQuoteToOrder(id); }
   convertQuoteToInvoice(quoteId: string) { return this.store.convertQuoteToInvoice(quoteId); }
+  listOrders() { return this.store.listSalesOrders(); }
+  createOrder(data: any) { return this.store.createSalesOrder(data); }
+  createDeliveryNote(orderId: string) { return this.store.createDeliveryNoteFromOrder(orderId); }
+  cancelDeliveryNote(id: string) { return this.store.cancelDeliveryNote(id); }
+  listDeliveryNotes() { return this.store.listDeliveryNotes(); }
+  convertOrderToInvoice(id: string) { return this.store.convertOrderToInvoice(id); }
   listInvoices() { return this.store.listInvoices(); }
   createInvoice(data: any) { return this.store.createInvoice(data); }
   recordPayment(data: any) { return this.store.recordPayment(data); }

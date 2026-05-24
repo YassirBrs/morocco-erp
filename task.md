@@ -35,12 +35,12 @@ This backlog contains concrete tasks to improve the app from the current working
 
 - [x] T018 P0 - Add full customer CRUD with ICE, IF, payment terms, credit limit, contacts, and addresses.
 - [x] T019 P0 - Add product/service catalog screens with VAT rate, SKU, unit, selling price, and stock behavior.
-- [ ] T020 P0 - Add quote creation, revision, approval, PDF export, and conversion to order.
-- [ ] T021 P0 - Add order creation and conversion to delivery note and invoice.
-- [ ] T022 P0 - Add delivery note creation with stock reservation and stock release on cancellation.
-- [ ] T023 P0 - Add invoice posting rules with continuous numbering per fiscal year and series.
+- [x] T020 P0 - Add quote creation, revision, approval, PDF export, and conversion to order.
+- [x] T021 P0 - Add order creation and conversion to delivery note and invoice.
+- [x] T022 P0 - Add delivery note creation with stock reservation and stock release on cancellation.
+- [x] T023 P0 - Add invoice posting rules with continuous numbering per fiscal year and series.
 - [ ] T024 P0 - Add credit notes with invoice references and automatic accounting reversal entries.
-- [ ] T025 P0 - Add payment capture with partial payments, overpayment rejection, and customer balance update.
+- [x] T025 P0 - Add payment capture with partial payments, overpayment rejection, and customer balance update.
 - [ ] T026 P1 - Add lead pipeline with stages, next action date, owner, source, and expected value.
 - [ ] T027 P1 - Add customer statement export with invoices, payments, credit notes, and aging.
 

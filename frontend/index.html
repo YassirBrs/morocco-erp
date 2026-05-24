@@ -86,6 +86,15 @@
               <span>Paiement</span>
               <span>Journal</span>
             </div>
+            <div class="salesFlowActions" aria-label="Actions commerciales">
+              <button id="createQuote">Creer devis</button>
+              <button id="approveQuote">Approuver</button>
+              <button id="convertQuoteToOrder">Commande</button>
+              <button id="createDelivery">BL</button>
+              <button id="invoiceOrder">Facturer</button>
+              <button id="payInvoice">Payer solde</button>
+            </div>
+            <div id="salesFlowState" class="flowState"></div>
             <div class="resultLine">
               <span>Derniere operation</span>
               <strong id="invoiceResult">Aucune facture creee dans cette session</strong>
@@ -203,6 +212,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
+      const state = { quotes: [], orders: [], deliveryNotes: [], invoices: [] };
 
       async function get(path) {
         const response = await fetch(API + path, { headers });
@@ -238,13 +248,21 @@
       }
 
       async function load() {
-        const [summary, stock, customers, products, setup] = await Promise.all([
+        const [summary, stock, customers, products, setup, quotes, orders, deliveryNotes, invoices] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
           get('/inventory/products'),
-          get('/tenant/setup-checklist')
+          get('/tenant/setup-checklist'),
+          get('/sales/quotes'),
+          get('/sales/orders'),
+          get('/sales/delivery-notes'),
+          get('/sales/invoices')
         ]);
+        state.quotes = quotes;
+        state.orders = orders;
+        state.deliveryNotes = deliveryNotes;
+        state.invoices = invoices;
         const entity = summary.tenant.legalEntity;
         qs('#tradeName').textContent = entity.tradeName;
         qs('#identity').innerHTML = [
@@ -262,6 +280,7 @@
         qs('#invoices').textContent = summary.metrics.invoices;
         qs('#rules').textContent = `${summary.compliance.id} · TVA ${summary.compliance.vatRates.map(pct).join(' / ')}`;
         qs('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
+        renderSalesFlow();
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
         qs('#setupBadge').className = setup.ready ? 'badge green' : 'badge';
         qs('#setupList').innerHTML = setup.checks.map((check) => `
@@ -300,6 +319,46 @@
         `).join('');
       }
 
+      function latest(items) {
+        return items[items.length - 1];
+      }
+
+      function latestInvoiceWithBalance() {
+        return [...state.invoices].reverse().find((invoice) => invoice.totals.total > invoice.paidAmount);
+      }
+
+      function renderSalesFlow() {
+        const quote = latest(state.quotes);
+        const order = latest(state.orders);
+        const delivery = latest(state.deliveryNotes);
+        const invoice = latest(state.invoices);
+        qs('#salesFlowState').innerHTML = [
+          ['Devis', quote ? `${quote.number} R${quote.revision} ${quote.status}` : '-'],
+          ['Commande', order ? `${order.number} ${order.status}` : '-'],
+          ['BL', delivery ? `${delivery.number} ${delivery.status}` : '-'],
+          ['Facture', invoice ? `${invoice.number} ${invoice.status}` : '-']
+        ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join('');
+      }
+
+      async function runAction(buttonSelector, loadingText, action) {
+        const button = qs(buttonSelector);
+        const original = button.textContent;
+        button.disabled = true;
+        button.textContent = loadingText;
+        clearMessage();
+        try {
+          const result = await action();
+          await load();
+          return result;
+        } catch (error) {
+          showMessage('error', error.message);
+          return null;
+        } finally {
+          button.disabled = false;
+          button.textContent = original;
+        }
+      }
+
       qs('#createInvoice').addEventListener('click', async () => {
         const button = qs('#createInvoice');
         button.disabled = true;
@@ -316,6 +375,65 @@
           button.disabled = false;
           button.textContent = 'Creer une facture test';
         }
+      });
+
+      qs('#createQuote').addEventListener('click', async () => {
+        await runAction('#createQuote', 'Creation...', async () => {
+          const quote = await post('/sales/quotes', { customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+          qs('#invoiceResult').textContent = `${quote.number} · ${mad(quote.totals.total)} · ${quote.status}`;
+          showMessage('success', `Devis ${quote.number} cree.`);
+        });
+      });
+
+      qs('#approveQuote').addEventListener('click', async () => {
+        await runAction('#approveQuote', 'Approbation...', async () => {
+          const quote = latest(state.quotes);
+          if (!quote) throw new Error('Aucun devis a approuver');
+          const approved = await post(`/sales/quotes/${quote.id}/approve`, {});
+          qs('#invoiceResult').textContent = `${approved.number} · revision ${approved.revision} · ${approved.status}`;
+          showMessage('success', `Devis ${approved.number} approuve.`);
+        });
+      });
+
+      qs('#convertQuoteToOrder').addEventListener('click', async () => {
+        await runAction('#convertQuoteToOrder', 'Conversion...', async () => {
+          const quote = [...state.quotes].reverse().find((candidate) => candidate.status === 'APPROVED');
+          if (!quote) throw new Error('Aucun devis approuve a convertir');
+          const order = await post(`/sales/quotes/${quote.id}/convert-to-order`, {});
+          qs('#invoiceResult').textContent = `${order.number} · ${mad(order.totals.total)} · ${order.status}`;
+          showMessage('success', `Commande ${order.number} creee avec reservation stock.`);
+        });
+      });
+
+      qs('#createDelivery').addEventListener('click', async () => {
+        await runAction('#createDelivery', 'BL...', async () => {
+          const order = [...state.orders].reverse().find((candidate) => candidate.status === 'CONFIRMED');
+          if (!order) throw new Error('Aucune commande confirmee a livrer');
+          const delivery = await post(`/sales/orders/${order.id}/delivery-notes`, {});
+          qs('#invoiceResult').textContent = `${delivery.number} · ${mad(delivery.totals.total)} · ${delivery.status}`;
+          showMessage('success', `Bon de livraison ${delivery.number} poste.`);
+        });
+      });
+
+      qs('#invoiceOrder').addEventListener('click', async () => {
+        await runAction('#invoiceOrder', 'Facturation...', async () => {
+          const order = [...state.orders].reverse().find((candidate) => candidate.status === 'DELIVERED');
+          if (!order) throw new Error('Aucune commande livree a facturer');
+          const invoice = await post(`/sales/orders/${order.id}/invoice`, {});
+          qs('#invoiceResult').textContent = `${invoice.number} · ${mad(invoice.totals.total)} · ${invoice.status}`;
+          showMessage('success', `Facture ${invoice.number} creee depuis commande.`);
+        });
+      });
+
+      qs('#payInvoice').addEventListener('click', async () => {
+        await runAction('#payInvoice', 'Paiement...', async () => {
+          const invoice = latestInvoiceWithBalance();
+          if (!invoice) throw new Error('Aucune facture ouverte a payer');
+          const amount = Number((invoice.totals.total - invoice.paidAmount).toFixed(2));
+          const payment = await post('/sales/payments', { invoiceId: invoice.id, amount, method: 'BANK' });
+          qs('#invoiceResult').textContent = `${invoice.number} · paiement ${mad(payment.amount)} · BANK`;
+          showMessage('success', `Paiement de ${mad(payment.amount)} enregistre.`);
+        });
       });
 
       qs('#customerForm').addEventListener('submit', async (event) => {

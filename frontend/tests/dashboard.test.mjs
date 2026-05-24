@@ -21,6 +21,8 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(api.includes('/inventory'));
   assert.ok(staticPage.includes("'x-tenant-id': 'tenant-demo'"));
   assert.ok(staticPage.includes('/sales/invoices'));
+  assert.ok(staticPage.includes('/sales/orders'));
+  assert.ok(staticPage.includes('/sales/delivery-notes'));
   assert.ok(staticPage.includes('/tenant/setup-checklist'));
   assert.ok(staticPage.includes('/crm/customers'));
   assert.ok(staticPage.includes('/inventory/products'));
@@ -33,10 +35,11 @@ test('layout uses dense ERP panels instead of a marketing hero', () => {
 });
 
 test('static dashboard exposes onboarding and master-data workflows', () => {
-  for (const text of ['Checklist de mise en service', 'Ajouter client', 'Ajouter article', 'Nom client', 'Prix vente']) {
+  for (const text of ['Checklist de mise en service', 'Ajouter client', 'Ajouter article', 'Nom client', 'Prix vente', 'Creer devis', 'Payer solde']) {
     assert.ok(staticPage.includes(text), `${text} workflow is present`);
   }
   assert.ok(staticCss.includes('.compactForm'));
+  assert.ok(staticCss.includes('.salesFlowActions'));
   assert.ok(staticCss.includes('.message.success'));
   assert.ok(staticCss.includes('.message.error'));
 });

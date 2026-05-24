@@ -29,6 +29,55 @@ describe('ErpStoreService working ERP workflows', () => {
       .toBeCloseTo(journals[0].lines.reduce((sum, line) => sum + line.credit, 0), 2);
   });
 
+  it('revises, approves, exports, and converts a quote to order, delivery note, and invoice', () => {
+    const quote = store.createQuote({
+      customerId: 'cus-1',
+      lines: [{ productId: 'prd-1', quantity: 1 }],
+    });
+
+    const revised = store.reviseQuote(quote.id, {
+      lines: [{ productId: 'prd-1', quantity: 2 }],
+    });
+    const approved = store.approveQuote(revised.id);
+    expect(revised.revision).toBe(2);
+    expect(approved.status).toBe('APPROVED');
+
+    const pdf = store.exportQuotePdf(approved.id);
+    const order = store.convertQuoteToOrder(approved.id);
+    const reservedStock = store.listStock().find((line) => line.productId === 'prd-1');
+    const delivery = store.createDeliveryNoteFromOrder(order.id);
+    const deliveredStock = store.listStock().find((line) => line.productId === 'prd-1');
+    const invoice = store.convertOrderToInvoice(order.id);
+
+    expect(Buffer.from(pdf.contentBase64, 'base64').toString('binary').startsWith('%PDF-')).toBe(true);
+    expect(store.getQuote(quote.id).status).toBe('CONVERTED');
+    expect(order.number).toMatch(/^BC-/);
+    expect(reservedStock?.reservedStock).toBe(2);
+    expect(reservedStock?.availableStock).toBe(48);
+    expect(delivery.number).toMatch(/^BL-/);
+    expect(deliveredStock?.stockOnHand).toBe(48);
+    expect(deliveredStock?.reservedStock).toBe(0);
+    expect(invoice.sourceOrderId).toBe(order.id);
+    expect(store.listSalesOrders()[0].status).toBe('INVOICED');
+  });
+
+  it('posts and cancels delivery notes with stock release', () => {
+    const order = store.createSalesOrder({
+      customerId: 'cus-1',
+      lines: [{ productId: 'prd-1', quantity: 1 }],
+    });
+    const delivery = store.createDeliveryNoteFromOrder(order.id);
+    expect(store.listStock().find((line) => line.productId === 'prd-1')?.stockOnHand).toBe(49);
+
+    const cancelled = store.cancelDeliveryNote(delivery.id);
+    const stock = store.listStock().find((line) => line.productId === 'prd-1');
+
+    expect(cancelled.status).toBe('CANCELLED');
+    expect(stock?.stockOnHand).toBe(50);
+    expect(stock?.reservedStock).toBe(0);
+    expect(store.listSalesOrders()[0].status).toBe('CONFIRMED');
+  });
+
   it('records invoice payments and posts a balanced bank/customer journal entry', () => {
     const invoice = store.createInvoice({
       customerId: 'cus-1',
@@ -40,6 +89,35 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(payment.amount).toBe(invoice.totals.total);
     expect(store.listInvoices()[0].status).toBe('PAID');
     expect(store.listJournalEntries().some((entry) => entry.description.includes('Payment'))).toBe(true);
+  });
+
+  it('rejects overpayments and keeps customer receivables accurate for partial payments', () => {
+    const invoice = store.createInvoice({
+      customerId: 'cus-1',
+      lines: [{ productId: 'prd-2', quantity: 1 }],
+    });
+
+    store.recordPayment({ invoiceId: invoice.id, amount: 500, method: 'BANK' });
+
+    expect(store.listInvoices()[0].status).toBe('POSTED');
+    expect(store.summary().metrics.receivables).toBe(invoice.totals.total - 500);
+    expect(() => store.recordPayment({ invoiceId: invoice.id, amount: invoice.totals.total, method: 'BANK' })).toThrow(BadRequestException);
+  });
+
+  it('uses tenant invoice series for continuous fiscal-year numbering', () => {
+    store.completeTenantOnboarding({ invoiceSeries: 'ATLAS' });
+
+    const first = store.createInvoice({
+      customerId: 'cus-1',
+      lines: [{ productId: 'prd-2', quantity: 1 }],
+    });
+    const second = store.createInvoice({
+      customerId: 'cus-1',
+      lines: [{ productId: 'prd-2', quantity: 1 }],
+    });
+
+    expect(first.number).toMatch(/^ATLAS-\d{4}-00001$/);
+    expect(second.number).toMatch(/^ATLAS-\d{4}-00002$/);
   });
 
   it('receives purchases, recalculates CUMP, and creates supplier liability accounting', () => {

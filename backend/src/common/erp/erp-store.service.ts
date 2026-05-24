@@ -4,6 +4,7 @@ import {
   AuditLog,
   ComplianceRuleSet,
   Customer,
+  DeliveryNote,
   DocumentLine,
   DocumentLineInput,
   DocumentTotals,
@@ -18,6 +19,7 @@ import {
   Product,
   ProductionOrder,
   PurchaseReceipt,
+  SalesOrder,
   Quote,
   StockMove,
   Supplier,
@@ -168,6 +170,7 @@ export class ErpStoreService {
           purchaseCost: 520,
           vatRate: 0.2,
           stockOnHand: 50,
+          reservedStock: 0,
           weightedAverageCost: 520,
           active: true,
           createdAt: today(),
@@ -186,6 +189,7 @@ export class ErpStoreService {
           purchaseCost: 0,
           vatRate: 0.2,
           stockOnHand: 0,
+          reservedStock: 0,
           weightedAverageCost: 0,
           active: true,
           createdAt: today(),
@@ -204,6 +208,7 @@ export class ErpStoreService {
           purchaseCost: 90,
           vatRate: 0.2,
           stockOnHand: 200,
+          reservedStock: 0,
           weightedAverageCost: 90,
           active: true,
           createdAt: today(),
@@ -222,6 +227,7 @@ export class ErpStoreService {
           purchaseCost: 300,
           vatRate: 0.2,
           stockOnHand: 8,
+          reservedStock: 0,
           weightedAverageCost: 300,
           active: true,
           createdAt: today(),
@@ -230,6 +236,8 @@ export class ErpStoreService {
       ],
       warehouses: [{ id: 'wh-1', tenantId: tenant.id, name: 'Depot Casablanca', city: 'Casablanca' }],
       quotes: [],
+      salesOrders: [],
+      deliveryNotes: [],
       invoices: [],
       payments: [],
       stockMoves: [],
@@ -285,6 +293,8 @@ export class ErpStoreService {
       products: [],
       warehouses: [{ id: this.id('wh'), tenantId, name: 'Depot principal', city: tenant.legalEntity.city }],
       quotes: [],
+      salesOrders: [],
+      deliveryNotes: [],
       invoices: [],
       payments: [],
       stockMoves: [],
@@ -565,6 +575,7 @@ export class ErpStoreService {
       purchaseCost: cost,
       vatRate: this.vatRate(input.vatRate ?? 0.2),
       stockOnHand,
+      reservedStock: 0,
       weightedAverageCost: trackStock ? this.nonNegative(input.weightedAverageCost ?? cost, 'CUMP must be zero or positive') : 0,
       active: input.active ?? true,
       createdAt: today(),
@@ -603,12 +614,16 @@ export class ErpStoreService {
     if (input.vatRate !== undefined) product.vatRate = this.vatRate(input.vatRate);
     if (input.stockOnHand !== undefined) {
       product.stockOnHand = product.trackStock ? this.nonNegative(input.stockOnHand, 'Stock on hand must be zero or positive') : 0;
+      if (product.reservedStock > product.stockOnHand) {
+        throw new BadRequestException('Stock on hand cannot be below reserved stock');
+      }
     }
     if (input.weightedAverageCost !== undefined) {
       product.weightedAverageCost = product.trackStock ? this.nonNegative(input.weightedAverageCost, 'CUMP must be zero or positive') : 0;
     }
     if (!product.trackStock || product.type === 'SERVICE') {
       product.stockOnHand = 0;
+      product.reservedStock = 0;
       product.weightedAverageCost = 0;
     }
     if (input.active !== undefined) product.active = input.active;
@@ -639,6 +654,8 @@ export class ErpStoreService {
       active: product.active,
       reorderPoint: product.reorderPoint,
       stockOnHand: product.stockOnHand,
+      reservedStock: product.reservedStock,
+      availableStock: this.availableStock(product),
       weightedAverageCost: product.weightedAverageCost,
       stockValue: r2(product.stockOnHand * product.weightedAverageCost),
     }));
@@ -709,6 +726,7 @@ export class ErpStoreService {
       number: this.nextNumber(workspace, 'DV'),
       customerId: input.customerId,
       status: 'DRAFT',
+      revision: 1,
       date: today(),
       validUntil: input.validUntil ?? today(),
       lines,
@@ -723,17 +741,216 @@ export class ErpStoreService {
     return this.workspace(tenantId).quotes;
   }
 
+  getQuote(quoteId: string, tenantId?: string): Quote {
+    return this.quote(this.workspace(tenantId), quoteId);
+  }
+
+  reviseQuote(quoteId: string, input: { lines?: DocumentLineInput[]; validUntil?: string }, tenantId?: string): Quote {
+    const workspace = this.workspace(tenantId);
+    const quote = this.quote(workspace, quoteId);
+    if (quote.status === 'CONVERTED' || quote.status === 'VOID') {
+      throw new BadRequestException('Converted or void quotes cannot be revised');
+    }
+    if (input.lines) {
+      quote.lines = this.documentLines(workspace, input.lines);
+      quote.totals = this.totals(quote.lines);
+    }
+    if (input.validUntil) {
+      quote.validUntil = input.validUntil;
+    }
+    quote.status = 'DRAFT';
+    quote.approvedAt = undefined;
+    quote.revision += 1;
+    this.audit(workspace, 'quote.revised', 'Quote', quote.id, quote);
+    return quote;
+  }
+
+  approveQuote(quoteId: string, tenantId?: string): Quote {
+    const workspace = this.workspace(tenantId);
+    const quote = this.quote(workspace, quoteId);
+    if (quote.status === 'CONVERTED' || quote.status === 'VOID') {
+      throw new BadRequestException('Quote cannot be approved');
+    }
+    quote.status = 'APPROVED';
+    quote.approvedAt = today();
+    this.audit(workspace, 'quote.approved', 'Quote', quote.id, quote);
+    return quote;
+  }
+
+  exportQuotePdf(quoteId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const quote = this.quote(workspace, quoteId);
+    const customer = this.customer(workspace, quote.customerId);
+    const lines = [
+      `Devis ${quote.number} revision ${quote.revision}`,
+      `Tenant ${workspace.tenant.legalEntity.tradeName}`,
+      `Client ${customer.name}`,
+      `Total HT ${quote.totals.subtotal.toFixed(2)} MAD`,
+      `TVA ${quote.totals.vatTotal.toFixed(2)} MAD`,
+      `Total TTC ${quote.totals.total.toFixed(2)} MAD`,
+      ...quote.lines.map((line) => `${line.sku} ${line.description} x${line.quantity} = ${line.total.toFixed(2)} MAD`),
+    ];
+    const contentBase64 = Buffer.from(this.simplePdf(lines), 'binary').toString('base64');
+    this.audit(workspace, 'quote.pdf.exported', 'Quote', quote.id, { quoteId, fileName: `${quote.number}.pdf` });
+    return {
+      quoteId: quote.id,
+      quoteNumber: quote.number,
+      fileName: `${quote.number}.pdf`,
+      mimeType: 'application/pdf',
+      contentBase64,
+      status: 'PREPARED',
+    };
+  }
+
+  convertQuoteToOrder(quoteId: string, tenantId?: string): SalesOrder {
+    const workspace = this.workspace(tenantId);
+    const quote = this.quote(workspace, quoteId);
+    if (quote.status !== 'APPROVED') {
+      throw new BadRequestException('Quote must be approved before order conversion');
+    }
+    const order = this.createSalesOrder({
+      customerId: quote.customerId,
+      lines: quote.lines,
+      sourceQuoteId: quote.id,
+    }, workspace.tenant.id);
+    quote.status = 'CONVERTED';
+    this.audit(workspace, 'quote.converted-to-order', 'Quote', quote.id, { quoteId: quote.id, orderId: order.id });
+    return order;
+  }
+
   convertQuoteToInvoice(quoteId: string, tenantId?: string): Invoice {
     const workspace = this.workspace(tenantId);
-    const quote = workspace.quotes.find((candidate) => candidate.id === quoteId);
-    if (!quote) {
-      throw new NotFoundException('Quote not found');
+    const quote = this.quote(workspace, quoteId);
+    if (quote.status === 'VOID') {
+      throw new BadRequestException('Void quotes cannot be invoiced');
     }
-    quote.status = 'POSTED';
+    quote.status = 'CONVERTED';
     return this.createInvoice({ customerId: quote.customerId, lines: quote.lines, sourceQuoteId: quote.id }, workspace.tenant.id);
   }
 
-  createInvoice(input: { customerId: string; lines: DocumentLineInput[]; sourceQuoteId?: string; dueDate?: string }, tenantId?: string): Invoice {
+  createSalesOrder(input: { customerId: string; lines: DocumentLineInput[] | DocumentLine[]; sourceQuoteId?: string }, tenantId?: string): SalesOrder {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    this.customer(workspace, input.customerId);
+    const lines = this.documentLines(workspace, input.lines);
+    this.reserveStockForOrder(workspace, lines, 'Order reservation');
+    const order: SalesOrder = {
+      id: this.id('so'),
+      tenantId: workspace.tenant.id,
+      number: this.nextNumber(workspace, 'BC'),
+      customerId: input.customerId,
+      sourceQuoteId: input.sourceQuoteId,
+      status: 'CONFIRMED',
+      date: today(),
+      lines,
+      totals: this.totals(lines),
+    };
+    workspace.salesOrders.push(order);
+    this.audit(workspace, 'order.created', 'SalesOrder', order.id, order);
+    return order;
+  }
+
+  listSalesOrders(tenantId?: string): SalesOrder[] {
+    return this.workspace(tenantId).salesOrders;
+  }
+
+  createDeliveryNoteFromOrder(orderId: string, tenantId?: string): DeliveryNote {
+    const workspace = this.workspace(tenantId);
+    const order = this.salesOrder(workspace, orderId);
+    if (order.status === 'CANCELLED') {
+      throw new BadRequestException('Cancelled orders cannot be delivered');
+    }
+    if (order.status === 'DELIVERED' || order.status === 'INVOICED') {
+      throw new BadRequestException('Order is already delivered');
+    }
+    for (const line of order.lines) {
+      const product = this.product(workspace, line.productId);
+      if (!product.trackStock || product.type === 'SERVICE') {
+        continue;
+      }
+      if (product.reservedStock < line.quantity) {
+        throw new BadRequestException(`Insufficient reserved stock for ${product.sku}`);
+      }
+      product.reservedStock = r2(product.reservedStock - line.quantity);
+      product.stockOnHand = r2(product.stockOnHand - line.quantity);
+      this.stockMove(workspace, product, -line.quantity, product.weightedAverageCost, 'DELIVERY', order.number);
+    }
+    const deliveryNote: DeliveryNote = {
+      id: this.id('bl'),
+      tenantId: workspace.tenant.id,
+      number: this.nextNumber(workspace, 'BL'),
+      customerId: order.customerId,
+      sourceOrderId: order.id,
+      status: 'POSTED',
+      date: today(),
+      lines: order.lines,
+      totals: order.totals,
+    };
+    workspace.deliveryNotes.push(deliveryNote);
+    order.status = 'DELIVERED';
+    this.audit(workspace, 'delivery-note.posted', 'DeliveryNote', deliveryNote.id, deliveryNote);
+    return deliveryNote;
+  }
+
+  listDeliveryNotes(tenantId?: string): DeliveryNote[] {
+    return this.workspace(tenantId).deliveryNotes;
+  }
+
+  cancelDeliveryNote(deliveryNoteId: string, tenantId?: string): DeliveryNote {
+    const workspace = this.workspace(tenantId);
+    const deliveryNote = this.deliveryNote(workspace, deliveryNoteId);
+    if (deliveryNote.status === 'CANCELLED') {
+      return deliveryNote;
+    }
+    const order = this.salesOrder(workspace, deliveryNote.sourceOrderId);
+    if (order.status === 'INVOICED') {
+      throw new BadRequestException('Invoiced delivery notes cannot be cancelled');
+    }
+    for (const line of deliveryNote.lines) {
+      const product = this.product(workspace, line.productId);
+      if (!product.trackStock || product.type === 'SERVICE') {
+        continue;
+      }
+      product.stockOnHand = r2(product.stockOnHand + line.quantity);
+      this.stockMove(workspace, product, line.quantity, product.weightedAverageCost, 'DELIVERY_REVERSAL', deliveryNote.number);
+    }
+    deliveryNote.status = 'CANCELLED';
+    order.status = 'CONFIRMED';
+    this.audit(workspace, 'delivery-note.cancelled', 'DeliveryNote', deliveryNote.id, deliveryNote);
+    return deliveryNote;
+  }
+
+  convertOrderToInvoice(orderId: string, tenantId?: string): Invoice {
+    const workspace = this.workspace(tenantId);
+    const order = this.salesOrder(workspace, orderId);
+    if (order.status !== 'DELIVERED') {
+      throw new BadRequestException('Order must be delivered before invoicing');
+    }
+    const deliveryNote = workspace.deliveryNotes.find((candidate) => candidate.sourceOrderId === order.id && candidate.status === 'POSTED');
+    if (!deliveryNote) {
+      throw new BadRequestException('A posted delivery note is required before invoicing');
+    }
+    const invoice = this.createInvoice({
+      customerId: order.customerId,
+      lines: order.lines,
+      sourceQuoteId: order.sourceQuoteId,
+      sourceOrderId: order.id,
+      sourceDeliveryNoteId: deliveryNote.id,
+      stockAlreadyDelivered: true,
+    }, workspace.tenant.id);
+    order.status = 'INVOICED';
+    return invoice;
+  }
+
+  createInvoice(input: {
+    customerId: string;
+    lines: DocumentLineInput[] | DocumentLine[];
+    sourceQuoteId?: string;
+    sourceOrderId?: string;
+    sourceDeliveryNoteId?: string;
+    dueDate?: string;
+    stockAlreadyDelivered?: boolean;
+  }, tenantId?: string): Invoice {
     const workspace = this.workspace(tenantId);
     this.assertCanWrite(workspace);
     this.customer(workspace, input.customerId);
@@ -743,12 +960,14 @@ export class ErpStoreService {
     const invoice: Invoice = {
       id: this.id('fac'),
       tenantId: workspace.tenant.id,
-      number: this.nextNumber(workspace, 'FAC'),
+      number: this.nextNumber(workspace, workspace.tenant.settings.invoiceSeries),
       customerId: input.customerId,
       status: 'POSTED',
       date: today(),
       dueDate: input.dueDate ?? today(),
       sourceQuoteId: input.sourceQuoteId,
+      sourceOrderId: input.sourceOrderId,
+      sourceDeliveryNoteId: input.sourceDeliveryNoteId,
       lines,
       totals: this.totals(lines),
       paidAmount: 0,
@@ -759,7 +978,9 @@ export class ErpStoreService {
       },
     };
     workspace.invoices.push(invoice);
-    this.consumeStockForSales(workspace, invoice.number, lines);
+    if (!input.stockAlreadyDelivered) {
+      this.consumeStockForSales(workspace, invoice.number, lines);
+    }
     this.postJournal(workspace, `Customer invoice ${invoice.number}`, invoice.number, [
       { account: '3421', label: 'Clients', debit: invoice.totals.total, credit: 0 },
       { account: '7111', label: 'Ventes de marchandises', debit: 0, credit: invoice.totals.subtotal },
@@ -782,8 +1003,12 @@ export class ErpStoreService {
     if (input.amount <= 0) {
       throw new BadRequestException('Payment amount must be positive');
     }
+    const remaining = r2(invoice.totals.total - invoice.paidAmount);
+    if (input.amount > remaining) {
+      throw new BadRequestException('Payment exceeds remaining invoice balance');
+    }
     invoice.paidAmount = r2(invoice.paidAmount + input.amount);
-    if (invoice.paidAmount >= invoice.totals.total) {
+    if (invoice.paidAmount === invoice.totals.total) {
       invoice.status = 'PAID';
     }
     const payment: Payment = {
@@ -951,6 +1176,30 @@ export class ErpStoreService {
     return customer;
   }
 
+  private quote(workspace: TenantWorkspace, quoteId: string): Quote {
+    const quote = workspace.quotes.find((candidate) => candidate.id === quoteId || candidate.number === quoteId);
+    if (!quote) {
+      throw new NotFoundException('Quote not found');
+    }
+    return quote;
+  }
+
+  private salesOrder(workspace: TenantWorkspace, orderId: string): SalesOrder {
+    const order = workspace.salesOrders.find((candidate) => candidate.id === orderId || candidate.number === orderId);
+    if (!order) {
+      throw new NotFoundException('Sales order not found');
+    }
+    return order;
+  }
+
+  private deliveryNote(workspace: TenantWorkspace, deliveryNoteId: string): DeliveryNote {
+    const deliveryNote = workspace.deliveryNotes.find((candidate) => candidate.id === deliveryNoteId || candidate.number === deliveryNoteId);
+    if (!deliveryNote) {
+      throw new NotFoundException('Delivery note not found');
+    }
+    return deliveryNote;
+  }
+
   private supplier(workspace: TenantWorkspace, supplierId: string): Supplier {
     const supplier = workspace.suppliers.find((candidate) => candidate.id === supplierId);
     if (!supplier) {
@@ -1017,12 +1266,30 @@ export class ErpStoreService {
       if (!product.trackStock || product.type === 'SERVICE') {
         continue;
       }
-      if (product.stockOnHand < line.quantity) {
+      if (this.availableStock(product) < line.quantity) {
         throw new BadRequestException(`Insufficient stock for ${product.sku}`);
       }
       product.stockOnHand = r2(product.stockOnHand - line.quantity);
       this.stockMove(workspace, product, -line.quantity, product.weightedAverageCost, type, reference);
     }
+  }
+
+  private reserveStockForOrder(workspace: TenantWorkspace, lines: DocumentLine[], reference: string): void {
+    for (const line of lines) {
+      const product = this.product(workspace, line.productId);
+      if (!product.trackStock || product.type === 'SERVICE') {
+        continue;
+      }
+      if (this.availableStock(product) < line.quantity) {
+        throw new BadRequestException(`Insufficient available stock for ${product.sku}`);
+      }
+      product.reservedStock = r2(product.reservedStock + line.quantity);
+      this.stockMove(workspace, product, line.quantity, product.weightedAverageCost, 'RESERVATION', reference);
+    }
+  }
+
+  private availableStock(product: Product): number {
+    return r2(product.stockOnHand - product.reservedStock);
   }
 
   private stockMove(workspace: TenantWorkspace, product: Product, quantity: number, unitCost: number, type: StockMove['type'], reference: string): StockMove {
@@ -1100,6 +1367,41 @@ export class ErpStoreService {
       at: new Date().toISOString(),
       payload,
     });
+  }
+
+  private simplePdf(lines: string[]): string {
+    const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+    const content = [
+      'BT',
+      '/F1 11 Tf',
+      '50 790 Td',
+      ...lines.flatMap((line, index) => [
+        index === 0 ? '' : '0 -18 Td',
+        `(${escape(line)}) Tj`,
+      ]).filter(Boolean),
+      'ET',
+    ].join('\n');
+    const objects = [
+      '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+      '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+      '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n',
+      '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
+      `5 0 obj\n<< /Length ${Buffer.byteLength(content, 'binary')} >>\nstream\n${content}\nendstream\nendobj\n`,
+    ];
+    let pdf = '%PDF-1.4\n';
+    const offsets = [0];
+    for (const object of objects) {
+      offsets.push(Buffer.byteLength(pdf, 'binary'));
+      pdf += object;
+    }
+    const xrefOffset = Buffer.byteLength(pdf, 'binary');
+    pdf += `xref\n0 ${objects.length + 1}\n`;
+    pdf += '0000000000 65535 f \n';
+    for (const offset of offsets.slice(1)) {
+      pdf += `${String(offset).padStart(10, '0')} 00000 n \n`;
+    }
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+    return pdf;
   }
 
   private clean(value: string | undefined): string | undefined {

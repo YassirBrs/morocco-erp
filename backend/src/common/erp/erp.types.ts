@@ -3,7 +3,10 @@ export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED';
 export type UserRole = 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'SALES' | 'WAREHOUSE' | 'PAYROLL' | 'CASHIER';
 export type VatRate = 0 | 0.07 | 0.1 | 0.14 | 0.2;
 export type DocumentStatus = 'DRAFT' | 'POSTED' | 'PAID' | 'VOID';
-export type StockMoveType = 'RECEIPT' | 'DELIVERY' | 'ADJUSTMENT' | 'PRODUCTION_CONSUME' | 'PRODUCTION_OUTPUT' | 'POS_SALE';
+export type QuoteStatus = 'DRAFT' | 'APPROVED' | 'CONVERTED' | 'VOID';
+export type SalesOrderStatus = 'CONFIRMED' | 'DELIVERED' | 'INVOICED' | 'CANCELLED';
+export type DeliveryNoteStatus = 'POSTED' | 'CANCELLED';
+export type StockMoveType = 'RECEIPT' | 'DELIVERY' | 'DELIVERY_REVERSAL' | 'ADJUSTMENT' | 'PRODUCTION_CONSUME' | 'PRODUCTION_OUTPUT' | 'POS_SALE' | 'RESERVATION' | 'RESERVATION_RELEASE';
 
 export interface LegalEntity {
   tradeName: string;
@@ -98,6 +101,7 @@ export interface Product {
   purchaseCost: number;
   vatRate: VatRate;
   stockOnHand: number;
+  reservedStock: number;
   weightedAverageCost: number;
   active: boolean;
   createdAt: string;
@@ -143,9 +147,35 @@ export interface Quote {
   tenantId: string;
   number: string;
   customerId: string;
-  status: DocumentStatus;
+  status: QuoteStatus;
+  revision: number;
   date: string;
   validUntil: string;
+  approvedAt?: string;
+  lines: DocumentLine[];
+  totals: DocumentTotals;
+}
+
+export interface SalesOrder {
+  id: string;
+  tenantId: string;
+  number: string;
+  customerId: string;
+  sourceQuoteId?: string;
+  status: SalesOrderStatus;
+  date: string;
+  lines: DocumentLine[];
+  totals: DocumentTotals;
+}
+
+export interface DeliveryNote {
+  id: string;
+  tenantId: string;
+  number: string;
+  customerId: string;
+  sourceOrderId: string;
+  status: DeliveryNoteStatus;
+  date: string;
   lines: DocumentLine[];
   totals: DocumentTotals;
 }
@@ -159,6 +189,8 @@ export interface Invoice {
   date: string;
   dueDate: string;
   sourceQuoteId?: string;
+  sourceOrderId?: string;
+  sourceDeliveryNoteId?: string;
   lines: DocumentLine[];
   totals: DocumentTotals;
   paidAmount: number;
@@ -278,6 +310,8 @@ export interface TenantWorkspace {
   products: Product[];
   warehouses: Warehouse[];
   quotes: Quote[];
+  salesOrders: SalesOrder[];
+  deliveryNotes: DeliveryNote[];
   invoices: Invoice[];
   payments: Payment[];
   stockMoves: StockMove[];
