@@ -105,28 +105,28 @@ This backlog contains concrete tasks to improve the app from the current working
 
 ## Documents, PDFs, And Exports
 
-- [ ] T072 P0 - Generate compliant invoice PDFs with tenant legal identifiers, customer identifiers, line VAT, totals, and numbering.
-- [ ] T073 P0 - Add PDF generation tests that assert required invoice mentions are present.
-- [ ] T074 P1 - Add quote, delivery note, credit note, purchase order, receipt, and payslip PDFs.
-- [ ] T075 P1 - Add document numbering settings per type and fiscal year.
-- [ ] T076 P1 - Add file storage abstraction with local storage for dev and object storage adapter for production.
-- [ ] T077 P2 - Add document templates with tenant logo, legal footer, and bilingual-ready fields.
+- [x] T072 P0 - Generate compliant invoice PDFs with tenant legal identifiers, customer identifiers, line VAT, totals, and numbering.
+- [x] T073 P0 - Add PDF generation tests that assert required invoice mentions are present.
+- [x] T074 P1 - Add quote, delivery note, credit note, purchase order, receipt, and payslip PDFs.
+- [x] T075 P1 - Add document numbering settings per type and fiscal year.
+- [x] T076 P1 - Add file storage abstraction with local storage for dev and object storage adapter for production.
+- [x] T077 P2 - Add document templates with tenant logo, legal footer, and bilingual-ready fields.
 
 ## Frontend UX And Design
 
-- [ ] T078 P0 - Replace static dashboard data flow with the Next.js app as the primary browser entry point.
-- [ ] T079 P0 - Add module-specific list/detail/create/edit screens for sales, stock, accounting, payroll, POS, and CRM.
-- [ ] T080 P0 - Add consistent empty, loading, error, success, and forbidden states.
-- [ ] T081 P0 - Add form validation messages mapped to backend DTO validation.
-- [ ] T082 P1 - Add global command/search for customers, invoices, products, suppliers, employees, and journal entries.
-- [ ] T083 P1 - Add saved filters, column visibility, and export buttons on dense tables.
-- [ ] T084 P1 - Add responsive tablet/mobile layouts for approval, lookup, and POS workflows.
-- [ ] T085 P1 - Add keyboard-friendly data entry for invoice lines, payment lines, and journal lines.
-- [ ] T086 P2 - Add dashboard personalization by role and tenant plan.
+- [x] T078 P0 - Replace static dashboard data flow with the Next.js app as the primary browser entry point.
+- [x] T079 P0 - Add module-specific list/detail/create/edit screens for sales, stock, accounting, payroll, POS, and CRM.
+- [x] T080 P0 - Add consistent empty, loading, error, success, and forbidden states.
+- [x] T081 P0 - Add form validation messages mapped to backend DTO validation.
+- [x] T082 P1 - Add global command/search for customers, invoices, products, suppliers, employees, and journal entries.
+- [x] T083 P1 - Add saved filters, column visibility, and export buttons on dense tables.
+- [x] T084 P1 - Add responsive tablet/mobile layouts for approval, lookup, and POS workflows.
+- [x] T085 P1 - Add keyboard-friendly data entry for invoice lines, payment lines, and journal lines.
+- [x] T086 P2 - Add dashboard personalization by role and tenant plan.
 
 ## Reporting And Analytics
 
-- [ ] T087 P0 - Add sales dashboard by period, customer, product, VAT rate, and unpaid balance.
+- [x] T087 P0 - Add sales dashboard by period, customer, product, VAT rate, and unpaid balance.
 - [ ] T088 P0 - Add inventory valuation report by warehouse and product.
 - [ ] T089 P0 - Add receivables and payables aging reports.
 - [ ] T090 P1 - Add profit and loss report from journal entries.

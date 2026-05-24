@@ -271,3 +271,21 @@ test('static dashboard exposes HR, POS, production, fleet, project, and profitab
     assert.ok(staticCss.includes(cssToken), `${cssToken} style exists`);
   }
 });
+
+test('Next primary workspace exposes document PDFs, module screens, UX states, filters, keyboard entry, personalization, and sales reporting', () => {
+  for (const text of ['Application Next.js principale', 'Commande globale', 'Ventes et reporting', 'Par produit', 'Par TVA', 'Impayés', 'Documents, filtres et états UX', 'Numérotation', 'Modèles PDF', 'Stockage fichiers', 'États standard', 'Validation backend', 'Filtres sauvegardés', 'Écrans par module', 'liste / détail / créer / modifier']) {
+    assert.ok(page.includes(text), `${text} Next primary label is present`);
+  }
+  for (const marker of ['getSalesDashboard', 'getDocumentOperations', 'getModuleData', 'searchBusiness', 'KeyboardLines', 'ModuleWorkflow', 'DataTable', 'MiniList']) {
+    assert.ok(page.includes(marker), `${marker} Next helper is present`);
+  }
+  for (const endpoint of ['/sales/dashboard', '/tenant/document-numbering', '/tenant/document-templates', '/tenant/file-storage', '/pos/sessions', '/sales/quotes']) {
+    assert.ok(api.includes(endpoint), `${endpoint} Next API route is wired`);
+  }
+  for (const cssToken of ['.commandBar', '.reportGrid', '.splitTables', '.denseControls', '.keyboardGrid', '.tableScroll', '.personalization']) {
+    assert.ok(css.includes(cssToken), `${cssToken} Next style exists`);
+  }
+  for (const staticEndpoint of ['/sales/invoices/${invoice.id}/pdf', '/sales/delivery-notes/${delivery.id}/pdf', '/sales/credit-notes/${creditNote.id}/pdf', '/inventory/purchase-orders/${purchaseOrder.id}/pdf', '/inventory/purchase-receipts/${purchaseReceipt.id}/pdf', '/tenant/document-numbering', '/tenant/document-templates', '/tenant/file-storage', '/sales/dashboard']) {
+    assert.ok(staticPage.includes(staticEndpoint) || api.includes(staticEndpoint) || page.includes(staticEndpoint), `${staticEndpoint} export or report route is represented`);
+  }
+});

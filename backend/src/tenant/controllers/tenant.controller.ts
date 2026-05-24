@@ -16,6 +16,10 @@ export class TenantController {
   @Post('data-export') requestDataExport() { return this.tenantService.requestDataExport(); }
   @Post('delete-request') requestTenantDelete(@Body() body: any) { return this.tenantService.requestTenantDelete(body); }
   @Get('import-templates') importTemplates() { return this.tenantService.importTemplates(); }
+  @Get('document-numbering') documentNumbering() { return this.tenantService.documentNumbering(); }
+  @Patch('document-numbering') updateDocumentNumbering(@Body() body: any) { return this.tenantService.updateDocumentNumbering(body); }
+  @Get('document-templates') documentTemplates() { return this.tenantService.documentTemplates(); }
+  @Get('file-storage') fileStorage() { return this.tenantService.fileStorage(); }
   @Get('implementation-partner/workspace') implementationPartnerWorkspace() { return this.tenantService.implementationPartnerWorkspace(); }
   @Post('implementation-partner/clients') createPartnerClient(@Body() body: any) { return this.tenantService.createPartnerClient(body); }
   @Patch('implementation-partner/clients/:tenantId/onboarding') updatePartnerClientOnboarding(@Param('tenantId') tenantId: string, @Body() body: any) {

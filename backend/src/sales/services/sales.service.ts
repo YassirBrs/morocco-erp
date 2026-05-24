@@ -11,8 +11,12 @@ export class SalesService {
   reviseQuote(id: string, data: any) { return this.store.reviseQuote(id, data); }
   approveQuote(id: string) { return this.store.approveQuote(id); }
   exportQuotePdf(id: string) { return this.store.exportQuotePdf(id); }
+  exportInvoicePdf(id: string) { return this.store.exportInvoicePdf(id); }
+  exportDeliveryNotePdf(id: string) { return this.store.exportDeliveryNotePdf(id); }
+  exportCreditNotePdf(id: string) { return this.store.exportCreditNotePdf(id); }
   convertQuoteToOrder(id: string) { return this.store.convertQuoteToOrder(id); }
   convertQuoteToInvoice(quoteId: string) { return this.store.convertQuoteToInvoice(quoteId); }
+  dashboard(data: { year?: number; month?: number }) { return this.store.salesDashboardReport(data); }
   listOrders() { return this.store.listSalesOrders(); }
   createOrder(data: any) { return this.store.createSalesOrder(data); }
   createDeliveryNote(orderId: string) { return this.store.createDeliveryNoteFromOrder(orderId); }

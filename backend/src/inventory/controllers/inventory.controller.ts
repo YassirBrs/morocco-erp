@@ -44,10 +44,12 @@ export class InventoryController {
   @Post('stock-moves/:id/approve') approveStockMove(@Param('id') id: string) { return this.inventoryService.approveStockMove(id); }
   @Get('purchase-orders') purchaseOrders() { return this.inventoryService.listPurchaseOrders(); }
   @Post('purchase-orders') createPurchaseOrder(@Body() body: any) { return this.inventoryService.createPurchaseOrder(body); }
+  @Get('purchase-orders/:id/pdf') purchaseOrderPdf(@Param('id') id: string) { return this.inventoryService.purchaseOrderPdf(id); }
   @Post('purchase-orders/:id/approve') approvePurchaseOrder(@Param('id') id: string) { return this.inventoryService.approvePurchaseOrder(id); }
   @Post('purchase-orders/:id/cancel') cancelPurchaseOrder(@Param('id') id: string) { return this.inventoryService.cancelPurchaseOrder(id); }
   @Get('purchase-receipts') purchaseReceipts() { return this.inventoryService.listPurchaseReceipts(); }
   @Post('purchase-receipts') purchaseReceipt(@Body() body: any) { return this.inventoryService.receivePurchase(body); }
+  @Get('purchase-receipts/:id/pdf') purchaseReceiptPdf(@Param('id') id: string) { return this.inventoryService.purchaseReceiptPdf(id); }
   @Post('purchase-receipts/:id/approve') approvePurchaseReceipt(@Param('id') id: string) { return this.inventoryService.approvePurchaseReceipt(id); }
   @Get('supplier-invoices') supplierInvoices() { return this.inventoryService.listSupplierInvoices(); }
   @Post('supplier-invoices') createSupplierInvoice(@Body() body: any) { return this.inventoryService.createSupplierInvoice(body); }

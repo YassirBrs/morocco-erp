@@ -26,6 +26,7 @@ export type PreferredLanguage = 'FR' | 'AR' | 'BILINGUAL';
 export type ImportTemplateKind = 'customers' | 'suppliers' | 'products' | 'employees' | 'chart-of-accounts';
 export type PermissionAction = 'READ' | 'WRITE' | 'ADMIN';
 export type ErpModuleKey = 'tenant' | 'auth' | 'crm' | 'sales' | 'inventory' | 'accounting' | 'payroll' | 'pos' | 'production' | 'compliance';
+export type DocumentExportType = 'QUOTE' | 'ORDER' | 'DELIVERY_NOTE' | 'INVOICE' | 'CREDIT_NOTE' | 'PURCHASE_ORDER' | 'PURCHASE_RECEIPT' | 'PAYSLIP';
 
 export interface LocalizedFields {
   arabicName?: string;
@@ -75,6 +76,7 @@ export interface LegalEntity {
 
 export interface TenantSettings {
   invoiceSeries: string;
+  documentSeries: Partial<Record<DocumentExportType, string>>;
   fiscalYearStartMonth: number;
   vatStatus: 'ENABLED' | 'EXEMPT';
   approvalLimits: {
@@ -641,12 +643,39 @@ export interface EmployeePortalAccess {
 export interface LegalEvidence {
   id: string;
   tenantId: string;
-  type: 'VAT_REPORT' | 'DGI_ENVELOPE' | 'DAMANCOM_EXPORT' | 'ACCOUNTING_EXPORT' | 'PAYSLIP_PDF';
+  type: 'VAT_REPORT' | 'DGI_ENVELOPE' | 'DAMANCOM_EXPORT' | 'ACCOUNTING_EXPORT' | 'PAYSLIP_PDF' | 'DOCUMENT_PDF';
   reference: string;
   status: 'ARCHIVED';
   checksum: string;
   archivedAt: string;
   metadata: Record<string, unknown>;
+}
+
+export interface StoredFile {
+  id: string;
+  tenantId: string;
+  key: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  checksum: string;
+  provider: 'LOCAL_DEV' | 'OBJECT_STORAGE_ADAPTER';
+  status: 'STORED' | 'PENDING_REMOTE';
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface DocumentTemplateSetting {
+  id: string;
+  tenantId: string;
+  type: DocumentExportType;
+  name: string;
+  language: PreferredLanguage;
+  logoKey?: string;
+  legalFooter: string;
+  fields: string[];
+  active: boolean;
+  updatedAt: string;
 }
 
 export interface PosTransaction {
@@ -878,6 +907,8 @@ export interface TenantWorkspace {
   leaveRequests: LeaveRequest[];
   employeePortalAccesses: EmployeePortalAccess[];
   legalEvidences: LegalEvidence[];
+  storedFiles: StoredFile[];
+  documentTemplates: DocumentTemplateSetting[];
   posSessions: PosSession[];
   cashDrawerMovements: CashDrawerMovement[];
   posOfflineQueue: PosOfflineQueueItem[];

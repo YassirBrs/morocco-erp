@@ -79,7 +79,11 @@ body {
 .identity,
 .metric span,
 .module span,
-.compliance span {
+.compliance span,
+.personalization span,
+.personalization small,
+.commandBar small,
+.miniList span {
   color: var(--muted);
 }
 
@@ -101,11 +105,59 @@ nav a.active {
   font-weight: 700;
 }
 
+.personalization {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
 .workspace {
   display: grid;
   gap: 18px;
   align-content: start;
   padding: 24px;
+}
+
+.commandBar {
+  display: grid;
+  grid-template-columns: 180px minmax(220px, 1fr) minmax(260px, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 12px;
+}
+
+.commandBar label {
+  font-weight: 700;
+}
+
+input {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.commandResults {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  grid-column: 1 / -1;
+}
+
+.commandResults span {
+  border-radius: 999px;
+  background: var(--blue-soft);
+  color: var(--primary);
+  font-size: 12px;
+  padding: 5px 8px;
 }
 
 .topbar {
@@ -150,6 +202,17 @@ h2 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+}
+
+.reportGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 16px;
+}
+
+.reportGrid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .metric,
@@ -230,6 +293,10 @@ table {
   border-collapse: collapse;
 }
 
+.tableScroll {
+  overflow-x: auto;
+}
+
 th,
 td {
   border-top: 1px solid var(--line);
@@ -259,6 +326,45 @@ th {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   padding: 16px;
+}
+
+.splitTables,
+.denseControls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px 16px 16px;
+}
+
+.miniList,
+.denseControls > div {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.keyboardGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+.keyboardGrid label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .compliance div,
@@ -300,7 +406,13 @@ th {
   .kpis,
   .gridTwo,
   .compliance,
-  .modules {
+  .modules,
+  .reportGrid,
+  .reportGrid.three,
+  .splitTables,
+  .denseControls,
+  .keyboardGrid,
+  .commandBar {
     grid-template-columns: 1fr;
   }
 

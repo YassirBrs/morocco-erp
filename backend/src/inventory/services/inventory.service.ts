@@ -41,10 +41,12 @@ export class InventoryService {
   approveStockMove(id: string) { return this.store.approveStockMove(id); }
   listPurchaseOrders() { return this.store.listPurchaseOrders(); }
   createPurchaseOrder(data: any) { return this.store.createPurchaseOrder(data); }
+  purchaseOrderPdf(id: string) { return this.store.exportPurchaseOrderPdf(id); }
   approvePurchaseOrder(id: string) { return this.store.approvePurchaseOrder(id); }
   cancelPurchaseOrder(id: string) { return this.store.cancelPurchaseOrder(id); }
   receivePurchase(data: any) { return this.store.createPurchaseReceipt(data); }
   listPurchaseReceipts() { return this.store.listPurchaseReceipts(); }
+  purchaseReceiptPdf(id: string) { return this.store.exportPurchaseReceiptPdf(id); }
   approvePurchaseReceipt(id: string) { return this.store.approvePurchaseReceipt(id); }
   listSupplierInvoices() { return this.store.listSupplierInvoices(); }
   createSupplierInvoice(data: any) { return this.store.createSupplierInvoice(data); }

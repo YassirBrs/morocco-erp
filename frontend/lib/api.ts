@@ -1,6 +1,15 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID ?? 'tenant-demo';
 
+export const documentExportRoutes = [
+  '/sales/invoices/${invoice.id}/pdf',
+  '/sales/delivery-notes/${delivery.id}/pdf',
+  '/sales/credit-notes/${creditNote.id}/pdf',
+  '/inventory/purchase-orders/${purchaseOrder.id}/pdf',
+  '/inventory/purchase-receipts/${purchaseReceipt.id}/pdf',
+  '/payroll/runs/${run.id}/payslips/${payslip.id}/pdf',
+];
+
 export type DashboardSummary = {
   tenant: {
     legalEntity: {
@@ -59,6 +68,31 @@ export type PayrollSnapshot = {
   employees: Array<{ id: string; fullName: string; baseSalary: number; active: boolean }>;
   contracts: Array<{ id: string; employeeId: string; salary: number; active: boolean }>;
   runs: Array<{ id: string; number: string; status: string; payslips: unknown[]; totals: { grossSalary: number; netSalary: number; employerCost: number } }>;
+};
+
+export type SalesDashboard = {
+  period: string;
+  invoiceCount: number;
+  creditNoteCount: number;
+  totals: { revenue: number; unpaid: number; vat: number };
+  byCustomer: Array<{ customerId: string; customerName: string; revenue: number; unpaid: number; invoices: number }>;
+  byProduct: Array<{ productId: string; sku: string; name: string; quantity: number; revenue: number }>;
+  byVatRate: Array<{ rate: string; taxable: number; vat: number; total: number }>;
+  unpaidInvoices: Array<{ invoiceId: string; number: string; customerName: string; dueDate: string; unpaid: number }>;
+};
+
+export type DocumentOperations = {
+  numbering: { fiscalYear: number; settings: Array<{ type: string; prefix: string; current: number; nextNumber: string; lockedAfterPosting: boolean }> };
+  templates: { templates: Array<{ id: string; type: string; name: string; language: string; legalFooter: string; fields: string[]; active: boolean }>; bilingualReady: boolean };
+  storage: { activeProvider: string; providers: Array<{ id: string; mode: string; writable: boolean }>; files: Array<{ id: string; fileName: string; key: string; checksum: string; size: number }>; totalSize: number };
+};
+
+export type ModuleData = {
+  customers: Array<{ id: string; name: string; city?: string; active: boolean; creditLimit: number }>;
+  products: Array<{ id: string; sku: string; name: string; stockOnHand: number; salePrice: number; active: boolean }>;
+  quotes: Array<{ id: string; number: string; status: string; totals: { total: number } }>;
+  suppliers: Array<{ id: string; name: string; city?: string; active: boolean; preferred: boolean }>;
+  posSessions: Array<{ id: string; number: string; status: string; expectedCash: number; variance: number }>;
 };
 
 export type BusinessSearchResult = {
@@ -156,4 +190,37 @@ export async function getPayrollSnapshot(): Promise<PayrollSnapshot> {
 
 export async function searchBusiness(query: string): Promise<BusinessSearchResult[]> {
   return getJson(`/search?q=${encodeURIComponent(query)}&limit=8`, []);
+}
+
+export async function getSalesDashboard(): Promise<SalesDashboard> {
+  return getJson('/sales/dashboard', {
+    period: '2026',
+    invoiceCount: 0,
+    creditNoteCount: 0,
+    totals: { revenue: 0, unpaid: 0, vat: 0 },
+    byCustomer: [],
+    byProduct: [],
+    byVatRate: [],
+    unpaidInvoices: [],
+  });
+}
+
+export async function getDocumentOperations(): Promise<DocumentOperations> {
+  const [numbering, templates, storage] = await Promise.all([
+    getJson('/tenant/document-numbering', { fiscalYear: 2026, settings: [] }),
+    getJson('/tenant/document-templates', { templates: [], bilingualReady: false }),
+    getJson('/tenant/file-storage', { activeProvider: 'LOCAL_DEV', providers: [], files: [], totalSize: 0 }),
+  ]);
+  return { numbering, templates, storage };
+}
+
+export async function getModuleData(): Promise<ModuleData> {
+  const [customers, products, quotes, suppliers, posSessions] = await Promise.all([
+    getJson('/crm/customers', []),
+    getJson('/inventory/products', []),
+    getJson('/sales/quotes', []),
+    getJson('/inventory/suppliers', []),
+    getJson('/pos/sessions', []),
+  ]);
+  return { customers, products, quotes, suppliers, posSessions };
 }

@@ -53,6 +53,22 @@ export class TenantService {
     return this.store.importTemplates();
   }
 
+  documentNumbering() {
+    return this.store.documentNumberingSettings();
+  }
+
+  updateDocumentNumbering(data: any) {
+    return this.store.updateDocumentNumberingSetting(data);
+  }
+
+  documentTemplates() {
+    return this.store.documentTemplateCatalog();
+  }
+
+  fileStorage() {
+    return this.store.fileStorageStatus();
+  }
+
   implementationPartnerWorkspace() {
     return this.store.implementationPartnerWorkspace();
   }

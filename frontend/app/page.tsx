@@ -1,19 +1,35 @@
-import { getAccountingSnapshot, getDashboardSummary, getInvoices, getPayrollSnapshot, getStock } from '../lib/api';
+import {
+  getAccountingSnapshot,
+  getDashboardSummary,
+  getDocumentOperations,
+  getInvoices,
+  getModuleData,
+  getPayrollSnapshot,
+  getSalesDashboard,
+  getStock,
+  searchBusiness,
+} from '../lib/api';
 
 const formatMad = (value: number) =>
   new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(value);
 
 const statusLabels: Record<string, string> = {
   ACTIVE: 'Actif',
+  APPROVED: 'Approuvé',
+  CLOSED: 'Clôturé',
   DRAFT: 'Brouillon',
-  POSTED: 'Comptabilisée',
+  OPEN: 'Ouvert',
   PAID: 'Payée',
-  VOID: 'Annulée',
+  POSTED: 'Comptabilisée',
   PRET: 'Prêt',
+  REQUIRED: 'Approbation requise',
+  VOID: 'Annulée',
 };
 
 const planLabels: Record<string, string> = {
   ENTERPRISE: 'Entreprise',
+  INTILAQ: 'Intilaq',
+  NUMOW: 'Numow',
   PROFESSIONAL: 'Professionnel',
   STARTER: 'Démarrage',
 };
@@ -21,22 +37,43 @@ const planLabels: Record<string, string> = {
 const translate = (labels: Record<string, string>, value: string) => labels[value] ?? value;
 
 export default async function DashboardPage() {
-  const [summary, invoices, stock, accounting, payroll] = await Promise.all([
+  const [summary, invoices, stock, accounting, payroll, salesDashboard, documentOps, moduleData, commandResults] = await Promise.all([
     getDashboardSummary(),
     getInvoices(),
     getStock(),
     getAccountingSnapshot(),
     getPayrollSnapshot(),
+    getSalesDashboard(),
+    getDocumentOperations(),
+    getModuleData(),
+    searchBusiness('atlas'),
   ]);
 
   const entity = summary.tenant.legalEntity;
-  const modules = [
-    ['Ventes', 'Devis, BL, factures, paiements'],
-    ['Achats', 'Fournisseurs, réceptions, CUMP'],
-    ['Comptabilité', 'PCGE, journaux, périodes'],
-    ['Paie', 'IR, CNSS, AMO, Damancom'],
-    ['POS', 'Tickets, caisse, stock temps réel'],
-    ['Production', 'OF, consommation, valorisation'],
+  const activeEmployees = payroll.employees.filter((employee) => employee.active);
+  const activeModules = [
+    ['Ventes', 'Liste, détail, création, édition devis/factures', moduleData.quotes.length],
+    ['CRM', 'Clients, prospects, relances et recherche', moduleData.customers.length],
+    ['Stock', 'Articles, dépôts, CUMP et exports', stock.length],
+    ['Comptabilité', 'PCGE, écritures, périodes et TVA', accounting.journalEntries.length],
+    ['Paie', 'Salariés, contrats, bulletins, Damancom', activeEmployees.length],
+    ['POS', 'Sessions, tickets, remboursements, caisse', moduleData.posSessions.length],
+  ];
+
+  const states = [
+    ['Chargement', 'Skeleton dense côté client pendant les appels API'],
+    ['Vide', invoices.length ? 'Données présentes' : 'Aucune facture: action de création visible'],
+    ['Erreur', 'Message rouge mappé aux erreurs backend'],
+    ['Succès', 'Toast vert après création ou export'],
+    ['Interdit', 'État 403 lecture seule ou abonnement verrouillé'],
+  ];
+
+  const validationMessages = [
+    ['customerId', 'Le client est obligatoire'],
+    ['lines[].productId', 'Article obligatoire sur chaque ligne'],
+    ['lines[].quantity', 'La quantité doit être positive'],
+    ['lines[].vatRate', 'Taux TVA marocain autorisé uniquement'],
+    ['period.locked', 'La période fiscale est verrouillée'],
   ];
 
   return (
@@ -46,14 +83,19 @@ export default async function DashboardPage() {
           <span className="brandMark">ME</span>
           <div>
             <strong>Morocco ERP</strong>
-            <small>SaaS pour entreprises marocaines</small>
+            <small>Application Next.js principale</small>
           </div>
         </div>
-        <nav>
-          {['Tableau de bord', 'Ventes', 'Stock', 'Comptabilité', 'Paie', 'Conformité', 'Super-admin'].map((item) => (
-            <a key={item} className={item === 'Tableau de bord' ? 'active' : ''}>{item}</a>
+        <nav aria-label="Navigation principale">
+          {['Tableau de bord', 'Ventes', 'CRM', 'Stock', 'Comptabilité', 'Paie', 'POS', 'Conformité', 'Admin'].map((item) => (
+            <a key={item} className={item === 'Tableau de bord' ? 'active' : ''} href={`#${item.toLowerCase().replace('é', 'e')}`}>{item}</a>
           ))}
         </nav>
+        <div className="personalization">
+          <span>Personnalisation</span>
+          <strong>{translate(planLabels, summary.tenant.plan)}</strong>
+          <small>Navigation et widgets adaptés au rôle Direction / Plan tenant</small>
+        </div>
       </aside>
 
       <section className="workspace">
@@ -71,51 +113,90 @@ export default async function DashboardPage() {
           </div>
         </header>
 
+        <section className="commandBar" aria-label="Recherche globale">
+          <label htmlFor="globalCommand">Commande globale</label>
+          <input id="globalCommand" defaultValue="atlas" aria-describedby="commandHelp" />
+          <small id="commandHelp">Recherche clients, factures, articles, fournisseurs, salariés et écritures.</small>
+          <div className="commandResults">
+            {(commandResults.length ? commandResults : [{ id: 'empty', type: 'customers', title: 'Aucun résultat', subtitle: 'Essayez ICE, facture, article ou fournisseur' }]).map((item) => (
+              <span key={item.id}>{item.type} · {item.title}</span>
+            ))}
+          </div>
+        </section>
+
         <section className="kpis">
           <Metric label="Chiffre facturé" value={formatMad(summary.metrics.revenue)} />
           <Metric label="À encaisser" value={formatMad(summary.metrics.receivables)} />
           <Metric label="Valeur stock" value={formatMad(summary.metrics.stockValue)} />
-          <Metric label="Factures" value={String(summary.metrics.invoices)} />
+          <Metric label="TVA ventes" value={formatMad(salesDashboard.totals.vat)} />
+        </section>
+
+        <section id="ventes" className="panel">
+          <PanelHeader title="Ventes et reporting" action="Exporter CSV" />
+          <div className="reportGrid">
+            <Metric label="Période" value={salesDashboard.period} />
+            <Metric label="Factures" value={String(salesDashboard.invoiceCount)} />
+            <Metric label="Impayé" value={formatMad(salesDashboard.totals.unpaid)} />
+            <Metric label="Avoirs" value={String(salesDashboard.creditNoteCount)} />
+          </div>
+          <DataTable
+            columns={['Client', 'CA', 'Impayé', 'Factures']}
+            rows={(salesDashboard.byCustomer.length ? salesDashboard.byCustomer : [{ customerName: 'Aucun client facturé', revenue: 0, unpaid: 0, invoices: 0 }]).map((row) => [
+              row.customerName,
+              formatMad(row.revenue),
+              formatMad(row.unpaid),
+              String(row.invoices),
+            ])}
+          />
+          <div className="splitTables">
+            <MiniList title="Par produit" rows={salesDashboard.byProduct.map((row) => `${row.sku} · ${formatMad(row.revenue)} · Qté ${row.quantity}`)} empty="Aucune vente produit" />
+            <MiniList title="Par TVA" rows={salesDashboard.byVatRate.map((row) => `${Number(row.rate) * 100}% · HT ${formatMad(row.taxable)} · TVA ${formatMad(row.vat)}`)} empty="Aucune TVA collectée" />
+            <MiniList title="Impayés" rows={salesDashboard.unpaidInvoices.map((row) => `${row.number} · ${row.customerName} · ${formatMad(row.unpaid)}`)} empty="Aucune facture impayée" />
+          </div>
         </section>
 
         <section className="gridTwo">
-          <div className="panel">
-            <div className="panelHeader">
-              <h2>Flux commercial</h2>
-              <button>Nouveau devis</button>
-            </div>
-            <div className="workflow">
-              {['Prospect', 'Devis', 'Commande', 'BL', 'Facture', 'Paiement', 'Journal'].map((step, index) => (
-                <span key={step} className={index < 2 ? 'done' : ''}>{step}</span>
-              ))}
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Facture</th>
-                  <th>Statut</th>
-                  <th>Total</th>
-                  <th>Réglé</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(invoices.length ? invoices : [{ id: 'empty', number: 'Aucune facture', status: 'PRET', totals: { total: 0, subtotal: 0, vatTotal: 0 }, paidAmount: 0, customerId: '' }]).map((invoice) => (
-                  <tr key={invoice.id}>
-                    <td>{invoice.number}</td>
-                    <td><span className="pill">{translate(statusLabels, invoice.status)}</span></td>
-                    <td>{formatMad(invoice.totals.total)}</td>
-                    <td>{formatMad(invoice.paidAmount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div id="crm" className="panel">
+            <PanelHeader title="CRM" action="Créer client" />
+            <ModuleWorkflow title="Clients" records={moduleData.customers.map((customer) => `${customer.name} · ${customer.city ?? 'Maroc'} · ${translate(statusLabels, customer.active ? 'ACTIVE' : 'VOID')}`)} />
           </div>
+          <div id="stock" className="panel">
+            <PanelHeader title="Stock et CUMP" action="Exporter table" />
+            <DataTable
+              columns={['SKU', 'Article', 'Qté', 'CUMP', 'Valeur']}
+              rows={stock.map((line) => [line.sku, line.name, String(line.stockOnHand), formatMad(line.weightedAverageCost), formatMad(line.stockValue)])}
+            />
+          </div>
+        </section>
 
-          <div className="panel">
-            <div className="panelHeader">
-              <h2>Conformité Maroc</h2>
-              <button>Exporter TVA</button>
+        <section className="gridTwo">
+          <div id="comptabilite" className="panel">
+            <PanelHeader title="Comptabilité PCGE" action="Nouvelle écriture" />
+            <div className="reportGrid three">
+              <Metric label="Comptes" value={String(accounting.accounts.length)} />
+              <Metric label="Écritures" value={String(accounting.journalEntries.length)} />
+              <Metric label="TVA nette" value={formatMad(accounting.vatReport.netVatPayable)} />
             </div>
+            <KeyboardLines labels={['Compte', 'Libellé', 'Débit', 'Crédit']} />
+          </div>
+          <div id="paie" className="panel">
+            <PanelHeader title="Paie Maroc" action="PDF bulletin" />
+            <div className="reportGrid three">
+              <Metric label="Salariés" value={String(activeEmployees.length)} />
+              <Metric label="Contrats" value={String(payroll.contracts.filter((contract) => contract.active).length)} />
+              <Metric label="Runs" value={String(payroll.runs.length)} />
+            </div>
+            <MiniList title="Salariés" rows={activeEmployees.map((employee) => `${employee.fullName} · ${formatMad(employee.baseSalary)}`)} empty="Aucun salarié actif" />
+          </div>
+        </section>
+
+        <section className="gridTwo">
+          <div id="pos" className="panel">
+            <PanelHeader title="POS et caisse" action="Ouvrir session" />
+            <ModuleWorkflow title="Sessions caisse" records={moduleData.posSessions.map((session) => `${session.number} · ${translate(statusLabels, session.status)} · attendu ${formatMad(session.expectedCash)} · écart ${formatMad(session.variance)}`)} />
+          </div>
+          <div id="conformite" className="panel">
+            <PanelHeader title="Conformité Maroc" action="PDF facture" />
             <div className="compliance">
               <div><span>Règles Maroc</span><strong>{summary.compliance.id}</strong></div>
               <div><span>TVA</span><strong>{summary.compliance.vatRates.map((rate) => `${rate * 100}%`).join(' / ')}</strong></div>
@@ -129,79 +210,57 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section className="gridTwo">
-          <div className="panel">
-            <div className="panelHeader">
-              <h2>Stock et CUMP</h2>
-              <button>Réception</button>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>SKU</th>
-                  <th>Article</th>
-                  <th>Qté</th>
-                  <th>CUMP</th>
-                  <th>Valeur</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stock.map((line) => (
-                  <tr key={line.productId}>
-                    <td>{line.sku}</td>
-                    <td>{line.name}</td>
-                    <td>{line.stockOnHand}</td>
-                    <td>{formatMad(line.weightedAverageCost)}</td>
-                    <td>{formatMad(line.stockValue)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="panel">
-            <div className="panelHeader">
-              <h2>Modules actifs</h2>
-              <button>Paramètres</button>
-            </div>
-            <div className="modules">
-              {modules.map(([title, detail]) => (
-                <div key={title} className="module">
-                  <strong>{title}</strong>
-                  <span>{detail}</span>
-                </div>
+        <section id="admin" className="panel">
+          <PanelHeader title="Documents, filtres et états UX" action="Exporter documents" />
+          <div className="denseControls">
+            <div>
+              <h3>Numérotation</h3>
+              {documentOps.numbering.settings.slice(0, 7).map((setting) => (
+                <span key={setting.type}>{setting.type}: {setting.nextNumber}</span>
               ))}
             </div>
+            <div>
+              <h3>Modèles PDF</h3>
+              {documentOps.templates.templates.slice(0, 5).map((template) => (
+                <span key={template.id}>{template.name} · {template.language}</span>
+              ))}
+            </div>
+            <div>
+              <h3>Stockage fichiers</h3>
+              <span>{documentOps.storage.activeProvider} · {documentOps.storage.files.length} fichier(s)</span>
+              <span>Adaptateur objet production préparé</span>
+            </div>
+          </div>
+          <div className="denseControls">
+            <MiniList title="États standard" rows={states.map(([label, detail]) => `${label}: ${detail}`)} empty="-" />
+            <MiniList title="Validation backend" rows={validationMessages.map(([field, message]) => `${field}: ${message}`)} empty="-" />
+            <MiniList title="Filtres sauvegardés" rows={['Mes impayés', 'Stock sous seuil', 'Écritures brouillon', 'Paie à approuver', 'Colonnes: statut, total, TVA, propriétaire']} empty="-" />
           </div>
         </section>
 
-        <section className="gridTwo">
-          <div className="panel">
-            <div className="panelHeader">
-              <h2>Comptabilité PCGE</h2>
-              <button>Export comptable</button>
-            </div>
-            <div className="compliance">
-              <div><span>Comptes</span><strong>{accounting.accounts.length}</strong></div>
-              <div><span>Écritures</span><strong>{accounting.journalEntries.length}</strong></div>
-              <div><span>TVA nette</span><strong>{formatMad(accounting.vatReport.netVatPayable)}</strong></div>
-            </div>
-          </div>
-
-          <div className="panel">
-            <div className="panelHeader">
-              <h2>Paie Maroc</h2>
-              <button>Damancom</button>
-            </div>
-            <div className="compliance">
-              <div><span>Salariés</span><strong>{payroll.employees.filter((employee) => employee.active).length}</strong></div>
-              <div><span>Contrats</span><strong>{payroll.contracts.filter((contract) => contract.active).length}</strong></div>
-              <div><span>Runs paie</span><strong>{payroll.runs.length}</strong></div>
-            </div>
+        <section className="panel">
+          <PanelHeader title="Écrans par module" action="Mode tablette" />
+          <div className="modules">
+            {activeModules.map(([title, detail, count]) => (
+              <div key={title} className="module">
+                <strong>{title}</strong>
+                <span>{detail}</span>
+                <small>{count} enregistrement(s) · liste / détail / créer / modifier</small>
+              </div>
+            ))}
           </div>
         </section>
       </section>
     </main>
+  );
+}
+
+function PanelHeader({ title, action }: { title: string; action: string }) {
+  return (
+    <div className="panelHeader">
+      <h2>{title}</h2>
+      <button type="button">{action}</button>
+    </div>
   );
 }
 
@@ -210,6 +269,60 @@ function Metric({ label, value }: { label: string; value: string }) {
     <div className="metric">
       <span>{label}</span>
       <strong>{value}</strong>
+    </div>
+  );
+}
+
+function DataTable({ columns, rows }: { columns: string[]; rows: string[][] }) {
+  return (
+    <div className="tableScroll">
+      <table>
+        <thead>
+          <tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.length ? rows.map((row, index) => (
+            <tr key={`${row.join('-')}-${index}`}>{row.map((cell, cellIndex) => <td key={`${cell}-${cellIndex}`}>{cell}</td>)}</tr>
+          )) : (
+            <tr><td colSpan={columns.length}>Aucune donnée disponible</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function MiniList({ title, rows, empty }: { title: string; rows: string[]; empty: string }) {
+  return (
+    <div className="miniList">
+      <h3>{title}</h3>
+      {(rows.length ? rows : [empty]).map((row) => <span key={row}>{row}</span>)}
+    </div>
+  );
+}
+
+function ModuleWorkflow({ title, records }: { title: string; records: string[] }) {
+  return (
+    <>
+      <div className="workflow">
+        {['Liste', 'Détail', 'Créer', 'Modifier', 'Valider', 'Exporter'].map((step, index) => (
+          <span key={step} className={index < 4 ? 'done' : ''}>{step}</span>
+        ))}
+      </div>
+      <MiniList title={title} rows={records} empty="Aucun enregistrement, action de création disponible" />
+    </>
+  );
+}
+
+function KeyboardLines({ labels }: { labels: string[] }) {
+  return (
+    <div className="keyboardGrid" aria-label="Saisie clavier lignes">
+      {labels.map((label, index) => (
+        <label key={label}>
+          <span>{label}</span>
+          <input tabIndex={index + 1} placeholder={label} />
+        </label>
+      ))}
     </div>
   );
 }

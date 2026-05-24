@@ -18,6 +18,8 @@ import {
   DeliveryNote,
   DocumentLine,
   DocumentLineInput,
+  DocumentExportType,
+  DocumentTemplateSetting,
   DocumentTotals,
   Employee,
   EmployeePortalAccess,
@@ -58,6 +60,7 @@ import {
   SecurityNotification,
   StockMove,
   StockTransfer,
+  StoredFile,
   Supplier,
   SupplierInvoice,
   Tenant,
@@ -148,6 +151,7 @@ export class ErpStoreService {
       },
       settings: {
         invoiceSeries: 'FAC',
+        documentSeries: this.defaultDocumentSeries('FAC'),
         fiscalYearStartMonth: 1,
         vatStatus: 'ENABLED',
         approvalLimits: { ...defaultApprovalLimits },
@@ -410,6 +414,8 @@ export class ErpStoreService {
       leaveRequests: [],
       employeePortalAccesses: [],
       legalEvidences: [],
+      storedFiles: [],
+      documentTemplates: this.defaultDocumentTemplates(tenant.id),
       posSessions: [],
       cashDrawerMovements: [],
       posOfflineQueue: [],
@@ -454,6 +460,7 @@ export class ErpStoreService {
       },
       settings: {
         invoiceSeries: 'FAC',
+        documentSeries: this.defaultDocumentSeries('FAC'),
         fiscalYearStartMonth: 1,
         vatStatus: input.vatEnabled === false ? 'EXEMPT' : 'ENABLED',
         approvalLimits: { ...defaultApprovalLimits },
@@ -501,6 +508,8 @@ export class ErpStoreService {
       leaveRequests: [],
       employeePortalAccesses: [],
       legalEvidences: [],
+      storedFiles: [],
+      documentTemplates: this.defaultDocumentTemplates(tenantId),
       posSessions: [],
       cashDrawerMovements: [],
       posOfflineQueue: [],
@@ -1728,6 +1737,12 @@ export class ErpStoreService {
       invoiceSeries: input.invoiceSeries !== undefined
         ? this.nonEmpty(input.invoiceSeries, 'La série de facturation est obligatoire').toUpperCase()
         : workspace.tenant.settings.invoiceSeries,
+      documentSeries: {
+        ...workspace.tenant.settings.documentSeries,
+        INVOICE: input.invoiceSeries !== undefined
+          ? this.nonEmpty(input.invoiceSeries, 'La série de facturation est obligatoire').toUpperCase()
+          : workspace.tenant.settings.documentSeries.INVOICE,
+      },
       fiscalYearStartMonth: input.fiscalYearStartMonth !== undefined
         ? this.month(input.fiscalYearStartMonth)
         : workspace.tenant.settings.fiscalYearStartMonth,
@@ -1794,9 +1809,11 @@ export class ErpStoreService {
       vatEnabled: input.vatEnabled ?? entity.vatEnabled,
     };
 
+    const invoiceSeries = this.nonEmpty(input.invoiceSeries ?? workspace.tenant.settings.invoiceSeries, 'La série de facturation est obligatoire').toUpperCase();
     workspace.tenant.settings = {
       ...workspace.tenant.settings,
-      invoiceSeries: this.nonEmpty(input.invoiceSeries ?? workspace.tenant.settings.invoiceSeries, 'La série de facturation est obligatoire').toUpperCase(),
+      invoiceSeries,
+      documentSeries: { ...workspace.tenant.settings.documentSeries, INVOICE: invoiceSeries },
       fiscalYearStartMonth: this.month(input.fiscalYearStartMonth ?? workspace.tenant.settings.fiscalYearStartMonth),
       vatStatus: input.vatStatus ?? (workspace.tenant.legalEntity.vatEnabled ? 'ENABLED' : 'EXEMPT'),
     };
@@ -2715,7 +2732,7 @@ export class ErpStoreService {
       id: this.id('po'),
       tenantId: workspace.tenant.id,
       supplierId: input.supplierId,
-      number: this.nextNumber(workspace, 'BA'),
+      number: this.nextNumber(workspace, this.documentPrefix(workspace, 'PURCHASE_ORDER')),
       date: today(),
       expectedDate: input.expectedDate ? this.isoDate(input.expectedDate, 'Date prévue achat invalide') : undefined,
       status: 'DRAFT',
@@ -2766,7 +2783,7 @@ export class ErpStoreService {
     this.supplier(workspace, supplierId);
     const warehouseId = input.warehouseId ?? workspace.warehouses[0]?.id;
     this.warehouse(workspace, warehouseId);
-    const number = this.nextNumber(workspace, 'BR');
+    const number = this.nextNumber(workspace, this.documentPrefix(workspace, 'PURCHASE_RECEIPT'));
     let total = 0;
     const receiptInputLines = input.lines ?? order?.lines.map((line) => ({
       productId: line.productId,
@@ -2988,7 +3005,7 @@ export class ErpStoreService {
     const quote: Quote = {
       id: this.id('quo'),
       tenantId: workspace.tenant.id,
-      number: this.nextNumber(workspace, 'DV'),
+      number: this.nextNumber(workspace, this.documentPrefix(workspace, 'QUOTE')),
       customerId: input.customerId,
       status: 'DRAFT',
       revision: 1,
@@ -3050,27 +3067,140 @@ export class ErpStoreService {
   }
 
   exportQuotePdf(quoteId: string, tenantId?: string) {
+    const pdf = this.exportBusinessDocumentPdf('QUOTE', quoteId, tenantId);
+    return { quoteId: pdf.documentId, quoteNumber: pdf.documentNumber, ...pdf };
+  }
+
+  exportInvoicePdf(invoiceId: string, tenantId?: string) {
+    const pdf = this.exportBusinessDocumentPdf('INVOICE', invoiceId, tenantId);
+    return { invoiceId: pdf.documentId, invoiceNumber: pdf.documentNumber, ...pdf };
+  }
+
+  exportDeliveryNotePdf(deliveryNoteId: string, tenantId?: string) {
+    const pdf = this.exportBusinessDocumentPdf('DELIVERY_NOTE', deliveryNoteId, tenantId);
+    return { deliveryNoteId: pdf.documentId, deliveryNoteNumber: pdf.documentNumber, ...pdf };
+  }
+
+  exportCreditNotePdf(creditNoteId: string, tenantId?: string) {
+    const pdf = this.exportBusinessDocumentPdf('CREDIT_NOTE', creditNoteId, tenantId);
+    return { creditNoteId: pdf.documentId, creditNoteNumber: pdf.documentNumber, ...pdf };
+  }
+
+  exportPurchaseOrderPdf(orderId: string, tenantId?: string) {
+    const pdf = this.exportBusinessDocumentPdf('PURCHASE_ORDER', orderId, tenantId);
+    return { purchaseOrderId: pdf.documentId, purchaseOrderNumber: pdf.documentNumber, ...pdf };
+  }
+
+  exportPurchaseReceiptPdf(receiptId: string, tenantId?: string) {
+    const pdf = this.exportBusinessDocumentPdf('PURCHASE_RECEIPT', receiptId, tenantId);
+    return { purchaseReceiptId: pdf.documentId, purchaseReceiptNumber: pdf.documentNumber, ...pdf };
+  }
+
+  documentNumberingSettings(tenantId?: string) {
     const workspace = this.workspace(tenantId);
-    const quote = this.quote(workspace, quoteId);
-    const customer = this.customer(workspace, quote.customerId);
-    const lines = [
-      `Devis ${quote.number} révision ${quote.revision}`,
-      `Entreprise ${workspace.tenant.legalEntity.tradeName}`,
-      `Client ${customer.name}`,
-      `Total HT ${quote.totals.subtotal.toFixed(2)} MAD`,
-      `TVA ${quote.totals.vatTotal.toFixed(2)} MAD`,
-      `Total TTC ${quote.totals.total.toFixed(2)} MAD`,
-      ...quote.lines.map((line) => `${line.sku} ${line.description} x${line.quantity} = ${line.total.toFixed(2)} MAD`),
-    ];
-    const contentBase64 = Buffer.from(this.simplePdf(lines), 'binary').toString('base64');
-    this.audit(workspace, 'quote.pdf.exported', 'Quote', quote.id, { quoteId, fileName: `${quote.number}.pdf` });
+    const year = new Date().getFullYear();
+    const types: DocumentExportType[] = ['QUOTE', 'ORDER', 'DELIVERY_NOTE', 'INVOICE', 'CREDIT_NOTE', 'PURCHASE_ORDER', 'PURCHASE_RECEIPT', 'PAYSLIP'];
     return {
-      quoteId: quote.id,
-      quoteNumber: quote.number,
-      fileName: `${quote.number}.pdf`,
-      mimeType: 'application/pdf',
-      contentBase64,
-      status: 'PREPARED',
+      fiscalYear: year,
+      settings: types.map((type) => {
+        const prefix = this.documentPrefix(workspace, type);
+        const current = workspace.sequences[`${prefix}-${year}`] ?? 0;
+        return {
+          type,
+          prefix,
+          current,
+          nextNumber: `${prefix}-${year}-${String(current + 1).padStart(5, '0')}`,
+          lockedAfterPosting: ['INVOICE', 'CREDIT_NOTE', 'PURCHASE_RECEIPT', 'PAYSLIP'].includes(type),
+        };
+      }),
+    };
+  }
+
+  updateDocumentNumberingSetting(input: { type: DocumentExportType; prefix: string }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    this.assertCanWrite(workspace);
+    const type = input.type;
+    const prefix = this.nonEmpty(input.prefix, 'Le préfixe de numérotation est obligatoire').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+    if (!prefix) throw new BadRequestException('Le préfixe de numérotation est obligatoire');
+    workspace.tenant.settings.documentSeries[type] = prefix;
+    if (type === 'INVOICE') workspace.tenant.settings.invoiceSeries = prefix;
+    this.audit(workspace, 'document-numbering.updated', 'Tenant', workspace.tenant.id, { type, prefix });
+    return this.documentNumberingSettings(workspace.tenant.id);
+  }
+
+  documentTemplateCatalog(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      templates: workspace.documentTemplates,
+      legalFooter: this.legalFooter(workspace),
+      bilingualReady: workspace.documentTemplates.every((template) => template.fields.some((field) => field.includes('arabic') || field.includes('Ar'))),
+    };
+  }
+
+  fileStorageStatus(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    return {
+      activeProvider: 'LOCAL_DEV',
+      providers: [
+        { id: 'LOCAL_DEV', mode: 'development', writable: true, root: `storage/${workspace.tenant.id}` },
+        { id: 'OBJECT_STORAGE_ADAPTER', mode: 'production', writable: false, requiredEnv: ['OBJECT_STORAGE_BUCKET', 'OBJECT_STORAGE_REGION'] },
+      ],
+      files: workspace.storedFiles,
+      totalSize: workspace.storedFiles.reduce((sum, file) => sum + file.size, 0),
+    };
+  }
+
+  salesDashboardReport(input: { year?: number; month?: number } = {}, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const year = input.year ?? Number(today().slice(0, 4));
+    const month = input.month;
+    const inPeriod = (date: string) => Number(date.slice(0, 4)) === year && (!month || Number(date.slice(5, 7)) === month);
+    const invoices = workspace.invoices.filter((invoice) => inPeriod(invoice.date));
+    const creditNotes = workspace.creditNotes.filter((credit) => inPeriod(credit.date));
+    const byCustomer = new Map<string, { customerId: string; customerName: string; revenue: number; unpaid: number; invoices: number }>();
+    const byProduct = new Map<string, { productId: string; sku: string; name: string; quantity: number; revenue: number }>();
+    const byVatRate = new Map<string, { rate: string; taxable: number; vat: number; total: number }>();
+    for (const invoice of invoices) {
+      const customer = this.customer(workspace, invoice.customerId);
+      const customerRow = byCustomer.get(customer.id) ?? { customerId: customer.id, customerName: customer.name, revenue: 0, unpaid: 0, invoices: 0 };
+      customerRow.revenue = r2(customerRow.revenue + invoice.totals.total);
+      customerRow.unpaid = r2(customerRow.unpaid + Math.max(0, invoice.totals.total - invoice.paidAmount));
+      customerRow.invoices += 1;
+      byCustomer.set(customer.id, customerRow);
+      for (const line of invoice.lines) {
+        const product = this.product(workspace, line.productId);
+        const productRow = byProduct.get(product.id) ?? { productId: product.id, sku: product.sku, name: product.name, quantity: 0, revenue: 0 };
+        productRow.quantity = r2(productRow.quantity + line.quantity);
+        productRow.revenue = r2(productRow.revenue + line.total);
+        byProduct.set(product.id, productRow);
+        const rateKey = `${line.vatRate}`;
+        const vatRow = byVatRate.get(rateKey) ?? { rate: rateKey, taxable: 0, vat: 0, total: 0 };
+        vatRow.taxable = r2(vatRow.taxable + line.subtotal);
+        vatRow.vat = r2(vatRow.vat + line.vatAmount);
+        vatRow.total = r2(vatRow.total + line.total);
+        byVatRate.set(rateKey, vatRow);
+      }
+    }
+    const creditTotal = creditNotes.reduce((sum, credit) => sum + credit.totals.total, 0);
+    return {
+      period: month ? `${year}-${String(month).padStart(2, '0')}` : `${year}`,
+      invoiceCount: invoices.length,
+      creditNoteCount: creditNotes.length,
+      totals: {
+        revenue: r2(invoices.reduce((sum, invoice) => sum + invoice.totals.total, 0) - creditTotal),
+        unpaid: r2(invoices.reduce((sum, invoice) => sum + Math.max(0, invoice.totals.total - invoice.paidAmount), 0)),
+        vat: r2(invoices.reduce((sum, invoice) => sum + invoice.totals.vatTotal, 0) - creditNotes.reduce((sum, credit) => sum + credit.totals.vatTotal, 0)),
+      },
+      byCustomer: [...byCustomer.values()].sort((a, b) => b.revenue - a.revenue),
+      byProduct: [...byProduct.values()].sort((a, b) => b.revenue - a.revenue),
+      byVatRate: [...byVatRate.values()].sort((a, b) => Number(a.rate) - Number(b.rate)),
+      unpaidInvoices: invoices.filter((invoice) => invoice.totals.total > invoice.paidAmount).map((invoice) => ({
+        invoiceId: invoice.id,
+        number: invoice.number,
+        customerName: this.customer(workspace, invoice.customerId).name,
+        dueDate: invoice.dueDate,
+        unpaid: r2(invoice.totals.total - invoice.paidAmount),
+      })),
     };
   }
 
@@ -3110,7 +3240,7 @@ export class ErpStoreService {
     const order: SalesOrder = {
       id: this.id('so'),
       tenantId: workspace.tenant.id,
-      number: this.nextNumber(workspace, 'BC'),
+      number: this.nextNumber(workspace, this.documentPrefix(workspace, 'ORDER')),
       customerId: input.customerId,
       sourceQuoteId: input.sourceQuoteId,
       status: 'CONFIRMED',
@@ -3154,7 +3284,7 @@ export class ErpStoreService {
     const deliveryNote: DeliveryNote = {
       id: this.id('bl'),
       tenantId: workspace.tenant.id,
-      number: this.nextNumber(workspace, 'BL'),
+      number: this.nextNumber(workspace, this.documentPrefix(workspace, 'DELIVERY_NOTE')),
       customerId: order.customerId,
       sourceOrderId: order.id,
       status: 'POSTED',
@@ -3240,7 +3370,7 @@ export class ErpStoreService {
     const invoice: Invoice = {
       id: this.id('fac'),
       tenantId: workspace.tenant.id,
-      number: this.nextNumber(workspace, workspace.tenant.settings.invoiceSeries),
+      number: this.nextNumber(workspace, this.documentPrefix(workspace, 'INVOICE')),
       customerId: input.customerId,
       status: 'POSTED',
       date: today(),
@@ -3295,7 +3425,7 @@ export class ErpStoreService {
     const creditNote: CreditNote = {
       id: this.id('cn'),
       tenantId: workspace.tenant.id,
-      number: this.nextNumber(workspace, 'NC'),
+      number: this.nextNumber(workspace, this.documentPrefix(workspace, 'CREDIT_NOTE')),
       invoiceId: invoice.id,
       customerId: invoice.customerId,
       status: 'POSTED',
@@ -5145,6 +5275,188 @@ export class ErpStoreService {
     if (required.some((value) => !value)) {
       throw new BadRequestException('L’identité légale du tenant est incomplète pour la facturation marocaine');
     }
+  }
+
+  private defaultDocumentSeries(invoiceSeries: string): Partial<Record<DocumentExportType, string>> {
+    return {
+      QUOTE: 'DV',
+      ORDER: 'BC',
+      DELIVERY_NOTE: 'BL',
+      INVOICE: invoiceSeries,
+      CREDIT_NOTE: 'NC',
+      PURCHASE_ORDER: 'BA',
+      PURCHASE_RECEIPT: 'BR',
+      PAYSLIP: 'BUL',
+    };
+  }
+
+  private defaultDocumentTemplates(tenantId: string): DocumentTemplateSetting[] {
+    const footer = 'ICE {ice} - IF {ifNumber} - RC {rc} - Patente {patente} - Adresse {address} - TVA selon régime tenant';
+    const baseFields = ['tradeName', 'ice', 'ifNumber', 'rc', 'patente', 'address', 'city', 'arabicName', 'arabicAddress', 'lines', 'vatByRate', 'totalTtc'];
+    return (['QUOTE', 'DELIVERY_NOTE', 'INVOICE', 'CREDIT_NOTE', 'PURCHASE_ORDER', 'PURCHASE_RECEIPT', 'PAYSLIP'] as DocumentExportType[]).map((type) => ({
+      id: `tpl-${type.toLowerCase()}`,
+      tenantId,
+      type,
+      name: `${type} Maroc FR/AR`,
+      language: 'BILINGUAL',
+      logoKey: `tenants/${tenantId}/branding/logo-placeholder.png`,
+      legalFooter: footer,
+      fields: type === 'PAYSLIP'
+        ? ['employeeName', 'cin', 'cnssNumber', 'period', 'grossSalary', 'cnssEmployee', 'amoEmployee', 'ir', 'netSalary', 'arabicName', 'arabicAddress']
+        : baseFields,
+      active: true,
+      updatedAt: today(),
+    }));
+  }
+
+  private documentPrefix(workspace: TenantWorkspace, type: DocumentExportType): string {
+    const defaults = this.defaultDocumentSeries(workspace.tenant.settings.invoiceSeries);
+    return workspace.tenant.settings.documentSeries[type] ?? defaults[type] ?? type;
+  }
+
+  private legalFooter(workspace: TenantWorkspace): string {
+    const entity = workspace.tenant.legalEntity;
+    return `${entity.tradeName} | ICE ${entity.ice} | IF ${entity.ifNumber} | RC ${entity.rc} | Patente ${entity.patente} | CNSS ${entity.cnssNumber} | ${entity.address}, ${entity.city}`;
+  }
+
+  private exportBusinessDocumentPdf(type: DocumentExportType, documentId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const snapshot = this.documentPdfSnapshot(workspace, type, documentId);
+    const template = workspace.documentTemplates.find((candidate) => candidate.type === type && candidate.active);
+    const lines = [
+      `${snapshot.title} ${snapshot.number}`,
+      `Date ${snapshot.date}`,
+      `Entreprise ${workspace.tenant.legalEntity.tradeName}`,
+      `ICE ${workspace.tenant.legalEntity.ice}`,
+      `IF ${workspace.tenant.legalEntity.ifNumber}`,
+      `RC ${workspace.tenant.legalEntity.rc}`,
+      `Patente ${workspace.tenant.legalEntity.patente}`,
+      `CNSS ${workspace.tenant.legalEntity.cnssNumber}`,
+      `Adresse ${workspace.tenant.legalEntity.address} ${workspace.tenant.legalEntity.city}`,
+      `${snapshot.partnerLabel} ${snapshot.partnerName}`,
+      `Identifiants ${snapshot.partnerIdentifiers}`,
+      `Modèle ${template?.name ?? 'Document Maroc'} ${template?.language ?? 'FR'}`,
+      ...snapshot.lines.map((line) => `${line.sku} ${line.description} | Qté ${line.quantity} | PU ${line.unitPrice.toFixed(2)} | TVA ${(line.vatRate * 100).toFixed(0)}% | HT ${line.subtotal.toFixed(2)} | TVA ${line.vatAmount.toFixed(2)} | TTC ${line.total.toFixed(2)}`),
+      ...Object.entries(snapshot.totals.vatByRate).map(([rate, amount]) => `TVA par taux ${rate.includes('%') ? rate : `${Number(rate) * 100}%`} = ${amount.toFixed(2)} MAD`),
+      `Total HT ${snapshot.totals.subtotal.toFixed(2)} MAD`,
+      `Total TVA ${snapshot.totals.vatTotal.toFixed(2)} MAD`,
+      `Total TTC ${snapshot.totals.total.toFixed(2)} MAD`,
+      `Mentions ${snapshot.mentions.join(' | ')}`,
+      `Pied légal ${this.legalFooter(workspace)}`,
+      'Champs bilingues prêts: nom arabe, adresse arabe, désignation arabe',
+    ];
+    const contentBase64 = Buffer.from(this.simplePdf(lines), 'binary').toString('base64');
+    const fileName = `${snapshot.number}.pdf`;
+    const storedFile = this.storeFileArtifact(workspace, {
+      fileName,
+      mimeType: 'application/pdf',
+      contentBase64,
+      metadata: { type, documentId: snapshot.id, number: snapshot.number },
+    });
+    this.archiveEvidence(workspace, 'DOCUMENT_PDF', fileName, { type, documentId: snapshot.id, number: snapshot.number, storageKey: storedFile.key, checksum: storedFile.checksum });
+    this.audit(workspace, 'document.pdf.exported', type, snapshot.id, { type, fileName, storageKey: storedFile.key });
+    return {
+      documentId: snapshot.id,
+      documentNumber: snapshot.number,
+      type,
+      fileName,
+      mimeType: 'application/pdf' as const,
+      contentBase64,
+      storageKey: storedFile.key,
+      checksum: storedFile.checksum,
+      requiredMentions: snapshot.mentions,
+      status: 'PREPARED',
+    };
+  }
+
+  private documentPdfSnapshot(workspace: TenantWorkspace, type: DocumentExportType, documentId: string) {
+    const salesPartner = (customerId: string) => {
+      const customer = this.customer(workspace, customerId);
+      return {
+        partnerLabel: 'Client',
+        partnerName: customer.name,
+        partnerIdentifiers: `ICE ${customer.ice ?? '-'} IF ${customer.ifNumber ?? '-'} RC ${customer.rc ?? '-'}`,
+      };
+    };
+    const purchasePartner = (supplierId: string) => {
+      const supplier = this.supplier(workspace, supplierId);
+      return {
+        partnerLabel: 'Fournisseur',
+        partnerName: supplier.name,
+        partnerIdentifiers: `ICE ${supplier.ice ?? '-'} IF ${supplier.ifNumber ?? '-'} RC ${supplier.rc ?? '-'}`,
+      };
+    };
+    const fromPurchaseLines = (lines: Array<{ productId: string; quantity: number; unitCost: number; value: number }>): DocumentLine[] => lines.map((line) => {
+      const product = this.product(workspace, line.productId);
+      const vatRate = product.vatRate;
+      const vatAmount = r2(line.value * vatRate);
+      return {
+        productId: product.id,
+        sku: product.sku,
+        description: product.name,
+        quantity: line.quantity,
+        unitPrice: line.unitCost,
+        vatRate,
+        subtotal: r2(line.value),
+        vatAmount,
+        total: r2(line.value + vatAmount),
+      };
+    });
+    const mentions = ['ICE vendeur', 'IF vendeur', 'RC vendeur', 'Patente vendeur', 'ICE/IF client ou fournisseur', 'Numéro séquentiel', 'Date document', 'Lignes TVA', 'Total HT', 'Total TVA', 'Total TTC'];
+    if (type === 'QUOTE') {
+      const quote = this.quote(workspace, documentId);
+      return { id: quote.id, title: 'Devis', number: quote.number, date: quote.date, lines: quote.lines, totals: quote.totals, mentions, ...salesPartner(quote.customerId) };
+    }
+    if (type === 'ORDER') {
+      const order = this.salesOrder(workspace, documentId);
+      return { id: order.id, title: 'Commande client', number: order.number, date: order.date, lines: order.lines, totals: order.totals, mentions, ...salesPartner(order.customerId) };
+    }
+    if (type === 'DELIVERY_NOTE') {
+      const delivery = this.deliveryNote(workspace, documentId);
+      return { id: delivery.id, title: 'Bon de livraison', number: delivery.number, date: delivery.date, lines: delivery.lines, totals: delivery.totals, mentions, ...salesPartner(delivery.customerId) };
+    }
+    if (type === 'INVOICE') {
+      const invoice = this.invoice(workspace, documentId);
+      return { id: invoice.id, title: 'Facture', number: invoice.number, date: invoice.date, lines: invoice.lines, totals: invoice.totals, mentions: [...mentions, ...invoice.compliance.legalMentions], ...salesPartner(invoice.customerId) };
+    }
+    if (type === 'CREDIT_NOTE') {
+      const credit = workspace.creditNotes.find((candidate) => candidate.id === documentId || candidate.number === documentId);
+      if (!credit) throw new NotFoundException('Avoir introuvable');
+      return { id: credit.id, title: 'Avoir', number: credit.number, date: credit.date, lines: credit.lines, totals: credit.totals, mentions, ...salesPartner(credit.customerId) };
+    }
+    if (type === 'PURCHASE_ORDER') {
+      const order = this.purchaseOrder(workspace, documentId);
+      const lines = fromPurchaseLines(order.lines);
+      return { id: order.id, title: 'Bon de commande achat', number: order.number, date: order.date, lines, totals: this.totals(lines), mentions, ...purchasePartner(order.supplierId) };
+    }
+    if (type === 'PURCHASE_RECEIPT') {
+      const receipt = this.purchaseReceipt(workspace, documentId);
+      const lines = fromPurchaseLines(receipt.lines);
+      return { id: receipt.id, title: 'Bon de réception', number: receipt.number, date: receipt.date, lines, totals: this.totals(lines), mentions, ...purchasePartner(receipt.supplierId) };
+    }
+    throw new BadRequestException('Type de document PDF non supporté');
+  }
+
+  private storeFileArtifact(workspace: TenantWorkspace, input: { fileName: string; mimeType: string; contentBase64: string; metadata: Record<string, unknown> }): StoredFile {
+    const bytes = Buffer.from(input.contentBase64, 'base64');
+    const checksum = createHash('sha256').update(bytes).digest('hex');
+    const existing = workspace.storedFiles.find((file) => file.checksum === checksum && file.fileName === input.fileName);
+    if (existing) return existing;
+    const file: StoredFile = {
+      id: this.id('file'),
+      tenantId: workspace.tenant.id,
+      key: `local/${workspace.tenant.id}/${today()}/${input.fileName}`,
+      fileName: input.fileName,
+      mimeType: input.mimeType,
+      size: bytes.length,
+      checksum,
+      provider: 'LOCAL_DEV',
+      status: 'STORED',
+      metadata: input.metadata,
+      createdAt: new Date().toISOString(),
+    };
+    workspace.storedFiles.push(file);
+    return file;
   }
 
   private assertPeriodOpen(workspace: TenantWorkspace, date: string): void {

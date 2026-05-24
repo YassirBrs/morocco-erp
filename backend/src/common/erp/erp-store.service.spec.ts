@@ -1542,4 +1542,62 @@ describe('ErpStoreService working ERP workflows', () => {
     ]));
     expect(profitability.totals.margin).toBe(8050);
   });
+
+  it('generates Moroccan document PDFs, persists file metadata, exposes templates, and controls numbering by document type', () => {
+    const quote = store.createQuote({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    store.approveQuote(quote.id);
+    const order = store.convertQuoteToOrder(quote.id);
+    const delivery = store.createDeliveryNoteFromOrder(order.id);
+    const invoice = store.convertOrderToInvoice(order.id);
+    const creditNote = store.createCreditNote({ invoiceId: invoice.id, lines: [{ productId: 'prd-1', quantity: 0.25 }] });
+    const purchaseOrder = store.approvePurchaseOrder(store.createPurchaseOrder({ supplierId: 'sup-1', lines: [{ productId: 'prd-raw', quantity: 2, unitCost: 90 }] }).id);
+    const purchaseReceipt = store.createPurchaseReceipt({ purchaseOrderId: purchaseOrder.id });
+
+    const pdfs = [
+      store.exportQuotePdf(quote.id),
+      store.exportDeliveryNotePdf(delivery.id),
+      store.exportInvoicePdf(invoice.id),
+      store.exportCreditNotePdf(creditNote.id),
+      store.exportPurchaseOrderPdf(purchaseOrder.id),
+      store.exportPurchaseReceiptPdf(purchaseReceipt.id),
+    ];
+    const invoicePdfText = Buffer.from(pdfs[2].contentBase64, 'base64').toString('binary');
+    const numbering = store.documentNumberingSettings();
+    const updatedNumbering = store.updateDocumentNumberingSetting({ type: 'INVOICE', prefix: 'FCA' });
+    const templates = store.documentTemplateCatalog();
+    const storage = store.fileStorageStatus();
+
+    expect(pdfs.every((pdf) => Buffer.from(pdf.contentBase64, 'base64').toString('binary').startsWith('%PDF-'))).toBe(true);
+    for (const required of ['Facture', invoice.number, 'ICE 001525678000083', 'IF 1525678', 'RC CASA-425001', 'Patente 34218811', 'Client Rabat Retail SARL', 'TVA par taux', 'Total TTC', 'Champs bilingues prêts']) {
+      expect(invoicePdfText).toContain(required);
+    }
+    expect(invoicePdfText).toContain('TVA par taux 20%');
+    expect(invoicePdfText).not.toContain('NaN%');
+    expect(pdfs[2].requiredMentions).toEqual(expect.arrayContaining(['ICE vendeur', 'Numéro séquentiel', 'Lignes TVA', 'Total TTC']));
+    expect(numbering.settings.map((setting) => setting.type)).toEqual(expect.arrayContaining(['QUOTE', 'INVOICE', 'PURCHASE_ORDER', 'PAYSLIP']));
+    expect(updatedNumbering.settings.find((setting) => setting.type === 'INVOICE')?.prefix).toBe('FCA');
+    expect(templates.bilingualReady).toBe(true);
+    expect(templates.templates.map((template) => template.type)).toEqual(expect.arrayContaining(['INVOICE', 'PAYSLIP']));
+    expect(storage.activeProvider).toBe('LOCAL_DEV');
+    expect(storage.providers.map((provider) => provider.id)).toEqual(['LOCAL_DEV', 'OBJECT_STORAGE_ADAPTER']);
+    expect(storage.files).toHaveLength(6);
+    expect(store.listLegalEvidences().map((item) => item.type)).toContain('DOCUMENT_PDF');
+  });
+
+  it('builds a sales dashboard by period, customer, product, VAT rate, and unpaid balance', () => {
+    const first = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 2 }] });
+    const second = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    store.recordPayment({ invoiceId: first.id, amount: 1000, method: 'BANK' });
+    store.createCreditNote({ invoiceId: second.id, lines: [{ productId: 'prd-2', quantity: 0.25 }] });
+
+    const report = store.salesDashboardReport({ year: 2026 });
+
+    expect(report.invoiceCount).toBe(2);
+    expect(report.creditNoteCount).toBe(1);
+    expect(report.totals).toMatchObject({ revenue: 3120, unpaid: 2480, vat: 520 });
+    expect(report.byCustomer[0]).toMatchObject({ customerName: 'Rabat Retail SARL', revenue: 3480, unpaid: 2480, invoices: 2 });
+    expect(report.byProduct.map((row) => row.sku)).toEqual(expect.arrayContaining(['SKU-CHAIR', 'SVC-INSTALL']));
+    expect(report.byVatRate).toEqual([expect.objectContaining({ rate: '0.2', taxable: 2900, vat: 580, total: 3480 })]);
+    expect(report.unpaidInvoices.map((row) => row.number)).toEqual(expect.arrayContaining([first.number, second.number]));
+  });
 });
