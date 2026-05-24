@@ -97,6 +97,74 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(exactLimitQuote.approvalStatus).toBe('AUTO_APPROVED');
   });
 
+  it('builds role widgets, customer payment reminders, supplier payment calendar, and VAT review checklist', () => {
+    store.addLead({
+      customerName: 'Prospect relance rôle',
+      stage: 'QUALIFIED',
+      owner: 'Nadia',
+      source: 'Salon',
+      nextActionDate: '2026-04-01',
+      expectedValue: 15000,
+    });
+    const overdueInvoice = store.createInvoice({
+      customerId: 'cus-1',
+      dueDate: '2026-04-01',
+      lines: [{ productId: 'prd-2', quantity: 1 }],
+    });
+    const receipt = store.createPurchaseReceipt({
+      supplierId: 'sup-1',
+      lines: [{ productId: 'prd-1', quantity: 2, unitCost: 600 }],
+    });
+    store.lockFiscalPeriod(2026, 1);
+
+    const roleWidgets = store.roleDashboardWidgets();
+    const paymentReminders = store.paymentReminderSchedule();
+    const supplierCalendar = store.supplierPaymentCalendar();
+    const vatChecklist = store.vatDeclarationReviewChecklist();
+
+    expect(roleWidgets.map((role) => role.role)).toEqual(['OWNER', 'SALES', 'WAREHOUSE', 'ACCOUNTANT', 'PAYROLL']);
+    expect(roleWidgets.find((role) => role.role === 'SALES')?.widgets.map((widget) => widget.label))
+      .toEqual(expect.arrayContaining(['Soldes impayés', 'Actions CRM en retard']));
+    expect(roleWidgets.find((role) => role.role === 'ACCOUNTANT')?.widgets.map((widget) => widget.label))
+      .toEqual(expect.arrayContaining(['TVA nette collectée', 'Périodes verrouillées']));
+
+    expect(paymentReminders.rows).toHaveLength(1);
+    expect(paymentReminders.rows[0]).toMatchObject({
+      invoiceId: overdueInvoice.id,
+      invoiceNumber: overdueInvoice.number,
+      customerName: 'Rabat Retail SARL',
+      channel: 'EMAIL',
+      status: 'SCHEDULED',
+    });
+    expect(paymentReminders.rows[0].daysOverdue).toBeGreaterThan(0);
+    expect(paymentReminders.rows[0].legalFooter).toContain('ICE');
+
+    expect(supplierCalendar.rows).toHaveLength(1);
+    expect(supplierCalendar.rows[0]).toMatchObject({
+      receiptId: receipt.id,
+      receiptNumber: receipt.number,
+      supplierName: 'Casa Import SA',
+      preferred: true,
+      amount: receipt.total,
+    });
+    expect(supplierCalendar.rows[0].riskFlags).toEqual(expect.arrayContaining(['Fournisseur préféré', 'Note risque']));
+
+    expect(vatChecklist.report.invoiceCount).toBe(1);
+    expect(vatChecklist.supportingCounts.taxableLineCount).toBe(1);
+    expect(vatChecklist.checklist.map((check) => check.label)).toEqual(expect.arrayContaining(['ICE/IF clients vérifiés', 'Taux TVA conformes au pack Maroc']));
+    expect(vatChecklist.exceptions).toHaveLength(0);
+
+    const customerWithoutTaxIds = store.addCustomer({ name: 'Client Sans ICE IF', creditLimit: 0 });
+    store.createInvoice({
+      customerId: customerWithoutTaxIds.id,
+      dueDate: '2026-04-01',
+      lines: [{ productId: 'prd-2', quantity: 1 }],
+    });
+    const reviewWithException = store.vatDeclarationReviewChecklist();
+    expect(reviewWithException.status).toBe('NEEDS_REVIEW');
+    expect(reviewWithException.exceptions.map((item) => item.message)).toEqual(expect.arrayContaining(['ICE client manquant', 'IF client manquant']));
+  });
+
   it('revises, approves, exports, and converts a quote to order, delivery note, and invoice', () => {
     const quote = store.createQuote({
       customerId: 'cus-1',

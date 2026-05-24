@@ -42,10 +42,14 @@ test('frontend is wired for tenant-scoped backend calls', () => {
   assert.ok(staticPage.includes('duplicateWarnings'));
   assert.ok(staticPage.includes('/tenant/setup-checklist'));
   assert.ok(staticPage.includes('/tenant/dashboard-filters'));
+  assert.ok(staticPage.includes('/tenant/role-widgets'));
   assert.ok(staticPage.includes('/tenant/approval-limits'));
   assert.ok(staticPage.includes('/tenant/company-profile'));
   assert.ok(staticPage.includes('/tenant/company-profile/approve'));
   assert.ok(staticPage.includes('/tenant/demo-reset'));
+  assert.ok(staticPage.includes('/sales/payment-reminders'));
+  assert.ok(staticPage.includes('/inventory/suppliers/payment-calendar'));
+  assert.ok(staticPage.includes('/compliance/vat-declaration-checklist'));
   assert.ok(staticPage.includes('/ledger/audit'));
   assert.ok(staticPage.includes('/search?q='));
   assert.ok(staticPage.includes("method: 'PATCH'"));
@@ -87,6 +91,19 @@ test('static dashboard exposes operational filter cards', () => {
   assert.ok(staticPage.includes("Filtre appliqué: délais fournisseurs."));
   assert.ok(staticCss.includes('.filterCards'));
   assert.ok(staticCss.includes('.filterCard'));
+});
+
+test('static dashboard exposes role widgets and compliance planning panels', () => {
+  for (const text of ['Widgets par rôle', 'Direction', 'Ventes', 'RH / Paie', 'Relances de paiement', 'Calendrier paiements', 'Checklist de revue', 'Déclaration TVA', 'Prochaine relance', 'Risque']) {
+    assert.ok(staticPage.includes(text), `${text} planning label is present`);
+  }
+  for (const marker of ['renderRoleWidgets', 'renderPaymentReminders', 'renderSupplierCalendar', 'renderVatChecklist', 'data-role-widget', 'data-role-widget-view']) {
+    assert.ok(staticPage.includes(marker), `${marker} renderer or marker is present`);
+  }
+  assert.ok(staticCss.includes('.roleWidgetGrid'));
+  assert.ok(staticCss.includes('.roleWidgetCard'));
+  assert.ok(staticCss.includes('.opsGrid'));
+  assert.ok(staticCss.includes('.vatReviewGrid'));
 });
 
 test('layout uses dense ERP panels instead of a marketing hero', () => {

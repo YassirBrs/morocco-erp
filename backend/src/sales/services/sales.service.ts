@@ -25,5 +25,6 @@ export class SalesService {
   createCreditNote(data: any) { return this.store.createCreditNote(data); }
   approveCreditNote(id: string) { return this.store.approveCreditNote(id); }
   customerStatement(customerId: string) { return this.store.customerStatement(customerId); }
+  paymentReminderSchedule() { return this.store.paymentReminderSchedule(); }
   recordPayment(data: any) { return this.store.recordPayment(data); }
 }

@@ -24,5 +24,6 @@ export class SalesController {
   @Post('credit-notes') createCreditNote(@Body() body: any) { return this.salesService.createCreditNote(body); }
   @Post('credit-notes/:id/approve') approveCreditNote(@Param('id') id: string) { return this.salesService.approveCreditNote(id); }
   @Get('customers/:id/statement') customerStatement(@Param('id') id: string) { return this.salesService.customerStatement(id); }
+  @Get('payment-reminders') paymentReminders() { return this.salesService.paymentReminderSchedule(); }
   @Post('payments') payment(@Body() body: any) { return this.salesService.recordPayment(body); }
 }

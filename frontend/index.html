@@ -90,6 +90,71 @@
           </div>
         </section>
 
+        <section class="panel roleWidgetsPanel" data-view-section="dashboard">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Personnalisation opérationnelle</p>
+              <h2>Widgets par rôle</h2>
+            </div>
+            <span id="roleWidgetBadge" class="badge">Direction</span>
+          </div>
+          <div id="roleWidgetTabs" class="segmented roleTabs" aria-label="Rôles tableau de bord"></div>
+          <div id="roleWidgetRows" class="roleWidgetGrid"></div>
+        </section>
+
+        <section class="opsGrid" data-view-section="dashboard sales stock compliance accounting">
+          <div class="panel">
+            <div class="panelHeader">
+              <div>
+                <p class="eyebrow">Trésorerie client</p>
+                <h2>Relances de paiement</h2>
+              </div>
+              <span id="paymentReminderBadge" class="badge warning">0 relance</span>
+            </div>
+            <div class="tableWrap">
+              <table class="miniTable">
+                <thead><tr><th>Client</th><th>Facture</th><th>Retard</th><th>Prochaine relance</th><th>Canal</th></tr></thead>
+                <tbody id="paymentReminderRows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panelHeader">
+              <div>
+                <p class="eyebrow">Achats fournisseurs</p>
+                <h2>Calendrier paiements</h2>
+              </div>
+              <span id="supplierCalendarBadge" class="badge">0 échéance</span>
+            </div>
+            <div class="tableWrap">
+              <table class="miniTable">
+                <thead><tr><th>Fournisseur</th><th>Réception</th><th>Échéance</th><th>Montant</th><th>Risque</th></tr></thead>
+                <tbody id="supplierCalendarRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel vatChecklistPanel" data-view-section="dashboard accounting compliance">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Déclaration TVA</p>
+              <h2>Checklist de revue</h2>
+            </div>
+            <span id="vatChecklistBadge" class="badge">À préparer</span>
+          </div>
+          <div class="vatReviewGrid">
+            <div id="vatChecklistRows" class="setupList"></div>
+            <div class="tableWrap">
+              <table class="miniTable">
+                <thead><tr><th>Facture</th><th>Client</th><th>Exception</th><th>Niveau</th></tr></thead>
+                <tbody id="vatExceptionRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <section class="panel setupPanel" data-view-section="dashboard compliance">
           <div class="panelHeader">
             <div>
@@ -450,7 +515,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, approvalReview: null, customerCreditControls: [], customerReminders: [], productMarginAlerts: [], leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', paymentReminders: null, supplierCalendar: null, vatChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], productMarginAlerts: [], leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -501,6 +566,13 @@
           products: 'Article',
           invoices: 'Facture',
           orders: 'Commande'
+        },
+        roleWidgets: {
+          OWNER: 'Direction',
+          SALES: 'Ventes',
+          WAREHOUSE: 'Stock',
+          ACCOUNTANT: 'Comptabilité',
+          PAYROLL: 'RH / Paie'
         }
       };
       const translate = (group, value) => labels[group][value] || value;
@@ -551,7 +623,7 @@
       }
 
       async function load() {
-        const [summary, stock, customers, customerCreditControls, customerReminders, products, productMarginAlerts, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, approvalReview, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, customerCreditControls, customerReminders, products, productMarginAlerts, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, roleWidgets, paymentReminders, supplierCalendar, vatChecklist, approvalReview, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
@@ -565,6 +637,10 @@
           get('/inventory/suppliers/risk-reminders'),
           get('/tenant/setup-checklist'),
           get('/tenant/dashboard-filters'),
+          get('/tenant/role-widgets'),
+          get('/sales/payment-reminders'),
+          get('/inventory/suppliers/payment-calendar'),
+          get('/compliance/vat-declaration-checklist'),
           get('/tenant/approval-limits'),
           get('/tenant/company-profile'),
           get('/ledger/audit'),
@@ -589,6 +665,10 @@
         state.supplierReminders = supplierReminders;
         state.statement = statement;
         state.dashboardFilters = dashboardFilters;
+        state.roleWidgets = roleWidgets;
+        state.paymentReminders = paymentReminders;
+        state.supplierCalendar = supplierCalendar;
+        state.vatChecklist = vatChecklist;
         state.approvalReview = approvalReview;
         state.profile = profile;
         state.audit = audit;
@@ -611,6 +691,10 @@
         qs('#mentions').innerHTML = summary.compliance.invoiceMentions.map((m) => `<li>${m}</li>`).join('');
         renderProfile();
         renderDashboardFilters();
+        renderRoleWidgets();
+        renderPaymentReminders();
+        renderSupplierCalendar();
+        renderVatChecklist();
         renderApprovalReview();
         renderCustomerCreditControls();
         renderCustomerReminders();
@@ -781,6 +865,82 @@
         qs('#overdueActionSummary').textContent = overdue ? `${overdue.customerName} · ${overdue.nextActionDate}` : 'Aucune action CRM en retard';
         qs('#unpaidBalanceSummary').textContent = unpaid ? `${unpaid.customerName} · ${mad(unpaid.balance)}` : 'Aucune facture ouverte';
         qs('#supplierTermsSummary').textContent = supplier ? `${supplier.name} · ${supplier.paymentTermsDays} j` : 'Aucun fournisseur actif';
+      }
+
+      function renderRoleWidgets() {
+        const roles = state.roleWidgets || [];
+        const selected = roles.find((role) => role.role === state.roleWidgetRole) || roles[0];
+        if (!selected) return;
+        state.roleWidgetRole = selected.role;
+        qs('#roleWidgetBadge').textContent = translate('roleWidgets', selected.role) || selected.label;
+        qs('#roleWidgetTabs').innerHTML = roles.map((role) => `
+          <button type="button" class="${role.role === selected.role ? 'active' : ''}" data-role-widget="${role.role}">${translate('roleWidgets', role.role) || role.label}</button>
+        `).join('');
+        qs('#roleWidgetRows').innerHTML = selected.widgets.map((widget) => `
+          <button class="roleWidgetCard" type="button" data-role-widget-view="${widget.view}">
+            <span>${widget.label}</span>
+            <strong>${typeof widget.value === 'number' ? (widget.unit === 'MAD' ? mad(widget.value) : widget.value) : widget.value}</strong>
+            <small>${[widget.unit && widget.unit !== 'MAD' ? widget.unit : '', widget.helper || '', widget.status === 'warning' ? 'À surveiller' : 'OK'].filter(Boolean).join(' · ')}</small>
+          </button>
+        `).join('');
+        document.querySelectorAll('[data-role-widget]').forEach((button) => {
+          button.addEventListener('click', () => {
+            state.roleWidgetRole = button.dataset.roleWidget;
+            renderRoleWidgets();
+          });
+        });
+        document.querySelectorAll('[data-role-widget-view]').forEach((button) => {
+          button.addEventListener('click', () => switchModuleView(button.dataset.roleWidgetView));
+        });
+      }
+
+      function renderPaymentReminders() {
+        const rows = state.paymentReminders?.rows || [];
+        qs('#paymentReminderBadge').textContent = `${rows.length} relance${rows.length > 1 ? 's' : ''}`;
+        qs('#paymentReminderRows').innerHTML = rows.length ? rows.slice(0, 5).map((row) => `
+          <tr>
+            <td><strong>${row.customerName}</strong><small>${row.customerEmail || 'Contact manuel'}</small></td>
+            <td>${row.invoiceNumber}<small>${mad(row.balance)}</small></td>
+            <td><span class="statusPill warning">${row.daysOverdue} j</span></td>
+            <td>${row.nextReminderDate}<small>${row.stage}</small></td>
+            <td>${row.channel}<small>${row.legalFooter}</small></td>
+          </tr>
+        `).join('') : emptyRow('Aucune facture marocaine en retard à relancer', 5);
+      }
+
+      function renderSupplierCalendar() {
+        const rows = state.supplierCalendar?.rows || [];
+        qs('#supplierCalendarBadge').textContent = `${rows.length} échéance${rows.length > 1 ? 's' : ''}`;
+        qs('#supplierCalendarRows').innerHTML = rows.length ? rows.slice(0, 5).map((row) => `
+          <tr>
+            <td><strong>${row.supplierName}</strong><small>${row.preferred ? 'Fournisseur préféré' : 'Standard'}</small></td>
+            <td>${row.receiptNumber}<small>${row.receiptDate}</small></td>
+            <td>${row.dueDate}<small>${row.daysUntilDue < 0 ? `${Math.abs(row.daysUntilDue)} j retard` : `${row.daysUntilDue} j restants`}</small></td>
+            <td>${mad(row.amount)}</td>
+            <td>${row.riskFlags.length ? `<span class="statusPill warning">${row.riskFlags[0]}</span>` : '<span class="statusPill success">OK</span>'}</td>
+          </tr>
+        `).join('') : emptyRow('Aucune échéance fournisseur issue des réceptions', 5);
+      }
+
+      function renderVatChecklist() {
+        const review = state.vatChecklist;
+        if (!review) return;
+        qs('#vatChecklistBadge').textContent = review.status === 'READY_FOR_REVIEW' ? 'Prêt revue' : 'À corriger';
+        qs('#vatChecklistBadge').className = review.status === 'READY_FOR_REVIEW' ? 'badge green' : 'badge warning';
+        qs('#vatChecklistRows').innerHTML = review.checklist.map((check) => `
+          <div class="${check.complete ? 'complete' : ''}">
+            <span>${check.complete ? 'OK' : 'À corriger'}</span>
+            <strong>${check.label}</strong>
+          </div>
+        `).join('');
+        qs('#vatExceptionRows').innerHTML = review.exceptions.length ? review.exceptions.slice(0, 5).map((item) => `
+          <tr>
+            <td><strong>${item.invoiceNumber}</strong></td>
+            <td>${item.customerName}</td>
+            <td>${item.message}</td>
+            <td><span class="statusPill warning">${item.severity}</span></td>
+          </tr>
+        `).join('') : emptyRow(`Aucune exception TVA pour ${review.period}`, 4);
       }
 
       function renderApprovalReview() {

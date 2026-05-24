@@ -352,7 +352,8 @@ h2 {
 
 .operations,
 .masterGrid,
-.lowerGrid {
+.lowerGrid,
+.opsGrid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.85fr);
   gap: 16px;
@@ -526,6 +527,56 @@ button:disabled {
   border-color: var(--primary);
   background: var(--blue-soft);
   color: var(--primary);
+}
+
+.roleTabs {
+  border-bottom: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.roleWidgetGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.roleWidgetCard {
+  display: grid;
+  min-height: 116px;
+  gap: 6px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 15px 16px;
+  text-align: left;
+}
+
+.roleWidgetCard:last-child {
+  border-right: 0;
+}
+
+.roleWidgetCard span,
+.roleWidgetCard small {
+  color: var(--muted);
+}
+
+.roleWidgetCard strong {
+  color: var(--primary);
+  font-size: 20px;
+}
+
+.roleWidgetCard:hover {
+  background: var(--blue-soft);
+}
+
+.vatReviewGrid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.vatReviewGrid .setupList {
+  border-right: 1px solid var(--line);
 }
 
 .statementHeader {
@@ -902,6 +953,9 @@ tbody tr:hover {
   .operations,
   .masterGrid,
   .lowerGrid,
+  .opsGrid,
+  .roleWidgetGrid,
+  .vatReviewGrid,
   .filterCards,
   .kpis {
     grid-template-columns: 1fr;
@@ -917,6 +971,19 @@ tbody tr:hover {
 
   .profileGrid div + div {
     border-left: 0;
+  }
+
+  .roleWidgetCard {
+    border-right: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .roleWidgetCard:first-child {
+    border-top: 0;
+  }
+
+  .vatReviewGrid .setupList {
+    border-right: 0;
   }
 
   .setupList div:nth-child(-n + 3) {

@@ -13,6 +13,10 @@ export class ComplianceService {
     return this.store.exportVatReport();
   }
 
+  vatDeclarationReviewChecklist() {
+    return this.store.vatDeclarationReviewChecklist();
+  }
+
   prepareDgiInvoiceEnvelope(invoiceId: string) {
     return this.store.prepareDgiInvoiceEnvelope(invoiceId);
   }

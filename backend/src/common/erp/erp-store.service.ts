@@ -37,6 +37,16 @@ import {
 
 const r2 = (value: number): number => Math.round(value * 100) / 100;
 const today = (): string => new Date().toISOString().slice(0, 10);
+const addDays = (date: string, days: number): string => {
+  const value = new Date(`${date}T00:00:00.000Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+};
+const daysBetween = (from: string, to: string): number => {
+  const start = new Date(`${from}T00:00:00.000Z`).getTime();
+  const end = new Date(`${to}T00:00:00.000Z`).getTime();
+  return Math.floor((end - start) / 86400000);
+};
 const allowedVatRates: VatRate[] = [0, 0.07, 0.1, 0.14, 0.2];
 const defaultApprovalLimits: TenantSettings['approvalLimits'] = {
   quote: 50000,
@@ -674,6 +684,204 @@ export class ErpStoreService {
         overdueNextActions: overdueNextActions.length,
         unpaidCustomerBalances: unpaidCustomerBalances.length,
         supplierPaymentTerms: supplierPaymentTerms.length,
+      },
+    };
+  }
+
+  roleDashboardWidgets(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const summary = this.summary(workspace.tenant.id);
+    const filters = this.dashboardFilters(workspace.tenant.id);
+    const approvalReview = this.approvalLimitReview(workspace.tenant.id);
+    const lowStock = this.listStock(workspace.tenant.id).filter((line) => line.active && line.availableStock <= line.reorderPoint);
+    const latestInvoice = workspace.invoices[workspace.invoices.length - 1];
+    const latestReceipt = workspace.purchaseReceipts[workspace.purchaseReceipts.length - 1];
+    return [
+      {
+        role: 'OWNER',
+        label: 'Direction',
+        widgets: [
+          { id: 'revenue', label: 'Chiffre facturé', value: summary.metrics.revenue, unit: 'MAD', status: 'info', view: 'sales' },
+          { id: 'cash-risk', label: 'À encaisser', value: summary.metrics.receivables, unit: 'MAD', status: summary.metrics.receivables > 0 ? 'warning' : 'success', view: 'sales' },
+          { id: 'approval-queue', label: 'Approbations', value: approvalReview.pending, unit: 'en attente', status: approvalReview.pending ? 'warning' : 'success', view: 'accounting' },
+        ],
+      },
+      {
+        role: 'SALES',
+        label: 'Ventes',
+        widgets: [
+          { id: 'latest-invoice', label: 'Dernière facture', value: latestInvoice?.number ?? 'Aucune', helper: latestInvoice ? `${latestInvoice.status} · ${latestInvoice.dueDate}` : 'Créer une facture', status: latestInvoice ? 'info' : 'warning', view: 'sales' },
+          { id: 'unpaid-balances', label: 'Soldes impayés', value: filters.counts.unpaidCustomerBalances, unit: 'client(s)', status: filters.counts.unpaidCustomerBalances ? 'warning' : 'success', view: 'sales' },
+          { id: 'overdue-actions', label: 'Actions CRM en retard', value: filters.counts.overdueNextActions, unit: 'action(s)', status: filters.counts.overdueNextActions ? 'warning' : 'success', view: 'crm' },
+        ],
+      },
+      {
+        role: 'WAREHOUSE',
+        label: 'Stock',
+        widgets: [
+          { id: 'stock-value', label: 'Valeur stock', value: summary.metrics.stockValue, unit: 'MAD', status: 'info', view: 'stock' },
+          { id: 'low-stock', label: 'Articles sous seuil', value: lowStock.length, unit: 'article(s)', status: lowStock.length ? 'warning' : 'success', view: 'stock' },
+          { id: 'latest-receipt', label: 'Dernière réception', value: latestReceipt?.number ?? 'Aucune', helper: latestReceipt ? `${latestReceipt.total} MAD` : 'Aucune réception achat', status: latestReceipt ? 'info' : 'warning', view: 'stock' },
+        ],
+      },
+      {
+        role: 'ACCOUNTANT',
+        label: 'Comptabilité',
+        widgets: [
+          { id: 'journal-count', label: 'Écritures journal', value: workspace.journalEntries.length, unit: 'écriture(s)', status: workspace.journalEntries.length ? 'info' : 'warning', view: 'accounting' },
+          { id: 'vat-net', label: 'TVA nette collectée', value: this.exportVatReport(workspace.tenant.id).netVatCollected, unit: 'MAD', status: 'info', view: 'compliance' },
+          { id: 'locked-periods', label: 'Périodes verrouillées', value: workspace.fiscalPeriods.filter((period) => period.locked).length, unit: 'période(s)', status: 'success', view: 'accounting' },
+        ],
+      },
+      {
+        role: 'PAYROLL',
+        label: 'RH / Paie',
+        widgets: [
+          { id: 'cnss-employer', label: 'CNSS employeur', value: workspace.tenant.legalEntity.cnssNumber ? 'Configuré' : 'Manquant', status: workspace.tenant.legalEntity.cnssNumber ? 'success' : 'warning', view: 'payroll' },
+          { id: 'payroll-rules', label: 'Règles paie', value: this.morocco2026Rules.id, helper: `CNSS plafonnée ${this.morocco2026Rules.cnss.cap} MAD`, status: 'info', view: 'payroll' },
+          { id: 'amo-rate', label: 'AMO salarié', value: `${r2(this.morocco2026Rules.cnss.amoEmployeeRate * 100)}%`, status: 'info', view: 'payroll' },
+        ],
+      },
+    ];
+  }
+
+  paymentReminderSchedule(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const currentDate = today();
+    const rows = workspace.invoices
+      .map((invoice) => {
+        const balance = r2(invoice.totals.total - invoice.paidAmount - this.invoiceCreditTotal(workspace, invoice.id));
+        const daysOverdue = daysBetween(invoice.dueDate, currentDate);
+        const customer = this.customer(workspace, invoice.customerId);
+        const stage = daysOverdue >= 15 ? 'MISE_EN_DEMEURE' : daysOverdue >= 7 ? 'RELANCE_2' : 'RELANCE_1';
+        const nextReminderDate = daysOverdue >= 15 ? currentDate : addDays(invoice.dueDate, daysOverdue >= 7 ? 15 : 7);
+        return {
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.number,
+          customerId: customer.id,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          dueDate: invoice.dueDate,
+          daysOverdue,
+          balance,
+          stage,
+          nextReminderDate,
+          channel: customer.email ? 'EMAIL' : 'MANUAL',
+          subject: `Relance facture ${invoice.number} - ${workspace.tenant.legalEntity.tradeName}`,
+          legalFooter: `ICE ${workspace.tenant.legalEntity.ice} · IF ${workspace.tenant.legalEntity.ifNumber}`,
+          status: 'SCHEDULED',
+        };
+      })
+      .filter((row) => row.balance > 0 && row.daysOverdue > 0)
+      .sort((left, right) => right.daysOverdue - left.daysOverdue || left.invoiceNumber.localeCompare(right.invoiceNumber));
+    return {
+      generatedAt: new Date().toISOString(),
+      rows,
+      counts: {
+        overdueInvoices: rows.length,
+        emailReady: rows.filter((row) => row.channel === 'EMAIL').length,
+        manualRequired: rows.filter((row) => row.channel === 'MANUAL').length,
+      },
+    };
+  }
+
+  supplierPaymentCalendar(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const currentDate = today();
+    const rows = workspace.purchaseReceipts
+      .map((receipt) => {
+        const supplier = this.supplier(workspace, receipt.supplierId);
+        const dueDate = addDays(receipt.date, supplier.paymentTermsDays);
+        const daysUntilDue = daysBetween(currentDate, dueDate);
+        const expiredDocuments = supplier.documentExpiries.filter((document) => this.daysUntil(document.expiresAt) < 0);
+        const expiringDocuments = supplier.documentExpiries.filter((document) => {
+          const days = this.daysUntil(document.expiresAt);
+          return days >= 0 && days <= 30;
+        });
+        const riskFlags = [
+          supplier.preferred ? 'Fournisseur préféré' : '',
+          supplier.riskNotes ? 'Note risque' : '',
+          expiredDocuments.length ? 'Document expiré' : '',
+          expiringDocuments.length ? 'Document à renouveler' : '',
+        ].filter(Boolean);
+        return {
+          receiptId: receipt.id,
+          receiptNumber: receipt.number,
+          supplierId: supplier.id,
+          supplierName: supplier.name,
+          preferred: supplier.preferred,
+          riskNotes: supplier.riskNotes,
+          receiptDate: receipt.date,
+          dueDate,
+          daysUntilDue,
+          amount: receipt.total,
+          status: daysUntilDue < 0 ? 'OVERDUE' : daysUntilDue <= 7 ? 'DUE_SOON' : 'PLANNED',
+          riskFlags,
+        };
+      })
+      .sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.supplierName.localeCompare(right.supplierName));
+    return {
+      generatedAt: new Date().toISOString(),
+      rows,
+      counts: {
+        overdue: rows.filter((row) => row.status === 'OVERDUE').length,
+        dueSoon: rows.filter((row) => row.status === 'DUE_SOON').length,
+        preferred: rows.filter((row) => row.preferred).length,
+        riskFlagged: rows.filter((row) => row.riskFlags.length > 0).length,
+      },
+    };
+  }
+
+  vatDeclarationReviewChecklist(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const report = this.exportVatReport(workspace.tenant.id);
+    const invoiceExceptions = workspace.invoices.flatMap((invoice) => {
+      const customer = this.customer(workspace, invoice.customerId);
+      const missing = [
+        customer.ice ? '' : 'ICE client manquant',
+        customer.ifNumber ? '' : 'IF client manquant',
+      ].filter(Boolean);
+      const unsupportedRates = invoice.lines
+        .filter((line) => !allowedVatRates.includes(line.vatRate))
+        .map((line) => `${line.sku}: taux TVA non supporté`);
+      return [...missing, ...unsupportedRates].map((message) => ({
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.number,
+        customerName: customer.name,
+        message,
+        severity: message.includes('TVA') ? 'ERROR' : 'WARNING',
+      }));
+    });
+    const legalIdentityComplete = Boolean(
+      workspace.tenant.legalEntity.ice
+      && workspace.tenant.legalEntity.ifNumber
+      && workspace.tenant.legalEntity.rc
+      && workspace.tenant.legalEntity.patente,
+    );
+    const collectedVatByRate = workspace.invoices.reduce<Record<string, number>>((acc, invoice) => {
+      for (const [rate, amount] of Object.entries(invoice.totals.vatByRate)) {
+        acc[rate] = r2((acc[rate] ?? 0) + amount);
+      }
+      return acc;
+    }, {});
+    const checklist = [
+      { id: 'tenant-legal-identity', label: 'Identifiants légaux tenant présents', complete: legalIdentityComplete },
+      { id: 'posted-invoices', label: 'Factures de la période comptabilisées', complete: report.invoiceCount > 0 },
+      { id: 'customer-identifiers', label: 'ICE/IF clients vérifiés', complete: invoiceExceptions.filter((item) => item.message.includes('client')).length === 0 },
+      { id: 'vat-rates', label: 'Taux TVA conformes au pack Maroc', complete: invoiceExceptions.filter((item) => item.message.includes('TVA')).length === 0 },
+      { id: 'credit-notes-reviewed', label: 'Avoirs inclus dans la revue', complete: report.creditNoteCount >= 0 },
+    ];
+    return {
+      period: report.period,
+      status: checklist.every((item) => item.complete) ? 'READY_FOR_REVIEW' : 'NEEDS_REVIEW',
+      report,
+      checklist,
+      exceptions: invoiceExceptions,
+      supportingCounts: {
+        invoiceCount: report.invoiceCount,
+        creditNoteCount: report.creditNoteCount,
+        taxableLineCount: workspace.invoices.reduce((sum, invoice) => sum + invoice.lines.filter((line) => line.vatAmount > 0).length, 0),
+        collectedVatByRate,
       },
     };
   }

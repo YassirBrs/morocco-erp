@@ -229,10 +229,10 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T139 P1 - Add product margin alerts when sale price drops below purchase cost plus VAT.
 - [x] T140 P1 - Add customer credit-control holds that block new invoices when limits are exceeded.
 - [x] T141 P1 - Add configurable approval limits for quotes, credit notes, purchases, and stock adjustments.
-- [ ] T142 P1 - Add per-role dashboard widgets for sales, stock, accounting, HR, and owner views.
-- [ ] T143 P1 - Add payment reminder scheduling for overdue Moroccan customer invoices.
-- [ ] T144 P1 - Add supplier payment calendar by due date, preferred status, and risk flags.
-- [ ] T145 P1 - Add VAT declaration review checklist with supporting invoice counts and exceptions.
+- [x] T142 P1 - Add per-role dashboard widgets for sales, stock, accounting, HR, and owner views.
+- [x] T143 P1 - Add payment reminder scheduling for overdue Moroccan customer invoices.
+- [x] T144 P1 - Add supplier payment calendar by due date, preferred status, and risk flags.
+- [x] T145 P1 - Add VAT declaration review checklist with supporting invoice counts and exceptions.
 - [ ] T146 P1 - Add fiscal document completeness checks before period close.
 - [ ] T147 P1 - Add duplicate customer detection by ICE, IF, phone, and email.
 - [ ] T148 P1 - Add duplicate product detection by SKU, barcode, and normalized name.
@@ -273,3 +273,56 @@ This backlog contains concrete tasks to improve the app from the current working
 - [ ] T183 P1 - Add background export status center for CSV, PDF, payroll, and declaration files.
 - [ ] T184 P1 - Add guided onboarding progress by company type: trading, services, retail, payroll-heavy.
 - [ ] T185 P1 - Add sample data reset options by module without deleting tenant legal configuration.
+
+## Competitive SaaS Depth
+
+- [ ] T186 P1 - Add tenant-specific KPI targets and variance tracking by module owner.
+- [ ] T187 P1 - Add executive daily digest for cash, overdue invoices, stock alerts, payroll, and approvals.
+- [ ] T188 P1 - Add accountant evidence binder generation per fiscal period.
+- [ ] T189 P1 - Add Moroccan city and region reference data for addresses, delivery, and reporting.
+- [ ] T190 P1 - Add customer risk scoring using overdue balance, document age, and credit-limit usage.
+- [ ] T191 P1 - Add supplier reliability scoring using delivery delays, document status, and purchase volume.
+- [ ] T192 P1 - Add product lifecycle states for draft, active, blocked, discontinued, and archived.
+- [ ] T193 P1 - Add stock quarantine workflow for damaged, returned, or compliance-held goods.
+- [ ] T194 P1 - Add delivery proof capture placeholders with signer, timestamp, and document reference.
+- [ ] T195 P1 - Add sales commission report by salesperson, margin, payment status, and period.
+- [ ] T196 P1 - Add customer contract register with renewal, price list, and credit-term reminders.
+- [ ] T197 P1 - Add supplier contract register with renewal, SLA, payment terms, and document checks.
+- [ ] T198 P1 - Add pricing rules by customer segment, product family, date range, and quantity break.
+- [ ] T199 P1 - Add discount approval workflow by threshold, role, and margin impact.
+- [ ] T200 P1 - Add stock reservation expiry and automatic release for stale sales orders.
+- [ ] T201 P1 - Add batch invoice generation for recurring services and subscriptions.
+- [ ] T202 P1 - Add recurring purchase schedule for rent, utilities, insurance, and service contracts.
+- [ ] T203 P1 - Add expense claim workflow with categories, receipts, approval, and accounting export.
+- [ ] T204 P1 - Add petty cash journal with opening balance, movements, attachments, and variance.
+- [ ] T205 P1 - Add bank statement matching suggestions by amount, date, customer, supplier, and reference.
+- [ ] T206 P1 - Add VAT exception drilldown by invoice, customer, product rate, and missing identifier.
+- [ ] T207 P1 - Add CNSS employee anomaly drilldown for missing identifiers and inconsistent salary bases.
+- [ ] T208 P1 - Add payroll variance report compared with previous month and contract salary.
+- [ ] T209 P1 - Add employee onboarding checklist with documents, contract, payroll identifiers, and equipment.
+- [ ] T210 P1 - Add employee offboarding checklist with final payroll, asset return, and document archive.
+- [ ] T211 P1 - Add HR disciplinary and performance note register with role-restricted visibility.
+- [ ] T212 P1 - Add asset assignment tracking for laptops, phones, vehicles, tools, and return status.
+- [ ] T213 P1 - Add fleet fuel efficiency report by vehicle, driver, route, and month.
+- [ ] T214 P1 - Add maintenance preventive schedule with recurrence, parts, labor, and downtime.
+- [ ] T215 P1 - Add project WIP report with costs, billings, milestones, and margin forecast.
+- [ ] T216 P1 - Add production variance report for planned versus actual component usage and cost.
+- [ ] T217 P1 - Add procurement budget controls by department, supplier, category, and period.
+- [ ] T218 P1 - Add multi-branch support with branch-specific stock, sales, POS, and cash accounts.
+- [ ] T219 P1 - Add tenant localization settings for French, Arabic-ready labels, date formats, and currencies.
+- [ ] T220 P1 - Add document template preview before activation with sample Moroccan invoice data.
+- [ ] T221 P1 - Add outgoing email audit trail with recipient, document, status, and retry history.
+- [ ] T222 P1 - Add customer portal invoice payment status and statement download workflow.
+- [ ] T223 P1 - Add supplier portal quote request, document upload, and payment status workflow.
+- [ ] T224 P1 - Add accountant portal period review comments and approval checklist.
+- [ ] T225 P1 - Add partner implementation checklist with tenant health, open blockers, and go-live readiness.
+- [ ] T226 P1 - Add super-admin compliance rule rollout workflow with effective dates and tenant impact.
+- [ ] T227 P1 - Add feature flag audit history with actor, reason, tenant, and rollback data.
+- [ ] T228 P1 - Add API integration health dashboard with latency, failures, retries, and last success.
+- [ ] T229 P1 - Add webhook signature verification examples and replay protection tests.
+- [ ] T230 P1 - Add export checksum verification and tamper-evidence report for archived files.
+- [ ] T231 P1 - Add database restore rehearsal checklist and tenant-level restore validation.
+- [ ] T232 P1 - Add support impersonation approval workflow with time limit and audit evidence.
+- [ ] T233 P1 - Add in-app release notes targeted by role, module, and tenant plan.
+- [ ] T234 P1 - Add usage-based onboarding nudges from real module adoption signals.
+- [ ] T235 P1 - Add competitive readiness scorecard comparing ERP module depth, compliance, and onboarding risk.

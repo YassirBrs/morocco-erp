@@ -15,6 +15,11 @@ export class ComplianceController {
     return this.complianceService.exportVatReport();
   }
 
+  @Get('vat-declaration-checklist')
+  vatDeclarationChecklist() {
+    return this.complianceService.vatDeclarationReviewChecklist();
+  }
+
   @Post('dgi/invoice-envelope')
   dgiEnvelope(@Body() body: { invoiceId: string }) {
     return this.complianceService.prepareDgiInvoiceEnvelope(body.invoiceId);

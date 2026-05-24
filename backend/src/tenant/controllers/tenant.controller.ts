@@ -8,6 +8,7 @@ export class TenantController {
   @Get('current') current() { return this.tenantService.current(); }
   @Get('setup-checklist') setupChecklist() { return this.tenantService.setupChecklist(); }
   @Get('dashboard-filters') dashboardFilters() { return this.tenantService.dashboardFilters(); }
+  @Get('role-widgets') roleWidgets() { return this.tenantService.roleWidgets(); }
   @Get('approval-limits') approvalLimits() { return this.tenantService.approvalLimits(); }
   @Patch('approval-limits') updateApprovalLimits(@Body() body: any) { return this.tenantService.updateApprovalLimits(body); }
   @Get('company-profile') profile() { return this.tenantService.profile(); }

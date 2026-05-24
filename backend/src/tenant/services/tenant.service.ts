@@ -21,6 +21,10 @@ export class TenantService {
     return this.store.dashboardFilters();
   }
 
+  roleWidgets() {
+    return this.store.roleDashboardWidgets();
+  }
+
   approvalLimits() {
     return this.store.approvalLimitReview();
   }
