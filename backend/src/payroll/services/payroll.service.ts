@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ErpStoreService } from '../../common/erp/erp-store.service';
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  INPUT / OUTPUT TYPES
@@ -112,10 +113,15 @@ const r2 = (v: number): number => parseFloat(v.toFixed(2));
 // ══════════════════════════════════════════════════════════════════════════════
 @Injectable()
 export class PayrollService {
+  constructor(private readonly store: ErpStoreService) {}
 
   listPayslips(_employeeId?: string): unknown {
     return [];
   }
+
+  payrollRunTimeline(id: string) { return this.store.entityTimeline('PAYROLL_RUN', id); }
+  addPayrollRunNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'PAYROLL_RUN', entityId: id, ...data }); }
+  addPayrollRunTask(id: string, data: any) { return this.store.addInternalTask({ entityType: 'PAYROLL_RUN', entityId: id, ...data }); }
 
   generatePayslip(input: PayrollInput): PayrollResult {
 

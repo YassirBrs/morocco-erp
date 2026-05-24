@@ -20,6 +20,9 @@ export class SalesController {
   @Delete('delivery-notes/:id') cancelDeliveryNote(@Param('id') id: string) { return this.salesService.cancelDeliveryNote(id); }
   @Get('invoices') invoices() { return this.salesService.listInvoices(); }
   @Post('invoices') createInvoice(@Body() body: any) { return this.salesService.createInvoice(body); }
+  @Get('invoices/:id/timeline') invoiceTimeline(@Param('id') id: string) { return this.salesService.invoiceTimeline(id); }
+  @Post('invoices/:id/notes') addInvoiceNote(@Param('id') id: string, @Body() body: any) { return this.salesService.addInvoiceNote(id, body); }
+  @Post('invoices/:id/tasks') addInvoiceTask(@Param('id') id: string, @Body() body: any) { return this.salesService.addInvoiceTask(id, body); }
   @Get('credit-notes') creditNotes() { return this.salesService.listCreditNotes(); }
   @Post('credit-notes') createCreditNote(@Body() body: any) { return this.salesService.createCreditNote(body); }
   @Post('credit-notes/:id/approve') approveCreditNote(@Param('id') id: string) { return this.salesService.approveCreditNote(id); }

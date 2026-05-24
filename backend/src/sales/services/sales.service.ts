@@ -21,6 +21,9 @@ export class SalesService {
   convertOrderToInvoice(id: string) { return this.store.convertOrderToInvoice(id); }
   listInvoices() { return this.store.listInvoices(); }
   createInvoice(data: any) { return this.store.createInvoice(data); }
+  invoiceTimeline(id: string) { return this.store.entityTimeline('INVOICE', id); }
+  addInvoiceNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'INVOICE', entityId: id, ...data }); }
+  addInvoiceTask(id: string, data: any) { return this.store.addInternalTask({ entityType: 'INVOICE', entityId: id, ...data }); }
   listCreditNotes() { return this.store.listCreditNotes(); }
   createCreditNote(data: any) { return this.store.createCreditNote(data); }
   approveCreditNote(id: string) { return this.store.approveCreditNote(id); }

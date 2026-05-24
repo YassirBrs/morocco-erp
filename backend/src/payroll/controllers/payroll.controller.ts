@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { PayrollService } from '../services/payroll.service';
 import { PayrollInput, PayrollResult } from '../dto/payroll.dto';
 
@@ -7,6 +7,10 @@ export class PayrollController {
   constructor(private readonly payrollService: PayrollService) {}
 
   @Get('payslips') list() { return this.payrollService.listPayslips(); }
+
+  @Get('runs/:id/timeline') payrollRunTimeline(@Param('id') id: string) { return this.payrollService.payrollRunTimeline(id); }
+  @Post('runs/:id/notes') addPayrollRunNote(@Param('id') id: string, @Body() body: any) { return this.payrollService.addPayrollRunNote(id, body); }
+  @Post('runs/:id/tasks') addPayrollRunTask(@Param('id') id: string, @Body() body: any) { return this.payrollService.addPayrollRunTask(id, body); }
 
   @Post('payslips')
   generate(@Body() input: PayrollInput): PayrollResult {

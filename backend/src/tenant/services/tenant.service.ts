@@ -25,6 +25,14 @@ export class TenantService {
     return this.store.roleDashboardWidgets();
   }
 
+  collaborationBoard() {
+    return this.store.collaborationBoard();
+  }
+
+  updateInternalTaskStatus(taskId: string, status: any) {
+    return this.store.updateInternalTaskStatus(taskId, status);
+  }
+
   approvalLimits() {
     return this.store.approvalLimitReview();
   }

@@ -10,6 +10,7 @@ export class InventoryController {
   @Get('products/duplicates') productDuplicateReview() { return this.inventoryService.productDuplicateReview(); }
   @Get('products/:id') product(@Param('id') id: string) { return this.inventoryService.getProduct(id); }
   @Post('products') createProduct(@Body() body: any) { return this.inventoryService.createProduct(body); }
+  @Post('products/bulk-status') bulkProductStatus(@Body() body: any) { return this.inventoryService.bulkProductStatus(body); }
   @Patch('products/:id') updateProduct(@Param('id') id: string, @Body() body: any) { return this.inventoryService.updateProduct(id, body); }
   @Delete('products/:id') archiveProduct(@Param('id') id: string) { return this.inventoryService.archiveProduct(id); }
   @Get('suppliers') suppliers() { return this.inventoryService.listSuppliers(); }
@@ -17,9 +18,13 @@ export class InventoryController {
   @Post('suppliers/import') importSuppliersCsv(@Body() body: { csv?: string }) { return this.inventoryService.importSuppliersCsv(body); }
   @Get('suppliers/risk-reminders') supplierRiskReminders(@Query('filter') filter?: string) { return this.inventoryService.supplierRiskReminders(filter); }
   @Get('suppliers/payment-calendar') supplierPaymentCalendar() { return this.inventoryService.supplierPaymentCalendar(); }
+  @Post('suppliers/bulk-status') bulkSupplierStatus(@Body() body: any) { return this.inventoryService.bulkSupplierStatus(body); }
   @Post('suppliers/:id/document-placeholders') addSupplierDocumentPlaceholder(@Param('id') id: string, @Body() body: any) {
     return this.inventoryService.addSupplierDocumentPlaceholder(id, body);
   }
+  @Get('suppliers/:id/timeline') supplierTimeline(@Param('id') id: string) { return this.inventoryService.supplierTimeline(id); }
+  @Post('suppliers/:id/notes') addSupplierNote(@Param('id') id: string, @Body() body: any) { return this.inventoryService.addSupplierNote(id, body); }
+  @Post('suppliers/:id/tasks') addSupplierTask(@Param('id') id: string, @Body() body: any) { return this.inventoryService.addSupplierTask(id, body); }
   @Get('suppliers/:id') supplier(@Param('id') id: string) { return this.inventoryService.getSupplier(id); }
   @Post('suppliers') createSupplier(@Body() body: any) { return this.inventoryService.createSupplier(body); }
   @Patch('suppliers/:id') updateSupplier(@Param('id') id: string, @Body() body: any) { return this.inventoryService.updateSupplier(id, body); }

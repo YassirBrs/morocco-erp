@@ -508,6 +508,40 @@ button:disabled {
   padding: 0 16px 12px;
 }
 
+.collabActions {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding: 14px 16px;
+}
+
+.collabActions button {
+  min-height: 36px;
+  padding: 0 9px;
+}
+
+.timelineGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.timelineGrid > div:nth-child(odd) {
+  border-right: 1px solid var(--line);
+}
+
+.timelineGrid > div:nth-child(n + 3) {
+  border-top: 1px solid var(--line);
+}
+
+.timelineTable {
+  min-width: 520px;
+}
+
+.taskBoard {
+  border-top: 1px solid var(--line);
+}
+
 .segmented {
   display: flex;
   flex-wrap: wrap;
@@ -1037,12 +1071,22 @@ tbody tr:hover {
   }
 
   .salesFlowActions,
-  .flowState {
+  .flowState,
+  .collabActions,
+  .timelineGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .flowState div + div {
     border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .timelineGrid > div:nth-child(odd) {
+    border-right: 0;
+  }
+
+  .timelineGrid > div + div {
     border-top: 1px solid var(--line);
   }
 }

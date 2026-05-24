@@ -16,6 +16,10 @@ export class CrmService {
   customerCreditControls() { return this.store.customerCreditControls(); }
   customerDocumentReminders() { return this.store.customerDocumentReminders(); }
   customerDuplicateReview() { return this.store.customerDuplicateReview(); }
+  customerTimeline(id: string) { return this.store.entityTimeline('CUSTOMER', id); }
+  addCustomerNote(id: string, data: any) { return this.store.addInternalNote({ entityType: 'CUSTOMER', entityId: id, ...data }); }
+  addCustomerTask(id: string, data: any) { return this.store.addInternalTask({ entityType: 'CUSTOMER', entityId: id, ...data }); }
+  bulkCustomerStatus(data: any) { return this.store.bulkArchiveRestore({ entity: 'CUSTOMER', ids: data.ids ?? [], action: data.action }); }
   getCustomer(id: string) { return this.store.getCustomer(id); }
   createCustomer(data: any) { return this.store.addCustomer(data); }
   updateCustomer(id: string, data: any) { return this.store.updateCustomer(id, data); }

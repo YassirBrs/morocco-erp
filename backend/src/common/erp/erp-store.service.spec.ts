@@ -958,4 +958,95 @@ describe('ErpStoreService working ERP workflows', () => {
     expect(updated.salePrice).toBe(1600);
     expect(updated.active).toBe(false);
   });
+
+  it('builds customer, supplier, and invoice timelines from documents, commercial events, notes, and tasks', () => {
+    const quote = store.createQuote({ customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+    const invoice = store.createInvoice({ customerId: 'cus-1', lines: [{ productId: 'prd-2', quantity: 1 }] });
+    const payment = store.recordPayment({ invoiceId: invoice.id, amount: 400, method: 'BANK' });
+    const creditNote = store.createCreditNote({
+      invoiceId: invoice.id,
+      reason: 'Geste commercial',
+      lines: [{ productId: 'prd-2', quantity: 0.25 }],
+    });
+    const receipt = store.createPurchaseReceipt({ supplierId: 'sup-1', lines: [{ productId: 'prd-1', quantity: 2, unitCost: 500 }] });
+    const customerNote = store.addInternalNote({ entityType: 'CUSTOMER', entityId: 'cus-1', author: 'Compta', body: 'Relancer avec facture et ICE.' });
+    const customerTask = store.addInternalTask({ entityType: 'CUSTOMER', entityId: 'cus-1', title: 'Vérifier garantie', assignedTo: 'Nadia', dueDate: '2026-06-01' });
+    const supplierNote = store.addInternalNote({ entityType: 'SUPPLIER', entityId: 'sup-1', body: 'Demander attestation fiscale.' });
+    const invoiceTask = store.addInternalTask({ entityType: 'INVOICE', entityId: invoice.id, title: 'Contrôler paiement', assignedTo: 'Omar' });
+
+    const customerTimeline = store.entityTimeline('CUSTOMER', 'cus-1');
+    const supplierTimeline = store.entityTimeline('SUPPLIER', 'sup-1');
+    const invoiceTimeline = store.entityTimeline('INVOICE', invoice.id);
+
+    expect(customerTimeline.counts).toMatchObject({ notes: 1, tasks: 1, openTasks: 1 });
+    expect(customerTimeline.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: quote.id, type: 'QUOTE', label: quote.number }),
+      expect.objectContaining({ id: invoice.id, type: 'INVOICE', label: invoice.number }),
+      expect.objectContaining({ id: payment.id, type: 'PAYMENT', amount: 400 }),
+      expect.objectContaining({ id: creditNote.id, type: 'CREDIT_NOTE', label: creditNote.number }),
+      expect.objectContaining({ id: customerNote.id, type: 'NOTE', description: 'Relancer avec facture et ICE.' }),
+      expect.objectContaining({ id: customerTask.id, type: 'TASK', assignedTo: 'Nadia' }),
+    ]));
+    expect(supplierTimeline.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: receipt.id, type: 'PURCHASE_RECEIPT', label: receipt.number }),
+      expect.objectContaining({ id: supplierNote.id, type: 'NOTE', description: 'Demander attestation fiscale.' }),
+    ]));
+    expect(invoiceTimeline.counts.openTasks).toBe(1);
+    expect(invoiceTimeline.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: invoice.id, type: 'INVOICE' }),
+      expect.objectContaining({ id: payment.id, type: 'PAYMENT' }),
+      expect.objectContaining({ id: creditNote.id, type: 'CREDIT_NOTE' }),
+      expect.objectContaining({ id: invoiceTask.id, type: 'TASK', label: 'Contrôler paiement' }),
+    ]));
+  });
+
+  it('tracks internal payroll-run collaboration and task status on the board', () => {
+    const note = store.addInternalNote({ entityType: 'PAYROLL_RUN', entityId: 'PAY-2026-05', author: 'RH', body: 'CNSS à contrôler avant Damancom.' });
+    const task = store.addInternalTask({ entityType: 'PAYROLL_RUN', entityId: 'PAY-2026-05', title: 'Valider les bases IR', assignedTo: 'Comptable', dueDate: '2026-05-31' });
+
+    expect(store.entityTimeline('PAYROLL_RUN', 'PAY-2026-05').items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: note.id, type: 'NOTE' }),
+      expect.objectContaining({ id: task.id, type: 'TASK', status: 'OPEN' }),
+    ]));
+    expect(store.collaborationBoard().counts).toMatchObject({ notes: 1, tasks: 1, openTasks: 1 });
+
+    const closed = store.updateInternalTaskStatus(task.id, 'DONE');
+
+    expect(closed.status).toBe('DONE');
+    expect(closed.closedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(store.collaborationBoard().counts.openTasks).toBe(0);
+    expect(() => store.updateInternalTaskStatus(task.id, 'INVALID' as any)).toThrow(BadRequestException);
+    expect(() => store.addInternalNote({ entityType: 'CUSTOMER', entityId: 'missing', body: 'Impossible' })).toThrow('Client introuvable');
+  });
+
+  it('archives and restores inactive customers, suppliers, and products in bulk with audit evidence', () => {
+    const customer = store.addCustomer({ name: 'Client Archive Bulk' });
+    const supplier = store.addSupplier({ name: 'Fournisseur Archive Bulk' });
+    const product = store.addProduct({ sku: 'BULK-ARCH', name: 'Produit archive bulk', salePrice: 100, purchaseCost: 50 });
+
+    expect(store.bulkArchiveRestore({ entity: 'CUSTOMER', ids: [customer.id], action: 'ARCHIVE' }).touched)
+      .toEqual([expect.objectContaining({ id: customer.id, active: false })]);
+    expect(store.bulkArchiveRestore({ entity: 'SUPPLIER', ids: [supplier.id], action: 'ARCHIVE' }).touched)
+      .toEqual([expect.objectContaining({ id: supplier.id, active: false })]);
+    expect(store.bulkArchiveRestore({ entity: 'PRODUCT', ids: [product.id], action: 'ARCHIVE' }).touched)
+      .toEqual([expect.objectContaining({ id: product.id, name: 'BULK-ARCH', active: false })]);
+
+    store.bulkArchiveRestore({ entity: 'CUSTOMER', ids: [customer.id], action: 'RESTORE' });
+    store.bulkArchiveRestore({ entity: 'SUPPLIER', ids: [supplier.id], action: 'RESTORE' });
+    store.bulkArchiveRestore({ entity: 'PRODUCT', ids: [product.id], action: 'RESTORE' });
+
+    expect(store.getCustomer(customer.id).active).toBe(true);
+    expect(store.getSupplier(supplier.id).active).toBe(true);
+    expect(store.getProduct(product.id).active).toBe(true);
+    expect(store.auditLogs().map((entry) => entry.action)).toEqual(expect.arrayContaining([
+      'bulk.customer.archive',
+      'bulk.supplier.archive',
+      'bulk.product.archive',
+      'bulk.customer.restore',
+      'bulk.supplier.restore',
+      'bulk.product.restore',
+    ]));
+    expect(() => store.bulkArchiveRestore({ entity: 'CUSTOMER', ids: [], action: 'ARCHIVE' })).toThrow(BadRequestException);
+    expect(() => store.bulkArchiveRestore({ entity: 'PRODUCT', ids: [product.id], action: 'BAD' as any })).toThrow(BadRequestException);
+  });
 });

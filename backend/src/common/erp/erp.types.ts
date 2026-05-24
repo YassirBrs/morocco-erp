@@ -9,6 +9,8 @@ export type DeliveryNoteStatus = 'POSTED' | 'CANCELLED';
 export type StockMoveType = 'RECEIPT' | 'DELIVERY' | 'DELIVERY_REVERSAL' | 'ADJUSTMENT' | 'PRODUCTION_CONSUME' | 'PRODUCTION_OUTPUT' | 'POS_SALE' | 'RESERVATION' | 'RESERVATION_RELEASE';
 export type BusinessSearchType = 'customers' | 'leads' | 'suppliers' | 'products' | 'invoices' | 'orders';
 export type ApprovalStatus = 'AUTO_APPROVED' | 'REQUIRED' | 'APPROVED';
+export type CollaborationEntityType = 'CUSTOMER' | 'SUPPLIER' | 'INVOICE' | 'PAYROLL_RUN';
+export type InternalTaskStatus = 'OPEN' | 'DONE';
 
 export interface BusinessSearchInput {
   q: string;
@@ -392,6 +394,29 @@ export interface CompanyProfileChange {
   };
 }
 
+export interface InternalNote {
+  id: string;
+  tenantId: string;
+  entityType: CollaborationEntityType;
+  entityId: string;
+  author: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface InternalTask {
+  id: string;
+  tenantId: string;
+  entityType: CollaborationEntityType;
+  entityId: string;
+  title: string;
+  assignedTo: string;
+  dueDate?: string;
+  status: InternalTaskStatus;
+  createdAt: string;
+  closedAt?: string;
+}
+
 export interface TenantWorkspace {
   tenant: Tenant;
   users: ErpUser[];
@@ -414,5 +439,7 @@ export interface TenantWorkspace {
   productionOrders: ProductionOrder[];
   auditLogs: AuditLog[];
   profileChanges: CompanyProfileChange[];
+  internalNotes: InternalNote[];
+  internalTasks: InternalTask[];
   sequences: Record<string, number>;
 }

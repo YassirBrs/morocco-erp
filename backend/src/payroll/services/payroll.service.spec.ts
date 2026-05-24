@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ClsService } from 'nestjs-cls';
+import { ErpStoreService } from '../../common/erp/erp-store.service';
 import { PayrollService, PayrollInput, PayrollResult } from './payroll.service';
 
 describe('PayrollService – gross-to-net', () => {
@@ -34,7 +36,11 @@ describe('PayrollService – gross-to-net', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PayrollService],
+      providers: [
+        PayrollService,
+        ErpStoreService,
+        { provide: ClsService, useValue: { get: jest.fn(() => 'tenant-demo') } },
+      ],
     }).compile();
     service = module.get<PayrollService>(PayrollService);
   });

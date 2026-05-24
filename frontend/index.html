@@ -222,6 +222,71 @@
           </div>
         </section>
 
+        <section class="panel collaborationPanel" data-view-section="dashboard sales crm stock payroll">
+          <div class="panelHeader">
+            <div>
+              <p class="eyebrow">Suivi interne</p>
+              <h2>Timelines et tâches</h2>
+            </div>
+            <span id="collaborationBadge" class="badge">0 tâche</span>
+          </div>
+          <div class="collabActions" aria-label="Actions notes et tâches internes">
+            <button id="addCustomerNote" type="button">Note client</button>
+            <button id="addCustomerTask" type="button">Tâche client</button>
+            <button id="addSupplierNote" type="button">Note fournisseur</button>
+            <button id="addSupplierTask" type="button">Tâche fournisseur</button>
+            <button id="addInvoiceNote" type="button">Note facture</button>
+            <button id="addInvoiceTask" type="button">Tâche facture</button>
+            <button id="addPayrollNote" type="button">Note paie</button>
+            <button id="addPayrollTask" type="button">Tâche paie</button>
+            <button id="closeInternalTask" type="button">Terminer tâche</button>
+          </div>
+          <div class="timelineGrid">
+            <div>
+              <div class="statementHeader"><span>Timeline client</span><strong id="customerTimelineCount">0 événement</strong></div>
+              <div class="tableWrap">
+                <table class="miniTable timelineTable">
+                  <thead><tr><th>Type</th><th>Date</th><th>Référence</th><th>Détail</th></tr></thead>
+                  <tbody id="customerTimelineRows"></tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <div class="statementHeader"><span>Timeline fournisseur</span><strong id="supplierTimelineCount">0 événement</strong></div>
+              <div class="tableWrap">
+                <table class="miniTable timelineTable">
+                  <thead><tr><th>Type</th><th>Date</th><th>Référence</th><th>Détail</th></tr></thead>
+                  <tbody id="supplierTimelineRows"></tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <div class="statementHeader"><span>Timeline facture</span><strong id="invoiceTimelineCount">0 événement</strong></div>
+              <div class="tableWrap">
+                <table class="miniTable timelineTable">
+                  <thead><tr><th>Type</th><th>Date</th><th>Référence</th><th>Détail</th></tr></thead>
+                  <tbody id="invoiceTimelineRows"></tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <div class="statementHeader"><span>Notes et tâches internes</span><strong id="payrollTimelineCount">0 événement</strong></div>
+              <div class="tableWrap">
+                <table class="miniTable timelineTable">
+                  <thead><tr><th>Type</th><th>Date</th><th>Référence</th><th>Détail</th></tr></thead>
+                  <tbody id="payrollTimelineRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="tableWrap taskBoard">
+            <table class="miniTable">
+              <thead><tr><th>Tâche</th><th>Entité</th><th>Responsable</th><th>Échéance</th><th>Statut</th></tr></thead>
+              <tbody id="internalTaskRows"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="operations" data-view-section="sales accounting compliance">
           <div class="panel commercialPanel">
             <div class="panelHeader">
@@ -310,6 +375,8 @@
               </div>
               <div class="headerActions">
                 <span id="customerCount" class="badge">0</span>
+                <button id="archiveCustomers" type="button">Archiver clients inactifs</button>
+                <button id="restoreCustomers" type="button">Restaurer clients</button>
               </div>
             </div>
             <form id="customerForm" class="compactForm">
@@ -374,7 +441,11 @@
                 <p class="eyebrow">Catalogue</p>
                 <h2>Articles et services</h2>
               </div>
-              <span id="productCount" class="badge">0</span>
+              <div class="headerActions">
+                <span id="productCount" class="badge">0</span>
+                <button id="archiveProducts" type="button">Archiver articles</button>
+                <button id="restoreProducts" type="button">Restaurer articles</button>
+              </div>
             </div>
             <form id="productForm" class="compactForm productForm">
               <label class="field"><span>SKU</span><input name="sku" required placeholder="SKU-DEMO" /></label>
@@ -476,6 +547,8 @@
                 <button id="exportSuppliersCsv" type="button">Exporter CSV fournisseurs</button>
                 <button id="importSuppliersCsv" type="button">Importer CSV démo</button>
                 <button id="addSupplierDocumentPlaceholder" type="button">Placeholder document</button>
+                <button id="archiveSuppliers" type="button">Archiver fournisseurs</button>
+                <button id="restoreSuppliers" type="button">Restaurer fournisseurs</button>
               </div>
             </div>
             <form id="supplierForm" class="compactForm">
@@ -561,7 +634,7 @@
       const mad = (v) => new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
       const pct = (v) => `${Number((v * 100).toFixed(2)).toLocaleString('fr-MA')}%`;
       const qs = (selector) => document.querySelector(selector);
-      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], suppliers: [], statement: null, profile: null, audit: [] };
+      const state = { activeView: 'dashboard', searchResults: [], searchQuery: '', dashboardFilters: null, roleWidgets: [], roleWidgetRole: 'OWNER', paymentReminders: null, supplierCalendar: null, vatChecklist: null, fiscalCloseChecklist: null, approvalReview: null, customerCreditControls: [], customerReminders: [], customerDuplicates: null, productMarginAlerts: [], productDuplicates: null, leadAnalytics: [], supplierReminders: [], supplierReminderFilter: 'all', quotes: [], orders: [], deliveryNotes: [], invoices: [], creditNotes: [], leads: [], customers: [], products: [], suppliers: [], statement: null, profile: null, audit: [], customerTimeline: null, supplierTimeline: null, invoiceTimeline: null, payrollTimeline: null, collaborationBoard: null };
       const labels = {
         plans: { ENTERPRISE: 'Entreprise', PROFESSIONAL: 'Professionnel', STARTER: 'Démarrage' },
         statuses: {
@@ -604,6 +677,16 @@
           BANK: 'Banque',
           CASH: 'Espèces',
           CARD: 'Carte'
+        },
+        timelineTypes: {
+          DOCUMENT: 'Document',
+          QUOTE: 'Devis',
+          INVOICE: 'Facture',
+          PAYMENT: 'Paiement',
+          CREDIT_NOTE: 'Avoir',
+          PURCHASE_RECEIPT: 'Réception',
+          NOTE: 'Note',
+          TASK: 'Tâche'
         },
         searchTypes: {
           customers: 'Client',
@@ -669,7 +752,7 @@
       }
 
       async function load() {
-        const [summary, stock, customers, customerCreditControls, customerReminders, customerDuplicates, products, productMarginAlerts, productDuplicates, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, roleWidgets, paymentReminders, supplierCalendar, vatChecklist, fiscalCloseChecklist, approvalReview, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement] = await Promise.all([
+        const [summary, stock, customers, customerCreditControls, customerReminders, customerDuplicates, products, productMarginAlerts, productDuplicates, leads, leadAnalytics, suppliers, supplierReminders, setup, dashboardFilters, roleWidgets, paymentReminders, supplierCalendar, vatChecklist, fiscalCloseChecklist, approvalReview, profile, audit, quotes, orders, deliveryNotes, invoices, creditNotes, statement, customerTimeline, supplierTimeline, payrollTimeline, collaborationBoard] = await Promise.all([
           get('/tenant/current'),
           get('/inventory'),
           get('/crm/customers'),
@@ -698,7 +781,11 @@
           get('/sales/delivery-notes'),
           get('/sales/invoices'),
           get('/sales/credit-notes'),
-          get('/sales/customers/cus-1/statement')
+          get('/sales/customers/cus-1/statement'),
+          get('/crm/customers/cus-1/timeline'),
+          get('/inventory/suppliers/sup-1/timeline'),
+          get('/payroll/runs/PAY-2026-05/timeline'),
+          get('/tenant/collaboration-board')
         ]);
         state.quotes = quotes;
         state.orders = orders;
@@ -706,6 +793,8 @@
         state.invoices = invoices;
         state.creditNotes = creditNotes;
         state.leads = leads;
+        state.customers = customers;
+        state.products = products;
         state.customerCreditControls = customerCreditControls;
         state.customerReminders = customerReminders;
         state.customerDuplicates = customerDuplicates;
@@ -724,6 +813,11 @@
         state.approvalReview = approvalReview;
         state.profile = profile;
         state.audit = audit;
+        state.customerTimeline = customerTimeline;
+        state.supplierTimeline = supplierTimeline;
+        state.payrollTimeline = payrollTimeline;
+        state.collaborationBoard = collaborationBoard;
+        state.invoiceTimeline = latest(invoices) ? await get(`/sales/invoices/${latest(invoices).id}/timeline`) : null;
         const entity = summary.tenant.legalEntity;
         qs('#tradeName').textContent = entity.tradeName;
         qs('#identity').innerHTML = [
@@ -758,6 +852,7 @@
         renderLeadAnalytics();
         renderSupplierReminders();
         renderStatement();
+        renderCollaboration();
         switchModuleView(state.activeView);
         qs('#setupBadge').textContent = `${setup.completed}/${setup.total}`;
         qs('#setupBadge').className = setup.ready ? 'badge green' : 'badge';
@@ -866,6 +961,40 @@
             <td>${mad(entry.balance)}</td>
           </tr>
         `).join('') : emptyRow('Aucune écriture client', 5);
+      }
+
+      function timelineRows(timeline) {
+        const items = timeline?.items || [];
+        return items.length ? items.slice(0, 6).map((item) => `
+          <tr>
+            <td>${translate('timelineTypes', item.type)}</td>
+            <td>${item.date || '-'}</td>
+            <td><strong>${item.label}</strong><small>${item.status || item.assignedTo || '-'}</small></td>
+            <td>${item.amount ? mad(item.amount) : (item.description || '-')}</td>
+          </tr>
+        `).join('') : emptyRow('Aucun événement de timeline', 4);
+      }
+
+      function renderCollaboration() {
+        const board = state.collaborationBoard || { tasks: [], counts: { tasks: 0, openTasks: 0 } };
+        qs('#collaborationBadge').textContent = `${board.counts.openTasks || 0} tâche${board.counts.openTasks > 1 ? 's' : ''} ouverte${board.counts.openTasks > 1 ? 's' : ''}`;
+        qs('#customerTimelineCount').textContent = `${state.customerTimeline?.items?.length || 0} événement${(state.customerTimeline?.items?.length || 0) > 1 ? 's' : ''}`;
+        qs('#supplierTimelineCount').textContent = `${state.supplierTimeline?.items?.length || 0} événement${(state.supplierTimeline?.items?.length || 0) > 1 ? 's' : ''}`;
+        qs('#invoiceTimelineCount').textContent = `${state.invoiceTimeline?.items?.length || 0} événement${(state.invoiceTimeline?.items?.length || 0) > 1 ? 's' : ''}`;
+        qs('#payrollTimelineCount').textContent = `${state.payrollTimeline?.items?.length || 0} événement${(state.payrollTimeline?.items?.length || 0) > 1 ? 's' : ''}`;
+        qs('#customerTimelineRows').innerHTML = timelineRows(state.customerTimeline);
+        qs('#supplierTimelineRows').innerHTML = timelineRows(state.supplierTimeline);
+        qs('#invoiceTimelineRows').innerHTML = timelineRows(state.invoiceTimeline);
+        qs('#payrollTimelineRows').innerHTML = timelineRows(state.payrollTimeline);
+        qs('#internalTaskRows').innerHTML = board.tasks.length ? board.tasks.slice(0, 8).map((task) => `
+          <tr>
+            <td><strong>${task.title}</strong></td>
+            <td>${task.entityType}<small>${task.entityId}</small></td>
+            <td>${task.assignedTo}</td>
+            <td>${task.dueDate || task.createdAt}</td>
+            <td>${task.status === 'DONE' ? '<span class="statusPill success">Terminée</span>' : '<span class="statusPill warning">Ouverte</span>'}</td>
+          </tr>
+        `).join('') : emptyRow('Aucune tâche interne', 5);
       }
 
       function renderProfile() {
@@ -1193,6 +1322,108 @@
           button.textContent = original;
         }
       }
+
+      async function latestOrCreateInvoice() {
+        return latest(state.invoices) || await post('/sales/invoices', { customerId: 'cus-1', lines: [{ productId: 'prd-1', quantity: 1 }] });
+      }
+
+      async function bulkStatus(path, items, action, emptyMessage, successLabel) {
+        const target = items.find((item) => action === 'ARCHIVE' ? item.active : !item.active);
+        if (!target) throw new Error(emptyMessage);
+        const result = await post(path, { ids: [target.id], action });
+        showMessage('success', `${successLabel}: ${result.touched.map((item) => item.name).join(', ')}.`);
+      }
+
+      qs('#addCustomerNote').addEventListener('click', async () => {
+        await runAction('#addCustomerNote', 'Note...', async () => {
+          await post('/crm/customers/cus-1/notes', { author: 'Service client', body: 'Appel de suivi client et vérification des pièces légales.' });
+          showMessage('success', 'Note client ajoutée à la timeline.');
+        });
+      });
+
+      qs('#addCustomerTask').addEventListener('click', async () => {
+        await runAction('#addCustomerTask', 'Tâche...', async () => {
+          await post('/crm/customers/cus-1/tasks', { title: 'Collecter ICE et garantie paiement', assignedTo: 'Nadia', dueDate: '2026-06-05' });
+          showMessage('success', 'Tâche client assignée.');
+        });
+      });
+
+      qs('#addSupplierNote').addEventListener('click', async () => {
+        await runAction('#addSupplierNote', 'Note...', async () => {
+          await post('/inventory/suppliers/sup-1/notes', { author: 'Achats', body: 'Vérifier attestation fiscale avant prochaine commande.' });
+          showMessage('success', 'Note fournisseur ajoutée.');
+        });
+      });
+
+      qs('#addSupplierTask').addEventListener('click', async () => {
+        await runAction('#addSupplierTask', 'Tâche...', async () => {
+          await post('/inventory/suppliers/sup-1/tasks', { title: 'Relancer document fournisseur', assignedTo: 'Achats', dueDate: '2026-06-03' });
+          showMessage('success', 'Tâche fournisseur assignée.');
+        });
+      });
+
+      qs('#addInvoiceNote').addEventListener('click', async () => {
+        await runAction('#addInvoiceNote', 'Note...', async () => {
+          const invoice = await latestOrCreateInvoice();
+          await post(`/sales/invoices/${invoice.id}/notes`, { author: 'Compta', body: 'Contrôle de lettrage et pièce justificative.' });
+          showMessage('success', `Note facture ajoutée sur ${invoice.number}.`);
+        });
+      });
+
+      qs('#addInvoiceTask').addEventListener('click', async () => {
+        await runAction('#addInvoiceTask', 'Tâche...', async () => {
+          const invoice = await latestOrCreateInvoice();
+          await post(`/sales/invoices/${invoice.id}/tasks`, { title: 'Suivre paiement facture', assignedTo: 'Compta', dueDate: '2026-06-10' });
+          showMessage('success', `Tâche facture assignée sur ${invoice.number}.`);
+        });
+      });
+
+      qs('#addPayrollNote').addEventListener('click', async () => {
+        await runAction('#addPayrollNote', 'Note...', async () => {
+          await post('/payroll/runs/PAY-2026-05/notes', { author: 'RH', body: 'Préparer contrôle IR, CNSS et AMO avant export Damancom.' });
+          showMessage('success', 'Note paie ajoutée.');
+        });
+      });
+
+      qs('#addPayrollTask').addEventListener('click', async () => {
+        await runAction('#addPayrollTask', 'Tâche...', async () => {
+          await post('/payroll/runs/PAY-2026-05/tasks', { title: 'Valider bases CNSS', assignedTo: 'RH', dueDate: '2026-05-31' });
+          showMessage('success', 'Tâche paie assignée.');
+        });
+      });
+
+      qs('#closeInternalTask').addEventListener('click', async () => {
+        await runAction('#closeInternalTask', 'Clôture...', async () => {
+          const task = state.collaborationBoard?.tasks?.find((item) => item.status === 'OPEN');
+          if (!task) throw new Error('Aucune tâche ouverte à terminer.');
+          await patch(`/tenant/tasks/${task.id}`, { status: 'DONE' });
+          showMessage('success', `Tâche "${task.title}" terminée.`);
+        });
+      });
+
+      qs('#archiveCustomers').addEventListener('click', async () => {
+        await runAction('#archiveCustomers', 'Archivage...', () => bulkStatus('/crm/customers/bulk-status', state.customers, 'ARCHIVE', 'Aucun client actif à archiver.', 'Client archivé'));
+      });
+
+      qs('#restoreCustomers').addEventListener('click', async () => {
+        await runAction('#restoreCustomers', 'Restauration...', () => bulkStatus('/crm/customers/bulk-status', state.customers, 'RESTORE', 'Aucun client archivé à restaurer.', 'Client restauré'));
+      });
+
+      qs('#archiveSuppliers').addEventListener('click', async () => {
+        await runAction('#archiveSuppliers', 'Archivage...', () => bulkStatus('/inventory/suppliers/bulk-status', state.suppliers, 'ARCHIVE', 'Aucun fournisseur actif à archiver.', 'Fournisseur archivé'));
+      });
+
+      qs('#restoreSuppliers').addEventListener('click', async () => {
+        await runAction('#restoreSuppliers', 'Restauration...', () => bulkStatus('/inventory/suppliers/bulk-status', state.suppliers, 'RESTORE', 'Aucun fournisseur archivé à restaurer.', 'Fournisseur restauré'));
+      });
+
+      qs('#archiveProducts').addEventListener('click', async () => {
+        await runAction('#archiveProducts', 'Archivage...', () => bulkStatus('/inventory/products/bulk-status', state.products, 'ARCHIVE', 'Aucun article actif à archiver.', 'Article archivé'));
+      });
+
+      qs('#restoreProducts').addEventListener('click', async () => {
+        await runAction('#restoreProducts', 'Restauration...', () => bulkStatus('/inventory/products/bulk-status', state.products, 'RESTORE', 'Aucun article archivé à restaurer.', 'Article restauré'));
+      });
 
       qs('#createInvoice').addEventListener('click', async () => {
         const button = qs('#createInvoice');

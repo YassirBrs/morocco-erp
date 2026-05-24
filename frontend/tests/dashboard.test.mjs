@@ -157,3 +157,18 @@ test('static dashboard exposes onboarding and master-data workflows', () => {
   assert.ok(staticCss.includes('.message.warning'));
   assert.ok(staticCss.includes('.warningText'));
 });
+
+test('static dashboard exposes collaboration timelines, notes, tasks, and bulk archive workflows', () => {
+  for (const text of ['Timelines et tâches', 'Timeline client', 'Timeline fournisseur', 'Timeline facture', 'Notes et tâches internes', 'Note client', 'Tâche client', 'Note fournisseur', 'Tâche fournisseur', 'Note facture', 'Tâche facture', 'Note paie', 'Tâche paie', 'Terminer tâche', 'Archiver clients inactifs', 'Restaurer clients', 'Archiver fournisseurs', 'Restaurer fournisseurs', 'Archiver articles', 'Restaurer articles']) {
+    assert.ok(staticPage.includes(text), `${text} collaboration or bulk workflow is present`);
+  }
+  for (const endpoint of ['/tenant/collaboration-board', '/tenant/tasks/${task.id}', '/crm/customers/cus-1/timeline', '/crm/customers/cus-1/notes', '/crm/customers/cus-1/tasks', '/inventory/suppliers/sup-1/timeline', '/inventory/suppliers/sup-1/notes', '/inventory/suppliers/sup-1/tasks', '/sales/invoices/${latest(invoices).id}/timeline', '/sales/invoices/${invoice.id}/notes', '/sales/invoices/${invoice.id}/tasks', '/payroll/runs/PAY-2026-05/timeline', '/payroll/runs/PAY-2026-05/notes', '/payroll/runs/PAY-2026-05/tasks', '/crm/customers/bulk-status', '/inventory/suppliers/bulk-status', '/inventory/products/bulk-status']) {
+    assert.ok(staticPage.includes(endpoint), `${endpoint} endpoint is wired`);
+  }
+  for (const marker of ['renderCollaboration', 'timelineRows', 'latestOrCreateInvoice', 'bulkStatus', "method: 'PATCH'"]) {
+    assert.ok(staticPage.includes(marker), `${marker} collaboration helper is present`);
+  }
+  for (const cssToken of ['.collabActions', '.timelineGrid', '.timelineTable', '.taskBoard']) {
+    assert.ok(staticCss.includes(cssToken), `${cssToken} style exists`);
+  }
+});

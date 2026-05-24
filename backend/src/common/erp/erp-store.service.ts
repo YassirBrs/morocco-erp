@@ -5,6 +5,7 @@ import {
   BusinessSearchInput,
   BusinessSearchResult,
   BusinessSearchType,
+  CollaborationEntityType,
   CompanyProfileChange,
   ComplianceRuleSet,
   CreditNote,
@@ -15,6 +16,9 @@ import {
   DocumentTotals,
   ErpUser,
   FiscalPeriod,
+  InternalNote,
+  InternalTask,
+  InternalTaskStatus,
   Invoice,
   JournalEntry,
   Lead,
@@ -292,6 +296,8 @@ export class ErpStoreService {
       productionOrders: [],
       auditLogs: [],
       profileChanges: [],
+      internalNotes: [],
+      internalTasks: [],
       sequences: {},
     };
 
@@ -353,6 +359,8 @@ export class ErpStoreService {
       productionOrders: [],
       auditLogs: [],
       profileChanges: [],
+      internalNotes: [],
+      internalTasks: [],
       sequences: {},
     });
 
@@ -949,6 +957,162 @@ export class ErpStoreService {
         pendingApprovals: approvalReview.pending,
       },
     };
+  }
+
+  entityTimeline(entityType: CollaborationEntityType, entityId: string, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    this.assertCollaborationEntity(workspace, entityType, entityId);
+    const items: Array<{
+      id: string;
+      type: string;
+      date: string;
+      label: string;
+      description?: string;
+      amount?: number;
+      status?: string;
+      assignedTo?: string;
+    }> = [];
+    const add = (item: typeof items[number]) => items.push(item);
+
+    if (entityType === 'CUSTOMER') {
+      const customer = this.customer(workspace, entityId);
+      for (const document of customer.documentExpiries) {
+        add({ id: `${customer.id}-${document.type}`, type: 'DOCUMENT', date: document.expiresAt, label: document.type, description: document.reference ?? 'Document client' });
+      }
+      for (const quote of workspace.quotes.filter((quote) => quote.customerId === customer.id)) {
+        add({ id: quote.id, type: 'QUOTE', date: quote.date, label: quote.number, amount: quote.totals.total, status: quote.status });
+      }
+      for (const invoice of workspace.invoices.filter((invoice) => invoice.customerId === customer.id)) {
+        add({ id: invoice.id, type: 'INVOICE', date: invoice.date, label: invoice.number, amount: invoice.totals.total, status: invoice.status });
+        for (const payment of workspace.payments.filter((payment) => payment.invoiceId === invoice.id)) {
+          add({ id: payment.id, type: 'PAYMENT', date: payment.date, label: `Paiement ${invoice.number}`, amount: payment.amount, status: payment.method });
+        }
+      }
+      for (const creditNote of workspace.creditNotes.filter((creditNote) => creditNote.customerId === customer.id)) {
+        add({ id: creditNote.id, type: 'CREDIT_NOTE', date: creditNote.date, label: creditNote.number, amount: creditNote.totals.total, status: creditNote.status });
+      }
+    }
+
+    if (entityType === 'SUPPLIER') {
+      const supplier = this.supplier(workspace, entityId);
+      for (const document of supplier.documentExpiries) {
+        add({ id: `${supplier.id}-${document.type}`, type: 'DOCUMENT', date: document.expiresAt, label: document.type, description: document.fileName ?? document.reference ?? 'Document fournisseur', status: document.uploadStatus });
+      }
+      for (const receipt of workspace.purchaseReceipts.filter((receipt) => receipt.supplierId === supplier.id)) {
+        add({ id: receipt.id, type: 'PURCHASE_RECEIPT', date: receipt.date, label: receipt.number, amount: receipt.total, status: receipt.approvalStatus });
+      }
+    }
+
+    if (entityType === 'INVOICE') {
+      const invoice = this.invoice(workspace, entityId);
+      add({ id: invoice.id, type: 'INVOICE', date: invoice.date, label: invoice.number, amount: invoice.totals.total, status: invoice.status });
+      for (const payment of workspace.payments.filter((payment) => payment.invoiceId === invoice.id)) {
+        add({ id: payment.id, type: 'PAYMENT', date: payment.date, label: `Paiement ${invoice.number}`, amount: payment.amount, status: payment.method });
+      }
+      for (const creditNote of workspace.creditNotes.filter((creditNote) => creditNote.invoiceId === invoice.id)) {
+        add({ id: creditNote.id, type: 'CREDIT_NOTE', date: creditNote.date, label: creditNote.number, amount: creditNote.totals.total, status: creditNote.status });
+      }
+    }
+
+    for (const note of workspace.internalNotes.filter((note) => note.entityType === entityType && note.entityId === entityId)) {
+      add({ id: note.id, type: 'NOTE', date: note.createdAt, label: note.author, description: note.body });
+    }
+    for (const task of workspace.internalTasks.filter((task) => task.entityType === entityType && task.entityId === entityId)) {
+      add({ id: task.id, type: 'TASK', date: task.dueDate ?? task.createdAt, label: task.title, description: `Assigné à ${task.assignedTo}`, status: task.status, assignedTo: task.assignedTo });
+    }
+
+    return {
+      entityType,
+      entityId,
+      items: items.sort((left, right) => right.date.localeCompare(left.date) || left.type.localeCompare(right.type)),
+      counts: {
+        notes: workspace.internalNotes.filter((note) => note.entityType === entityType && note.entityId === entityId).length,
+        tasks: workspace.internalTasks.filter((task) => task.entityType === entityType && task.entityId === entityId).length,
+        openTasks: workspace.internalTasks.filter((task) => task.entityType === entityType && task.entityId === entityId && task.status === 'OPEN').length,
+      },
+    };
+  }
+
+  addInternalNote(input: { entityType: CollaborationEntityType; entityId: string; author?: string; body: string }, tenantId?: string): InternalNote {
+    const workspace = this.workspace(tenantId);
+    this.assertCollaborationEntity(workspace, input.entityType, input.entityId);
+    const note: InternalNote = {
+      id: this.id('note'),
+      tenantId: workspace.tenant.id,
+      entityType: input.entityType,
+      entityId: input.entityId,
+      author: this.clean(input.author) ?? 'Équipe interne',
+      body: this.nonEmpty(input.body, 'La note interne est obligatoire'),
+      createdAt: today(),
+    };
+    workspace.internalNotes.push(note);
+    this.audit(workspace, 'collaboration.note-created', 'InternalNote', note.id, note);
+    return note;
+  }
+
+  addInternalTask(input: { entityType: CollaborationEntityType; entityId: string; title: string; assignedTo?: string; dueDate?: string }, tenantId?: string): InternalTask {
+    const workspace = this.workspace(tenantId);
+    this.assertCollaborationEntity(workspace, input.entityType, input.entityId);
+    const task: InternalTask = {
+      id: this.id('task'),
+      tenantId: workspace.tenant.id,
+      entityType: input.entityType,
+      entityId: input.entityId,
+      title: this.nonEmpty(input.title, 'Le titre de la tâche est obligatoire'),
+      assignedTo: this.clean(input.assignedTo) ?? 'Non assigné',
+      dueDate: input.dueDate ? this.isoDate(input.dueDate, 'La date d’échéance de la tâche est invalide') : undefined,
+      status: 'OPEN',
+      createdAt: today(),
+    };
+    workspace.internalTasks.push(task);
+    this.audit(workspace, 'collaboration.task-created', 'InternalTask', task.id, task);
+    return task;
+  }
+
+  updateInternalTaskStatus(taskId: string, status: InternalTaskStatus, tenantId?: string): InternalTask {
+    const workspace = this.workspace(tenantId);
+    const task = workspace.internalTasks.find((candidate) => candidate.id === taskId);
+    if (!task) throw new NotFoundException('Tâche interne introuvable');
+    if (!['OPEN', 'DONE'].includes(status)) throw new BadRequestException('Statut de tâche invalide');
+    task.status = status;
+    task.closedAt = status === 'DONE' ? today() : undefined;
+    this.audit(workspace, 'collaboration.task-status-updated', 'InternalTask', task.id, task);
+    return task;
+  }
+
+  collaborationBoard(tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const tasks = [...workspace.internalTasks].sort((left, right) => (left.dueDate ?? left.createdAt).localeCompare(right.dueDate ?? right.createdAt));
+    return {
+      notes: [...workspace.internalNotes].sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
+      tasks,
+      counts: {
+        notes: workspace.internalNotes.length,
+        tasks: workspace.internalTasks.length,
+        openTasks: workspace.internalTasks.filter((task) => task.status === 'OPEN').length,
+      },
+    };
+  }
+
+  bulkArchiveRestore(input: { entity: 'CUSTOMER' | 'SUPPLIER' | 'PRODUCT'; ids: string[]; action: 'ARCHIVE' | 'RESTORE' }, tenantId?: string) {
+    const workspace = this.workspace(tenantId);
+    const ids = input.ids?.filter(Boolean) ?? [];
+    if (!ids.length) throw new BadRequestException('Aucun identifiant fourni pour l’action en lot');
+    if (!['ARCHIVE', 'RESTORE'].includes(input.action)) throw new BadRequestException('Action de statut en lot invalide');
+    const active = input.action === 'RESTORE';
+    const touched = ids.map((id) => {
+      const entity = input.entity === 'CUSTOMER'
+        ? this.customer(workspace, id)
+        : input.entity === 'SUPPLIER'
+          ? this.supplier(workspace, id)
+          : this.product(workspace, id);
+      entity.active = active;
+      entity.updatedAt = today();
+      this.audit(workspace, `bulk.${input.entity.toLowerCase()}.${input.action.toLowerCase()}`, input.entity, entity.id, entity);
+      const name = 'sku' in entity ? entity.sku : entity.name;
+      return { id: entity.id, name, active: entity.active };
+    });
+    return { entity: input.entity, action: input.action, touched };
   }
 
   companyProfile(tenantId?: string) {
@@ -2360,6 +2524,26 @@ export class ErpStoreService {
       throw new NotFoundException('Facture introuvable');
     }
     return invoice;
+  }
+
+  private assertCollaborationEntity(workspace: TenantWorkspace, entityType: CollaborationEntityType, entityId: string): void {
+    if (entityType === 'CUSTOMER') {
+      this.customer(workspace, entityId);
+      return;
+    }
+    if (entityType === 'SUPPLIER') {
+      this.supplier(workspace, entityId);
+      return;
+    }
+    if (entityType === 'INVOICE') {
+      this.invoice(workspace, entityId);
+      return;
+    }
+    if (entityType === 'PAYROLL_RUN') {
+      if (!this.clean(entityId)) throw new BadRequestException('Identifiant paie invalide');
+      return;
+    }
+    throw new BadRequestException('Type d’entité collaboration invalide');
   }
 
   private supplier(workspace: TenantWorkspace, supplierId: string): Supplier {
