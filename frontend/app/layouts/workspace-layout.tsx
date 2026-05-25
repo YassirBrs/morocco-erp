@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 
 type Session = {
@@ -8,6 +9,9 @@ type Session = {
   role: string;
   tenantId: string;
 };
+
+let cachedSession: Session | null | undefined;
+let cachedSidebarCollapsed = false;
 
 const navItems = [
   ['CRM', '/crm'],
@@ -25,12 +29,13 @@ const navItems = [
 ];
 
 export function WorkspaceLayout({ activeModule, children }: { activeModule: string; children: ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [collapsed, setCollapsed] = useState(() => cachedSidebarCollapsed);
+  const [session, setSession] = useState<Session | null | undefined>(() => cachedSession);
 
   useEffect(() => {
     const rawSession = window.localStorage.getItem('morocco-erp-session');
-    setSession(rawSession ? JSON.parse(rawSession) as Session : null);
+    cachedSession = rawSession ? JSON.parse(rawSession) as Session : null;
+    setSession(cachedSession);
   }, []);
 
   const activeLabel = useMemo(() => navItems.find(([label]) => label === activeModule)?.[0] ?? activeModule, [activeModule]);
@@ -57,17 +62,25 @@ export function WorkspaceLayout({ activeModule, children }: { activeModule: stri
     <main className={`workspaceShell ${collapsed ? 'collapsed' : ''}`}>
       <aside className="workspaceSidebar" aria-label="Navigation ERP">
         <div className="sidebarHeader">
-          <a className="brandLockup" href="/crm">
+          <Link className="brandLockup" href="/crm">
             <span className="brandMark">ME</span>
             <span>Morocco ERP</span>
-          </a>
-          <button type="button" className="iconButton" aria-label="Réduire la barre latérale" onClick={() => setCollapsed((value) => !value)}>
+          </Link>
+          <button
+            type="button"
+            className="iconButton"
+            aria-label="Réduire la barre latérale"
+            onClick={() => setCollapsed((value) => {
+              cachedSidebarCollapsed = !value;
+              return cachedSidebarCollapsed;
+            })}
+          >
             {collapsed ? '>' : '<'}
           </button>
         </div>
         <nav>
           {navItems.map(([label, href]) => (
-            <a key={label} href={href} className={label === activeModule ? 'active' : ''}>{label}</a>
+            <Link key={label} href={href} className={label === activeModule ? 'active' : ''}>{label}</Link>
           ))}
         </nav>
         <div className="sessionCard">

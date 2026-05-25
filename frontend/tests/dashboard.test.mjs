@@ -76,6 +76,11 @@ test('workspace layout hides internal content until a session exists', () => {
   for (const text of ['Session requise', 'localStorage.getItem', 'morocco-erp-session', 'Ouvrir une session', 'workspaceSidebar', 'Réduire la barre latérale']) {
     assert.ok(workspaceLayout.includes(text), `${text} exists in guarded workspace layout`);
   }
+  assert.ok(workspaceLayout.includes("import Link from 'next/link'"), 'workspace sidebar uses Next client-side routing');
+  assert.ok(workspaceLayout.includes('<Link key={label} href={href}'), 'workspace module links avoid full page refresh');
+  assert.ok(workspaceLayout.includes('<Link className="brandLockup" href="/crm">'), 'workspace brand link avoids full page refresh');
+  assert.ok(workspaceLayout.includes('let cachedSession'), 'workspace session is cached across client route changes');
+  assert.ok(workspaceLayout.includes('let cachedSidebarCollapsed'), 'workspace sidebar state is cached across client route changes');
   assert.ok(workspaceLayout.includes('setCollapsed'));
   assert.ok(workspaceLayout.includes('activeModule'));
 });
