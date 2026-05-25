@@ -374,24 +374,31 @@ select {
 
 .workspaceShell {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   background: var(--bg);
+  padding-left: 280px;
 }
 
 .workspaceShell.collapsed {
-  grid-template-columns: 96px minmax(0, 1fr);
+  padding-left: 96px;
 }
 
 .workspaceSidebar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
   display: flex;
+  width: 280px;
   height: 100dvh;
   flex-direction: column;
   gap: 20px;
   border-right: 1px solid var(--line);
   background: #fff;
   padding: 18px;
+}
+
+.workspaceShell.collapsed .workspaceSidebar {
+  width: 96px;
 }
 
 .workspaceShell.collapsed .brandLockup span:last-child,
@@ -548,7 +555,13 @@ select {
 
   .workspaceSidebar {
     position: static;
+    width: auto;
     height: auto;
+  }
+
+  .workspaceShell,
+  .workspaceShell.collapsed {
+    padding-left: 0;
   }
 
   .sectionHeader.internal {

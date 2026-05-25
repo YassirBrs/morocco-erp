@@ -231,6 +231,8 @@ test('responsive professional SaaS styles cover public, auth, shell, forms, and 
   for (const token of ['.marketingPage', '.marketingHero', '.pricingGrid', '.authPage', '.workspaceShell', '.workspaceSidebar', '.workspacePanel', '.domainForm', '.actionToast', '@media (max-width: 980px)', '@media (max-width: 640px)']) {
     assert.ok(css.includes(token), `${token} style exists`);
   }
+  assert.ok(css.includes('position: fixed'), 'workspace sidebar is fixed on desktop');
+  assert.ok(css.includes('padding-left: 280px'), 'workspace content reserves space for fixed sidebar');
   for (const existingToken of ['--color-primary: #1E3A8A', '--background-main: #F8FAFC', '--status-success-text: #16A34A']) {
     assert.ok(css.includes(existingToken), `${existingToken} design token is preserved`);
   }
