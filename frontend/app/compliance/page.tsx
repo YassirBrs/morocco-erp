@@ -1,5 +1,5 @@
 import { ComplianceCenterPage } from '../compliance/compliance-center-page';
 
-export default function ConformitePage() {
+export default function CompliancePage() {
   return <ComplianceCenterPage />;
 }

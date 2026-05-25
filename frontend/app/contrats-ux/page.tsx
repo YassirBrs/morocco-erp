@@ -1,6 +1,5 @@
-import { ErpContractWorkspacePage } from '../../features/ux-organization/erp-contract-workspace-page';
+import { UxContractHubPage } from '../contracts/ux-contract-hub-page';
 
 export default function ContratsUxPage() {
-  return <ErpContractWorkspacePage />;
+  return <UxContractHubPage />;
 }
-

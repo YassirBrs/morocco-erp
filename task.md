@@ -1054,3 +1054,46 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T873 P2 - Add monthly product usability review checklist with screenshots, task-completion metrics, bugs, and user feedback.
 - [x] T874 P2 - Add in-app feedback capture linked to workspace, record, screenshot, user role, and browser metadata.
 - [x] T875 P2 - Add release readiness UX gate that blocks release until core journeys, accessibility, visual checks, and E2E tests pass.
+
+## Architectural Decoupling Pass 2 - Remaining Workspaces
+
+- [x] T902 P0 - Replace the legacy Comptabilité route import with an explicit app-level accounting workspace file guarded by the shared shell.
+- [x] T903 P0 - Add accounting state validation for Journal Comptable entries, balanced debit/credit totals, and Clôture de période blockers.
+- [x] T904 P0 - Replace the legacy Admin route import with an explicit app-level tenant administration console.
+- [x] T905 P0 - Add admin state validation for user invitations, role assignment, MFA expectation, and audit-readable feedback.
+- [x] T906 P0 - Replace the legacy Conformité route import with an explicit app-level Moroccan compliance center.
+- [x] T907 P0 - Add compliance state validation for DGI/CNSS adapter checks, rule-pack versions, and declaration evidence messages.
+- [x] T908 P0 - Replace the legacy POS route import with an explicit app-level cashier workspace.
+- [x] T909 P0 - Add POS state validation for opening cashier sessions, ticket payment, stock sync, and Z report readiness.
+- [x] T910 P0 - Replace the legacy Stock route import with an explicit app-level inventory control workspace.
+- [x] T911 P0 - Add stock state validation for warehouse movements, CUMP valuation, reservation status, and audit notes.
+- [x] T912 P0 - Replace the legacy Workflows route import with an explicit app-level operations workflow center.
+- [x] T913 P0 - Add workflow state validation for import preview, export status, approvals, evidence archive, and task routing.
+- [x] T914 P0 - Replace the legacy Qualité/Migration route import with an explicit app-level release and migration readiness workspace.
+- [x] T915 P0 - Add quality/migration state validation for Sage/Odoo imports, duplicate resolution, accessibility gates, and release blocking.
+- [x] T916 P1 - Replace the legacy Contrats UX route import with an explicit app-level UX contract hub.
+- [x] T917 P1 - Add UX contract state validation for list contracts, detail contracts, form schema, and action-result payload feedback.
+- [x] T918 P1 - Move route loading and error boundaries away from the legacy feature folder into app-level reusable components.
+- [x] T919 P1 - Expand the shared workspace navigation to expose accounting, stock, POS, workflows, quality, admin, compliance, and UX contracts.
+- [x] T920 P1 - Preserve public/private separation so every new internal workspace remains hidden behind the simulated secure session.
+- [x] T921 P1 - Normalize French ERP terminology across the new workspaces: Journal Comptable, Bulletins de paie, Clôture de période, Damancom, CUMP, and télédéclaration.
+- [x] T922 P1 - Add route-level aliases so French and English workspace paths resolve to isolated pages without a shared dashboard.
+- [x] T923 P1 - Add frontend architecture tests proving no app route imports legacy ux-organization feature pages.
+- [x] T924 P1 - Add frontend component tests for all new isolated workspaces and their required validation messages.
+- [x] T925 P1 - Add backend contract tests proving support endpoints still expose workspace payloads required by the reconstructed routes.
+- [x] T926 P1 - Add responsive shell checks for expanded navigation density, collapsed sidebar behavior, and mobile stacking.
+- [x] T927 P1 - Add accessible action feedback via role=status and role=alert for every new form.
+- [x] T928 P1 - Add dense operational tables for each new workspace with stable columns and no marketing copy inside internal views.
+- [x] T929 P1 - Add status badge usage for blocked, warning, ready, posted, synced, and archived operational states.
+- [x] T930 P1 - Add workspace-specific KPI strips using Moroccan business terms and MAD values where financial context exists.
+- [x] T931 P1 - Add quality safeguards that avoid cards nested inside cards and keep page sections unframed inside the shell.
+- [x] T932 P1 - Add route-state tests for loading and error boundaries sourced from app/components instead of legacy feature components.
+- [x] T933 P1 - Add browser verification for the public landing, auth gate, and at least one newly isolated internal route.
+- [x] T934 P2 - Add accounting subtasks for a later journal line editor with row-level debit/credit balancing.
+- [x] T935 P2 - Add stock subtasks for a later sliding warehouse filter sheet and CUMP drilldown table.
+- [x] T936 P2 - Add POS subtasks for a later tablet keypad, receipt preview drawer, and offline conflict resolver.
+- [x] T937 P2 - Add compliance subtasks for a later declaration calendar and adapter evidence drawer.
+- [x] T938 P2 - Add workflows subtasks for a later import-mapping wizard and PDF preview drawer.
+- [x] T939 P2 - Add quality subtasks for a later visual regression dashboard and migration reconciliation wizard.
+- [x] T940 P2 - Run frontend tests and build after the pass.
+- [x] T941 P2 - Run backend tests and build after the pass before commit and push.

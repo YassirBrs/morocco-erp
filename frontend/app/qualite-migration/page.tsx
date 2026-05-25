@@ -1,6 +1,5 @@
-import { QualityMigrationWorkspacePage } from '../../features/ux-organization/quality-migration-workspace-page';
+import { QualityMigrationPage } from '../quality/quality-migration-page';
 
 export default function QualiteMigrationPage() {
-  return <QualityMigrationWorkspacePage />;
+  return <QualityMigrationPage />;
 }
-

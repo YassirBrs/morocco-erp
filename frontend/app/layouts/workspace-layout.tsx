@@ -15,7 +15,13 @@ const navItems = [
   ['Fournisseurs', '/purchases'],
   ['Paie', '/payroll'],
   ['Comptabilité', '/comptabilite'],
+  ['Stock', '/stock'],
+  ['POS', '/pos'],
+  ['Workflows', '/workflows'],
+  ['Qualité', '/qualite-migration'],
+  ['Admin', '/admin'],
   ['Conformité', '/conformite'],
+  ['Contrats UX', '/contrats-ux'],
 ];
 
 export function WorkspaceLayout({ activeModule, children }: { activeModule: string; children: ReactNode }) {

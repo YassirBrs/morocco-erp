@@ -1,5 +1,5 @@
-import { PosWorkspacePage } from '../../features/ux-organization/pos-workspace-page';
+import { PosRegisterPage } from './pos-register-page';
 
 export default function PosPage() {
-  return <PosWorkspacePage />;
+  return <PosRegisterPage />;
 }

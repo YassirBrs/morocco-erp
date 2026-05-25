@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -13,6 +13,15 @@ const crmPage = read('../app/crm/crm-pipeline-page.tsx');
 const supplierPage = read('../app/purchases/supplier-directory-page.tsx');
 const invoicePage = read('../app/sales/invoice-management-page.tsx');
 const payrollPage = read('../app/payroll/payroll-processing-page.tsx');
+const accountingPage = read('../app/accounting/accounting-workspace-page.tsx');
+const adminPage = read('../app/admin/admin-console-page.tsx');
+const compliancePage = read('../app/compliance/compliance-center-page.tsx');
+const posPage = read('../app/pos/pos-register-page.tsx');
+const inventoryPage = read('../app/stock/inventory-control-page.tsx');
+const workflowsPage = read('../app/workflows/operations-flow-page.tsx');
+const qualityPage = read('../app/quality/quality-migration-page.tsx');
+const contractsPage = read('../app/contracts/ux-contract-hub-page.tsx');
+const routeState = read('../app/components/route-state.tsx');
 const workspaceComponents = read('../app/components/workspace-components.tsx');
 const css = read('../app/globals.css');
 const tasks = read('../../task.md');
@@ -25,6 +34,19 @@ const routeFiles = [
   '../app/sales/page.tsx',
   '../app/purchases/page.tsx',
   '../app/payroll/page.tsx',
+  '../app/comptabilite/page.tsx',
+  '../app/accounting/page.tsx',
+  '../app/admin/page.tsx',
+  '../app/conformite/page.tsx',
+  '../app/compliance/page.tsx',
+  '../app/pos/page.tsx',
+  '../app/stock/page.tsx',
+  '../app/inventory/page.tsx',
+  '../app/workflows/page.tsx',
+  '../app/qualite-migration/page.tsx',
+  '../app/quality/page.tsx',
+  '../app/contrats-ux/page.tsx',
+  '../app/contracts/page.tsx',
 ].map(read);
 
 test('root page is a public marketing entry point, not the internal ERP dashboard', () => {
@@ -67,6 +89,15 @@ test('required decoupled domain page files exist', () => {
     '../app/purchases/supplier-directory-page.tsx',
     '../app/sales/invoice-management-page.tsx',
     '../app/payroll/payroll-processing-page.tsx',
+    '../app/accounting/accounting-workspace-page.tsx',
+    '../app/admin/admin-console-page.tsx',
+    '../app/compliance/compliance-center-page.tsx',
+    '../app/pos/pos-register-page.tsx',
+    '../app/stock/inventory-control-page.tsx',
+    '../app/workflows/operations-flow-page.tsx',
+    '../app/quality/quality-migration-page.tsx',
+    '../app/contracts/ux-contract-hub-page.tsx',
+    '../app/components/route-state.tsx',
   ]) {
     assert.equal(existsSync(new URL(file, import.meta.url)), true, `${file} exists`);
   }
@@ -81,10 +112,76 @@ test('domain route files delegate to isolated pages instead of one shared dashbo
     [routeFiles[4], 'InvoiceManagementPage'],
     [routeFiles[5], 'SupplierDirectoryPage'],
     [routeFiles[6], 'PayrollProcessingPage'],
+    [routeFiles[7], 'AccountingWorkspacePage'],
+    [routeFiles[8], 'AccountingWorkspacePage'],
+    [routeFiles[9], 'AdminConsolePage'],
+    [routeFiles[10], 'ComplianceCenterPage'],
+    [routeFiles[11], 'ComplianceCenterPage'],
+    [routeFiles[12], 'PosRegisterPage'],
+    [routeFiles[13], 'InventoryControlPage'],
+    [routeFiles[14], 'InventoryControlPage'],
+    [routeFiles[15], 'OperationsFlowPage'],
+    [routeFiles[16], 'QualityMigrationPage'],
+    [routeFiles[17], 'QualityMigrationPage'],
+    [routeFiles[18], 'UxContractHubPage'],
+    [routeFiles[19], 'UxContractHubPage'],
   ]) {
     assert.ok(content.includes(component), `${component} is used by route`);
     assert.ok(!content.includes('ErpShellWorkspace'), 'route does not delegate to the old bloated shell');
   }
+});
+
+test('remaining internal workspaces are app-level pages with no legacy feature imports', () => {
+  for (const [content, marker] of [
+    [accountingPage, 'Journal Comptable'],
+    [adminPage, 'Administration tenant'],
+    [compliancePage, 'Règles MA-2026'],
+    [posPage, 'Z report'],
+    [inventoryPage, 'valorisation CUMP'],
+    [workflowsPage, 'Imports, exports, preuves et approbations'],
+    [qualityPage, 'Readiness Sage/Odoo'],
+    [contractsPage, 'Contrats UX ERP'],
+  ]) {
+    assert.ok(content.includes(marker), `${marker} exists`);
+    assert.ok(content.includes('WorkspaceLayout'), `${marker} uses guarded workspace shell`);
+    assert.ok(content.includes('ActionToast'), `${marker} exposes actionable feedback`);
+    assert.ok(!content.includes('features/ux-organization'), `${marker} is not a legacy feature import`);
+  }
+});
+
+test('remaining internal workspaces expose concrete validation and state transformations', () => {
+  for (const [content, snippets] of [
+    [accountingPage, ['Écriture déséquilibrée', 'Clôture de période active', 'setJournals']],
+    [adminPage, ['Invitation rejetée', 'MFA obligatoire', 'setUsers']],
+    [compliancePage, ['Référence conformité invalide', 'Preuve requise', 'setChecks']],
+    [posPage, ['Ouvrez une session caisse', 'setTickets', 'Z report mis à jour']],
+    [inventoryPage, ['SKU invalide', 'Coût unitaire requis', 'setMoves']],
+    [workflowsPage, ['Référence workflow obligatoire', 'setJobs', 'Planifier workflow']],
+    [qualityPage, ['Couverture migration attendue', 'setGates', 'release gate']],
+    [contractsPage, ['Message contrat trop court', 'setContracts', 'ActionResult']],
+  ]) {
+    for (const snippet of snippets) {
+      assert.ok(content.includes(snippet), `${snippet} validation exists`);
+    }
+  }
+});
+
+test('app routes no longer import ux-organization feature pages', () => {
+  const files = listFiles(new URL('../app', import.meta.url).pathname);
+  const offenders = files
+    .filter((file) => file.endsWith('.tsx'))
+    .filter((file) => readFileSync(file, 'utf8').includes('features/ux-organization'));
+  assert.deepEqual(offenders, []);
+});
+
+test('app-level route states and expanded sidebar navigation cover all isolated workspaces', () => {
+  for (const text of ['WorkspaceRouteLoading', 'WorkspaceRouteError', 'role="status"', 'role="alert"']) {
+    assert.ok(routeState.includes(text), `${text} exists in app route state`);
+  }
+  for (const text of ['Stock', 'POS', 'Workflows', 'Qualité', 'Admin', 'Conformité', 'Contrats UX']) {
+    assert.ok(workspaceLayout.includes(text), `${text} exists in sidebar`);
+  }
+  assert.ok(css.includes('.checkboxLine'), 'checkbox styling exists for accessible binary settings');
 });
 
 test('CRM page owns pipeline behavior and actionable validation', () => {
@@ -146,3 +243,18 @@ test('architectural decoupling pass is logged as a structured 40-task chunk', ()
   const passTasks = tasks.match(/T1(5[0-9]|6[0-9]|7[0-9]|8[0-9])/g) ?? [];
   assert.ok(passTasks.length >= 40, 'first reconstruction pass contains at least 40 tasks');
 });
+
+test('second architectural decoupling pass is logged as a structured 40-task chunk', () => {
+  for (const taskId of ['T902', 'T912', 'T923', 'T933', 'T941']) {
+    assert.ok(tasks.includes(taskId), `${taskId} is logged`);
+  }
+  const passTasks = tasks.match(/T9(0[2-9]|[1-3][0-9]|4[0-1])/g) ?? [];
+  assert.ok(passTasks.length >= 40, 'second reconstruction pass contains at least 40 tasks');
+});
+
+function listFiles(dir) {
+  return readdirSync(dir).flatMap((entry) => {
+    const path = `${dir}/${entry}`;
+    return statSync(path).isDirectory() ? listFiles(path) : [path];
+  });
+}

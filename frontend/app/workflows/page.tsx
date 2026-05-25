@@ -1,5 +1,5 @@
-import { OperationalWorkflowCenterPage } from '../../features/ux-organization/operational-workflow-center-page';
+import { OperationsFlowPage } from './operations-flow-page';
 
 export default function WorkflowsPage() {
-  return <OperationalWorkflowCenterPage />;
+  return <OperationsFlowPage />;
 }

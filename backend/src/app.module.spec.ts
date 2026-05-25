@@ -117,4 +117,36 @@ describe('AppModule ERP module wiring', () => {
       expect(performance.status).toBe('PASS');
     });
   });
+
+  it('keeps UX support contracts available for isolated frontend workspaces', () => {
+    const tenant = moduleRef.get(TenantController);
+    const cls = moduleRef.get(ClsService);
+
+    cls.run(() => {
+      cls.set('tenantId', 'tenant-demo');
+      cls.set('userRole', 'ACCOUNTANT');
+
+      const navigation: any = tenant.roleNavigation('ACCOUNTANT');
+      const listContract: any = tenant.uxListViewContract('accounting');
+      const detailContract: any = tenant.uxDetailViewContract('sales', 'FAC-2026-014');
+      const formSchema: any = tenant.uxFormSchemaContract('compliance');
+      const actionResult: any = tenant.uxActionResultContract({ action: 'journal.post', entityId: 'OD-2026-008' });
+      const validationErrors: any = tenant.uxValidationErrorContract('stock');
+      const contractHub: any = tenant.uxContractHub();
+      const quality: any = tenant.uxQualityMigrationReadiness();
+
+      expect(navigation.modules.find((item: any) => item.module === 'accounting')).toMatchObject({ visible: true, canWrite: true });
+      expect(listContract).toMatchObject({ tenantId: 'tenant-demo', module: 'accounting', resource: 'accounting.list' });
+      expect(listContract.columns.map((column: any) => column.labelFr)).toContain('Total TTC');
+      expect(detailContract.header.badges).toEqual(expect.arrayContaining(['TVA 20 %', 'ICE vérifié', 'Période ouverte']));
+      expect(formSchema.sections[0].labelFr).toBe('Identité légale');
+      expect(actionResult.messageFr).toContain('OD-2026-008');
+      expect(actionResult.nextSuggestedAction).toContain('Envoyer PDF');
+      expect(validationErrors.errors.map((error: any) => error.messageFr)).toEqual(expect.arrayContaining(['Taux TVA marocain non autorisé']));
+      expect(contractHub).toHaveProperty('permissionMatrix');
+      expect(contractHub.smokeFlows.flows.length).toBeGreaterThan(0);
+      expect(quality.playwrightQuality.visualRegression.desktop).toEqual(expect.arrayContaining(['/comptabilite', '/pos', '/admin']));
+      expect(quality.frontendUnitCoverage.validators).toEqual(expect.arrayContaining(['ICE', 'TVA', 'période fiscale']));
+    });
+  });
 });

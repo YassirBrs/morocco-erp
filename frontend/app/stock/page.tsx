@@ -1,5 +1,5 @@
-import { PurchasesInventoryWorkspacePage } from '../../features/ux-organization/purchases-inventory-workspace-page';
+import { InventoryControlPage } from './inventory-control-page';
 
 export default function StockPage() {
-  return <PurchasesInventoryWorkspacePage />;
+  return <InventoryControlPage />;
 }

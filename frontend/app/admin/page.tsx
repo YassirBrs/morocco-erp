@@ -1,5 +1,5 @@
-import { AdminComplianceWorkspacePage } from '../../features/ux-organization/admin-compliance-workspace-page';
+import { AdminConsolePage } from './admin-console-page';
 
 export default function AdminPage() {
-  return <AdminComplianceWorkspacePage />;
+  return <AdminConsolePage />;
 }

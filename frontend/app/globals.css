@@ -472,6 +472,26 @@ select {
   padding: 16px;
 }
 
+.domainForm input,
+.domainForm select,
+.domainForm textarea {
+  min-height: 44px;
+}
+
+.checkboxLine {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.checkboxLine input {
+  width: 18px;
+  min-height: 18px;
+}
+
 .kpiStrip {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -1042,7 +1062,9 @@ h3 {
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: 3px solid var(--color-primary-hover);
   outline-offset: 2px;
 }
