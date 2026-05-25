@@ -1,5 +1,5 @@
-import { PayrollHrWorkspacePage } from '../../features/ux-organization/payroll-hr-workspace-page';
+import { PayrollProcessingPage } from '../payroll/payroll-processing-page';
 
 export default function PaiePage() {
-  return <PayrollHrWorkspacePage />;
+  return <PayrollProcessingPage />;
 }

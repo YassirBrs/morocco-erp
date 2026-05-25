@@ -30,6 +30,530 @@
   --blue-soft: var(--status-info-bg);
 }
 
+.marketingPage,
+.authPage,
+.workspaceGate,
+.workspaceShell {
+  min-height: 100dvh;
+}
+
+.marketingPage {
+  background:
+    linear-gradient(180deg, rgba(219, 234, 254, 0.9), rgba(248, 250, 252, 0.96) 38%),
+    var(--bg);
+}
+
+.marketingNav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(255, 255, 255, 0.94);
+  padding: 14px clamp(18px, 4vw, 48px);
+}
+
+.brandLockup {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.marketingNav nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.marketingNav a:not(.brandLockup),
+.secondaryLink,
+.primaryLink,
+.pricingCard a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+
+.marketingNav a:not(.brandLockup),
+.secondaryLink {
+  color: var(--ink);
+}
+
+.marketingNav .navButton,
+.primaryLink,
+.pricingCard a {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+}
+
+.marketingHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  gap: clamp(24px, 5vw, 72px);
+  align-items: center;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(40px, 8vw, 92px) clamp(18px, 4vw, 48px) 40px;
+}
+
+.heroCopy {
+  display: grid;
+  gap: 18px;
+}
+
+.heroCopy h1 {
+  max-width: 720px;
+  font-size: clamp(36px, 6vw, 68px);
+  line-height: 1.02;
+}
+
+.heroCopy p:not(.eyebrow),
+.sectionHeader p,
+.publicCard p,
+.pricingCard p,
+.authIntro,
+.workspacePanelHeader p,
+.formField small {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.heroActions,
+.pricingGrid,
+.moduleGrid,
+.workspaceGrid,
+.kpiStrip,
+.checkList {
+  display: grid;
+  gap: 12px;
+}
+
+.heroActions {
+  grid-template-columns: repeat(2, max-content);
+  align-items: center;
+}
+
+.secondaryLink {
+  border: 1px solid var(--line);
+  background: #fff;
+  font-weight: 800;
+}
+
+.heroSystem {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+  padding: 18px;
+}
+
+.systemTopline,
+.workspacePanelHeader,
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.systemMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.systemMetrics span,
+.systemFlow span,
+.publicCard,
+.pricingCard,
+.authPanel,
+.authRequiredPanel,
+.workspacePanel,
+.sessionCard,
+.kpiStrip span,
+.checkList span {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.systemMetrics span {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  color: var(--muted);
+}
+
+.systemMetrics strong {
+  color: var(--ink);
+}
+
+.systemFlow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.systemFlow span {
+  background: var(--blue-soft);
+  color: var(--primary);
+  font-weight: 800;
+  padding: 10px;
+  text-align: center;
+}
+
+.publicSection {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 42px clamp(18px, 4vw, 48px);
+}
+
+.sectionHeader {
+  display: grid;
+  max-width: 760px;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.sectionHeader h2 {
+  font-size: clamp(26px, 4vw, 40px);
+}
+
+.moduleGrid,
+.complianceList {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.publicCard,
+.pricingCard {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+}
+
+.complianceBand {
+  max-width: none;
+  background: #fff;
+}
+
+.complianceBand .sectionHeader,
+.complianceList {
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.complianceList {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.complianceList li {
+  border-left: 4px solid var(--green);
+  background: var(--green-soft);
+  padding: 14px;
+}
+
+.pricingGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pricingCard {
+  align-content: space-between;
+  min-height: 340px;
+}
+
+.pricingCard strong {
+  display: block;
+  margin: 10px 0;
+  font-size: 30px;
+}
+
+.authPage,
+.workspaceGate {
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(135deg, rgba(219, 234, 254, 0.9), rgba(254, 243, 199, 0.42)),
+    var(--bg);
+  padding: 24px;
+}
+
+.authPanel,
+.authRequiredPanel {
+  display: grid;
+  width: min(100%, 520px);
+  gap: 18px;
+  padding: 24px;
+}
+
+.segmentedControl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.segmentedControl button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink);
+}
+
+.segmentedControl button.selected {
+  border-color: var(--primary);
+  background: var(--blue-soft);
+  color: var(--primary);
+}
+
+.authForm,
+.domainForm,
+.formField {
+  display: grid;
+  gap: 10px;
+}
+
+.formField span {
+  font-weight: 800;
+}
+
+select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.formAlert,
+.actionToast {
+  border-radius: 8px;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.formAlert.error,
+.actionToast.error {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.formAlert.success,
+.actionToast.success {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.actionToast.info {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.workspaceShell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  background: var(--bg);
+}
+
+.workspaceShell.collapsed {
+  grid-template-columns: 96px minmax(0, 1fr);
+}
+
+.workspaceSidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  height: 100dvh;
+  flex-direction: column;
+  gap: 20px;
+  border-right: 1px solid var(--line);
+  background: #fff;
+  padding: 18px;
+}
+
+.workspaceShell.collapsed .brandLockup span:last-child,
+.workspaceShell.collapsed .sessionCard {
+  display: none;
+}
+
+.workspaceShell.collapsed .workspaceSidebar nav a {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.iconButton {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.workspaceSidebar nav {
+  display: grid;
+  gap: 6px;
+}
+
+.workspaceSidebar nav a {
+  min-height: 44px;
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 12px;
+  text-decoration: none;
+}
+
+.workspaceSidebar nav a.active {
+  background: var(--blue-soft);
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.sessionCard {
+  display: grid;
+  gap: 4px;
+  margin-top: auto;
+  padding: 12px;
+}
+
+.workspaceContent {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  min-width: 0;
+  padding: 24px;
+}
+
+.sectionHeader.internal {
+  max-width: none;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: end;
+  margin: 0;
+}
+
+.workspaceGrid.two {
+  grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.15fr);
+}
+
+.workspacePanel {
+  overflow: hidden;
+}
+
+.workspacePanelHeader {
+  border-bottom: 1px solid var(--line);
+  padding: 16px;
+}
+
+.domainForm,
+.kpiStrip,
+.checkList,
+.workspacePanel > .tableScroll {
+  padding: 16px;
+}
+
+.kpiStrip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.kpiStrip span,
+.checkList span {
+  padding: 12px;
+}
+
+.denseTable th,
+.denseTable td {
+  height: 48px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.statusBadge.success {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.statusBadge.warning {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.statusBadge.danger {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.statusBadge.info {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+@media (max-width: 980px) {
+  .marketingHero,
+  .moduleGrid,
+  .pricingGrid,
+  .complianceList,
+  .workspaceGrid.two,
+  .workspaceShell {
+    grid-template-columns: 1fr;
+  }
+
+  .workspaceSidebar {
+    position: static;
+    height: auto;
+  }
+
+  .sectionHeader.internal {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .marketingNav,
+  .heroActions,
+  .systemMetrics,
+  .systemFlow,
+  .kpiStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .marketingNav {
+    display: grid;
+  }
+
+  .marketingNav nav {
+    display: grid;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -273,6 +797,11 @@ button {
 button:hover {
   border-color: var(--color-primary-hover);
   background: var(--color-primary-hover);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .workflow {

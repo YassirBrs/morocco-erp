@@ -238,6 +238,49 @@ This backlog contains concrete tasks to improve the app from the current working
 - [x] T147 P1 - Add duplicate customer detection by ICE, IF, phone, and email.
 - [x] T148 P1 - Add duplicate product detection by SKU, barcode, and normalized name.
 - [x] T149 P1 - Add customer and supplier timeline views for quotes, invoices, payments, notes, and documents.
+
+## Architectural Decoupling Pass 001
+
+- [x] T150 P0 - Replace the root Next.js dashboard with a public marketing landing entry point.
+- [x] T151 P0 - Create `/app/marketing/landing-page.tsx` as the standalone SaaS public page.
+- [x] T152 P0 - Add a responsive public hero that does not expose internal dashboard data tables.
+- [x] T153 P0 - Add public module value propositions for CRM, sales, purchases, accounting, stock, and paie.
+- [x] T154 P0 - Add a Moroccan compliance advantage section with ICE, IF, RC, Patente, CNSS, TVA, IR, AMO, and Damancom wording.
+- [x] T155 P0 - Add a pricing matrix with Starter, Professional, and Enterprise plans.
+- [x] T156 P0 - Express plan pricing in Moroccan Dirham or clear enterprise quote language.
+- [x] T157 P0 - Create `/app/auth/login-page.tsx` as the dedicated credentials gate.
+- [x] T158 P0 - Add login and registration modes with visible labels and validation messages.
+- [x] T159 P0 - Simulate secure session creation in browser storage for local testing.
+- [x] T160 P0 - Hide workspace content until a simulated session is available.
+- [x] T161 P0 - Create `/app/layouts/workspace-layout.tsx` as the persistent internal shell.
+- [x] T162 P0 - Add a fixed left sidebar for internal pages.
+- [x] T163 P0 - Add a collapsible sidebar control with accessible labelling.
+- [x] T164 P0 - Add role, tenant, and user session context in the workspace shell.
+- [x] T165 P0 - Extract CRM pipeline into `/app/crm/crm-pipeline-page.tsx`.
+- [x] T166 P0 - Wire CRM lead creation with local state transformation and validation.
+- [x] T167 P0 - Extract supplier registry into `/app/purchases/supplier-directory-page.tsx`.
+- [x] T168 P0 - Wire supplier creation with ICE and Moroccan RIB validation.
+- [x] T169 P0 - Extract invoice management into `/app/sales/invoice-management-page.tsx`.
+- [x] T170 P0 - Wire invoice draft creation with customer, amount, and Moroccan VAT-rate validation.
+- [x] T171 P0 - Extract payroll processing into `/app/payroll/payroll-processing-page.tsx`.
+- [x] T172 P0 - Wire payroll run creation with period, employee count, and gross amount validation.
+- [x] T173 P1 - Add shared workspace UI components for panels, data tables, fields, badges, and toasts.
+- [x] T174 P1 - Keep French ERP terminology consistent across new internal pages.
+- [x] T175 P1 - Add `/sales` route for invoice management.
+- [x] T176 P1 - Add `/purchases` route for supplier directory.
+- [x] T177 P1 - Add `/payroll` route for payroll processing.
+- [x] T178 P1 - Rewire `/crm` to the dedicated CRM pipeline page.
+- [x] T179 P1 - Rewire `/ventes` to the dedicated invoice management page for French route continuity.
+- [x] T180 P1 - Rewire `/achats-stock` to the dedicated supplier directory page for French route continuity.
+- [x] T181 P1 - Rewire `/paie` to the dedicated payroll processing page for French route continuity.
+- [x] T182 P1 - Add responsive CSS for landing, auth, workspace shell, and domain screens.
+- [x] T183 P1 - Preserve semantic color tokens and accessible focus states.
+- [x] T184 P1 - Ensure internal domain pages do not import the old bloated root page.
+- [x] T185 P1 - Add source-level architecture tests for public/auth/internal separation.
+- [x] T186 P1 - Add source-level tests for all required artifact paths.
+- [x] T187 P1 - Add source-level tests for actionable validation and toast feedback.
+- [x] T188 P1 - Add source-level tests for French ERP jargon coverage.
+- [x] T189 P1 - Verify the first decoupling pass with frontend and backend health checks.
 - [x] T150 P1 - Add internal notes and task assignments on customers, suppliers, invoices, and payroll runs.
 - [x] T151 P1 - Add bulk archive and restore flows for inactive customers, suppliers, and products.
 - [x] T152 P1 - Add stock reservation visibility from orders and POS tickets.

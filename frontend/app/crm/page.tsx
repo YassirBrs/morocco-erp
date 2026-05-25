@@ -1,5 +1,5 @@
-import { SalesWorkspacePage } from '../../features/ux-organization/sales-workspace-page';
+import { CrmPipelinePage } from './crm-pipeline-page';
 
 export default function CrmPage() {
-  return <SalesWorkspacePage />;
+  return <CrmPipelinePage />;
 }
